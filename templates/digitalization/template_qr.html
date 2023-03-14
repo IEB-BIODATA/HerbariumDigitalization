@@ -1,0 +1,60 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="es">
+    <head>
+        <meta charset="utf-8">
+        <title>Códigos QR</title>
+        <style type="text/css">
+            @page {
+                size: {{ pagesize }};
+                margin: 0.5cm;
+                @frame footer {
+                    -pdf-frame-content: footerContent;
+                    bottom: 0cm;
+                    margin-left: 0cm;
+                    margin-right: 0cm;
+                    height: 0cm;
+                }
+                @frame header {
+                    -pdf-frame-content: headerContent;
+                    top: 0.55cm;
+                    margin-left: 0.5cm;
+                    margin-right: 0cm;
+                    height: 10cm;
+                    font-weight: bold;
+                    font-size: 12px;
+                }
+                table {
+                    margin-top:50px;
+                }
+            }
+            body  
+            { 
+                /* this affects the margin on the content before sending to printer */ 
+                margin-left: 18px; 
+            } 
+        </style>
+        <link rel="stylesheet" href="{% static 'vendor/bootstrap/css/bootstrap.min.css' %}">
+    </head>
+    <body>
+        <div id="headerContent">
+            {%block page_head%}
+                Lista de QRs - Sesión: {{ page_id }} - Fecha: {{ page_date }}
+            {%endblock%}
+        </div>
+        <table>
+            {% for code,print_code in codes_list %}
+                {% if forloop.first %}<tr>{% endif %}
+                <td style="padding-top: 10px;"><img src="media/qr/{{code}}.jpg" width="80px"/><br style="line-height: 0%;"/><p style="{% if code|length >= 17 %} padding-left: -6px {% else %} padding-left: 0px {% endif %};padding-top: -10px;font-size:9px;">{{print_code}}</p></td>
+                {% if forloop.counter|divisibleby:col %}</tr>{% endif %}
+            {% endfor %}
+        </table>
+        <div id="footerContent">
+            {%block page_foot%}
+                Page <pdf:pagenumber>
+            {%endblock%}
+            Fecha Documento: {{ page_date }}
+        </div>
+        <script type="text/javascript" src="{% static 'vendor/bootstrap/js/bootstrap.bundle.min.js' %}"></script>
+    </body>
+</html>

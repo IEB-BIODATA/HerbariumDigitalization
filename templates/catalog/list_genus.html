@@ -1,0 +1,56 @@
+{% extends "base.html" %}
+{% load static %}
+{% block javascript %}
+<script src="{% static 'vendor/datatables/jquery.dataTables.js' %}"></script>
+<script src="{% static 'vendor/datatables/dataTables.bootstrap4.js' %}"></script>
+  <script type="text/javascript">
+  $(document).ready(function() {
+    $('#CatalogTable').DataTable();
+  });
+  </script>
+{% endblock %}
+{% block content %}
+<h1>Géneros</h1>
+<!-- DataTables Example -->
+<div class="card mb-3">
+  <div class="row">
+    <div class="col-3">
+     <a class="btn btn-primary btn-block" href="{% url 'create_genus' %}">Nuevo</a>
+    </div>
+  </div>
+  <div class="card-header">
+    <i class="fas fa-table"></i>
+    Géneros</div>
+  <div class="card-body">
+    <div class="table-responsive">
+      <table class="table table-bordered" id="CatalogTable" width="100%" cellspacing="0">
+        <thead>
+          <tr>
+            <th>Nombre</th>
+            <th>Familia</th>
+            <th>Creado por</th>
+            <th>Fecha Creación</th>
+            <th>Fecha Actualización</th>
+            <th>Acción</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for item in genus%}
+            <tr>
+              <td>{{ item.name }}</td>
+              <td>{{ item.family }}</td>
+              <td>{{ item.created_by }}</td>
+              <td>{{ item.created_at }}</td>
+              <td>{{ item.updated_at }}</td>
+              <td>                
+                <a href="{% url 'update_genus' id=item.id %}" data-toggle="tooltip" data-placement="top" title="Editar nombre Genero"><i class="fas fa-fw fa-edit text-primary"></i></a>
+                <a href="{% url 'update_genus_family' id=item.id %}" data-toggle="tooltip" data-placement="top" title="Editar Familia de Genero"><i class="fas fa-fw fa-long-arrow-alt-down text-primary"></i></a>
+              </td>
+            </tr>
+          {% endfor%}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+{% endblock %}

@@ -1,0 +1,62 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="es">
+  <head>
+    <!-- Site Title-->
+    <title>{% block title %}BIODATA{% endblock %}</title>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+    <meta name="description" content="BIODATA">
+    <meta name="author" content="dortiz">
+    <!-- Bootstrap core CSS-->
+    <link rel="stylesheet" href="{% static 'vendor/bootstrap/css/bootstrap.min.css' %}">
+    <!-- Custom fonts for this template-->
+    <link rel="stylesheet" href="{% static 'vendor/fontawesome-free/css/all.min.css' %}">
+    <!-- Custom styles for this template-->
+    <link rel="stylesheet" href="{% static 'css/sb-admin.css' %}">
+  </head>
+  <body class="bg-dark">
+    <div class="container">
+      <div class="card card-login mx-auto mt-5">
+        {% if form.errors %}
+        <p>Su nombre de usuario o contraseña no son correctos</p>
+        {% endif %}
+
+        {% if next %}
+            {% if user.is_authenticated %}
+            <p>Su cuenta no tiene acceso a esta página. Para acceder, por favor ingrese a su cuenta.</p>
+            {% endif %}
+        {% endif %}
+        <div class="card-header">Login</div>
+        <div class="card-body">
+          <form method="post" action="{% url 'login' %}">
+            {% csrf_token %}
+            <div class="form-group">
+              <div class="form-label-group">
+                <input type="text" name="username" autofocus="" autocapitalize="none" autocomplete="username" maxlength="150" required="" id="id_username" autofocus="autofocus" class="form-control" placeholder="Email address" >
+                <label for="inputEmail" style="position: relative !important;">Nombre de usuario:</label>
+              </div>
+            </div>
+            <div class="form-group">
+              <div class="form-label-group">
+                <input type="password" name="password" autocomplete="current-password" required="" id="id_password" class="form-control" placeholder="Password">
+                <label for="inputPassword" style="position: relative !important;">Contraseña:</label>
+              </div>
+            </div>
+            <input type="submit" value="login" class="btn btn-primary btn-block">
+            <input type="hidden" name="next" value="{{ next }}">
+          </form>
+        </div>
+      </div>
+    </div>
+
+    <!-- Bootstrap core JavaScript-->
+    <script type="text/javascript" src="{% static 'vendor/jquery/jquery.min.js' %}"></script>
+    <script type="text/javascript" src="{% static 'vendor/bootstrap/js/bootstrap.bundle.min.js' %}"></script>
+    <!-- Core plugin JavaScript-->
+    <script type="text/javascript" src="{% static 'vendor/jquery-easing/jquery.easing.min.js' %}"></script>
+
+  </body>
+
+</html>

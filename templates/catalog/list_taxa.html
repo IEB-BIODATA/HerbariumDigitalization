@@ -1,0 +1,118 @@
+{% extends "base.html" %}
+{% load static %}
+{% block javascript %}
+<script src="{% static 'vendor/datatables/jquery.dataTables.js' %}"></script>
+<script src="{% static 'vendor/datatables/dataTables.bootstrap4.js' %}"></script>
+  <script type="text/javascript">
+  $(document).ready(function() {
+    $('#CatalogTable').DataTable();
+  });
+
+  function download_xlsx(data_error) {
+      $(document).ajaxSend(function() {
+        $("#overlay").fadeIn(300);　
+      });
+      $.ajax({
+        url: '/catalog/download',
+        type: 'GET',
+        xhrFields: {
+          // make sure the response knows we're expecting a binary type in return.
+          // this is important, without it the excel file is marked corrupted.
+          responseType: 'arraybuffer'
+        }
+      }).done(function (data, status, xmlHeaderRequest) {
+        var downloadLink = document.createElement('a');
+        var blob = new Blob([data],
+            {
+                type: xmlHeaderRequest.getResponseHeader('Content-Type')
+            });
+        var url = window.URL || window.webkitURL;
+        var downloadUrl = url.createObjectURL(blob);
+        var fileName = 'vouchers_error.xlsx';
+      
+        if (typeof window.navigator.msSaveBlob !== 'undefined') {
+            window.navigator.msSaveBlob(blob, fileName);
+        } else {
+            if (fileName) {
+                if (typeof downloadLink.download === 'undefined') {
+                    window.location = downloadUrl;
+                } else {
+                    downloadLink.href = downloadUrl;
+                    downloadLink.download = "catalog.xlsx";
+                    document.body.appendChild(downloadLink);
+                    downloadLink.click();
+                }
+            } else {
+                window.location = downloadUrl;
+            }
+            setTimeout(function () {
+                url.revokeObjectURL(downloadUrl);
+                $("#overlay").fadeOut(300);
+            },
+                100);
+        }
+      });
+  }
+  </script>
+{% endblock %}
+{% block content %}
+<h1>Catálogo</h1>
+<!-- DataTables Example -->
+<div class="card mb-3">
+  <div class="row">
+    <div class="col-3">
+     <a class="btn btn-primary btn-block" href="{% url 'create_taxa' %}">Nuevo</a>
+    </div>
+    <div class="col-3 offset-md-6">
+     <a class="btn btn-primary btn-block" href="#" onclick="download_xlsx()">Descargar</a>
+    </div>
+  </div>
+  <div class="card-header">
+    <i class="fas fa-table"></i>
+    Catálogo</div>
+  <div class="card-body">
+    <div class="table-responsive">
+      <table class="table table-bordered" id="CatalogTable" width="100%" cellspacing="0">
+        <thead>
+          <tr>
+            <th>División</th>
+            <th>Clase</th>
+            <th>Orden</th>
+            <th>Familia</th>
+            <th>Nombre Científico Completo</th>
+            <th>Última Actualización</th>
+            <th>Hábito</th>
+            <th>Ciclo</th>
+            <th>Status</th>
+            <th>¿Terminal?</th>
+            <th>Acción</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for specie in species%}
+            <tr>
+              <td>{{ specie.division }}</td>
+              <td>{{ specie.class_name }}</td>
+              <td>{{ specie.orden }}</td>
+              <td>{{ specie.family }}</td>
+              <td>{{ specie.scientificNameFull }}</td>
+              <td>{{ specie.updated_at }}</td>
+              <td>{{ specie.habito|default_if_none:"" }}</td>
+              <td>{{ specie.ciclo|default_if_none:"" }}</td>
+              <td>{{ specie.status|default_if_none:"" }}</td>
+              <td>{{ specie.determined }}</td>
+              <td width="10%">                
+                <a href="{% url 'update_taxa' id=specie.id %}"><i class="fas fa-fw fa-edit text-primary"></i> Editar</a><br/>
+                <a href="{% url 'split_1_taxa' id=specie.id %}"><i class="fa-sharp fa-solid fa-expand-arrows-alt text-primary"></i> Dividir con 1 nuevo taxón</a><br/>
+                <a href="{% url 'split_2_taxa' id=specie.id %}"><i class="fa-sharp fa-solid fa-expand-arrows-alt text-primary"></i> Dividir a 2 nuevos taxones</a><br/>
+                <a href="{% url 'merge_taxa' id=specie.id %}"><i class="fa-sharp fa-solid fa-compress text-primary"></i> Unir</a>
+                <!--<br/><a href="" class="text-danger"><i class="fas fa-fw fa-trash text-danger"></i> Eliminar</a>-->
+              </td>
+            </tr>
+          {% endfor%}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+{% endblock %}

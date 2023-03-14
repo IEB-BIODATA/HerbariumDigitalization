@@ -1,0 +1,728 @@
+{% extends "base.html" %}
+{% load static %}
+{% block javascript %}
+<script src="{% static 'js/bootstrap-select.js' %}"></script>
+<script type="text/javascript">
+  var common_names_1=[{% for common_name in taxa_1.common_names.all %} {{common_name.id}}, {% endfor %}];
+  var synonymys_1=[{% for synonymy in taxa_1.synonymys.all %} {{synonymy.id}}, {% endfor %}];
+  var region_distribution_1=[{% for region in taxa_1.region_distribution.all %} {{region.id}}, {% endfor %}];
+  function get_taxa(id){
+    $(document).ajaxSend(function() {
+        $("#overlay").fadeIn(300);
+    });
+    $.ajax({
+     url: '/catalog/get_taxa/'+id.value+'/',
+     type: 'GET',
+     success : function(response) {
+      data=response[0].fields;
+      $("#taxon_habito").empty();
+      $("#taxon_habito").append(data.habito_name);
+      $("#taxon_genus").empty();
+      $("#taxon_genus").append(data.genus_name);
+      $("#taxon_specificEpithet").empty();
+      $("#taxon_specificEpithet").append(data.specificEpithet);
+      $("#taxon_scientificNameAuthorship").empty();
+      $("#taxon_scientificNameAuthorship").append(data.scientificNameAuthorship);
+      $("#taxon_subespecie").empty();
+      $("#taxon_subespecie").append(data.subespecie);
+      $("#taxon_autoresSsp").empty();
+      $("#taxon_autoresSsp").append(data.autoresSsp);
+      $("#taxon_variedad").empty();
+      $("#taxon_variedad").append(data.variedad);
+      $("#taxon_autoresVariedad").empty();
+      $("#taxon_autoresVariedad").append(data.autoresVariedad);
+      $("#taxon_forma").empty();
+      $("#taxon_forma").append(data.variedad);
+      $("#taxon_autoresForma").empty();
+      $("#taxon_autoresForma").append(data.autoresForma);
+      $("#taxon_ciclo").empty();
+      $("#taxon_ciclo").append(data.ciclo_name);
+      $("#taxon_status").empty();
+      $("#taxon_status").append(data.status_name);
+      $("#taxon_enArgentina").empty();
+      $("#taxon_enArgentina").append(data.enArgentina.toString());
+      $("#taxon_enPeru").empty();
+      $("#taxon_enPeru").append(data.enPeru.toString());
+      $("#taxon_enBolivia").empty();
+      $("#taxon_enBolivia").append(data.enBolivia.toString());
+      $("#taxon_alturaMaxima").empty();
+      $("#taxon_alturaMaxima").append(data.alturaMaxima);
+      $("#taxon_alturaMinima").empty();
+      $("#taxon_alturaMinima").append(data.alturaMinima);
+      $("#taxon_notas").empty();
+      $("#taxon_notas").append(data.notas);
+      $("#taxon_publicacion").empty();
+      $("#taxon_publicacion").append(data.publicacion);
+      $("#taxon_volumen").empty();
+      $("#taxon_volumen").append(data.volumen);
+      $("#taxon_paginas").empty();
+      $("#taxon_paginas").append(data.paginas);
+      $("#taxon_anio").empty();
+      $("#taxon_anio").append(data.anio);
+      $("#taxon_id_tipo").empty();
+      $("#taxon_id_tipo").append(data.id_tipo);
+      $("#taxon_common_names").empty();
+      $("#taxon_common_names").append(data.common_names);
+      $("#taxon_synonymys").empty();
+      $("#taxon_synonymys").append(data.synonymys);
+      $("#taxon_region_distribution").empty();
+      $("#taxon_region_distribution").append(data.region_distribution);
+      $("#id_taxon_2").val(data.id);
+      $(".selectpicker#id_common_names").val([]);
+      common_names_1.forEach(function(common_name){
+          var id_common_names = $(".selectpicker#id_common_names").val();
+          if(id_common_names.indexOf(common_name)==-1)
+          {
+              id_common_names.push(common_name);
+              $(".selectpicker#id_common_names").val(id_common_names);
+              $("#id_common_names option[value="+common_name+"]").attr('selected', 'selected');
+          }
+          $(".selectpicker#id_common_names").selectpicker('refresh');
+      });
+      data.common_names_2.forEach(function(common_name){
+          var id_common_names = $(".selectpicker#id_common_names").val();
+          if(id_common_names.indexOf(common_name)==-1)
+          {
+              id_common_names.push(common_name);
+              $(".selectpicker#id_common_names").val(id_common_names);
+              $("#id_common_names option[value="+common_name+"]").attr('selected', 'selected');
+          }
+          $(".selectpicker#id_common_names").selectpicker('refresh');
+      });
+      $(".selectpicker#id_synonymys").val([]);
+      synonymys_1.forEach(function(synonymy){
+          var id_synonymys = $(".selectpicker#id_synonymys").val();
+          if(id_synonymys.indexOf(synonymy)==-1)
+          {
+              id_synonymys.push(synonymy);
+              $(".selectpicker#id_synonymys").val(id_synonymys);
+              $("#id_synonymys option[value="+synonymy+"]").attr('selected', 'selected');
+          }
+          $(".selectpicker#id_synonymys").selectpicker('refresh');
+      });
+      data.synonymys_2.forEach(function(synonymy){
+          var id_synonymys = $(".selectpicker#id_synonymys").val();
+          if(id_synonymys.indexOf(synonymy)==-1)
+          {
+              id_synonymys.push(synonymy);
+              $(".selectpicker#id_synonymys").val(id_synonymys);
+              $("#id_synonymys option[value="+synonymy+"]").attr('selected', 'selected');
+          }
+          $(".selectpicker#id_synonymys").selectpicker('refresh');
+      });
+      $(".selectpicker#id_region_distribution").val([]);
+      region_distribution_1.forEach(function(region){
+          var id_region_distribution = $(".selectpicker#id_region_distribution").val();
+          if(id_region_distribution.indexOf(region)==-1)
+          {
+              id_region_distribution.push(region);
+              $(".selectpicker#id_region_distribution").val(id_region_distribution);
+              $("#id_region_distribution option[value="+region+"]").attr('selected', 'selected');
+          }
+          $(".selectpicker#id_region_distribution").selectpicker('refresh');
+      });
+      data.region_distribution_2.forEach(function(region){ 
+          var id_region_distribution = $(".selectpicker#id_region_distribution").val();
+          if(id_region_distribution.indexOf(region)==-1)
+          {
+              id_region_distribution.push(region);
+              $(".selectpicker#id_region_distribution").val(id_region_distribution);
+              $("#id_region_distribution option[value="+region+"]").attr('selected', 'selected');
+          }
+          $(".selectpicker#id_region_distribution").selectpicker('refresh');
+      });
+
+      $('#id_alturaMaxima').val(Math.max(data.alturaMaxima,{{taxa_1.alturaMaxima|default_if_none:""}}));
+      $('#id_alturaMinima').val(Math.min(data.alturaMinima,{{taxa_1.alturaMinima|default_if_none:""}}));
+
+    },
+      cache: false,
+      processData: false,
+      contentType: false,
+    }).done(function() {
+          setTimeout(function(){
+            $("#overlay").fadeOut(300);
+          },500);
+        });
+  }
+
+  $('.selectpicker#id_common_names').on('rendered.bs.select', function() {
+      $('.filter-option-inner-inner').eq(0).html($('.filter-option-inner-inner').eq(0).text().replace(/,/g, "<br>"));
+  });
+
+  $('.selectpicker#id_synonymys').on('rendered.bs.select', function() {
+      $('.filter-option-inner-inner').eq(1).html($('.filter-option-inner-inner').eq(1).text().replace(/,/g, "<br>"));
+  });
+
+  $('.selectpicker#id_region_distribution').on('rendered.bs.select', function() {
+      $('.filter-option-inner-inner').eq(2).html($('.filter-option-inner-inner').eq(2).text().replace(/,/g, "<br>"));
+  });
+
+  $('.selectpicker#id_common_names').on('change', function(){
+    var values = $('.selectpicker#id_common_names option:selected').map(function (idx, ele) {
+        return $(ele).val();
+    }).get();
+    values.forEach(element => $("#id_common_names option[value="+element+"]").attr('selected', 'selected'));
+  });
+
+  $('.selectpicker#id_synonymys').on('change', function(){
+    var values = $('.selectpicker#id_synonymys option:selected').map(function (idx, ele) {
+        return $(ele).val();
+    }).get();
+    values.forEach(element => $("#id_synonymys option[value="+element+"]").attr('selected', 'selected'));
+  });
+
+  $('.selectpicker#id_region_distribution').on('change', function(){
+    var values = $('.selectpicker#id_region_distribution option:selected').map(function (idx, ele) {
+        return $(ele).val();
+    }).get();
+    values.forEach(element => $("#id_region_distribution option[value="+element+"]").attr('selected', 'selected'));
+  });
+</script>
+{% endblock %}
+{% block content %}
+<h1>Unir Taxón</h1>
+<p>Este proceso permite unir dos taxones, creando un nuevo taxa y eliminando los dos taxones de origen. Los nombres comunes, sinónimos y distribución son unificados en el nuevo taxón. Además se establece automaticamente la altura máxima y mínima entre ambos taxones. Sin embargo, es posible editar todos los cambos de este nuevo taxa, ya que lo anterior solo es una propuesta.
+Todos los vouchers asociados de ambos taxones son unificados en este nuevo taxa.</p>
+<!-- DataTables Example -->
+<div class="row">
+  <div class="col-12">
+    <form class="taxon-form">
+      Seleccione Taxón que el que se unirá <b>{{ taxa_1.scientificName}}</b>: 
+      <select id="select-taxon" class="select-taxon" onchange="get_taxa(this);">
+        <option value="0">---</option>
+        {% for specie in species %}
+          <option value="{{ specie.id }}">{{ specie.scientificName }}</option>
+        {% endfor %}
+      </select>
+    </form>
+  </div>
+  <div class="col-12">
+    {% if form.errors %}
+       {% for field in form %}
+           {% for error in field.errors %} 
+              <div class="alert alert-danger">
+                   <strong>{{ error|escape }}</strong>
+              </div>
+           {% endfor %}
+       {% endfor %}
+    {% endif %}
+  </div>
+</div>
+<div class="row">
+  <div class="col-sm-6">
+    <div class="card mb-3">
+      <div class="card-header">
+        <i class="fas fa-table"></i>
+        Taxón 1
+      </div>
+      <div class="card-body">
+        <div class="table-responsive">
+          <table class="table">
+              <tr>
+                <td><strong>Habito</strong></td>
+                <td>
+                  {{ taxa_1.habito }}
+                </td>
+              </tr>
+              <tr>
+                <td><strong>Genero</strong></td>
+                <td>
+                  {{ taxa_1.genus }}
+                </td>
+              </tr>
+              <tr>
+                <td><strong>Epiteto Específico</strong></td>
+                <td>
+                  {{ taxa_1.specificEpithet }}
+                </td>
+              </tr>
+              <tr>
+                <td><strong>Autor(es)</strong></td>
+                <td>
+                  {{ taxa_1.scientificNameAuthorship }}
+                </td>
+              </tr>
+              <tr>
+                <td><strong>Subespecie</strong></td>
+                <td>
+                  {{ taxa_1.subespecie|default_if_none:"" }}
+                </td>
+              </tr>
+              <tr>
+                <td><strong>Autor(es) Subespecie</strong></td>
+                <td>
+                  {{ taxa_1.autoresSsp|default_if_none:"" }}
+                </td>
+              </tr>
+              <tr>
+                <td><strong>Variedad</strong></td>
+                <td>
+                  {{ taxa_1.variedad|default_if_none:"" }}
+                </td>
+              </tr>
+              <tr>
+                <td><strong>Autor(es) Variedad</strong></td>
+                <td>
+                  {{ taxa_1.autoresVariedad|default_if_none:"" }}
+                </td>
+              </tr>
+              <tr>
+                <td><strong>Forma</strong></td>
+                <td>
+                  {{ taxa_1.forma|default_if_none:"" }}
+                </td>
+              </tr>
+              <tr>
+                <td><strong>Autor(es) Forma</strong></td>
+                <td>
+                  {{ taxa_1.autoresForma|default_if_none:"" }}
+                </td>
+              </tr>
+              <tr>
+                <td><strong>Ciclo</strong></td>
+                <td>
+                  {{ taxa_1.ciclo|default_if_none:"" }}
+                </td>
+              </tr>
+              <tr>
+                <td><strong>Estado</strong></td>
+                <td>
+                  {{ taxa_1.status|default_if_none:"" }}
+                </td>
+              </tr>
+              <tr>
+                <td><strong>En Argentina</strong></td>
+                <td>
+                  {{ taxa_1.enArgentina|default_if_none:"" }}
+                </td>
+              </tr>
+              <tr>
+                <td><strong>En Bolivia</strong></td>
+                <td>
+                  {{ taxa_1.enBolivia|default_if_none:"" }}
+                </td>
+              </tr>
+              <tr>
+                <td><strong>En Peru</strong></td>
+                <td>
+                  {{ taxa_1.enPeru|default_if_none:"" }}
+                </td>
+              </tr>
+              <tr>
+                <td><strong>Altura Máxima</strong></td>
+                <td>
+                  {{ taxa_1.alturaMaxima|default_if_none:"" }}
+                </td>
+              </tr>
+              <tr>
+                <td><strong>Altura Mínima</strong></td>
+                <td>
+                  {{ taxa_1.alturaMinima|default_if_none:"" }}
+                </td>
+              </tr>
+              <tr>
+                <td><strong>Notas</strong></td>
+                <td>
+                  {{ taxa_1.notas|default_if_none:"" }}
+                </td>
+              </tr>
+              <tr>
+                <td><strong>Publicacion</strong></td>
+                <td>
+                  {{ taxa_1.publicacion|default_if_none:"" }}
+                </td>
+              </tr>
+              <tr>
+                <td><strong>Volumen</strong></td>
+                <td>
+                  {{ taxa_1.volumen|default_if_none:"" }}
+                </td>
+              </tr>
+              <tr>
+                <td><strong>Páginas</strong></td>
+                <td>
+                  {{ taxa_1.paginas|default_if_none:"" }}
+                </td>
+              </tr>
+              <tr>
+                <td><strong>ID Tipo</strong></td>
+                <td>
+                  {{ taxa_1.id_tipo|default_if_none:"" }}
+                </td>
+              </tr>
+              <tr>
+                <td><strong>Nombres Comunes</strong></td>
+                <td>
+                  {% for nombre_comun in taxa_1.common_names.all %}
+                    {{ nombre_comun }}
+                  {% endfor %}
+                </td>
+              </tr>
+              <tr>
+                <td><strong>Sinónimos</strong></td>
+                <td>
+                  {% for synonymy in taxa_1.synonymys.all %}
+                    {{ synonymy }},
+                  {% endfor %}
+                </td>
+              </tr>
+              <tr>
+                <td><strong>Distribución Regional</strong></td>
+                <td>
+                  {% for region in taxa_1.region_distribution.all %}
+                    {{ region }},
+                  {% endfor %}
+                </td>
+              </tr>
+            </table>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="col-sm-6">
+    <div class="card mb-3">
+      <div class="card-header">
+        <i class="fas fa-table"></i>
+        Taxón 2</div>
+      <div class="card-body">
+        <div class="table-responsive">
+              <table class="table">
+              <tr>
+                <td><strong>Habito</strong></td>
+                <td id="taxon_habito">
+                  {{ taxa_2.habito }}
+                </td>
+              </tr>
+              <tr>
+                <td><strong>Genero</strong></td>
+                <td id="taxon_genus">
+                  {{ taxa_2.genus }}
+                </td>
+              </tr>
+              <tr>
+                <td><strong>Epiteto Específico</strong></td>
+                <td id="taxon_specificEpithet">
+                  {{ taxa_2.specificEpithet }}
+                </td>
+              </tr>
+              <tr>
+                <td><strong>Autor(es)</strong></td>
+                <td id="taxon_scientificNameAuthorship">
+                  {{ taxa_2.scientificNameAuthorship }}
+                </td>
+              </tr>
+              <tr>
+                <td><strong>Subespecie</strong></td>
+                <td id="taxon_subespecie">
+                  {{ taxa_2.subespecie|default_if_none:"" }}
+                </td>
+              </tr>
+              <tr>
+                <td><strong>Autor(es) Subespecie</strong></td>
+                <td id="taxon_autoresSsp">
+                  {{ taxa_2.autoresSsp|default_if_none:"" }}
+                </td>
+              </tr>
+              <tr>
+                <td><strong>Variedad</strong></td>
+                <td id="taxon_variedad">
+                  {{ taxa_2.variedad|default_if_none:"" }}
+                </td>
+              </tr>
+              <tr>
+                <td><strong>Autor(es) Variedad</strong></td>
+                <td id="taxon_autoresVariedad">
+                  {{ taxa_2.autoresVariedad|default_if_none:"" }}
+                </td>
+              </tr>
+              <tr>
+                <td><strong>Forma</strong></td>
+                <td id="taxon_forma">
+                  {{ taxa_2.forma|default_if_none:"" }}
+                </td>
+              </tr>
+              <tr>
+                <td><strong>Autor(es) Forma</strong></td>
+                <td id="taxon_autoresForma">
+                  {{ taxa_2.autoresForma|default_if_none:"" }}
+                </td>
+              </tr>
+              <tr>
+                <td><strong>Ciclo</strong></td>
+                <td id="taxon_ciclo">
+                  {{ taxa_2.ciclo|default_if_none:"" }}
+                </td>
+              </tr>
+              <tr>
+                <td><strong>Estado</strong></td>
+                <td id="taxon_status">
+                  {{ taxa_2.status|default_if_none:"" }}
+                </td>
+              </tr>
+              <tr>
+                <td><strong>En Argentina</strong></td>
+                <td id="taxon_enArgentina">
+                  {{ taxa_2.enArgentina|default_if_none:"" }}
+                </td>
+              </tr>
+              <tr>
+                <td><strong>En Bolivia</strong></td>
+                <td id="taxon_enBolivia">
+                  {{ taxa_2.enBolivia|default_if_none:"" }}
+                </td>
+              </tr>
+              <tr>
+                <td><strong>En Peru</strong></td>
+                <td id="taxon_enPeru">
+                  {{ taxa_2.enPeru|default_if_none:"" }}
+                </td>
+              </tr>
+              <tr>
+                <td><strong>Altura Máxima</strong></td>
+                <td id="taxon_alturaMaxima">
+                  {{ taxa_2.alturaMaxima|default_if_none:"" }}
+                </td>
+              </tr>
+              <tr>
+                <td><strong>Altura Mínima</strong></td>
+                <td id="taxon_alturaMinima">
+                  {{ taxa_2.alturaMinima|default_if_none:"" }}
+                </td>
+              </tr>
+              <tr>
+                <td><strong>Notas</strong></td>
+                <td id="taxon_notas">
+                  {{ taxa_2.notas|default_if_none:"" }}
+                </td>
+              </tr>
+              <tr>
+                <td><strong>Publicacion</strong></td>
+                <td id="taxon_publicacion">
+                  {{ taxa_2.publicacion|default_if_none:"" }}
+                </td>
+              </tr>
+              <tr>
+                <td><strong>Volumen</strong></td>
+                <td id="taxon_volumen">
+                  {{ taxa_2.volumen|default_if_none:"" }}
+                </td>
+              </tr>
+              <tr>
+                <td><strong>Páginas</strong></td>
+                <td id="taxon_paginas">
+                  {{ taxa_2.paginas|default_if_none:"" }}
+                </td>
+              </tr>
+              <tr>
+                <td><strong>ID Tipo</strong></td>
+                <td id="taxon_id_tipo">
+                  {{ taxa_2.id_tipo|default_if_none:"" }}
+                </td>
+              </tr>
+              <tr>
+                <td><strong>Nombres Comunes</strong></td>
+                <td id="taxon_common_names">
+                  {% for nombre_comun in taxa_2.common_names.all %}
+                    {{ nombre_comun }}
+                  {% endfor %}
+                </td>
+              </tr>
+              <tr>
+                <td><strong>Sinónimos</strong></td>
+                <td id="taxon_synonymys">
+                  {% for synonymy in taxa_2.synonymys.all %}
+                    {{ synonymy }},
+                  {% endfor %}
+                </td>
+              </tr>
+              <tr>
+                <td><strong>Distribución Regional</strong></td>
+                <td id="taxon_region_distribution">
+                  {% for region in taxa_2.region_distribution.all %}
+                    {{ region }},
+                  {% endfor %}
+                </td>
+              </tr>
+            </table>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+<div class="row">
+  <div class="col-sm-12">
+    <div class="card mb-3">
+      <div class="card-header">
+        <i class="fas fa-table"></i>
+        Nuevo Taxón</div>
+      <div class="card-body">
+        <div class="table-responsive">
+          <form action="/catalog/merge_taxa/{{id_taxon_1}}/" method="post" class="form-horizontal">
+              {% csrf_token %}
+              {{ form.scientificName }}
+              {{ form.scientificNameFull }}
+              <input type="hidden" name="id_taxon_2" value="" id="id_taxon_2">
+              <div class="form-group row">
+                <label class="col-sm-2 col-form-label">Habito</label>
+                <div class="col-sm-10">
+                  {{ form.habito }}
+                </div>
+              </div>
+              <div class="form-group row">
+                <label class="col-sm-2 col-form-label">Genero</label>
+                <div class="col-sm-10">
+                  {{ form.genus }}
+                </div>
+              </div>
+              <div class="form-group row">
+                <label class="col-sm-2 col-form-label">Epiteto Específico</label>
+                <div class="col-sm-10">
+                  {{ form.specificEpithet }}
+                </div>
+              </div>
+              <div class="form-group row">
+                <label class="col-sm-2 col-form-label">Autor(es)</label>
+                <div class="col-sm-10">
+                  {{ form.scientificNameAuthorship }}
+                </div>
+              </div>
+              <div class="form-group row">
+                <label class="col-sm-2 col-form-label">Subespecie</label>
+                <div class="col-sm-10">
+                  {{ form.subespecie }}
+                </div>
+              </div>
+              <div class="form-group row">
+                <label class="col-sm-2 col-form-label">Autor(es) Subespecie</label>
+                <div class="col-sm-10">
+                  {{ form.autoresSsp }}
+                </div>
+              </div>
+              <div class="form-group row">
+                <label class="col-sm-2 col-form-label">Variedad</label>
+                <div class="col-sm-10">
+                  {{ form.variedad }}
+                </div>
+              </div>
+              <div class="form-group row">
+                <label class="col-sm-2 col-form-label">Autor(es) Variedad</label>
+                <div class="col-sm-10">
+                  {{ form.autoresVariedad }}
+                </div>
+              </div>
+              <div class="form-group row">
+                <label class="col-sm-2 col-form-label">Forma</label>
+                <div class="col-sm-10">
+                  {{ form.forma }}
+                </div>
+              </div>
+              <div class="form-group row">
+                <label class="col-sm-2 col-form-label">Autor(es) Forma</label>
+                <div class="col-sm-10">
+                  {{ form.autoresForma }}
+                </div>
+              </div>
+              <div class="form-group row">
+                <label class="col-sm-2 col-form-label">Ciclo</label>
+                <div class="col-sm-10">
+                  {{ form.ciclo }}
+                </div>
+              </div>
+              <div class="form-group row">
+                <label class="col-sm-2 col-form-label">Estado</label>
+                <div class="col-sm-10">
+                  {{ form.status }}
+                </div>
+              </div>
+              <div class="form-group row">
+                <label class="col-sm-2 form-check-label">En Argentina</label>
+                <div class="col-sm-10">
+                  {{ form.enArgentina }}
+                </div>
+              </div>
+              <div class="form-group row">
+                <label class="col-sm-2 form-check-label">En Bolivia</label>
+                <div class="col-sm-10">
+                  {{ form.enBolivia }}
+                </div>
+              </div>
+              <div class="form-group row">
+                <label class="col-sm-2 form-check-label">En Peru</label>
+                <div class="col-sm-10">
+                  {{ form.enPeru }}
+                </div>
+              </div>
+              <div class="form-group row">
+                <label class="col-sm-2 col-form-label">Altura Máxima</label>
+                <div class="col-sm-10">
+                  {{ form.alturaMaxima }}
+                </div>
+              </div>
+              <div class="form-group row">
+                <label class="col-sm-2 col-form-label">Altura Mínima</label>
+                <div class="col-sm-10">
+                  {{ form.alturaMinima }}
+                </div>
+              </div>
+              <div class="form-group row">
+                <label class="col-sm-2 col-form-label">Notas</label>
+                <div class="col-sm-10">
+                  {{ form.notas }}
+                </div>
+              </div>
+              <div class="form-group row">
+                <label class="col-sm-2 col-form-label">Publicacion</label>
+                <div class="col-sm-10">
+                  {{ form.publicacion }}
+                </div>
+              </div>
+              <div class="form-group row">
+                <label class="col-sm-2 col-form-label">Volumen</label>
+                <div class="col-sm-10">
+                  {{ form.volumen }}
+                </div>
+              </div>
+              <div class="form-group row">
+                <label class="col-sm-2 col-form-label">Páginas</label>
+                <div class="col-sm-10">
+                  {{ form.paginas }}
+                </div>
+              </div>
+              <div class="form-group row">
+                <label class="col-sm-2 col-form-label">ID Tipo</label>
+                <div class="col-sm-10">
+                  {{ form.id_tipo }}
+                </div>
+              </div>
+              <div class="form-group row">
+                <label class="col-sm-2 col-form-label">Nombres Comunes</label>
+                <div class="col-sm-10">
+                  {{ form.common_names }}
+                </div>
+              </div>
+              <div class="form-group row">
+                <label class="col-sm-2 col-form-label">Sinónimos</label>
+                <div class="col-sm-10">
+                  {{ form.synonymys }}
+                </div>
+              </div>
+              <div class="form-group row">
+                <label class="col-sm-2 col-form-label">Distribución Regional</label>
+                <div class="col-sm-10">
+                  {{ form.region_distribution }}
+                </div>
+              </div>
+              <div class="form-group row">
+                <div class="col-sm-10">
+                  <input type="submit" class="btn btn-primary" value="Guardar"><a href="{% url 'list_taxa' %}" class="btn btn-danger">Cancelar</a>
+                </div>
+                
+              </div>
+          </form>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

@@ -1,0 +1,179 @@
+{% extends "base.html" %}
+{% load static %}
+{% block javascript %}
+<script src="{% static 'vendor/datatables/jquery.dataTables.js' %}"></script>
+<script src="{% static 'vendor/datatables/dataTables.bootstrap4.js' %}"></script>
+  <script type="text/javascript">
+  $(document).ready(function() {
+    $('#VouchersTable').DataTable({"order": []});
+    $('#VouchersTable_length').append('<label class="p-3">Filtrar Estado <select id="voucher_state" name="VouchersTable_length" aria-controls="VouchersTable" class="custom-select custom-select-sm form-control form-control-sm" onchange="get_vouchers(this.value);"><option value="-1">Todos</option><option value="1">Encontrado</option><option value="0">Sin Estado</option><option value="2" selected>No Encontrado</option><option value="3">En Préstamo</option><option value="4">Extraviado</option><option value="5">En Préstado Encontrado</option><option value="6">Extraviado Encontrado</option><option value="7">Digitalizado</option></select></label>');
+  });
+
+  function get_vouchers(state_voucher){
+    $(document).ajaxSend(function() {
+        $("#overlay").fadeIn(300);
+    });
+    $.ajax({
+     url: '/digitalization/control_vouchers?state_voucher='+state_voucher,
+     type: 'GET',
+     success : function(response) {
+      data=response.data
+      var table = '<thead><tr><th>Estado</th><th>Fecha Proceso</th><th>Herbario</th><th>ID Biodata</th><th>ID Herbario</th><th>Nombre Especie</th><th>Colectado por</th><th>Numero de Colecta</th><th>Ubicación</th><th>Acción</th></tr></thead><tbody>'
+      for(var i=0; i<data.length; i++)
+      {
+          switch(data[i].fields.voucherStateID) {
+            case 0:
+              class_state='bg-light text-dark';
+              break;
+            case 1:
+              class_state='bg-success text-white';
+              break;
+            case 2:
+              class_state='bg-danger text-white';
+              break;
+            case 3:
+              class_state='bg-warning text-dark';
+              break;
+            case 4:
+              class_state='bg-warning text-white';
+              break;
+            case 5:
+              class_state='bg-info text-dark';
+              break;
+            case 6:
+              class_state='bg-info text-dark';
+              break;
+            case 7:
+              class_state='bg-primary text-white';
+              break;
+          }
+          founded='';
+          if (state_voucher == 2) {
+            founded='<a href="#" class="btn btn-warning btn-block" onclick="set_state('+data[i].fields.voucherStateID+',0); return false;" id="id_button_class_found_'+data[i].fields.voucherStateID+'">Encontrado</a>';
+          }
+          table += '<tr><td><div class="p-3 mb-2 '+class_state+' ">'+data[i].fields.voucherStateName+'</div>'+founded+'</td><td>'+data[i].fields.PageDate+'</td><td>'+data[i].fields.Herbarium+'</td><td>'+data[i].fields.occurrenceID+'</td><td>'+data[i].fields.catalogNumber+'</td><td>'+data[i].fields.scientificName+'</td><td>'+data[i].fields.recordedBy+'</td><td>'+data[i].fields.recordNumber+'</td><td>'+data[i].fields.locality+'</td><td width="10%"><a href="/digitalization/update_voucher/'+data[i].fields.id+'/" id=voucher.id %}"><i class="fas fa-fw fa-edit text-primary"></i> Editar</a></td></tr>';
+      }
+      $("[id^=VouchersTable]").remove()
+      table += "</tbody>";
+      $('#vouchers-content').append('<table class="table table-bordered" id="VouchersTable'+state_voucher+'" width="100%" cellspacing="0"></table>');
+      $('#VouchersTable'+state_voucher).append(table); 
+      //$("#vouchers-table").show("slow");     
+     },
+      cache: false,
+      processData: false,
+      contentType: false,
+    }).done(function() {
+          $('#VouchersTable'+state_voucher).DataTable();
+          $('#VouchersTable'+state_voucher+'_length').append('<label class="p-3">Filtrar Estado <select id="voucher_state" name="VouchersTable_length" aria-controls="VouchersTable" class="custom-select custom-select-sm form-control form-control-sm" onchange="get_vouchers(this.value);"><option value="-1">Todos</option><option value="1">Encontrado</option><option value="0">Sin Estado</option><option value="2">No Encontrado</option><option value="3">En Préstamo</option><option value="4">Extraviado</option><option value="5">En Préstado Encontrado</option><option value="6">Extraviado Encontrado</option><option value="7">Digitalizado</option></select></label>');
+          $('#voucher_state option[value='+state_voucher+']').attr('selected','selected');
+          setTimeout(function(){
+            $("#overlay").fadeOut(300);
+          },500);
+    });
+  }
+
+  function set_state(pk,state_voucher){
+    $(document).ajaxSend(function() {
+        $("#overlay").fadeIn(300);　
+    });
+    $.ajax({
+     url: '/digitalization/set_state?pk_voucher='+pk+'&state_voucher='+state_voucher,
+     type: 'GET',
+     success : function(response) {
+      if (response.result=='OK')
+      {
+        $('#id_button_class_found_'+pk).remove();
+        $('#id_div_class_found_'+pk).removeClass();
+        $('#id_div_class_found_'+pk).addClass('p-3 mb-2 bg-light text-dark');
+        $('#id_div_class_found_'+pk).text('Sin Estado');
+      } 
+     }
+    }).done(function() {
+          setTimeout(function(){
+            $("#overlay").fadeOut(300);
+          },500);
+        });
+  }
+  </script>
+{% endblock %}
+{% block content %}
+<h1>Digitalización de Vouchers</h1>
+<!-- DataTables Example -->
+<div class="card mb-3">
+  <div class="card-header">
+    <i class="fas fa-table"></i>
+    Tabla de Vouchers</div>
+  <div class="card-body">
+    <div class="table-responsive" id="vouchers-content">
+      <table class="table table-bordered" id="VouchersTable" width="100%" cellspacing="0">
+        <thead>
+          <tr>
+            <th>Estado</th>
+            <th>Fecha Proceso</th>
+            <th>Herbario</th>
+            <th>ID Biodata</th>
+            <th>ID Herbario</th>
+            <th>Nombre Especie</th>
+            <th>Colectado por</th>
+            <th>Numero de Colecta</th>
+            <th>Ubicación</th>
+            <th>Acción</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for voucher in vouchers%}
+            <tr>
+              <td>
+                <div id="id_div_class_found_{{ voucher.id }}" class="p-3 mb-2 
+                    {% if voucher.occurrenceID.voucher_state == 0 %}
+                      bg-light text-dark
+                    {% elif voucher.occurrenceID.voucher_state == 1 %}
+                      bg-success text-white
+                    {% elif voucher.occurrenceID.voucher_state == 2 %}
+                      bg-danger text-white
+                    {% elif voucher.occurrenceID.voucher_state == 3 %}
+                      bg-warning text-dark
+                    {% elif voucher.occurrenceID.voucher_state == 4 %}
+                      bg-warning text-white
+                    {% elif voucher.occurrenceID.voucher_state == 5 %}
+                      bg-info text-dark
+                    {% elif voucher.occurrenceID.voucher_state == 6 %}
+                      bg-info text-dark
+                    {% elif voucher.occurrenceID.voucher_state == 7 %}
+                      bg-primary text-white
+                    {% endif %}
+                ">{{ voucher.occurrenceID.get_voucher_state_display }}
+                </div>
+                {% if voucher.occurrenceID.voucher_state == 2 %}
+                  <a href="#" class="btn btn-warning btn-block" onclick="set_state({{voucher.id}},0); return false;" id="id_button_class_found_{{ voucher.id }}">Encontrado</a>
+                {% endif %}
+              </td>
+              <td>{{ voucher.occurrenceID.page.created_at }}</td>
+              <td>{{ voucher.herbarium }}</td>
+              <td>{{ voucher.occurrenceID }}</td>
+              <td>{{ voucher.catalogNumber }}</td>
+              <td>{{ voucher.scientificName }}</td>
+              <td>{{ voucher.recordedBy }}</td>
+              <td>{{ voucher.recordNumber }}</td>
+              <td>{{ voucher.locality }}</td>
+              <td width="10%"><a href="{% url 'update_voucher' id=voucher.id %}"><i class="fas fa-fw fa-edit text-primary"></i> Editar</a></td>
+            </tr>
+          {% endfor%}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+<div class="card mb-3" id="vouchers-table" style="display: none;">
+  <div class="card-header">
+    <i class="fas fa-table"></i><div id="page_name" style="display: contents;"></div>
+  </div>
+  <div class="card-body">
+    <div class="table-responsive" id="vouchers-content">
+      <table class="table table-bordered" id="dataTable2" width="100%" cellspacing="0">
+      </table>
+    </div>
+  </div>
+  <div class="card-footer small text-muted">Updated yesterday at 11:59 PM</div>
+</div>
+{% endblock %}

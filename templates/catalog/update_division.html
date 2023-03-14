@@ -1,0 +1,52 @@
+{% extends "base.html" %}
+{% load static %}
+{% block javascript %}
+<script src="{% static 'js/bootstrap-select.js' %}"></script>
+<script type="text/javascript">
+  $(function () {
+    $('#id_synonymys').selectpicker();
+  });
+</script>
+{% endblock %}
+{% block content %}
+<h1>División</h1>
+<!-- DataTables Example -->
+<div class="card mb-3">
+  <div class="card-header">
+    <i class="fas fa-table"></i>
+    Actualizar División</div>
+  <div class="card-body">
+    <div class="table-responsive">
+      <form action="/catalog/update_division/{{id}}/" method="post" class="form-horizontal">
+          {% csrf_token %}
+          <div class="form-group row">
+            <label class="col-sm-2 col-form-label">Nombre</label>
+            <div class="col-sm-10">
+              {{ form.name }}
+            </div>
+          </div>
+          <div class="form-group row">
+            <label class="col-sm-2 col-form-label">Reino</label>
+            <div class="col-sm-10">
+              {{ form.kingdom }}
+            </div>
+          </div>
+          {% if form.errors %}
+             {% for field in form %}
+                 {% for error in field.errors %} 
+                    <div class="alert alert-danger">
+                         <strong>{{ error|escape }}</strong>
+                    </div>
+                 {% endfor %}
+             {% endfor %}
+          {% endif %}
+          <div class="form-group row">
+            <div class="col-sm-10">
+              <input type="submit" class="btn btn-primary" value="Guardar"><a href="{% url 'list_division' %}" class="btn btn-danger">Cancelar</a>
+            </div>            
+          </div>
+      </form>
+    </div>
+  </div>
+</div>
+{% endblock %}

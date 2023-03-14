@@ -1,0 +1,105 @@
+{% extends "base.html" %}
+{% load static %}
+{% block javascript %}
+<script src="{% static 'js/bootstrap-select.js' %}"></script>
+<script type="text/javascript">
+function proposal(id){
+    $(document).ajaxSend(function() {
+        $("#overlay").fadeIn(300);　
+    });
+    var data = new FormData($('form').get(0));
+    $.ajax({
+     data: data,
+     url: '/catalog/proposal_genus/'+id+'/',
+     type: 'POST',
+     success : function(response) {
+        $('#table').empty();
+        indexs=JSON.parse(response.data);
+        var table = '<table class="table">'
+        table += '<thead><tr><th>Selecciona</th><th>scientificName</th><th>scientificNameAuthorship</th></tr></thead><tbody>';
+        for (var index in indexs.id){
+          table += '<tr><td><input type="checkbox" id=specie_id_'+indexs.id[index]+' name=specie_id_'+indexs.id[index]+' checked></td><td>'+indexs.scientificName[index]+'</td><td>'+indexs.scientificNameAuthorship[index]+'<td></tr>';
+        }
+        table += "</tbody></table>";
+        $('#table').append(table); 
+        $("#table").show("slow"); 
+        $("#boton-table").show("slow"); 
+        $("#genus_name").val(response.genus);
+        $("#family_id").val(response.family);
+        $("#autor_name").val(response.autor);
+        console.log(response.autor)
+    },
+      cache: false,
+      processData: false,
+      contentType: false,
+    }).done(function() {
+          setTimeout(function(){
+            $("#overlay").fadeOut(300);
+          },500);
+    });
+}
+</script>
+{% endblock %}
+{% block content %}
+<h1>Géneros</h1>
+<!-- DataTables Example -->
+<div class="card mb-3">
+  <div class="card-header">
+    <i class="fas fa-table"></i>
+    Actualizar Género</div>
+  <div class="card-body">
+    <div class="table-responsive">
+      <form action="" method="post" onsubmit="proposal({{id}}); return false;" class="form-horizontal">
+          {% csrf_token %}
+          <div class="form-group row">
+            <label class="col-sm-2 col-form-label">Nombre</label>
+            <div class="col-sm-10">
+              {{ form.name }}
+            </div>
+          </div>
+          <div class="form-group row">
+            <label class="col-sm-2 col-form-label">Familia</label>
+            <div class="col-sm-10">
+              {{ form.family }}
+            </div>
+          </div>
+          <div class="form-group row">
+            <label class="col-sm-2 col-form-label">Autor de la nueva combinación</label>
+            <div class="col-sm-10">
+              <input type="text" name="autor" id="autor" class="form-control" maxlength="200" required />
+              <p><strong>Nota:</strong> Recuerde verificar si ya existía la combinación</p>
+            </div>
+          </div>
+          {% if form.errors %}
+             {% for field in form %}
+                 {% for error in field.errors %} 
+                    <div class="alert alert-danger">
+                         <strong>{{ error|escape }}</strong>
+                    </div>
+                 {% endfor %}
+             {% endfor %}
+          {% endif %}
+          <div class="form-group row">
+            <div class="col-sm-10">
+              <input type="submit" class="btn btn-primary" value="Revisar">
+              <a href="{% url 'list_genus' %}" class="btn btn-danger">Cancelar</a>
+            </div>            
+          </div>
+      </form>
+    </div>
+    <form action="/catalog/update_genus/{{id}}/" method="post" class="form-horizontal">
+      {% csrf_token %}
+      <input type="hidden" id="genus_name" name="genus_name">
+      <input type="hidden" id="family_id" name="family_id">
+      <input type="hidden" id="autor_name" name="autor_name">
+      <div class="table-responsive" role="table" style="display: none;" id="table"></div>
+      <div class="form-group row" id="boton-table" style="display:none;">
+        <div class="col-sm-10">
+          <input type="submit" class="btn btn-primary" value="Guardar">
+          <a href="{% url 'list_genus' %}" class="btn btn-danger">Cancelar</a>
+        </div>            
+      </div>
+    </form>
+  </div>
+</div>
+{% endblock %}

@@ -1,0 +1,33 @@
+# -*- coding: utf-8 -*-
+
+from django.urls import re_path
+from . import views
+
+urlpatterns = [
+    re_path(r'^qr_generator$', views.qr_generator, name='qr_generator'),
+    re_path(r'^code_generator$', views.code_generator, name='code_generator'),
+    re_path(r'^historical_page_download$', views.historical_page_download, name='historical_page_download'),
+    re_path(r'^historical_priority_voucher_page_download$', views.historical_priority_voucher_page_download, name='historical_priority_voucher_page_download'),
+    re_path(r'^load_priority_vouchers_file$', views.load_priority_vouchers_file, name='load_priority_vouchers_file'),
+    re_path(r'^upload_priority_vouchers_file$', views.upload_priority_vouchers_file, name='upload_priority_vouchers_file'),
+    re_path(r'^upload_color_profile_file$', views.upload_color_profile_file, name='upload_color_profile_file'),
+    re_path(r'^mark_vouchers$', views.mark_vouchers, name='mark_vouchers'),
+    re_path(r'^get_vouchers$', views.get_vouchers, name='get_vouchers'),
+    re_path(r'^set_state$', views.set_state, name='set_state'),
+    re_path(r'^set_digitalization_state$', views.set_digitalization_state, name='set_digitalization_state'),
+    re_path(r'^get_digitalization_state$', views.get_digitalization_state, name='get_digitalization_state'),
+    re_path(r'^csv_error_data$', views.csv_error_data, name='csv_error_data'),
+    re_path(r'^xls_error_data$', views.xls_error_data, name='xls_error_data'),
+    re_path(r'^pdf_error_data$', views.pdf_error_data, name='pdf_error_data'),
+    re_path(r'^control_vouchers$', views.control_vouchers, name='control_vouchers'),
+    re_path(r'^terminate_session$', views.terminate_session, name='terminate_session'), 
+    re_path(r'^validate_vouchers$', views.validate_vouchers, name='validate_vouchers'),
+    re_path(r'^get_vouchers_to_validate$', views.get_vouchers_to_validate, name='get_vouchers_to_validate'),
+    re_path(r'^upload_images$', views.upload_images, name='upload_images'),
+    re_path(r'^get_voucher_info$', views.get_voucher_info, name='get_voucher_info'),
+    re_path(r'^upload_raw_image$', views.upload_raw_image, name='upload_raw_image'),
+    re_path(r'^get_pending_images$', views.get_pending_images, name='get_pending_images'),
+    re_path(r'^process_pending_images$', views.process_pending_images, name='process_pending_images'),
+    re_path(r'^vouchers_download$', views.vouchers_download, name='vochers_download'),
+    re_path(r'^update_voucher/(?P<id>\d+)/$', views.update_voucher, name='update_voucher'),
+]

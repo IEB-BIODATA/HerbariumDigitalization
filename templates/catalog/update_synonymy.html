@@ -1,0 +1,97 @@
+{% extends "base.html" %}
+{% load static %}
+{% block javascript %}
+<script src="{% static 'js/bootstrap-select.js' %}"></script>
+<script type="text/javascript">
+  $(function () {
+    $('#id_synonymys').selectpicker();
+  });
+</script>
+{% endblock %}
+{% block content %}
+<h1>Sinónimo</h1>
+<!-- DataTables Example -->
+<div class="card mb-3">
+  <div class="card-header">
+    <i class="fas fa-table"></i>
+    Actualizar Sinónimo</div>
+  <div class="card-body">
+    <div class="table-responsive">
+      <form action="/catalog/update_synonymy/{{id}}/" method="post" class="form-horizontal">
+          {% csrf_token %}
+          {{ form.scientificName }}
+          {{ form.scientificNameFull }}
+          {{ form.scientificNameDB }}
+          <div class="form-group row">
+            <label class="col-sm-2 col-form-label">Genero</label>
+            <div class="col-sm-10">
+              {{ form.genus }}
+            </div>
+          </div>
+          <div class="form-group row">
+            <label class="col-sm-2 col-form-label">Epiteto Específico</label>
+            <div class="col-sm-10">
+              {{ form.specificEpithet }}
+            </div>
+          </div>
+          <div class="form-group row">
+            <label class="col-sm-2 col-form-label">Autor(es)</label>
+            <div class="col-sm-10">
+              {{ form.scientificNameAuthorship }}
+            </div>
+          </div>
+          <div class="form-group row">
+            <label class="col-sm-2 col-form-label">Subespecie</label>
+            <div class="col-sm-10">
+              {{ form.subespecie }}
+            </div>
+          </div>
+          <div class="form-group row">
+            <label class="col-sm-2 col-form-label">Autor(es) Subespecie</label>
+            <div class="col-sm-10">
+              {{ form.autoresSsp }}
+            </div>
+          </div>
+          <div class="form-group row">
+            <label class="col-sm-2 col-form-label">Variedad</label>
+            <div class="col-sm-10">
+              {{ form.variedad }}
+            </div>
+          </div>
+          <div class="form-group row">
+            <label class="col-sm-2 col-form-label">Autor(es) Variedad</label>
+            <div class="col-sm-10">
+              {{ form.autoresVariedad }}
+            </div>
+          </div>
+          <div class="form-group row">
+            <label class="col-sm-2 col-form-label">Forma</label>
+            <div class="col-sm-10">
+              {{ form.forma }}
+            </div>
+          </div>
+          <div class="form-group row">
+            <label class="col-sm-2 col-form-label">Autor(es) Forma</label>
+            <div class="col-sm-10">
+              {{ form.autoresForma }}
+            </div>
+          </div>
+          {% if form.errors %}
+             {% for field in form %}
+                 {% for error in field.errors %} 
+                    <div class="alert alert-danger">
+                         <strong>{{ error|escape }}</strong>
+                    </div>
+                 {% endfor %}
+             {% endfor %}
+          {% endif %}
+          <div class="form-group row">
+            <div class="col-sm-10">
+              <input type="submit" class="btn btn-primary" value="Guardar"><a href="{% url 'list_genus' %}" class="btn btn-danger">Cancelar</a>
+            </div>            
+          </div>
+      </form>
+    </div>
+  </div>
+</div>
+{% endblock %}

@@ -1,0 +1,587 @@
+{% extends "base.html" %}
+{% load static %}
+{% block javascript %}
+<script src="{% static 'js/bootstrap-select.js' %}"></script>
+<script type="text/javascript">
+
+  $('.selectpicker#id_form_taxa_1-common_names').on('rendered.bs.select', function() {
+      $('.filter-option-inner-inner').eq(0).html($('.filter-option-inner-inner').eq(0).text().replace(/,/g, "<br>"));
+  });
+
+  $('.selectpicker#id_form_taxa_1-synonymys').on('rendered.bs.select', function() {
+      $('.filter-option-inner-inner').eq(1).html($('.filter-option-inner-inner').eq(1).text().replace(/,/g, "<br>"));
+  });
+
+  $('.selectpicker#id_form_taxa_1-region_distribution').on('rendered.bs.select', function() {
+      $('.filter-option-inner-inner').eq(2).html($('.filter-option-inner-inner').eq(2).text().replace(/,/g, "<br>"));
+  });
+
+  $('.selectpicker#id_form_taxa_1-common_names').on('change', function(){
+    var values = $('.selectpicker#id_form_taxa_1-common_names option:selected').map(function (idx, ele) {
+        return $(ele).val();
+    }).get();
+    values.forEach(element => $("#id_form_taxa_1-common_names option[value="+element+"]").attr('selected', 'selected'));
+  });
+
+  $('.selectpicker#id_form_taxa_1-synonymys').on('change', function(){
+    var values = $('.selectpicker#id_form_taxa_1-synonymys option:selected').map(function (idx, ele) {
+        return $(ele).val();
+    }).get();
+    values.forEach(element => $("#id_form_taxa_1-synonymys option[value="+element+"]").attr('selected', 'selected'));
+  });
+
+  $('.selectpicker#id_form_taxa_1-region_distribution').on('change', function(){
+    var values = $('.selectpicker#id_form_taxa_1-region_distribution option:selected').map(function (idx, ele) {
+        return $(ele).val();
+    }).get();
+    values.forEach(element => $("#id_form_taxa_1-region_distribution option[value="+element+"]").attr('selected', 'selected'));
+  });
+
+</script>
+{% endblock %}
+{% block content %}
+<h1>Dividir Taxón</h1>
+<p>Este proceso permite crear dos nuevos taxones a partir de uno ya existente. Estos heredan todo los registros del taxón original. El taxón original se elimina. Los vouchers existentes quedan asociados al taxón 1 creado.</p>
+<!-- DataTables  -->
+<div class="row">
+  <div class="col-12">
+    {% if form_taxa_1.errors %}
+       {% for field in form_taxa_1 %}
+           {% for error in field.errors %} 
+              <div class="alert alert-danger">
+                   <strong>{{ error|escape }}</strong>
+              </div>
+           {% endfor %}
+       {% endfor %}
+    {% endif %}
+    {% if form_taxa_2.errors %}
+       {% for field in form_taxa_2 %}
+           {% for error in field.errors %} 
+              <div class="alert alert-danger">
+                   <strong>{{ error|escape }}</strong>
+              </div>
+           {% endfor %}
+       {% endfor %}
+    {% endif %}
+  </div>
+</div>
+<div class="row">
+  <div class="col-sm-12">
+    <div class="card mb-3">
+      <div class="card-header">
+        <i class="fas fa-table"></i>
+        {{ taxa_1.scientificNameFull }}
+      </div>
+      <div class="card-body">
+        <div class="table-responsive">
+          <table class="table">
+              <tr>
+                <td><strong>Habito</strong></td>
+                <td>
+                  {{ taxa_1.habito }}
+                </td>
+              </tr>
+              <tr>
+                <td><strong>Genero</strong></td>
+                <td>
+                  {{ taxa_1.genus }}
+                </td>
+              </tr>
+              <tr>
+                <td><strong>Epiteto Específico</strong></td>
+                <td>
+                  {{ taxa_1.specificEpithet }}
+                </td>
+              </tr>
+              <tr>
+                <td><strong>Autor(es)</strong></td>
+                <td>
+                  {{ taxa_1.scientificNameAuthorship }}
+                </td>
+              </tr>
+              <tr>
+                <td><strong>Subespecie</strong></td>
+                <td>
+                  {{ taxa_1.subespecie|default_if_none:"" }}
+                </td>
+              </tr>
+              <tr>
+                <td><strong>Autor(es) Subespecie</strong></td>
+                <td>
+                  {{ taxa_1.autoresSsp|default_if_none:"" }}
+                </td>
+              </tr>
+              <tr>
+                <td><strong>Variedad</strong></td>
+                <td>
+                  {{ taxa_1.variedad|default_if_none:"" }}
+                </td>
+              </tr>
+              <tr>
+                <td><strong>Autor(es) Variedad</strong></td>
+                <td>
+                  {{ taxa_1.autoresVariedad|default_if_none:"" }}
+                </td>
+              </tr>
+              <tr>
+                <td><strong>Forma</strong></td>
+                <td>
+                  {{ taxa_1.forma|default_if_none:"" }}
+                </td>
+              </tr>
+              <tr>
+                <td><strong>Autor(es) Forma</strong></td>
+                <td>
+                  {{ taxa_1.autoresForma|default_if_none:"" }}
+                </td>
+              </tr>
+              <tr>
+                <td><strong>Ciclo</strong></td>
+                <td>
+                  {{ taxa_1.ciclo|default_if_none:"" }}
+                </td>
+              </tr>
+              <tr>
+                <td><strong>Estado</strong></td>
+                <td>
+                  {{ taxa_1.status|default_if_none:"" }}
+                </td>
+              </tr>
+              <tr>
+                <td><strong>En Argentina</strong></td>
+                <td>
+                  {{ taxa_1.enArgentina|default_if_none:"" }}
+                </td>
+              </tr>
+              <tr>
+                <td><strong>En Bolivia</strong></td>
+                <td>
+                  {{ taxa_1.enBolivia|default_if_none:"" }}
+                </td>
+              </tr>
+              <tr>
+                <td><strong>En Peru</strong></td>
+                <td>
+                  {{ taxa_1.enPeru|default_if_none:"" }}
+                </td>
+              </tr>
+              <tr>
+                <td><strong>Altura Máxima</strong></td>
+                <td>
+                  {{ taxa_1.alturaMaxima|default_if_none:"" }}
+                </td>
+              </tr>
+              <tr>
+                <td><strong>Altura Mínima</strong></td>
+                <td>
+                  {{ taxa_1.alturaMinima|default_if_none:"" }}
+                </td>
+              </tr>
+              <tr>
+                <td><strong>Notas</strong></td>
+                <td>
+                  {{ taxa_1.notas|default_if_none:"" }}
+                </td>
+              </tr>
+              <tr>
+                <td><strong>Publicacion</strong></td>
+                <td>
+                  {{ taxa_1.publicacion|default_if_none:"" }}
+                </td>
+              </tr>
+              <tr>
+                <td><strong>Volumen</strong></td>
+                <td>
+                  {{ taxa_1.volumen|default_if_none:"" }}
+                </td>
+              </tr>
+              <tr>
+                <td><strong>Páginas</strong></td>
+                <td>
+                  {{ taxa_1.paginas|default_if_none:"" }}
+                </td>
+              </tr>
+              <tr>
+                <td><strong>ID Tipo</strong></td>
+                <td>
+                  {{ taxa_1.id_tipo|default_if_none:"" }}
+                </td>
+              </tr>
+              <tr>
+                <td><strong>Nombres Comunes</strong></td>
+                <td>
+                  {% for nombre_comun in taxa_1.common_names.all %}
+                    {{ nombre_comun }}
+                  {% endfor %}
+                </td>
+              </tr>
+              <tr>
+                <td><strong>Sinónimos</strong></td>
+                <td>
+                  {% for synonymy in taxa_1.synonymys.all %}
+                    {{ synonymy }},
+                  {% endfor %}
+                </td>
+              </tr>
+              <tr>
+                <td><strong>Distribución Regional</strong></td>
+                <td>
+                  {% for region in taxa_1.region_distribution.all %}
+                    {{ region }},
+                  {% endfor %}
+                </td>
+              </tr>
+            </table>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+<div class="row">
+  <div class="col-sm-12">
+    <form action="/catalog/split_2_taxa/{{id_taxon_1}}/" method="post" class="form-horizontal">
+    {% csrf_token %}
+    {{ form_taxa_1.scientificName }}
+    {{ form_taxa_1.scientificNameFull }}
+    {{ form_taxa_2.scientificName }}
+    {{ form_taxa_2.scientificNameFull }}
+      <div class="row">
+        <div class="col-sm-6">
+          <div class="card mb-3">
+            <div class="card-header">
+              <i class="fas fa-table"></i>
+              Nuevo Taxón 1</div>
+            <div class="card-body">
+              <div class="table-responsive">
+                  <input type="hidden" name="id_taxon_2" value="" id="id_taxon_2">
+                  <div class="form-group row">
+                    <label class="col-sm-2 col-form-label">Habito</label>
+                    <div class="col-sm-10">
+                      {{ form_taxa_1.habito }}
+                    </div>
+                  </div>
+                  <div class="form-group row">
+                    <label class="col-sm-2 col-form-label">Genero</label>
+                    <div class="col-sm-10">
+                      {{ form_taxa_1.genus }}
+                    </div>
+                  </div>
+                  <div class="form-group row">
+                    <label class="col-sm-2 col-form-label">Epiteto Específico</label>
+                    <div class="col-sm-10">
+                      {{ form_taxa_1.specificEpithet }}
+                    </div>
+                  </div>
+                  <div class="form-group row">
+                    <label class="col-sm-2 col-form-label">Autor(es)</label>
+                    <div class="col-sm-10">
+                      {{ form_taxa_1.scientificNameAuthorship }}
+                    </div>
+                  </div>
+                  <div class="form-group row">
+                    <label class="col-sm-2 col-form-label">Subespecie</label>
+                    <div class="col-sm-10">
+                      {{ form_taxa_1.subespecie }}
+                    </div>
+                  </div>
+                  <div class="form-group row">
+                    <label class="col-sm-2 col-form-label">Autor(es) Subespecie</label>
+                    <div class="col-sm-10">
+                      {{ form_taxa_1.autoresSsp }}
+                    </div>
+                  </div>
+                  <div class="form-group row">
+                    <label class="col-sm-2 col-form-label">Variedad</label>
+                    <div class="col-sm-10">
+                      {{ form_taxa_1.variedad }}
+                    </div>
+                  </div>
+                  <div class="form-group row">
+                    <label class="col-sm-2 col-form-label">Autor(es) Variedad</label>
+                    <div class="col-sm-10">
+                      {{ form_taxa_1.autoresVariedad }}
+                    </div>
+                  </div>
+                  <div class="form-group row">
+                    <label class="col-sm-2 col-form-label">Forma</label>
+                    <div class="col-sm-10">
+                      {{ form_taxa_1.forma }}
+                    </div>
+                  </div>
+                  <div class="form-group row">
+                    <label class="col-sm-2 col-form-label">Autor(es) Forma</label>
+                    <div class="col-sm-10">
+                      {{ form_taxa_1.autoresForma }}
+                    </div>
+                  </div>
+                  <div class="form-group row">
+                    <label class="col-sm-2 col-form-label">Ciclo</label>
+                    <div class="col-sm-10">
+                      {{ form_taxa_1.ciclo }}
+                    </div>
+                  </div>
+                  <div class="form-group row">
+                    <label class="col-sm-2 col-form-label">Estado</label>
+                    <div class="col-sm-10">
+                      {{ form_taxa_1.status }}
+                    </div>
+                  </div>
+                  <div class="form-group row">
+                    <label class="col-sm-2 form-check-label">En Argentina</label>
+                    <div class="col-sm-10">
+                      {{ form_taxa_1.enArgentina }}
+                    </div>
+                  </div>
+                  <div class="form-group row">
+                    <label class="col-sm-2 form-check-label">En Bolivia</label>
+                    <div class="col-sm-10">
+                      {{ form_taxa_1.enBolivia }}
+                    </div>
+                  </div>
+                  <div class="form-group row">
+                    <label class="col-sm-2 form-check-label">En Peru</label>
+                    <div class="col-sm-10">
+                      {{ form_taxa_1.enPeru }}
+                    </div>
+                  </div>
+                  <div class="form-group row">
+                    <label class="col-sm-2 col-form-label">Altura Máxima</label>
+                    <div class="col-sm-10">
+                      {{ form_taxa_1.alturaMaxima }}
+                    </div>
+                  </div>
+                  <div class="form-group row">
+                    <label class="col-sm-2 col-form-label">Altura Mínima</label>
+                    <div class="col-sm-10">
+                      {{ form_taxa_1.alturaMinima }}
+                    </div>
+                  </div>
+                  <div class="form-group row">
+                    <label class="col-sm-2 col-form-label">Notas</label>
+                    <div class="col-sm-10">
+                      {{ form_taxa_1.notas }}
+                    </div>
+                  </div>
+                  <div class="form-group row">
+                    <label class="col-sm-2 col-form-label">Publicacion</label>
+                    <div class="col-sm-10">
+                      {{ form_taxa_1.publicacion }}
+                    </div>
+                  </div>
+                  <div class="form-group row">
+                    <label class="col-sm-2 col-form-label">Volumen</label>
+                    <div class="col-sm-10">
+                      {{ form_taxa_1.volumen }}
+                    </div>
+                  </div>
+                  <div class="form-group row">
+                    <label class="col-sm-2 col-form-label">Páginas</label>
+                    <div class="col-sm-10">
+                      {{ form_taxa_1.paginas }}
+                    </div>
+                  </div>
+                  <div class="form-group row">
+                    <label class="col-sm-2 col-form-label">ID Tipo</label>
+                    <div class="col-sm-10">
+                      {{ form_taxa_1.id_tipo }}
+                    </div>
+                  </div>
+                  <div class="form-group row">
+                    <label class="col-sm-2 col-form-label">Nombres Comunes</label>
+                    <div class="col-sm-10">
+                      {{ form_taxa_1.common_names }}
+                    </div>
+                  </div>
+                  <div class="form-group row">
+                    <label class="col-sm-2 col-form-label">Sinónimos</label>
+                    <div class="col-sm-10">
+                      {{ form_taxa_1.synonymys }}
+                    </div>
+                  </div>
+                  <div class="form-group row">
+                    <label class="col-sm-2 col-form-label">Distribución Regional</label>
+                    <div class="col-sm-10">
+                      {{ form_taxa_1.region_distribution }}
+                    </div>
+                  </div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="col-sm-6">
+          <div class="card mb-3">
+            <div class="card-header">
+              <i class="fas fa-table"></i>
+              Nuevo Taxón 2</div>
+            <div class="card-body">
+              <div class="table-responsive">
+                  <input type="hidden" name="id_taxon_2" value="" id="id_taxon_2">
+                  <div class="form-group row">
+                    <label class="col-sm-2 col-form-label">Habito</label>
+                    <div class="col-sm-10">
+                      {{ form_taxa_2.habito }}
+                    </div>
+                  </div>
+                  <div class="form-group row">
+                    <label class="col-sm-2 col-form-label">Genero</label>
+                    <div class="col-sm-10">
+                      {{ form_taxa_2.genus }}
+                    </div>
+                  </div>
+                  <div class="form-group row">
+                    <label class="col-sm-2 col-form-label">Epiteto Específico</label>
+                    <div class="col-sm-10">
+                      {{ form_taxa_2.specificEpithet }}
+                    </div>
+                  </div>
+                  <div class="form-group row">
+                    <label class="col-sm-2 col-form-label">Autor(es)</label>
+                    <div class="col-sm-10">
+                      {{ form_taxa_2.scientificNameAuthorship }}
+                    </div>
+                  </div>
+                  <div class="form-group row">
+                    <label class="col-sm-2 col-form-label">Subespecie</label>
+                    <div class="col-sm-10">
+                      {{ form_taxa_2.subespecie }}
+                    </div>
+                  </div>
+                  <div class="form-group row">
+                    <label class="col-sm-2 col-form-label">Autor(es) Subespecie</label>
+                    <div class="col-sm-10">
+                      {{ form_taxa_2.autoresSsp }}
+                    </div>
+                  </div>
+                  <div class="form-group row">
+                    <label class="col-sm-2 col-form-label">Variedad</label>
+                    <div class="col-sm-10">
+                      {{ form_taxa_2.variedad }}
+                    </div>
+                  </div>
+                  <div class="form-group row">
+                    <label class="col-sm-2 col-form-label">Autor(es) Variedad</label>
+                    <div class="col-sm-10">
+                      {{ form_taxa_2.autoresVariedad }}
+                    </div>
+                  </div>
+                  <div class="form-group row">
+                    <label class="col-sm-2 col-form-label">Forma</label>
+                    <div class="col-sm-10">
+                      {{ form_taxa_2.forma }}
+                    </div>
+                  </div>
+                  <div class="form-group row">
+                    <label class="col-sm-2 col-form-label">Autor(es) Forma</label>
+                    <div class="col-sm-10">
+                      {{ form_taxa_2.autoresForma }}
+                    </div>
+                  </div>
+                  <div class="form-group row">
+                    <label class="col-sm-2 col-form-label">Ciclo</label>
+                    <div class="col-sm-10">
+                      {{ form_taxa_2.ciclo }}
+                    </div>
+                  </div>
+                  <div class="form-group row">
+                    <label class="col-sm-2 col-form-label">Estado</label>
+                    <div class="col-sm-10">
+                      {{ form_taxa_2.status }}
+                    </div>
+                  </div>
+                  <div class="form-group row">
+                    <label class="col-sm-2 form-check-label">En Argentina</label>
+                    <div class="col-sm-10">
+                      {{ form_taxa_2.enArgentina }}
+                    </div>
+                  </div>
+                  <div class="form-group row">
+                    <label class="col-sm-2 form-check-label">En Bolivia</label>
+                    <div class="col-sm-10">
+                      {{ form_taxa_2.enBolivia }}
+                    </div>
+                  </div>
+                  <div class="form-group row">
+                    <label class="col-sm-2 form-check-label">En Peru</label>
+                    <div class="col-sm-10">
+                      {{ form_taxa_2.enPeru }}
+                    </div>
+                  </div>
+                  <div class="form-group row">
+                    <label class="col-sm-2 col-form-label">Altura Máxima</label>
+                    <div class="col-sm-10">
+                      {{ form_taxa_2.alturaMaxima }}
+                    </div>
+                  </div>
+                  <div class="form-group row">
+                    <label class="col-sm-2 col-form-label">Altura Mínima</label>
+                    <div class="col-sm-10">
+                      {{ form_taxa_2.alturaMinima }}
+                    </div>
+                  </div>
+                  <div class="form-group row">
+                    <label class="col-sm-2 col-form-label">Notas</label>
+                    <div class="col-sm-10">
+                      {{ form_taxa_2.notas }}
+                    </div>
+                  </div>
+                  <div class="form-group row">
+                    <label class="col-sm-2 col-form-label">Publicacion</label>
+                    <div class="col-sm-10">
+                      {{ form_taxa_2.publicacion }}
+                    </div>
+                  </div>
+                  <div class="form-group row">
+                    <label class="col-sm-2 col-form-label">Volumen</label>
+                    <div class="col-sm-10">
+                      {{ form_taxa_2.volumen }}
+                    </div>
+                  </div>
+                  <div class="form-group row">
+                    <label class="col-sm-2 col-form-label">Páginas</label>
+                    <div class="col-sm-10">
+                      {{ form_taxa_2.paginas }}
+                    </div>
+                  </div>
+                  <div class="form-group row">
+                    <label class="col-sm-2 col-form-label">ID Tipo</label>
+                    <div class="col-sm-10">
+                      {{ form_taxa_2.id_tipo }}
+                    </div>
+                  </div>
+                  <div class="form-group row">
+                    <label class="col-sm-2 col-form-label">Nombres Comunes</label>
+                    <div class="col-sm-10">
+                      {{ form_taxa_2.common_names }}
+                    </div>
+                  </div>
+                  <div class="form-group row">
+                    <label class="col-sm-2 col-form-label">Sinónimos</label>
+                    <div class="col-sm-10">
+                      {{ form_taxa_2.synonymys }}
+                    </div>
+                  </div>
+                  <div class="form-group row">
+                    <label class="col-sm-2 col-form-label">Distribución Regional</label>
+                    <div class="col-sm-10">
+                      {{ form_taxa_2.region_distribution }}
+                    </div>
+                  </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="row">
+        <div class="col-sm-12">
+          <div class="form-group row">
+            <div class="col-sm-10">
+              <input type="submit" class="btn btn-primary" value="Guardar"><a href="{% url 'list_taxa' %}" class="btn btn-danger">Cancelar</a>
+            </div>
+            
+          </div>
+        </div>
+      </div>
+    </form>
+  </div>
+</div>
+{% endblock %}

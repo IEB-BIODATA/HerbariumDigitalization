@@ -1,0 +1,69 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="es">
+    <head>
+        <meta charset="utf-8">
+        <title>Códigos QR</title>
+        <style type="text/css">
+            @page {
+                size: {{ pagesize }};
+                margin: 1cm;
+                @frame footer {
+                    -pdf-frame-content: footerContent;
+                    bottom: 0cm;
+                    margin-left: 9cm;
+                    margin-right: 9cm;
+                    height: 1cm;
+                }
+            }
+            td {
+                padding: 0.1cm 0cm 0cm 0cm;
+                vertical-align: top;
+                -pdf-word-wrap: CJK;
+            }
+            body  
+            { 
+                /* this affects the margin on the content before sending to printer */ 
+                margin-left: 40px;  
+            } 
+        </style>
+        <link rel="stylesheet" href="{% static 'vendor/bootstrap/css/bootstrap.min.css' %}">
+    </head>
+    <body>
+        <h1>Lista de Vourhcer Priorizados - Sesión: {{ page_id }} - Fecha: {{ page_date }}</h1>
+        <table border="1" cellspacing="0" cellpadding="4" width="100%">
+            <thead>
+                <tr>
+                    <th style="width: 10%;margin-right: 68px;">Código Herbario</th>
+                    <th style="width: 25%;">Especie</th>
+                    <th style="width: 20%;">Familia</th>
+                    <th style="width: 30%;">Colectado por</th>
+                    <th style="width: 15%;">Número de Colecta</th>                   
+                </tr>
+            </thead>
+            <tbody>
+            {% for priority_voucher in priority_vouchers %}
+                <tr>
+                    <th style="margin-right: 80px;">{{ priority_voucher.catalogNumber }}</th>
+                    <td>
+                        {% if priority_voucher.scientificName %}
+                            {{ priority_voucher.scientificName }}
+                        {% else %}
+                            {{ priority_voucher.scientificName.scientificName }}
+                        {% endif %}
+                    </td>
+                    <td>{{ priority_voucher.scientificName.genus.family.name }}</td>
+                    <td>{{ priority_voucher.recordedBy }}</td>
+                    <td>{{ priority_voucher.recordNumber }}</td>                  
+                </tr>
+            {% endfor %}
+            </tbody>
+        </table>
+        <div id="footerContent">
+            {%block page_foot%}
+                Page <pdf:pagenumber>
+            {%endblock%}
+        </div>
+        <script type="text/javascript" src="{% static 'vendor/bootstrap/js/bootstrap.bundle.min.js' %}"></script>
+    </body>
+</html>

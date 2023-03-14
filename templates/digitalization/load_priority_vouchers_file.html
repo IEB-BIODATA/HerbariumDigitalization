@@ -1,0 +1,284 @@
+{% extends "base.html" %}
+{% load static %}
+{% block javascript %}
+  <script src="{% static 'vendor/datatables/jquery.dataTables.js' %}"></script>
+  <script src="{% static 'vendor/datatables/dataTables.bootstrap4.js' %}"></script>
+  <script type="text/javascript">
+  $(document).ready(function() {
+    $('#FilesTable').DataTable({"order": []});
+  });
+
+  function print_data_error(data_error) {
+      $(document).ajaxSend(function() {
+        $("#overlay").fadeIn(300);　
+      });
+      $.ajax({
+         data: data_error,
+         url: '/digitalization/pdf_error_data',
+         type: 'POST',
+         success : function(data) {
+          var pdfFile=new Blob([data], {type: "application/pdf"});
+          var pdfUrl = URL.createObjectURL(pdfFile);
+          printJS(pdfUrl);
+         }
+      }).done(function() {
+        setTimeout(function(){
+          $("#overlay").fadeOut(300);
+        },500);
+      });
+  }
+
+  function download_xlsx_data_error(data_error) {
+      $(document).ajaxSend(function() {
+        $("#overlay").fadeIn(300);　
+      });
+      $.ajax({
+        data: data_error,
+        url: '/digitalization/xls_error_data',
+        type: 'POST',
+        xhrFields: {
+          // make sure the response knows we're expecting a binary type in return.
+          // this is important, without it the excel file is marked corrupted.
+          responseType: 'arraybuffer'
+        }
+      }).done(function (data, status, xmlHeaderRequest) {
+        var downloadLink = document.createElement('a');
+        var blob = new Blob([data],
+            {
+                type: xmlHeaderRequest.getResponseHeader('Content-Type')
+            });
+        var url = window.URL || window.webkitURL;
+        var downloadUrl = url.createObjectURL(blob);
+        var fileName = 'vouchers_error.xlsx';
+      
+        if (typeof window.navigator.msSaveBlob !== 'undefined') {
+            window.navigator.msSaveBlob(blob, fileName);
+        } else {
+            if (fileName) {
+                if (typeof downloadLink.download === 'undefined') {
+                    window.location = downloadUrl;
+                } else {
+                    downloadLink.href = downloadUrl;
+                    downloadLink.download = "vouchers_error.xlsx";
+                    document.body.appendChild(downloadLink);
+                    downloadLink.click();
+                }
+            } else {
+                window.location = downloadUrl;
+            }
+            setTimeout(function () {
+                url.revokeObjectURL(downloadUrl);
+                $("#overlay").fadeOut(300);
+            },
+                100);
+        }
+      });
+  }
+
+  function download_csv_data_error(data_error) {
+      $(document).ajaxSend(function() {
+        $("#overlay").fadeIn(300);　
+      });
+      $.ajax({
+         data: data_error,
+         url: '/digitalization/csv_error_data',
+         type: 'POST',
+         success : function(data) {
+          var uri = 'data:application/csv;charset=UTF-8,' + encodeURIComponent(data);
+          var downloadLink = document.createElement("a");
+          downloadLink.href = uri;
+          downloadLink.download = "vouchers_error.csv";
+
+          document.body.appendChild(downloadLink);
+          downloadLink.click();
+          document.body.removeChild(downloadLink);
+         }
+      }).done(function() {
+        setTimeout(function(){
+          $("#overlay").fadeOut(300);
+        },500);
+      });
+  }
+  function cargar_archivo(){
+    $(document).ajaxSend(function() {
+        $("#overlay").fadeIn(300);　
+    });
+    var data = new FormData($('form').get(0));
+    $.ajax({
+     data: data,
+     url: '/digitalization/upload_priority_vouchers_file',
+     type: 'POST',
+     success : function(response) {
+      var r;
+      r=response;
+      json_response=JSON.parse(r.response);
+      if (json_response.result=='error') 
+      { 
+        $("#alert").addClass("alert-danger");
+        if (json_response.type=='duplicates in file') 
+        {  
+          var messaje = '<p>Registros duplicados en archivo</p><a class="btn btn-primary btn-block" href="#" onclick="download_xlsx_data_error(JSON.parse(json_response.data)); return false;" style="width:200px;">Descargar</a><a class="btn btn-primary btn-block" href="#" onclick="print_data_error(JSON.parse(json_response.data)); return false;" style="width:200px;">Imprimir</a>'
+          $('#alert').append(messaje); 
+        }
+        else if (json_response.type=='duplicates in database') 
+        {
+          var messaje = '<p>Registros duplicados en la base de datos</p><a class="btn btn-primary btn-block" href="#" onclick="download_xlsx_data_error(JSON.parse(json_response.data)); return false;" style="width:200px;">Descargar</a><a class="btn btn-primary btn-block" href="#" onclick="print_data_error(JSON.parse(json_response.data)); return false;" style="width:200px;">Imprimir</a>'
+          $('#alert').append(messaje); 
+        }
+        else if (json_response.type=='no match with catalog') 
+        {
+          var messaje = '<p>Existen registros que el nombre de la Especie no coincide con el catálogo</p><a class="btn btn-primary btn-block" href="#" onclick="download_xlsx_data_error(JSON.parse(json_response.data)); return false;" style="width:200px;">Descargar</a><a class="btn btn-primary btn-block" href="#" onclick="print_data_error(JSON.parse(json_response.data)); return false;" style="width:200px;">Imprimir</a>'
+          $('#alert').append(messaje); 
+        }
+        else if (json_response.type=='code') 
+        {
+          var messaje = '<p>Error en la importación: '+json_response.error+'</p>'
+          $('#alert').append(messaje); 
+        }
+        var table = '<table class="table">'
+        try {
+          indexs=JSON.parse(json_response.data);
+        } catch (error) {
+          indexs=[];
+        }
+        if (json_response.type=='no match with catalog') 
+        {
+          table += '<thead><tr><th>catalogNumber</th><th>scientificName</th><th>scientificName Similarity</th><th>Synonymy Similarity</th><th>similarity</th></tr></thead><tbody>';
+          for (var index in indexs.catalogNumber)
+          {
+            try {
+              table += '<tr><td>'+indexs.catalogNumber[index]+'</td><td>'+indexs.scientificName[index]+'</td><td>'+indexs.scientificName_similarity[index]+'</td><td>'+indexs.synonymy_similarity[index]+'</td><td>'+indexs.similarity[index]+'<td></tr>';
+            } catch (error) {
+
+              console.error(error);
+            }
+          }
+        }
+        else
+        {
+          table += '<thead><tr><th>catalogNumber</th><th>recordedBy</th><th>recordNumber</th><th>scientificName</th><th>locality</th></tr></thead><tbody>'
+          for (var index in indexs.catalogNumber)
+          {
+              table += '<tr><td>'+indexs.catalogNumber[index]+'</td><td>'+indexs.recordedBy[index]+'</td><td>'+indexs.recordNumber[index]+'</td><td>'+indexs.scientificName[index]+'</td><td>'+indexs.locality[index]+'<td></tr>';
+          }
+        }
+        table += "</tbody></table>";
+
+        $('#alert').append(table); 
+      }
+      else if (json_response.result=='ok') 
+      {
+        var messaje = '<p>Registros importados correctamente</p>'
+        $('#alert').append(messaje); 
+        $("#alert").addClass("alert-success");
+      }
+      $("#alert").show("slow");     
+     },
+      cache: false,
+      processData: false,
+      contentType: false,
+    }).done(function() {
+          setTimeout(function(){
+            $("#overlay").fadeOut(300);
+          },500);
+    });
+  }
+
+  function download_vouchers_xlsx(data_error) {
+      $(document).ajaxSend(function() {
+        $("#overlay").fadeIn(300);　
+      });
+      $.ajax({
+        url: '/digitalization/vouchers_download',
+        type: 'GET',
+        xhrFields: {
+          // make sure the response knows we're expecting a binary type in return.
+          // this is important, without it the excel file is marked corrupted.
+          responseType: 'arraybuffer'
+        }
+      }).done(function (data, status, xmlHeaderRequest) {
+        var downloadLink = document.createElement('a');
+        var blob = new Blob([data],
+            {
+                type: xmlHeaderRequest.getResponseHeader('Content-Type')
+            });
+        var url = window.URL || window.webkitURL;
+        var downloadUrl = url.createObjectURL(blob);
+        var fileName = 'vouchers.xlsx';
+      
+        if (typeof window.navigator.msSaveBlob !== 'undefined') {
+            window.navigator.msSaveBlob(blob, fileName);
+        } else {
+            if (fileName) {
+                if (typeof downloadLink.download === 'undefined') {
+                    window.location = downloadUrl;
+                } else {
+                    downloadLink.href = downloadUrl;
+                    downloadLink.download = "vouchers.xlsx";
+                    document.body.appendChild(downloadLink);
+                    downloadLink.click();
+                }
+            } else {
+                window.location = downloadUrl;
+            }
+            setTimeout(function () {
+                url.revokeObjectURL(downloadUrl);
+                $("#overlay").fadeOut(300);
+            },
+                100);
+        }
+      });
+  }
+  </script>
+{% endblock %}
+{% block content %}
+<h1>Cargar Excel</h1>
+
+<form id="file_form" action="" method="post" onsubmit="cargar_archivo(); return false;" enctype="multipart/form-data">
+  {% csrf_token %}
+  <div class="form-group">
+    {{ form }}
+    <div class="row">
+      <div class="col-3">
+        <button type="submit" class="btn btn-primary" id="boton_cargar">Cargar</button>
+      </div>
+      <div class="offset-md-6 col-3">
+        <a class="btn btn-primary btn-block" href="#" onclick="download_vouchers_xlsx()">Descargar Vouchers</a>
+      </div>
+    </div>
+  </div>
+</form>
+
+<div class="alert" role="alert" style="display: none;" id="alert">
+</div>
+
+<div class="card mb-3">
+  <div class="card-header">
+    <i class="fas fa-table"></i>
+    Tabla de Archivos</div>
+  <div class="card-body">
+    <div class="table-responsive" id="vouchers-content">
+      <table class="table table-bordered" id="FilesTable" width="100%" cellspacing="0">
+        <thead>
+          <tr>
+            <th>Herbario</th>
+            <th>Fecha</th>
+            <th>Usuario</th>
+            <th>Archivo</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for file in files %}
+            <tr>
+              <td>{{ file.herbarium }}</td>
+              <td>{{ file.created_at }}</td>
+              <td>{{ file.created_by }}</td>
+              <td><a href="{{ file.file.url }}">{{ file.filename }}</a></td>
+            </tr>
+          {% endfor%}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+{% endblock %}

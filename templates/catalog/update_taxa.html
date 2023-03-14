@@ -1,0 +1,234 @@
+{% extends "base.html" %}
+{% load static %}
+{% block javascript %}
+<script src="{% static 'js/bootstrap-select.js' %}"></script>
+<script type="text/javascript">
+  $('.selectpicker#id_common_names').on('rendered.bs.select', function() {
+      $('.filter-option-inner-inner').eq(0).html($('.filter-option-inner-inner').eq(0).text().replace(/,/g, "<br>"));
+  });
+
+  $('.selectpicker#id_synonymys').on('rendered.bs.select', function() {
+      $('.filter-option-inner-inner').eq(1).html($('.filter-option-inner-inner').eq(1).text().replace(/,/g, "<br>"));
+  });
+
+  $('.selectpicker#id_region_distribution').on('rendered.bs.select', function() {
+      $('.filter-option-inner-inner').eq(2).html($('.filter-option-inner-inner').eq(2).text().replace(/,/g, "<br>"));
+  });
+
+  $('.selectpicker#id_common_names').on('change', function(){
+    var values = $('.selectpicker#id_common_names option:selected').map(function (idx, ele) {
+        return $(ele).val();
+    }).get();
+    values.forEach(element => $("#id_common_names option[value="+element+"]").attr('selected', 'selected'));
+  });
+
+  $('.selectpicker#id_synonymys').on('change', function(){
+    var values = $('.selectpicker#id_synonymys option:selected').map(function (idx, ele) {
+        return $(ele).val();
+    }).get();
+    values.forEach(element => $("#id_synonymys option[value="+element+"]").attr('selected', 'selected'));
+  });
+
+  $('.selectpicker#id_region_distribution').on('change', function(){
+    var values = $('.selectpicker#id_region_distribution option:selected').map(function (idx, ele) {
+        return $(ele).val();
+    }).get();
+    values.forEach(element => $("#id_region_distribution option[value="+element+"]").attr('selected', 'selected'));
+  });
+</script>
+{% endblock %}
+{% block content %}
+<h1>Catálogo: Taxón</h1>
+<!-- DataTables Example -->
+<div class="card mb-3">
+  <div class="card-header">
+    <i class="fas fa-table"></i>
+    Actualizar Taxón</div>
+  <div class="card-body">
+    <div class="table-responsive">
+      <form action="/catalog/update_taxa/{{id}}/" method="post" class="form-horizontal">
+          {% csrf_token %}
+          {{ form.scientificName }}
+          {{ form.scientificNameFull }}
+          <div class="form-group row">
+            <label class="col-sm-2 col-form-label">Habito</label>
+            <div class="col-sm-10">
+              {{ form.habito }}
+            </div>
+          </div>
+          <div class="form-group row">
+            <label class="col-sm-2 col-form-label">Genero</label>
+            <div class="col-sm-10">
+              {{ form.genus }}
+            </div>
+          </div>
+          <div class="form-group row">
+            <label class="col-sm-2 col-form-label">Epiteto Específico</label>
+            <div class="col-sm-10">
+              {{ form.specificEpithet }}
+            </div>
+          </div>
+          <div class="form-group row">
+            <label class="col-sm-2 col-form-label">Autor(es)</label>
+            <div class="col-sm-10">
+              {{ form.scientificNameAuthorship }}
+            </div>
+          </div>
+          <div class="form-group row">
+            <label class="col-sm-2 col-form-label">Subespecie</label>
+            <div class="col-sm-10">
+              {{ form.subespecie }}
+            </div>
+          </div>
+          <div class="form-group row">
+            <label class="col-sm-2 col-form-label">Autor(es) Subespecie</label>
+            <div class="col-sm-10">
+              {{ form.autoresSsp }}
+            </div>
+          </div>
+          <div class="form-group row">
+            <label class="col-sm-2 col-form-label">Variedad</label>
+            <div class="col-sm-10">
+              {{ form.variedad }}
+            </div>
+          </div>
+          <div class="form-group row">
+            <label class="col-sm-2 col-form-label">Autor(es) Variedad</label>
+            <div class="col-sm-10">
+              {{ form.autoresVariedad }}
+            </div>
+          </div>
+          <div class="form-group row">
+            <label class="col-sm-2 col-form-label">Forma</label>
+            <div class="col-sm-10">
+              {{ form.forma }}
+            </div>
+          </div>
+          <div class="form-group row">
+            <label class="col-sm-2 col-form-label">Autor(es) Forma</label>
+            <div class="col-sm-10">
+              {{ form.autoresForma }}
+            </div>
+          </div>
+          <div class="form-group row">
+            <label class="col-sm-2 col-form-label">Ciclo</label>
+            <div class="col-sm-10">
+              {{ form.ciclo }}
+            </div>
+          </div>
+          <div class="form-group row">
+            <label class="col-sm-2 col-form-label">Estado</label>
+            <div class="col-sm-10">
+              {{ form.status }}
+            </div>
+          </div>
+          <div class="form-group row">
+            <label class="col-sm-2 form-check-label">En Argentina</label>
+            <div class="col-sm-10">
+              {{ form.enArgentina }}
+            </div>
+          </div>
+          <div class="form-group row">
+            <label class="col-sm-2 form-check-label">En Bolivia</label>
+            <div class="col-sm-10">
+              {{ form.enBolivia }}
+            </div>
+          </div>
+          <div class="form-group row">
+            <label class="col-sm-2 form-check-label">En Peru</label>
+            <div class="col-sm-10">
+              {{ form.enPeru }}
+            </div>
+          </div>
+          <div class="form-group row">
+            <label class="col-sm-2 col-form-label">Altura Máxima</label>
+            <div class="col-sm-10">
+              {{ form.alturaMaxima }}
+            </div>
+          </div>
+          <div class="form-group row">
+            <label class="col-sm-2 col-form-label">Altura Mínima</label>
+            <div class="col-sm-10">
+              {{ form.alturaMinima }}
+            </div>
+          </div>
+          <div class="form-group row">
+            <label class="col-sm-2 col-form-label">Notas</label>
+            <div class="col-sm-10">
+              {{ form.notas }}
+            </div>
+          </div>
+          <div class="form-group row">
+            <label class="col-sm-2 col-form-label">Publicacion</label>
+            <div class="col-sm-10">
+              {{ form.publicacion }}
+            </div>
+          </div>
+          <div class="form-group row">
+            <label class="col-sm-2 col-form-label">Volumen</label>
+            <div class="col-sm-10">
+              {{ form.volumen }}
+            </div>
+          </div>
+          <div class="form-group row">
+            <label class="col-sm-2 col-form-label">Páginas</label>
+            <div class="col-sm-10">
+              {{ form.paginas }}
+            </div>
+          </div>
+          <div class="form-group row">
+            <label class="col-sm-2 col-form-label">ID Tipo</label>
+            <div class="col-sm-10">
+              {{ form.id_tipo }}
+            </div>
+          </div>
+          <div class="form-group row">
+            <label class="col-sm-2 col-form-label">Nombres Comunes</label>
+            <div class="col-sm-10">
+              {{ form.common_names }}
+            </div>
+          </div>
+          <div class="form-group row">
+            <label class="col-sm-2 col-form-label">Sinónimos</label>
+            <div class="col-sm-10">
+              {{ form.synonymys }}
+            </div>
+          </div>
+          <div class="form-group row">
+            <label class="col-sm-2 col-form-label">Distribución Regional</label>
+            <div class="col-sm-10">
+              {{ form.region_distribution }}
+            </div>
+          </div>
+          <div class="form-group row">
+            <label class="col-sm-2 col-form-label">Estado de Conservación</label>
+            <div class="col-sm-10">
+              {{ form.conservation_state }}
+            </div>
+          </div>
+          <div class="form-group row">
+            <label class="col-sm-2 col-form-label">ID MMA</label>
+            <div class="col-sm-10">
+              {{ form.id_mma }}
+            </div>
+          </div>
+          {% if form.errors %}
+             {% for field in form %}
+                 {% for error in field.errors %} 
+                    <div class="alert alert-danger">
+                         <strong>{{ error|escape }}</strong>
+                    </div>
+                 {% endfor %}
+             {% endfor %}
+          {% endif %}
+          <div class="form-group row">
+            <div class="col-sm-10">
+              <input type="submit" class="btn btn-primary" value="Guardar"><a href="{% url 'list_taxa' %}" class="btn btn-danger">Cancelar</a>
+            </div>
+            
+          </div>
+      </form>
+    </div>
+  </div>
+</div>
+{% endblock %}

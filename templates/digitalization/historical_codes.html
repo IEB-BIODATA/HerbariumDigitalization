@@ -1,0 +1,66 @@
+{% extends "base.html" %}
+{% load static %}
+{% block javascript %}
+<!-- Page level plugin JavaScript-->
+<script src="{% static 'vendor/datatables/jquery.dataTables.js' %}"></script>
+<script src="{% static 'vendor/datatables/dataTables.bootstrap4.js' %}"></script>
+<script src="{% static 'js/demo/datatables-demo.js' %}"></script>
+<script type="text/javascript">
+  function code_generator(historical_page_id) {
+    $(document).ajaxSend(function() {
+      $("#overlay").fadeIn(300);　
+    });
+    $.ajax({
+       data: $("#qr_generator_form").serialize() + "&csrfmiddlewaretoken=" + $('input[name=csrfmiddlewaretoken]').val(),
+       url: '/digitalization/historical_page_download?historical_page_id='+historical_page_id,
+       type: 'GET',
+       success : function(data) {
+        var pdfFile=new Blob([data], {type: "application/pdf"});
+        var pdfUrl = URL.createObjectURL(pdfFile);
+        printJS(pdfUrl);
+       }
+    }).done(function() {
+      setTimeout(function(){
+        $("#overlay").fadeOut(300);
+      },500);
+    });
+  }
+</script>
+{% endblock %}
+{% block content %}
+<h1>Histórico de Códigos QR</h1>
+<!-- DataTables Example -->
+<div class="card mb-3">
+  <div class="card-header">
+    <i class="fas fa-table"></i>
+    Tabla de páginas generadas</div>
+  <div class="card-body">
+    <div class="table-responsive">
+      <table class="table table-bordered" id="dataTable" width="100%" cellspacing="0">
+        <thead>
+          <tr>
+            <th>N</th>
+            <th>Rango</th>
+            <th>Creado por</th>
+            <th>Fecha creación</th>
+            <th>Lista</th>
+            <th>QRs</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for generated_page in generated_pages%}
+            <tr>
+              <td>{{ forloop.counter }}</td>
+              <td>{{ generated_page.name }}</td>
+              <td>{{ generated_page.created_by }}</td>
+              <td>{{ generated_page.created_at }}</td>
+              <td><a class="btn btn-primary btn-block" href="#" onclick="code_generator({{generated_page.id}}); return false;">Imprimir Lista</a></td>
+              <td><a class="btn btn-primary btn-block" href="#" onclick="code_generator({{generated_page.id}}); return false;">Imprimir QRS</a></td>
+            </tr>
+          {% endfor%}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+{% endblock %}
