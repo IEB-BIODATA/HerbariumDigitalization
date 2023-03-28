@@ -2,7 +2,7 @@ from rest_framework.serializers import HyperlinkedModelSerializer, ModelSerializ
     SerializerMethodField
 from apps.catalog.models import Species, Family, Genus, Habit, Synonymy, Region, Division, Class_name, Order, Status, \
     Ciclo, CommonName, ConservationState
-from apps.digitalization.models import VoucherImported
+from apps.digitalization.models import VoucherImported, GalleryImage, Licence
 from django.contrib.auth.models import User
 from rest_framework import serializers
 
@@ -92,6 +92,28 @@ class VoucherSerializer(HyperlinkedModelSerializer):
                   'image_public_resized_60']
 
 
+class GallerySerializer(HyperlinkedModelSerializer):
+    species = CharField(source='scientificName')
+
+    class Meta:
+        model = GalleryImage
+        fields = ['id', 'species', 'image', 'taken_by', 'upload_at', ]  # 'licence', ]
+
+
+"""
+    def get_licence(self, obj):
+        licence = obj.licence_set.all()
+        response = LicenceSerializer(licence, many=True, context=self.context).data
+        return response
+
+
+class LicenceSerializer(ModelSerializer):
+    class Meta:
+        model = Licence
+        fields = ['name', ]
+"""
+
+
 class ConservationStateSerializer(HyperlinkedModelSerializer):
     class Meta:
         model = ConservationState
@@ -119,6 +141,7 @@ class SpecieSerializer(HyperlinkedModelSerializer):
     common_names = CommonNameSerializer(required=False, many=True)
     conservation_state = ConservationStateSerializer(required=False, many=True)
     vouchers = SerializerMethodField()
+    gallery_images = SerializerMethodField()
 
     class Meta:
         model = Species
@@ -129,11 +152,16 @@ class SpecieSerializer(HyperlinkedModelSerializer):
                   'enPeru', 'habito', 'ciclo', 'status', 'alturaMinima', 'alturaMaxima', 'notas', 'id_tipo',
                   'publicacion', 'volumen', 'paginas', 'anio', 'synonymys', 'region_distribution', 'created_at',
                   'updated_at', 'created_by', 'determined', 'id_taxa_origin', 'conservation_state', 'id_mma',
-                  'vouchers']
+                  'vouchers', 'gallery_images']
 
     def get_vouchers(self, obj):
         vouchers = obj.voucherimported_set.all().exclude(image_public_resized_10__exact='')[:5]
         response = VoucherSerializer(vouchers, many=True, context=self.context).data
+        return response
+
+    def get_gallery_images(self, obj):
+        galleries_entries = obj.galleryimage_set.all()
+        response = GallerySerializer(galleries_entries, many=True, context=self.context).data
         return response
 
 

@@ -14,6 +14,8 @@ Including another URLconf
     2. Add a URL to urlpatterns:  path('blog/', include('blog.urls'))
 """
 from django.urls import re_path
+
+from . import views
 from .views import SpeciesList, FinderApiView, MenuApiView, SpecieDetails
 from .views import SynonymyDetails, DivisionList, ClassList, OrderList
 from .views import FamilyList, HabitList, SpeciesFilterApiView, MenuFilterApiView
@@ -42,4 +44,5 @@ urlpatterns = [
     re_path(r'^image/(?P<voucher_id>\d+)/$', ImageDetails.as_view()),
     re_path(r'^total_images/$', TotalImages.as_view()),
     re_path(r'^total_species/$', TotalSpecies.as_view()),
+    re_path(r'^login$', views.login, name='login'),
 ]

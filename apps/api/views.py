@@ -1,4 +1,10 @@
+import base64
+import datetime as dt
+
+import jwt
+from django.contrib.auth import authenticate
 from django.db.models import Q
+from django.http import HttpResponseBadRequest, JsonResponse, HttpResponse
 from drf_multiple_model.pagination import MultipleModelLimitOffsetPagination
 from drf_multiple_model.views import FlatMultipleModelAPIView, ObjectMultipleModelAPIView
 from rest_framework import status
@@ -10,6 +16,7 @@ from rest_framework.views import APIView
 from apps.catalog.models import Species, Synonymy, Family, Division, Class_name, Order, Habit, Status, Ciclo, Genus, \
     CommonName, Region, ConservationState
 from apps.digitalization.models import VoucherImported
+from web import settings
 from .serializers import SpecieSerializer, SynonymySerializer, SpeciesSerializer, SpeciesFinderSerializer, \
     SynonymysFinderSerializer, FamilysFinderSerializer, DivisionSerializer, ClassSerializer, OrderSerializer, \
     FamilySerializer, HabitSerializer, StatusSerializer, CicloSerializer, GenusFinderSerializer, \
@@ -666,3 +673,32 @@ class TotalSpecies(APIView):
             voucherimported__image_public_resized_10__exact='').count()
         content = {'total': species_count}
         return Response(content)
+
+
+def login(request):
+    if request.method == 'POST':
+        authorization_header = request.META['HTTP_AUTHORIZATION']
+        if not authorization_header:
+            return HttpResponseBadRequest('Authorization header missing')
+
+        auth_type, encoded_credentials = authorization_header.split(' ', 1)
+        if auth_type.lower() != 'basic':
+            return HttpResponseBadRequest('Invalid authentication type')
+
+        decoded_credentials = base64.b64decode(encoded_credentials).decode('utf-8')
+        username, password = decoded_credentials.split(':', 1)
+
+        # Authenticate user
+        user = authenticate(request, username=username, password=password)
+
+        # Generate JWT token
+        if user is not None:
+            payload = {
+                'user_id': user.id,
+                'username': user.username,
+                'exp': dt.datetime.utcnow() + dt.timedelta(days=1)
+            }
+            jwt_token = jwt.encode(payload, settings.SECRET_KEY, algorithm='HS256')
+            return JsonResponse({'token': jwt_token})
+        else:
+            return HttpResponse(status=401)

@@ -225,6 +225,33 @@ class VoucherImported(models.Model):
     image_voucher.allow_tags = True
 
 
+class Licence(models.Model):
+    name = models.CharField(max_length=300, null=True)
+    link = models.CharField(max_length=300, blank=True, null=True)
+    added_by = models.ForeignKey(User, on_delete=models.SET_NULL, null=True)
+
+    def __unicode__(self):
+        return self.name
+
+    def __str__(self):
+        return "%s " % self.name
+
+
+class GalleryImage(models.Model):
+    scientificName = models.ForeignKey(Species, on_delete=models.CASCADE)
+    image = models.ImageField(upload_to="gallery", storage=PrivateMediaStorage())
+    specimen = models.ForeignKey(BiodataCode, on_delete=models.SET_NULL, blank=True, null=True)
+    taken_by = models.CharField(max_length=300, blank=True, null=True)
+    licence = models.ForeignKey(
+        Licence,
+        on_delete=models.SET_NULL,
+        null=True,
+        default=Licence.objects.filter(id=1).first().pk
+    )
+    upload_by = models.ForeignKey(User, on_delete=models.PROTECT, default=1, editable=False)
+    upload_at = models.DateTimeField(auto_now_add=True, blank=True, null=True, editable=False)
+
+
 @receiver(post_delete, sender=PriorityVouchersFile)
 def auto_delete_file_on_delete_PriorityVouchersFile(sender, instance, **kwargs):
     if instance.file:
