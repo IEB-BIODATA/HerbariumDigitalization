@@ -1,10 +1,11 @@
-from rest_framework.serializers import HyperlinkedModelSerializer, ModelSerializer, CharField, ReadOnlyField, \
-    SerializerMethodField
-from apps.catalog.models import Species, Family, Genus, Habit, Synonymy, Region, Division, Class_name, Order, Status, \
-    Ciclo, CommonName, ConservationState
-from apps.digitalization.models import VoucherImported, GalleryImage, Licence
 from django.contrib.auth.models import User
 from rest_framework import serializers
+from rest_framework.serializers import HyperlinkedModelSerializer, ModelSerializer, CharField, ReadOnlyField, \
+    SerializerMethodField
+
+from apps.catalog.models import Species, Family, Genus, Habit, Synonymy, Region, Division, Class_name, Order, Status, \
+    Ciclo, CommonName, ConservationState
+from apps.digitalization.models import VoucherImported, GalleryImage
 
 
 class StatusSerializer(HyperlinkedModelSerializer):
@@ -155,13 +156,23 @@ class SpecieSerializer(HyperlinkedModelSerializer):
                   'vouchers', 'gallery_images']
 
     def get_vouchers(self, obj):
-        vouchers = obj.voucherimported_set.all().exclude(image_public_resized_10__exact='')[:5]
-        response = VoucherSerializer(vouchers, many=True, context=self.context).data
+        vouchers = obj.voucherimported_set.all().exclude(image_public_resized_10__exact='')
+        count = len(vouchers)
+        vouchers = vouchers[:5]
+        response = {
+            "count": count,
+            "images": VoucherSerializer(vouchers, many=True, context=self.context).data
+        }
         return response
 
     def get_gallery_images(self, obj):
         galleries_entries = obj.galleryimage_set.all()
-        response = GallerySerializer(galleries_entries, many=True, context=self.context).data
+        count = len(galleries_entries)
+        galleries_entries = galleries_entries[:4]
+        response = {
+            "count": count,
+            "gallery": GallerySerializer(galleries_entries, many=True, context=self.context).data
+        }
         return response
 
 
@@ -248,6 +259,14 @@ class ImagesSerializer(HyperlinkedModelSerializer):
         fields = ['id', 'name', 'specie_id', 'herbarium_code', 'image_public', 'image_public_resized_10',
                   'image_public_resized_60', 'image_name', 'catalogNumber', 'recordedBy', 'recordNumber',
                   'organismRemarks', 'locality', 'identifiedBy', 'dateIdentified', 'georeferencedDate']
+
+
+class GalleryPhotosSerializer(HyperlinkedModelSerializer):
+    name = CharField(source='scientificName.scientificName')
+
+    class Meta:
+        model = GalleryImage
+        fields = ['id', 'name', 'image']
 
 
 class CommonNameFinderSerializer(ModelSerializer):
