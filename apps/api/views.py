@@ -15,12 +15,13 @@ from rest_framework.views import APIView
 
 from apps.catalog.models import Species, Synonymy, Family, Division, Class_name, Order, Habit, Status, Ciclo, Genus, \
     CommonName, Region, ConservationState
-from apps.digitalization.models import VoucherImported
+from apps.digitalization.models import VoucherImported, GalleryImage
 from web import settings
 from .serializers import SpecieSerializer, SynonymySerializer, SpeciesSerializer, SpeciesFinderSerializer, \
     SynonymysFinderSerializer, FamilysFinderSerializer, DivisionSerializer, ClassSerializer, OrderSerializer, \
     FamilySerializer, HabitSerializer, StatusSerializer, CicloSerializer, GenusFinderSerializer, \
-    DistributionSerializer, ImagesSerializer, CommonNameFinderSerializer, RegionSerializer, ConservationStateSerializer
+    DistributionSerializer, ImagesSerializer, CommonNameFinderSerializer, RegionSerializer, ConservationStateSerializer, \
+    GalleryPhotosSerializer
 
 
 class LimitPagination(MultipleModelLimitOffsetPagination):
@@ -467,6 +468,16 @@ class ImagesList(ListAPIView):
         items = VoucherImported.objects.filter(scientificName=specie_id).exclude(image_public_resized_10__exact='')
         images = ImagesSerializer(items, many=True)
 
+        return Response(status=status.HTTP_200_OK, data=images.data)
+
+
+class GalleryList(ListAPIView):
+    serializer_class = GalleryPhotosSerializer
+    queryset = GalleryImage.objects.all()
+
+    def get(self, request, specie_id=None, **kwargs):
+        items = GalleryImage.objects.filter(scientificName=specie_id)
+        images = GalleryPhotosSerializer(items, many=True)
         return Response(status=status.HTTP_200_OK, data=images.data)
 
 

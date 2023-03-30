@@ -16,7 +16,7 @@ Including another URLconf
 from django.urls import re_path
 
 from . import views
-from .views import SpeciesList, FinderApiView, MenuApiView, SpecieDetails
+from .views import SpeciesList, FinderApiView, MenuApiView, SpecieDetails, GalleryList
 from .views import SynonymyDetails, DivisionList, ClassList, OrderList
 from .views import FamilyList, HabitList, SpeciesFilterApiView, MenuFilterApiView
 from .views import DistributionList, ImagesList, ImagesFilterApiView, SpeciesCountView
@@ -38,6 +38,7 @@ urlpatterns = [
     re_path(r'^menu_filter/(?P<limit>\d+)/$' ,MenuFilterApiView.as_view()),
     re_path(r'^distribution/(?P<specie_id>\d+)/$', DistributionList.as_view()),
     re_path(r'^images/(?P<specie_id>\d+)/$', ImagesList.as_view()),
+    re_path(r'^gallery/(?P<specie_id>\d+)/$', GalleryList.as_view()),
     re_path(r'^images_filter/$', ImagesFilterApiView.as_view()), 
     re_path(r'^species_count/$', SpeciesCountView.as_view()),
     re_path(r'^images_count/$', ImagesCountApiView.as_view()), 
