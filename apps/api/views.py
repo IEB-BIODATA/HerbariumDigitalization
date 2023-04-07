@@ -405,7 +405,7 @@ class MenuFilterApiView(ObjectMultipleModelAPIView):
             query_status &= Q(species__region_distribution__in=region)
             query_cycle &= Q(species__region_distribution__in=region)
             query_region &= Q(id__in=region)
-            query_conservation &= Q(id__in=region)
+            query_conservation &= Q(species__region_distribution__in=region)
         conservation = self.request.query_params.getlist('conservation')
         if conservation:
             query_division &= Q(class_name__order__family__genus__species__conservation_state__in=conservation)
@@ -415,7 +415,7 @@ class MenuFilterApiView(ObjectMultipleModelAPIView):
             query_habit &= Q(species__conservation_state__in=conservation)
             query_status &= Q(species__conservation_state__in=conservation)
             query_cycle &= Q(species__conservation_state__in=conservation)
-            query_region &= Q(id__in=conservation)
+            query_region &= Q(species__conservation_state__in=conservation)
             query_conservation &= Q(id__in=conservation)
         if limit == 0:
             orders = Order.objects.filter(query_order).distinct().order_by('name')
