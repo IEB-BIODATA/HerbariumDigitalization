@@ -252,6 +252,13 @@ class GalleryImage(models.Model):
     upload_at = models.DateTimeField(auto_now_add=True, blank=True, null=True, editable=False)
 
 
+class BannerImage(models.Model):
+    specie_id = models.OneToOneField(Species, on_delete=models.CASCADE)
+    banner = models.ImageField(upload_to="banners", storage=PublicMediaStorage())
+    image = models.ForeignKey(VoucherImported, on_delete=models.CASCADE)
+    updated = models.DateTimeField(auto_now=True)
+
+
 @receiver(post_delete, sender=PriorityVouchersFile)
 def auto_delete_file_on_delete_PriorityVouchersFile(sender, instance, **kwargs):
     if instance.file:

@@ -27,6 +27,7 @@ urlpatterns = [
     re_path(r'^get_vouchers_to_validate$', views.get_vouchers_to_validate, name='get_vouchers_to_validate'),
     re_path(r'^upload_images$', views.upload_images, name='upload_images'),
     re_path(r'^upload_gallery$', views.upload_gallery, name='upload_gallery'),
+    re_path(r'^upload_banner$', views.upload_banner, name='upload_banner'),
     re_path(r'^get_voucher_info$', views.get_voucher_info, name='get_voucher_info'),
     re_path(r'^upload_raw_image$', views.upload_raw_image, name='upload_raw_image'),
     re_path(r'^get_pending_images$', views.get_pending_images, name='get_pending_images'),
