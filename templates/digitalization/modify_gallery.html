@@ -1,0 +1,186 @@
+{% extends "base.html" %}
+{% load static %}
+{% load gallery_name %}
+{% block javascript %}
+    <script type="text/javascript">
+        const thumbnails = document.querySelectorAll('.thumbnail');
+
+        thumbnails.forEach(thumbnail => {
+            const thumbnailId = thumbnail.id;
+            const enlargedImageId = thumbnail.querySelector('span').id;
+            const enlargedImage = document.getElementById(enlargedImageId);
+
+            thumbnail.addEventListener('mouseover', function(event) {
+                const clientY = event.clientY; // mouse position relative to viewport
+                const windowHeight = window.innerHeight;
+                const imageHeight = enlargedImage.offsetHeight;
+
+                if (clientY + imageHeight + 40 > windowHeight) {
+                    // Not enough space below the mouse, position the image above
+                    enlargedImage.classList.remove('below');
+                    enlargedImage.classList.add('above');
+                } else {
+                    // Enough space below the mouse, position the image below
+                    enlargedImage.classList.remove('above');
+                    enlargedImage.classList.add('below');
+                }
+
+                enlargedImage.style.left = (event.clientX - 300) + 'px'; // offset from the mouse
+            });
+
+            thumbnail.addEventListener('mouseout', function() {
+                enlargedImage.style.left = '-1000px'; // hide the enlarged image
+                enlargedImage.classList.remove('above', 'below');
+            });
+        })
+    </script>
+{% endblock %}
+{% block css %}
+    <style>
+        .card-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .card-header a:last-child {
+            margin-left: auto;
+        }
+
+        th {
+            white-space: nowrap;
+        }
+
+        td {
+            white-space: nowrap;
+        }
+
+        .thumbnail {
+            position: relative;
+            z-index: 0;
+        }
+
+        .thumbnail:hover {
+            background-color: transparent;
+            z-index: 50;
+        }
+
+        .thumbnail:hover .enlarge-image{
+            visibility: visible;
+        }
+
+        .enlarge-image { /*CSS for enlarged image*/
+            position: absolute;
+            left: -1000px;
+            border: 1px black;
+            visibility: hidden;
+            color: black;
+            text-decoration: none;
+        }
+
+        .enlarge-image img{ /*CSS for enlarged image*/
+            border-width: 0;
+            padding: 2px;
+        }
+
+        /* Position the enlarged image above the mouse if there is not enough space below */
+        .enlarge-image.below{
+            top: 20px; /* offset from the link element */
+        }
+
+        /* Position the enlarged image below the mouse if there is not enough space above */
+        .enlarge-image.above{
+            bottom: 20px; /* offset from the link element */
+        }
+    </style>
+{% endblock %}
+{% block content %}
+    <h1>Galería de Fotografías</h1>
+    <div class="card mb-3">
+        <div class="card-header">
+            <i class="fas fa-solid fa-leaf"></i> &nbsp;
+            {{ species.scientificName }} &nbsp;
+            <i style="color: #808080">{{ species.scientificNameFull }}</i>
+            <a href="{% url 'new_gallery_image' catalog_id=species.id %}">
+                <i class="fas fa-solid fa-plus-circle"></i>
+            </a>
+        </div>
+        <div class="card-body">
+            <div class="table-responsive">
+                <table id="galleryTable{{ species.id }}" class="table table-bordered" style="width: 100%" cellspacing="0">
+                {% if gallery.count > 0 %}
+                    <thead>
+                        <tr>
+                            <th></th>
+                            <th></th>
+                            <th>Espécimen</th>
+                            <th>Tomada por</th>
+                            <th>Licencia</th>
+                            <th>Subida por</th>
+                            <th>Subida el</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for image in gallery %}
+                            <tr>
+                                <td>
+                                    <a href="{% url 'gallery_image' gallery_id=image.id %}">
+                                        <i class="fas fa-solid fa-edit text-primary"></i>
+                                    </a>
+                                    <a data-toggle="modal" data-target="#warningModal-{{ forloop.counter0 }}" style="cursor: pointer;">
+                                        <i class="fas fa-solid fa-trash text-danger"></i>
+                                    </a>
+                                </td>
+                                <td>
+                                    <a class="thumbnail" id="thumbnail-{{ forloop.counter0 }}" href="{{ image.image.url }}", target="_blank">
+                                        {{ image.image.name|replace_gallery_name }}
+                                        <span class="enlarge-image below" id="enlarge-image-{{ forloop.counter0 }}">
+                                            <img src="{{ image.image.url }}" width="300px" height="auto">
+                                        </span>
+                                    </a>
+                                </td>
+                                <td>
+                                    {% if image.specimen is None %}
+                                        <i style="color: #808080">No asignado</i>
+                                    {% else %}
+                                        {{ image.specimen.code }}
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    {% if image.taken_by is None %}
+                                        <i style="color: #808080">No reportado</i>
+                                    {% else %}
+                                        {{ image.taken_by }}
+                                    {% endif %}
+                                </td>
+                                <td>{{ image.licence }}</td>
+                                <td>{{ image.upload_by.first_name }} {{ image.upload_by.last_name }}</td>
+                                <td>{{ image.upload_at }}</td>
+                            </tr>
+                        {% endfor %}
+                    </tbody>
+                {% endif %}
+                </table>
+            </div>
+        </div>
+    </div>
+    <!-- Modal -->
+    {% for image in gallery %}
+        <div class="modal fade" id="warningModal-{{ forloop.counter0 }}" tabindex="-1" aria-labelledby="warningModalLabel" aria-hidden="true">
+            <div class="modal-dialog modal-dialog-centered">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h5 class="modal-title" id="warningModalLabel">¡Cuidado!</h5>
+                    </div>
+                    <div class="modal-body">
+                        ¿Estás seguro que deseas borrar la imagen {{ image.image.name|replace_gallery_name }}?
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancelar</button>
+                        <a href="{% url 'delete_gallery_image' gallery_id=image.id %}" class="btn btn-danger">Borrar</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    {% endfor %}
+{% endblock %}
