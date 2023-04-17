@@ -25,7 +25,7 @@ from django.core.files import File
 from django.core.files.base import ContentFile
 from django.core.files.uploadedfile import InMemoryUploadedFile
 from django.db.models import Q
-from django.http import HttpResponse, HttpResponseBadRequest, HttpResponseServerError
+from django.http import HttpResponse, HttpResponseBadRequest, HttpResponseServerError, HttpResponseRedirect
 from django.shortcuts import render, redirect
 from django.template.loader import get_template
 from django.views.decorators.csrf import csrf_exempt
@@ -33,7 +33,7 @@ from django.views.decorators.http import require_POST, require_GET
 from xhtml2pdf import pisa
 
 from apps.catalog.models import Species, CatalogView
-from .forms import LoadPriorityVoucherForm, LoadColorProfileForm, VoucherImportedForm, GalleryImageForm
+from .forms import LoadPriorityVoucherForm, LoadColorProfileForm, VoucherImportedForm, GalleryImageForm, LicenceForm
 from .models import BiodataCode, Herbarium, GeneratedPage, VoucherImported, PriorityVouchersFile, VouchersView, \
     GalleryImage
 from .vouchers import PriorityVouchers
@@ -648,6 +648,7 @@ def new_gallery_image(request, catalog_id):
         'gallery': None,
     })
 
+
 @login_required
 def delete_gallery_image(request, gallery_id):
     image = GalleryImage.objects.filter(id=gallery_id).first()
@@ -661,6 +662,23 @@ def delete_gallery_image(request, gallery_id):
     logging.info("Deleting {} model".format(image))
     image.delete()
     return redirect('modify_gallery', catalog_id=catalog_id)
+
+
+@login_required
+def new_licence(request):
+    form = LicenceForm(instance=None)
+    prev_page = request.session.pop('prev_page', None)
+    if request.method == "POST":
+        prev_page = request.POST['next']
+        form = LicenceForm(request.POST)
+        if form.is_valid():
+            licence = form.save()
+            logging.info("New licence saved: {}".format(licence))
+            return HttpResponseRedirect(prev_page)
+    return render(request, "digitalization/new_licence.html", {
+        "prev_page": prev_page,
+        "form": form,
+    })
 
 
 @require_GET

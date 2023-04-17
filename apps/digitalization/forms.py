@@ -79,6 +79,8 @@ class GalleryImageForm(forms.ModelForm):
 
     def __init__(self, *args, **kwargs):
         super(GalleryImageForm, self).__init__(*args, **kwargs)
+        self.fields['licence'].choices = list(
+            self.fields['licence'].choices) + [("", "(Añadir nueva licencia)")]
 
     class Meta:
         model = GalleryImage
@@ -94,5 +96,19 @@ class GalleryImageForm(forms.ModelForm):
             'image': forms.FileInput(attrs={'class': "form-control"}),
             'taken_by': forms.TextInput(attrs={'class': "form-control"}),
             'licence': forms.Select(attrs={'class': "form-control"}),
-            'specimen': forms.TextInput(attrs={'class': "form-control"})
+            'specimen': forms.TextInput(attrs={'class': "form-control"}),
+        }
+
+
+class LicenceForm(forms.ModelForm):
+
+    class Meta:
+        model = Licence
+        fields = {
+            'name',
+            'link',
+        }
+        widgets = {
+            'name': forms.TextInput(attrs={'class': "form-control"}),
+            'link': forms.TextInput(attrs={'class': "form-control"}),
         }

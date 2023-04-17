@@ -30,6 +30,7 @@ urlpatterns = [
     re_path(r'^gallery_image/(?P<gallery_id>\d+)$', views.gallery_image, name='gallery_image'),
     re_path(r'^new_gallery_image/(?P<catalog_id>\d+)$', views.new_gallery_image, name='new_gallery_image'),
     re_path(r'^delete_gallery_image/(?P<gallery_id>\d+)$', views.delete_gallery_image, name='delete_gallery_image'),
+    re_path(r'^new_licence$', views.new_licence, name='new_licence'),
     re_path(r'^get_voucher_info$', views.get_voucher_info, name='get_voucher_info'),
     re_path(r'^upload_raw_image$', views.upload_raw_image, name='upload_raw_image'),
     re_path(r'^get_pending_images$', views.get_pending_images, name='get_pending_images'),
