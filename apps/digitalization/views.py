@@ -1,4 +1,5 @@
 # -*- coding: utf-8 -*-
+import logging
 import os
 import csv
 import hashlib
@@ -10,6 +11,7 @@ import urllib.request
 from datetime import datetime, date
 from io import BytesIO
 from pathlib import Path
+from typing import Tuple, Union
 
 import numpy
 import pytz
@@ -33,7 +35,7 @@ from xhtml2pdf import pisa
 from apps.catalog.models import Species
 from .forms import LoadPriorityVoucherForm, LoadColorProfileForm, VoucherImportedForm, GalleryImageForm
 from .models import BiodataCode, Herbarium, GeneratedPage, VoucherImported, PriorityVouchersFile, VouchersView, \
-    GalleryImage
+    GalleryImage, BannerImage
 from .vouchers import PriorityVouchers
 from ..api.decorators import backend_authenticated
 from ..api.serializers import SpecieSerializer
@@ -551,10 +553,9 @@ def upload_images(request):
         voucher_imported.image_public_resized_60.save(image_public_resized_60.name, image_public_resized_60_content)
         voucher_imported.image_raw.save(image_raw.name, image_raw_content)
         voucher_imported.save()
-        data = {'result': 'ok'}
+        return HttpResponse(json.dumps({'result': 'ok'}), content_type="application/json")
     else:
-        data = {'result': 'error'}
-    return HttpResponse(json.dumps(data), content_type="application/json")
+        return HttpResponse({'result': 'error'}, status=400)
 
 
 @require_POST
@@ -563,11 +564,10 @@ def upload_gallery(request):
     if request.method == 'POST':
         image = request.FILES['image']
         image_content = ContentFile(image.read())
-        species = Species.objects.filter(scientificNameFull=request.POST["scientificName"])
-        if len(species) == 0:
-            return HttpResponseBadRequest("Species not registered")
-        if len(species) > 1:
-            return HttpResponseServerError("More than one species found, check database")
+        species, response = get_species(request.POST["scientificName"])
+        if response is not None:
+            return response
+        logging.debug("Uploading gallery image for {}".format(species.scientificName))
         candid_hash = hashlib.sha256(image_content.read()).hexdigest()
         image_content.seek(0)
         prev_gallery = GalleryImage.objects.filter(scientificName=species[0])
@@ -587,10 +587,43 @@ def upload_gallery(request):
         gallery_image = GalleryImage(**parameters)
         gallery_image.image.save(image.name, image_content)
         gallery_image.save()
-        data = {'result': 'ok'}
+        return HttpResponse(json.dumps({'result': 'ok'}), content_type="application/json")
     else:
-        data = {'result': 'error'}
-    return HttpResponse(json.dumps(data), content_type="application/json")
+        return HttpResponse({'result': 'error'}, status=400)
+
+
+def get_species(scientific_name_full: str) -> Tuple[Union[Species, None], Union[HttpResponse, None]]:
+    species = Species.objects.filter(scientificNameFull=scientific_name_full)
+    if len(species) == 0:
+        return None, HttpResponseBadRequest("Species not registered")
+    if len(species) > 1:
+        return None, HttpResponseServerError("More than one species found, check database")
+    return species[0], None
+
+
+@require_POST
+@backend_authenticated
+def upload_banner(request):
+    if request.method == "POST":
+        banner = request.FILES['image']
+        banner_content = ContentFile(banner.read())
+        species, response = get_species(request.POST["scientificName"])
+        if response is not None:
+            return response
+        logging.debug("Uploading banner for {}".format(species.scientificName))
+        vouchers = VoucherImported.objects.filter(id=request.POST["voucher"])
+        if vouchers.count() == 0:
+            return HttpResponse({'info': 'No voucher found'}, status=400)
+        try:
+            banner_image = BannerImage(specie_id=species, image=vouchers.first())
+            banner_image.banner.save(banner.name, banner_content)
+            banner_image.save()
+        except Exception as e:
+            logging.error(e, exc_info=True)
+            return HttpResponse({'info': e}, status=500)
+        return HttpResponse({'result': 'ok'}, content_type="application/json")
+    else:
+        return HttpResponse({'result': 'error'}, status=400)
 
 
 @login_required

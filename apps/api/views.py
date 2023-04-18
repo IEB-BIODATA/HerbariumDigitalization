@@ -1,5 +1,7 @@
 import base64
 import datetime as dt
+import logging
+import os
 
 import jwt
 from django.contrib.auth import authenticate
@@ -15,7 +17,7 @@ from rest_framework.views import APIView
 
 from apps.catalog.models import Species, Synonymy, Family, Division, Class_name, Order, Habit, Status, Ciclo, Genus, \
     CommonName, Region, ConservationState
-from apps.digitalization.models import VoucherImported, GalleryImage
+from apps.digitalization.models import VoucherImported, GalleryImage, BannerImage
 from web import settings
 from .serializers import SpecieSerializer, SynonymySerializer, SpeciesSerializer, SpeciesFinderSerializer, \
     SynonymysFinderSerializer, FamilysFinderSerializer, DivisionSerializer, ClassSerializer, OrderSerializer, \
@@ -686,14 +688,45 @@ class TotalSpecies(APIView):
         return Response(content)
 
 
+class BannerSpecie(APIView):
+    """
+    Generates image of banner and url to 'herbariodigital.cl'
+    """
+    renderer_classes = (JSONRenderer,)
+
+    def get(self, request, format=None, **kwargs):
+        specie_id = kwargs.get("specie_id")
+        specie = Species.objects.filter(id=specie_id).first()
+        logging.debug("Getting banner for {}".format(specie.scientificName))
+        banners = BannerImage.objects.filter(specie_id=specie)
+        if banners.count() == 0:
+            logging.warning("No banner found for {} species".format(specie.scientificName))
+            return Response(
+                {
+                    "msg": "No banner for specie {}".format(
+                        specie.scientificName
+                    )
+                }, status=501)
+        return Response({
+            'image': banners.first().banner.url,
+            'url': "{}/catalog/details/Species/{}/".format(
+                os.environ.get("HERBARIUM_FRONTEND"),
+                specie_id
+            )
+        })
+
+
 def login(request):
     if request.method == 'POST':
+        logging.debug("Authorizing backend")
         authorization_header = request.META['HTTP_AUTHORIZATION']
         if not authorization_header:
+            logging.warning("Authorization header missing")
             return HttpResponseBadRequest('Authorization header missing')
 
         auth_type, encoded_credentials = authorization_header.split(' ', 1)
         if auth_type.lower() != 'basic':
+            logging.warning("Invalid authentication type: {}".format(auth_type))
             return HttpResponseBadRequest('Invalid authentication type')
 
         decoded_credentials = base64.b64decode(encoded_credentials).decode('utf-8')
