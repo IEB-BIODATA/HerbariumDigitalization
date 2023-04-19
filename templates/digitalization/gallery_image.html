@@ -1,0 +1,117 @@
+{% extends "base.html" %}
+{% load static %}
+{% load roles %}
+{% block javascript %}
+  <script type="text/javascript">
+      document.getElementById("imageId").onchange = function (event){
+          console.log("Image changed");
+          let photo = URL.createObjectURL(event.target.files[0]);
+          document.getElementById("preview").src = photo;
+      }
+
+      document.querySelector("#id_licence").addEventListener("change", function() {
+            const selectedValue = this.value;
+            if (selectedValue === "") {
+                this.value = 1;
+                window.location.href = "{% url 'new_licence' %}";
+                const currentUrl = window.location.href;
+                $.ajax({
+                    url: '{% url "set_back_page" %}',
+                    type: 'POST',
+                    data: {
+                        'prev_page': currentUrl,
+                        'csrfmiddlewaretoken': '{{ csrf_token }}'
+                    },
+                    success: function(data) {
+                        window.location.href = '{% url "new_licence" %}';
+                    },
+                    error: function(xhr, textStatus, errorThrown) {
+                        console.log('Error setting previous page URL:', errorThrown);
+                    }
+                });
+
+            }
+        });
+  </script>
+{% endblock %}
+{% block content %}
+    <h1>Galería de Fotografías</h1>
+    <div class="card mb-3">
+        <div class="card-header">
+            <i class="{% if gallery is None %}far {% else %}fas {% endif %}fa-image"></i>
+            {{ specie.scientificName }} &nbsp;
+            <i style="color: #808080">{{ specie.scientificNameFull }}</i>
+        </div>
+        <div class="card-body">
+            <div class="table-responsive">
+                <form action="
+                    {% if gallery is None %} /digitalization/new_gallery_image/{{ specie.id }}
+                    {% else %} /digitalization/gallery_image/{{ gallery.id }}
+                    {% endif %}
+                " method="post" enctype=multipart/form-data>
+                    {% csrf_token %}
+                    <input type="hidden" name="scientificName" value="{{ specie.id }}">
+                    <div class="form-group row">
+                        <label class="col-sm-2 col-form-label">Imagen</label>
+                        <div class="col-sm-10">
+                            {% if gallery is not None %}
+                                <div class="row">
+                                    <label class="col-sm-2 col-form-label">Actualmente</label>
+                                    <div class="col-sm-10">
+                                        <img id="preview" src="{{ form.initial.image.url }}" style="height: 300px; width: auto">
+                                    </div>
+                                </div>
+                                <br>
+                            {% endif %}
+                            <div class="row">
+                                <label class="col-sm-2 col-form-label">
+                                    {% if gallery is None %}
+                                        Subir
+                                    {% else %}
+                                        Modificar
+                                    {% endif %}
+                                </label>
+                                <div class="col-sm-10">
+                                    <input
+                                            id="imageId"
+                                            type="file"
+                                            name="image"
+                                            accept="image/*"
+                                            value="{{ form.initial.image.url }}"
+                                    >
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="form-group row">
+                        <label class="col-sm-2 col-form-label">Tomada por</label>
+                        <div class="col-sm-10">
+                            {{ form.taken_by }}
+                        </div>
+                    </div>
+                    <div class="form-group row">
+                        <label class="col-sm-2 col-form-label">Licencia</label>
+                        <div class="col-sm-10">
+                            {{ form.licence }}
+                        </div>
+                    </div>
+                    <div class="form-group row">
+                        <label class="col-sm-2 col-form-label">Espécimen</label>
+                        <div class="col-sm-10">
+                            {{ form.specimen }}
+                        </div>
+                    </div>
+                    <div style="display: flex; justify-content: space-around; margin: 20px;">
+                        <button type="submit" class="btn btn-primary" id="load_button">
+                            {% if gallery is None %} Cargar
+                            {% else %} Modificar
+                            {% endif %}
+                            Fotografía
+                        </button>
+                        <a href="{% url 'modify_gallery' catalog_id=specie.id %}" class="nav-link btn btn-danger" id="cancel_button">Cancelar</a>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+{% endblock %}
