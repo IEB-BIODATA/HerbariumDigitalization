@@ -1,16 +1,18 @@
 # -*- coding: utf-8 -*-
-import os
 import csv
-import hashlib
 import glob
+import hashlib
 import json
+import logging
+import os
 import subprocess
 import textwrap
 import urllib.request
 from datetime import datetime, date
+from http import HTTPStatus
 from io import BytesIO
 from pathlib import Path
-
+from typing import Tuple, Union
 import numpy
 import pytz
 import qrcode
@@ -23,22 +25,20 @@ from django.core.files import File
 from django.core.files.base import ContentFile
 from django.core.files.uploadedfile import InMemoryUploadedFile
 from django.db.models import Q
-from django.http import HttpResponse, JsonResponse, HttpResponseBadRequest, HttpResponseServerError
+from django.http import HttpResponse, HttpResponseBadRequest, HttpResponseServerError, HttpResponseRedirect
 from django.shortcuts import render, redirect
 from django.template.loader import get_template
 from django.views.decorators.csrf import csrf_exempt
 from django.views.decorators.http import require_POST, require_GET
 from xhtml2pdf import pisa
 
-from apps.catalog.models import Species
-from .forms import LoadPriorityVoucherForm, LoadColorProfileForm, VoucherImportedForm, GalleryImageForm
+from apps.catalog.models import Species, CatalogView
+from .forms import LoadPriorityVoucherForm, LoadColorProfileForm, VoucherImportedForm, GalleryImageForm, LicenceForm
 from .models import BiodataCode, Herbarium, GeneratedPage, VoucherImported, PriorityVouchersFile, VouchersView, \
-    GalleryImage
+    GalleryImage, BannerImage
 from .vouchers import PriorityVouchers
 from ..api.decorators import backend_authenticated
-from ..api.serializers import SpecieSerializer
 
-from http import HTTPStatus
 
 class HttpResponsePreconditionFailed(HttpResponse):
     status_code = HTTPStatus.PRECONDITION_FAILED
@@ -551,10 +551,9 @@ def upload_images(request):
         voucher_imported.image_public_resized_60.save(image_public_resized_60.name, image_public_resized_60_content)
         voucher_imported.image_raw.save(image_raw.name, image_raw_content)
         voucher_imported.save()
-        data = {'result': 'ok'}
+        return HttpResponse(json.dumps({'result': 'ok'}), content_type="application/json")
     else:
-        data = {'result': 'error'}
-    return HttpResponse(json.dumps(data), content_type="application/json")
+        return HttpResponse({'result': 'error'}, status=400)
 
 
 @require_POST
@@ -563,11 +562,10 @@ def upload_gallery(request):
     if request.method == 'POST':
         image = request.FILES['image']
         image_content = ContentFile(image.read())
-        species = Species.objects.filter(scientificNameFull=request.POST["scientificName"])
-        if len(species) == 0:
-            return HttpResponseBadRequest("Species not registered")
-        if len(species) > 1:
-            return HttpResponseServerError("More than one species found, check database")
+        species, response = get_species(request.POST["scientificName"])
+        if response is not None:
+            return response
+        logging.debug("Uploading gallery image for {}".format(species.scientificName))
         candid_hash = hashlib.sha256(image_content.read()).hexdigest()
         image_content.seek(0)
         prev_gallery = GalleryImage.objects.filter(scientificName=species[0])
@@ -587,23 +585,130 @@ def upload_gallery(request):
         gallery_image = GalleryImage(**parameters)
         gallery_image.image.save(image.name, image_content)
         gallery_image.save()
-        data = {'result': 'ok'}
+        return HttpResponse(json.dumps({'result': 'ok'}), content_type="application/json")
     else:
-        data = {'result': 'error'}
-    return HttpResponse(json.dumps(data), content_type="application/json")
+        return HttpResponse({'result': 'error'}, status=400)
+
+
+def get_species(scientific_name_full: str) -> Tuple[Union[Species, None], Union[HttpResponse, None]]:
+    species = Species.objects.filter(scientificNameFull=scientific_name_full)
+    if len(species) == 0:
+        return None, HttpResponseBadRequest("Species not registered")
+    if len(species) > 1:
+        return None, HttpResponseServerError("More than one species found, check database")
+    return species[0], None
+
+
+@require_POST
+@backend_authenticated
+def upload_banner(request):
+    if request.method == "POST":
+        banner = request.FILES['image']
+        banner_content = ContentFile(banner.read())
+        species, response = get_species(request.POST["scientificName"])
+        if response is not None:
+            return response
+        logging.debug("Uploading banner for {}".format(species.scientificName))
+        vouchers = VoucherImported.objects.filter(id=request.POST["voucher"])
+        if vouchers.count() == 0:
+            return HttpResponse({'info': 'No voucher found'}, status=400)
+        try:
+            banner_image = BannerImage(specie_id=species, image=vouchers.first())
+            banner_image.banner.save(banner.name, banner_content)
+            banner_image.save()
+        except Exception as e:
+            logging.error(e, exc_info=True)
+            return HttpResponse({'info': e}, status=500)
+        return HttpResponse({'result': 'ok'}, content_type="application/json")
+    else:
+        return HttpResponse({'result': 'error'}, status=400)
 
 
 @login_required
 def upload_gallery_image(request):
-    return render(request, 'digitalization/update_gallery.html', {})
+    return render(request, 'digitalization/update_gallery.html', {'species': CatalogView.objects.all()})
 
 
 @login_required
-def upload_gallery_species(request, catalog_id):
-    species = SpecieSerializer(Species.objects.filter(id=catalog_id)[0], context={'request': request}).data
-    return render(request, 'digitalization/species_gallery.html', {
-        'specie': species,
-        'form': GalleryImageForm(species, request.POST, request.FILES),
+def modify_gallery(request, catalog_id):
+    specie = Species.objects.filter(id=catalog_id).first()
+    gallery = GalleryImage.objects.filter(scientificName=specie)
+    return render(request, 'digitalization/modify_gallery.html', {
+        'species': specie,
+        'gallery': gallery,
+    })
+
+
+@login_required
+def gallery_image(request, gallery_id):
+    gallery = GalleryImage.objects.filter(id=gallery_id).first()
+    catalog_id = gallery.scientificName.id
+    form = GalleryImageForm(instance=gallery)
+    if request.method == "POST":
+        form = GalleryImageForm(request.POST, request.FILES, instance=gallery)
+        if form.is_valid():
+            gallery = form.save()
+            logging.debug("Gallery modified {}".format(gallery))
+            return redirect('modify_gallery', catalog_id=catalog_id)
+        else:
+            logging.warning("Form is not valid: {}".format(form.errors))
+    return render(request, 'digitalization/gallery_image.html', {
+        'form': form,
+        'specie': gallery.scientificName,
+        'gallery': gallery,
+    })
+
+
+@login_required
+def new_gallery_image(request, catalog_id):
+    specie = Species.objects.filter(id=catalog_id).first()
+    form = GalleryImageForm(instance=None)
+    form.fields["scientificName"].initial = specie
+    if request.method == "POST":
+        form = GalleryImageForm(request.POST, request.FILES)
+        if form.is_valid():
+            form.scientificName = specie
+            gallery = form.save()
+            logging.debug("Gallery modified {}".format(gallery))
+            return redirect('modify_gallery', catalog_id=catalog_id)
+        else:
+            logging.warning("Form is not valid: {}".format(form.errors))
+    return render(request, 'digitalization/gallery_image.html', {
+        'form': form,
+        'specie': specie,
+        'gallery': None,
+    })
+
+
+@login_required
+def delete_gallery_image(request, gallery_id):
+    image = GalleryImage.objects.filter(id=gallery_id).first()
+    catalog_id = image.scientificName.id
+    logging.info("Deleting {} image".format(image.image.name))
+    try:
+        image.image.delete()
+    except Exception as e:
+        logging.error("Error deleting image {}".format(image.image.url))
+        logging.error(e, exc_info=True)
+    logging.info("Deleting {} model".format(image))
+    image.delete()
+    return redirect('modify_gallery', catalog_id=catalog_id)
+
+
+@login_required
+def new_licence(request):
+    form = LicenceForm(instance=None)
+    prev_page = request.session.pop('prev_page', None)
+    if request.method == "POST":
+        prev_page = request.POST['next']
+        form = LicenceForm(request.POST)
+        if form.is_valid():
+            licence = form.save()
+            logging.info("New licence saved: {}".format(licence))
+            return HttpResponseRedirect(prev_page)
+    return render(request, "digitalization/new_licence.html", {
+        "prev_page": prev_page,
+        "form": form,
     })
 
 
