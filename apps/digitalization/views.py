@@ -668,8 +668,10 @@ def new_gallery_image(request, catalog_id):
         form = GalleryImageForm(request.POST, request.FILES)
         if form.is_valid():
             form.scientificName = specie
-            gallery = form.save()
-            logging.debug("Gallery modified {}".format(gallery))
+            gallery = form.save(commit=False)
+            gallery.upload_by = request.user
+            gallery.save()
+            logging.debug("Added new image gallery {}".format(gallery))
             return redirect('modify_gallery', catalog_id=catalog_id)
         else:
             logging.warning("Form is not valid: {}".format(form.errors))
@@ -703,7 +705,9 @@ def new_licence(request):
         prev_page = request.POST['next']
         form = LicenceForm(request.POST)
         if form.is_valid():
-            licence = form.save()
+            licence = form.save(commit=False)
+            licence.added_by = request.user
+            licence.save()
             logging.info("New licence saved: {}".format(licence))
             return HttpResponseRedirect(prev_page)
     return render(request, "digitalization/new_licence.html", {
