@@ -14,22 +14,6 @@
             if (selectedValue === "") {
                 this.value = 1;
                 window.location.href = "{% url 'new_licence' %}";
-                const currentUrl = window.location.href;
-                $.ajax({
-                    url: '{% url "set_back_page" %}',
-                    type: 'POST',
-                    data: {
-                        'prev_page': currentUrl,
-                        'csrfmiddlewaretoken': '{{ csrf_token }}'
-                    },
-                    success: function(data) {
-                        window.location.href = '{% url "new_licence" %}';
-                    },
-                    error: function(xhr, textStatus, errorThrown) {
-                        console.log('Error setting previous page URL:', errorThrown);
-                    }
-                });
-
             }
         });
   </script>
