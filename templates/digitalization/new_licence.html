@@ -25,6 +25,12 @@
                             {{ form.link }}
                         </div>
                     </div>
+                    <div class="form-group row">
+                        <label class="col-sm-2 col-form-label">Nombre Corto</label>
+                        <div class="col-sm-10">
+                            {{ form.short_name }}
+                        </div>
+                    </div>
                     <div style="display: flex; justify-content: space-around; margin: 20px;">
                         <button type="submit" class="btn btn-primary" id="load_button">Añadir</button>
                         <a href="{{ prev_page }}" class="nav-link btn btn-danger" id="cancel_button">Cancelar</a>

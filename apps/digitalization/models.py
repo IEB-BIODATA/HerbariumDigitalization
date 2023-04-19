@@ -228,7 +228,8 @@ class VoucherImported(models.Model):
 class Licence(models.Model):
     name = models.CharField(max_length=300, null=True)
     link = models.CharField(max_length=300, blank=True, null=True)
-    added_by = models.ForeignKey(User, on_delete=models.SET_NULL, null=True)
+    short_name = models.CharField(max_length=20, null=True)
+    added_by = models.ForeignKey(User, on_delete=models.SET_NULL, default=1, editable=False, null=True)
 
     def __unicode__(self):
         return self.name
@@ -239,7 +240,7 @@ class Licence(models.Model):
 
 class GalleryImage(models.Model):
     scientificName = models.ForeignKey(Species, on_delete=models.CASCADE)
-    image = models.ImageField(upload_to="gallery", storage=PrivateMediaStorage())
+    image = models.ImageField(upload_to="gallery", storage=PublicMediaStorage())
     specimen = models.ForeignKey(BiodataCode, on_delete=models.SET_NULL, blank=True, null=True)
     taken_by = models.CharField(max_length=300, blank=True, null=True)
     licence = models.ForeignKey(

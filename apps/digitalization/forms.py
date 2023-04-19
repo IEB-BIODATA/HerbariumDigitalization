@@ -107,8 +107,10 @@ class LicenceForm(forms.ModelForm):
         fields = {
             'name',
             'link',
+            'short_name',
         }
         widgets = {
             'name': forms.TextInput(attrs={'class': "form-control"}),
             'link': forms.TextInput(attrs={'class': "form-control"}),
+            'short_name': forms.TextInput(attrs={'class': "form-control"}),
         }
