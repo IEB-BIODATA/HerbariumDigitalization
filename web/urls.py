@@ -44,7 +44,6 @@ urlpatterns = [
     re_path(r'^api/', include('apps.api.urls')),
     re_path(r'^accounts/login/', auth_views.LoginView.as_view(), name='login'),
     re_path(r'^logout/', LogoutView.as_view(next_page=settings.LOGOUT_REDIRECT_URL), name='logout'),
-    re_path(r'^set_back_page$', views.set_back_page, name='set_back_page'),
     re_path(r'^swagger(?P<format>\.json|\.yaml)$', schema_view.without_ui(cache_timeout=0), name='schema-json'),
     re_path(r'^swagger/$', schema_view.with_ui('swagger', cache_timeout=0), name='schema-swagger-ui'),
     re_path(r'^redoc/$', schema_view.with_ui('redoc', cache_timeout=0), name='schema-redoc'),

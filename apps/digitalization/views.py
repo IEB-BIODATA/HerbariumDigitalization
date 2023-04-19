@@ -700,7 +700,7 @@ def delete_gallery_image(request, gallery_id):
 @login_required
 def new_licence(request):
     form = LicenceForm(instance=None)
-    prev_page = request.session.pop('prev_page', None)
+    prev_page = request.headers["Referer"]
     if request.method == "POST":
         prev_page = request.POST['next']
         form = LicenceForm(request.POST)
