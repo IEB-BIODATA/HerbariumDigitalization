@@ -12,7 +12,7 @@
       $('.filter-option-inner-inner').eq(1).html($('.filter-option-inner-inner').eq(1).text().replace(/,/g, "<br>"));
   });
 
-  $('.selectpicker#id_region_distribution').on('rendered.bs.select', function() {
+  $('.selectpicker#id_region').on('rendered.bs.select', function() {
       $('.filter-option-inner-inner').eq(2).html($('.filter-option-inner-inner').eq(2).text().replace(/,/g, "<br>"));
   });
 
@@ -30,11 +30,11 @@
     values.forEach(element => $("#id_synonymys option[value="+element+"]").attr('selected', 'selected'));
   });
 
-  $('.selectpicker#id_region_distribution').on('change', function(){
-    var values = $('.selectpicker#id_region_distribution option:selected').map(function (idx, ele) {
+  $('.selectpicker#id_region').on('change', function(){
+    var values = $('.selectpicker#id_region option:selected').map(function (idx, ele) {
         return $(ele).val();
     }).get();
-    values.forEach(element => $("#id_region_distribution option[value="+element+"]").attr('selected', 'selected'));
+    values.forEach(element => $("#id_region option[value="+element+"]").attr('selected', 'selected'));
   });
 
 </script>
@@ -67,9 +67,9 @@
         <div class="table-responsive">
           <table class="table">
               <tr>
-                <td><strong>Habito</strong></td>
+                <td><strong>habit</strong></td>
                 <td>
-                  {{ taxa_1.habito }}
+                  {{ taxa_1.habit }}
                 </td>
               </tr>
               <tr>
@@ -222,7 +222,7 @@
                 <td><strong>Distribución Regional</strong></td>
                 <td>
                   <ul>
-                    {% for region in taxa_1.region_distribution.all %}
+                    {% for region in taxa_1.region.all %}
                       <li>{{ region }}</li>
                     {% endfor %}
                   </ul>
@@ -249,9 +249,9 @@
           <div class="table-responsive">
               <input type="hidden" name="id_taxon_2" value="" id="id_taxon_2">
               <div class="form-group row">
-                <label class="col-sm-2 col-form-label">Habito</label>
+                <label class="col-sm-2 col-form-label">habit</label>
                 <div class="col-sm-10">
-                  {{ form_taxa_1.habito }}
+                  {{ form_taxa_1.habit }}
                 </div>
               </div>
               <div class="form-group row">
@@ -395,7 +395,7 @@
               <div class="form-group row">
                 <label class="col-sm-2 col-form-label">Distribución Regional</label>
                 <div class="col-sm-10">
-                  {{ form_taxa_1.region_distribution }}
+                  {{ form_taxa_1.region }}
                 </div>
               </div>
               <div class="form-group row">

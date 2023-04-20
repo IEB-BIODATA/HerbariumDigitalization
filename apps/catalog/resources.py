@@ -5,7 +5,7 @@ from .models import Species, Region, Synonymy
 
 
 class SpeciesAdminResource(resources.ModelResource):
-    region_distribution = fields.Field(attribute='region_distribution', widget=ManyToManyWidget(Region))
+    region = fields.Field(attribute='region', widget=ManyToManyWidget(Region))
     synonymys = fields.Field(attribute='synonymys', widget=ManyToManyWidget(Synonymy))
 
     class Meta:
@@ -30,7 +30,7 @@ class SpeciesAdminResource(resources.ModelResource):
             'enArgentina',
             'enBolivia',
             'enPeru',
-            'habito',
+            'habit',
             'ciclo',
             'status',
             'alturaMinima',
@@ -42,7 +42,7 @@ class SpeciesAdminResource(resources.ModelResource):
             'paginas',
             'anio',
             'synonymys',
-            'region_distribution',
+            'region',
             'determined',
             'id_taxa_origin',
             'id_mma',
