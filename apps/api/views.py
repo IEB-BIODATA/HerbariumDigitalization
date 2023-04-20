@@ -361,7 +361,8 @@ class MenuFilterApiView(ObjectMultipleModelAPIView):
             for parameter_name in self.QUERIES:
                 parameters = self.request.query_params.getlist(parameter_name)
                 if query_name == parameter_name:
-                    tag = "id__"
+                    tag = ""
+                    additive = True
                     if query_name in self.TAXONOMY:
                         prev_tag = "{}__{}".format(query_name, prev_tag)
                         old_tag = ""
@@ -383,12 +384,9 @@ class MenuFilterApiView(ObjectMultipleModelAPIView):
                         else:
                             tag = "species__{}__".format(parameter_name)
                 logging.debug("Query: {}\tParameter: {}\n{}in".format(query_name, parameter_name, tag))
-                if len(parameters) > 0:
+                if len(parameters) > 0 and tag != "":
                     query &= Q(**{"{}in".format(tag): parameters})
                     logging.debug(query)
-                if tag == "id__":
-                    tag = ""
-                    additive = True
             results = self.QUERIES[query_name]["model"].objects.filter(query).distinct().order_by('name')
             if limit != 0 and query_name not in list(self.QUERIES.keys())[0:2] + ["status"]:
                 results = results[:limit]
