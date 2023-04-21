@@ -212,24 +212,24 @@ class SpeciesFilterApiView(FlatMultipleModelAPIView):
         query_synonymy = Q()
         division = self.request.query_params.get('division')
         if division:
-            query_species &= Q(genus__family__orden__class_name__division_id__in=division)
-            query_synonymy &= Q(species__genus__family__orden__class_name__division_id__in=division)
+            query_species &= Q(genus__family__order__class_name__division_id__in=division)
+            query_synonymy &= Q(species__genus__family__order__class_name__division_id__in=division)
         class_name = self.request.query_params.getlist('class_name')
         if class_name:
-            query_species &= Q(genus__family__orden__class_name_id__in=class_name)
-            query_synonymy &= Q(species__genus__family__orden__class_name_id__in=class_name)
-        orden = self.request.query_params.getlist('order')
-        if orden:
-            query_species &= Q(genus__family__orden_id__in=orden)
-            query_synonymy &= Q(species__genus__family__orden_id__in=orden)
+            query_species &= Q(genus__family__order__class_name_id__in=class_name)
+            query_synonymy &= Q(species__genus__family__order__class_name_id__in=class_name)
+        order = self.request.query_params.getlist('order')
+        if order:
+            query_species &= Q(genus__family__order_id__in=order)
+            query_synonymy &= Q(species__genus__family__order_id__in=order)
         family = self.request.query_params.getlist('family')
         if family:
             query_species &= Q(genus__family_id__in=family)
             query_synonymy &= Q(species__genus__family_id__in=family)
         habit = self.request.query_params.getlist('habit')
         if habit:
-            query_species &= Q(habito_id__in=habit)
-            query_synonymy &= Q(species__habito_id__in=habit)
+            query_species &= Q(habit_id__in=habit)
+            query_synonymy &= Q(species__habit_id__in=habit)
         genus = self.request.query_params.getlist('genus')
         if genus:
             query_species &= Q(genus_id__in=genus)
@@ -248,8 +248,8 @@ class SpeciesFilterApiView(FlatMultipleModelAPIView):
             query_synonymy &= Q(species__ciclo__in=cycle)
         region = self.request.query_params.getlist('region')
         if region:
-            query_species &= Q(region_distribution__in=region)
-            query_synonymy &= Q(species__region_distribution__in=region)
+            query_species &= Q(region__in=region)
+            query_synonymy &= Q(species__region__in=region)
         conservation = self.request.query_params.getlist('conservation')
         if conservation:
             query_species &= Q(conservation_state__in=conservation)
@@ -308,146 +308,91 @@ class MenuApiView(ObjectMultipleModelAPIView):
 
 class MenuFilterApiView(ObjectMultipleModelAPIView):
     pagination_class = None
+    QUERIES = {
+        "division": {
+            "model": Division,
+            "serializer": DivisionSerializer
+        },
+        "class_name": {
+            "model": Class_name,
+            "serializer": ClassSerializer
+        },
+        "order": {
+            "model": Order,
+            "serializer": OrderSerializer
+        },
+        "family": {
+            "model": Family,
+            "serializer": FamilySerializer
+        },
+        "habit": {
+            "model": Habit,
+            "serializer": HabitSerializer
+        },
+        "status": {
+            "model": Status,
+            "serializer": StatusSerializer
+        },
+        "ciclo": {
+            "model": Ciclo,
+            "serializer": CicloSerializer
+        },
+        "region": {
+            "model": Region,
+            "serializer": RegionSerializer
+        },
+        "conservation_state": {
+            "model": ConservationState,
+            "serializer": ConservationStateSerializer
+        },
+    }
+    TAXONOMY = list(QUERIES.keys())[0:4]
 
     def get_querylist(self, limit=5):
         limit = int(self.kwargs['limit'])
-        query_division = Q()
-        query_class_name = Q()
-        query_order = Q()
-        query_family = Q()
-        query_habit = Q()
-        query_status = Q()
-        query_cycle = Q()
-        query_region = Q()
-        query_conservation = Q()
-        division = self.request.query_params.getlist('division')
-        if division:
-            query_division &= Q(id__in=division)
-            query_class_name &= Q(division__in=division)
-            query_order &= Q(class_name__division__in=division)
-            query_family &= Q(orden__class_name__division__in=division)
-            query_habit &= Q(species__genus__family__orden__class_name__division__in=division)
-            query_status &= Q(species__genus__family__orden__class_name__division__in=division)
-            query_cycle &= Q(species__genus__family__orden__class_name__division__in=division)
-            query_region &= Q(species__genus__family__orden__class_name__division__in=division)
-            query_conservation &= Q(species__genus__family__orden__class_name__division__in=division)
-        class_name = self.request.query_params.getlist('class_name')
-        if class_name:
-            query_division &= Q(class_name__in=class_name)
-            query_class_name &= Q(id__in=class_name)
-            query_order &= Q(class_name__in=class_name)
-            query_family &= Q(orden__class_name__in=class_name)
-            query_habit &= Q(species__genus__family__orden__class_name__in=class_name)
-            query_status &= Q(species__genus__family__orden__class_name__in=class_name)
-            query_cycle &= Q(species__genus__family__orden__class_name__in=class_name)
-            query_region &= Q(species__genus__family__orden__class_name__in=class_name)
-            query_conservation &= Q(species__genus__family__orden__class_name__in=class_name)
-        order = self.request.query_params.getlist('order')
-        if order:
-            query_division &= Q(class_name__order__in=order)
-            query_class_name &= Q(order__in=order)
-            query_order &= Q(id__in=order)
-            query_family &= Q(orden__in=order)
-            query_habit &= Q(species__genus__family__orden__in=order)
-            query_status &= Q(species__genus__family__orden__in=order)
-            query_cycle &= Q(species__genus__family__orden__in=order)
-            query_region &= Q(species__genus__family__orden__in=order)
-            query_conservation &= Q(species__genus__family__orden__in=order)
-        family = self.request.query_params.getlist('family')
-        if family:
-            query_division &= Q(class_name__order__family__in=family)
-            query_class_name &= Q(order__family__in=family)
-            query_order &= Q(family__in=family)
-            query_family &= Q(id__in=family)
-            query_habit &= Q(species__genus__family__in=family)
-            query_status &= Q(species__genus__family__in=family)
-            query_cycle &= Q(species__genus__family__in=family)
-            query_region &= Q(species__genus__family__in=family)
-            query_conservation &= Q(species__genus__family__in=family)
-        habit = self.request.query_params.getlist('habit')
-        if habit:
-            query_division &= Q(class_name__order__family__genus__species__habito__in=habit)
-            query_class_name &= Q(order__family__genus__species__habito__in=habit)
-            query_order &= Q(family__genus__species__habito__in=habit)
-            query_family &= Q(genus__species__habito__in=habit)
-            query_habit &= Q(id__in=habit)
-            query_status &= Q(species__habito__in=habit)
-            query_cycle &= Q(species__habito__in=habit)
-            query_region &= Q(species__habito__in=habit)
-            query_conservation &= Q(species__habito__in=habit)
-        status = self.request.query_params.getlist('status')
-        if status:
-            query_division &= Q(class_name__order__family__genus__species__status__in=status)
-            query_class_name &= Q(order__family__genus__species__status__in=status)
-            query_order &= Q(family__genus__species__status__in=status)
-            query_family &= Q(genus__species__status__in=status)
-            query_habit &= Q(species__status__in=status)
-            query_status &= Q(id__in=status)
-            query_cycle &= Q(species__status__in=status)
-            query_region &= Q(species__status__in=status)
-            query_conservation &= Q(species__status__in=status)
-        cycle = self.request.query_params.getlist('cycle')
-        if cycle:
-            query_division &= Q(class_name__order__family__genus__species__ciclo__in=cycle)
-            query_class_name &= Q(order__family__genus__species__ciclo__in=cycle)
-            query_order &= Q(family__genus__species__ciclo__in=cycle)
-            query_family &= Q(genus__species__ciclo__in=cycle)
-            query_habit &= Q(species__ciclo__in=cycle)
-            query_status &= Q(species__ciclo__in=cycle)
-            query_cycle &= Q(id__in=cycle)
-            query_region &= Q(species__ciclo__in=cycle)
-            query_conservation &= Q(species__ciclo__in=cycle)
-        region = self.request.query_params.getlist('region')
-        if region:
-            query_division &= Q(class_name__order__family__genus__species__region_distribution__in=region)
-            query_class_name &= Q(order__family__genus__species__region_distribution__in=region)
-            query_order &= Q(family__genus__species__region_distribution__in=region)
-            query_family &= Q(genus__species__region_distribution__in=region)
-            query_habit &= Q(species__region_distribution__in=region)
-            query_status &= Q(species__region_distribution__in=region)
-            query_cycle &= Q(species__region_distribution__in=region)
-            query_region &= Q(id__in=region)
-            query_conservation &= Q(species__region_distribution__in=region)
-        conservation = self.request.query_params.getlist('conservation')
-        if conservation:
-            query_division &= Q(class_name__order__family__genus__species__conservation_state__in=conservation)
-            query_class_name &= Q(order__family__genus__species__conservation_state__in=conservation)
-            query_order &= Q(family__genus__species__conservation_state__in=conservation)
-            query_family &= Q(genus__species__conservation_state__in=conservation)
-            query_habit &= Q(species__conservation_state__in=conservation)
-            query_status &= Q(species__conservation_state__in=conservation)
-            query_cycle &= Q(species__conservation_state__in=conservation)
-            query_region &= Q(species__conservation_state__in=conservation)
-            query_conservation &= Q(id__in=conservation)
-        if limit == 0:
-            orders = Order.objects.filter(query_order).distinct().order_by('name')
-            families = Family.objects.filter(query_family).distinct().order_by('name')
-            habits = Habit.objects.filter(query_habit).distinct().order_by('name')
-            cycles = Ciclo.objects.filter(query_cycle).distinct().order_by('name')
-            regions = Region.objects.filter(query_region).distinct().order_by('order')
-            conservations = ConservationState.objects.filter(query_conservation).distinct().order_by('order')
-        else:
-            orders = Order.objects.filter(query_order).distinct().order_by('name')[:limit]
-            families = Family.objects.filter(query_family).distinct().order_by('name')[:limit]
-            habits = Habit.objects.filter(query_habit).distinct().order_by('name')[:limit]
-            cycles = Ciclo.objects.filter(query_cycle).distinct().order_by('name')[:limit]
-            regions = Region.objects.filter(query_region).distinct().order_by('order')[:limit]
-            conservations = ConservationState.objects.filter(query_conservation).distinct().order_by('order')[:limit]
-
-        querylist = [
-            {'queryset': Division.objects.filter(query_division).distinct().order_by('name'),
-             'serializer_class': DivisionSerializer},
-            {'queryset': Class_name.objects.filter(query_class_name).distinct().order_by('name'),
-             'serializer_class': ClassSerializer},
-            {'queryset': orders, 'serializer_class': OrderSerializer},
-            {'queryset': families, 'serializer_class': FamilySerializer},
-            {'queryset': habits, 'serializer_class': HabitSerializer},
-            {'queryset': Status.objects.filter(query_status).distinct().order_by('name'),
-             'serializer_class': StatusSerializer},
-            {'queryset': cycles, 'serializer_class': CicloSerializer},
-            {'queryset': regions, 'serializer_class': RegionSerializer},
-            {'queryset': conservations, 'serializer_class': ConservationStateSerializer},
-        ]
+        old_tag = ""
+        prev_tag = ""
+        querylist = list()
+        for query_name in self.QUERIES:
+            query = Q()
+            tag = ""
+            to_delete = ""
+            additive = False
+            for parameter_name in self.QUERIES:
+                parameters = self.request.query_params.getlist(parameter_name)
+                if query_name == parameter_name:
+                    tag = ""
+                    additive = True
+                    if query_name in self.TAXONOMY:
+                        prev_tag = "{}__{}".format(query_name, prev_tag)
+                        old_tag = ""
+                else:
+                    if query_name in self.TAXONOMY:
+                        if additive:
+                            if parameter_name in self.TAXONOMY:
+                                tag = "{}{}__".format(tag, parameter_name)
+                                old_tag = tag
+                            else:
+                                tag = "{}genus__species__{}__".format(old_tag, parameter_name)
+                        else:
+                            tag = prev_tag.replace(to_delete, "")
+                            to_delete = "{}__{}".format(parameter_name, to_delete)
+                    else:
+                        if parameter_name in self.TAXONOMY:
+                            tag = "species__genus__family__order__class_name__division__".replace(to_delete, "")
+                            to_delete = "{}{}__".format(to_delete, parameter_name)
+                        else:
+                            tag = "species__{}__".format(parameter_name)
+                logging.debug("Query: {}\tParameter: {}\n{}in".format(query_name, parameter_name, tag))
+                if len(parameters) > 0 and tag != "":
+                    query &= Q(**{"{}in".format(tag): parameters})
+                    logging.debug(query)
+            results = self.QUERIES[query_name]["model"].objects.filter(query).distinct().order_by('name')
+            if limit != 0 and query_name not in list(self.QUERIES.keys())[0:2] + ["status"]:
+                results = results[:limit]
+            querylist.append({
+                "queryset": results, "serializer_class": self.QUERIES[query_name]["serializer"],
+            })
         return querylist
 
 
@@ -490,19 +435,19 @@ class ImagesFilterApiView(FlatMultipleModelAPIView):
         query_images = Q()
         division = self.request.query_params.get('division')
         if division:
-            query_images &= Q(scientificName__genus__family__orden__class_name__division_id__in=division)
+            query_images &= Q(scientificName__genus__family__order__class_name__division_id__in=division)
         class_name = self.request.query_params.getlist('class_name')
         if class_name:
-            query_images &= Q(scientificName__genus__family__orden__class_name_id__in=class_name)
-        orden = self.request.query_params.getlist('order')
-        if orden:
-            query_images &= Q(scientificName__genus__family__orden_id__in=orden)
+            query_images &= Q(scientificName__genus__family__order__class_name_id__in=class_name)
+        order = self.request.query_params.getlist('order')
+        if order:
+            query_images &= Q(scientificName__genus__family__order_id__in=order)
         family = self.request.query_params.getlist('family')
         if family:
             query_images &= Q(scientificName__genus__family_id__in=family)
         habit = self.request.query_params.getlist('habit')
         if habit:
-            query_images &= Q(scientificName__habito_id__in=habit)
+            query_images &= Q(scientificName__habit_id__in=habit)
         genus = self.request.query_params.getlist('genus')
         if genus:
             query_images &= Q(scientificName__genus_id__in=genus)
@@ -517,7 +462,7 @@ class ImagesFilterApiView(FlatMultipleModelAPIView):
             query_images &= Q(scientificName__ciclo__in=cycle)
         region = self.request.query_params.getlist('region')
         if region:
-            query_images &= Q(scientificName__region_distribution__in=region)
+            query_images &= Q(scientificName__region__in=region)
         conservation = self.request.query_params.getlist('conservation')
         if conservation:
             query_images &= Q(scientificName__conservation_state__in=conservation)
@@ -540,24 +485,24 @@ class SpeciesCountView(APIView):
         query_synonymy = Q()
         division = self.request.query_params.get('division')
         if division:
-            query_species &= Q(genus__family__orden__class_name__division_id__in=division)
-            query_synonymy &= Q(species__genus__family__orden__class_name__division_id__in=division)
+            query_species &= Q(genus__family__order__class_name__division_id__in=division)
+            query_synonymy &= Q(species__genus__family__order__class_name__division_id__in=division)
         class_name = self.request.query_params.getlist('class_name')
         if class_name:
-            query_species &= Q(genus__family__orden__class_name_id__in=class_name)
-            query_synonymy &= Q(species__genus__family__orden__class_name_id__in=class_name)
-        orden = self.request.query_params.getlist('order')
-        if orden:
-            query_species &= Q(genus__family__orden_id__in=orden)
-            query_synonymy &= Q(species__genus__family__orden_id__in=orden)
+            query_species &= Q(genus__family__order__class_name_id__in=class_name)
+            query_synonymy &= Q(species__genus__family__order__class_name_id__in=class_name)
+        order = self.request.query_params.getlist('order')
+        if order:
+            query_species &= Q(genus__family__order_id__in=order)
+            query_synonymy &= Q(species__genus__family__order_id__in=order)
         family = self.request.query_params.getlist('family')
         if family:
             query_species &= Q(genus__family_id__in=family)
             query_synonymy &= Q(species__genus__family_id__in=family)
         habit = self.request.query_params.getlist('habit')
         if habit:
-            query_species &= Q(habito_id__in=habit)
-            query_synonymy &= Q(species__habito_id__in=habit)
+            query_species &= Q(habit_id__in=habit)
+            query_synonymy &= Q(species__habit_id__in=habit)
         genus = self.request.query_params.getlist('genus')
         if genus:
             query_species &= Q(genus_id__in=genus)
@@ -576,8 +521,8 @@ class SpeciesCountView(APIView):
             query_synonymy &= Q(species__ciclo__in=cycle)
         region = self.request.query_params.getlist('region')
         if region:
-            query_species &= Q(region_distribution__in=region)
-            query_synonymy &= Q(species__region_distribution__in=region)
+            query_species &= Q(region__in=region)
+            query_synonymy &= Q(species__region__in=region)
         conservation = self.request.query_params.getlist('conservation')
         if conservation:
             query_species &= Q(conservation_state__in=conservation)
@@ -617,19 +562,19 @@ class ImagesCountApiView(APIView):
         query_images = Q()
         division = self.request.query_params.get('division')
         if division:
-            query_images &= Q(scientificName__genus__family__orden__class_name__division_id__in=division)
+            query_images &= Q(scientificName__genus__family__order__class_name__division_id__in=division)
         class_name = self.request.query_params.getlist('class_name')
         if class_name:
-            query_images &= Q(scientificName__genus__family__orden__class_name_id__in=class_name)
-        orden = self.request.query_params.getlist('order')
-        if orden:
-            query_images &= Q(scientificName__genus__family__orden_id__in=orden)
+            query_images &= Q(scientificName__genus__family__order__class_name_id__in=class_name)
+        order = self.request.query_params.getlist('order')
+        if order:
+            query_images &= Q(scientificName__genus__family__order_id__in=order)
         family = self.request.query_params.getlist('family')
         if family:
             query_images &= Q(scientificName__genus__family_id__in=family)
         habit = self.request.query_params.getlist('habit')
         if habit:
-            query_images &= Q(scientificName__habito_id__in=habit)
+            query_images &= Q(scientificName__habit_id__in=habit)
         genus = self.request.query_params.getlist('genus')
         if genus:
             query_images &= Q(scientificName__genus_id__in=genus)
@@ -644,7 +589,7 @@ class ImagesCountApiView(APIView):
             query_images &= Q(scientificName__ciclo__in=cycle)
         region = self.request.query_params.getlist('region')
         if region:
-            query_images &= Q(scientificName__region_distribution__in=region)
+            query_images &= Q(scientificName__region__in=region)
         conservation = self.request.query_params.getlist('conservation')
         if conservation:
             query_images &= Q(scientificName__conservation_state__in=conservation)

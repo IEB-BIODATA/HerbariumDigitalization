@@ -118,22 +118,22 @@ def generate_etiquete(id):
 @login_required
 def catalog_download(request):
     if request.method == 'GET':
-        headers1 = ['id', 'id_taxa', 'kingdom', 'division', 'class_name', 'orden', 'family', 'genus', 'scientificName',
+        headers1 = ['id', 'id_taxa', 'kingdom', 'division', 'class_name', 'order', 'family', 'genus', 'scientificName',
                     'scientificNameFull'
             , 'specificEpithet', 'scientificNameAuthorship', 'subespecie', 'autoresSsp', 'variedad', 'autoresVariedad',
                     'forma', 'autoresForma'
-            , 'enArgentina', 'enBolivia', 'enPeru', 'habito', 'ciclo', 'status', 'alturaMinima', 'alturaMaxima',
+            , 'enArgentina', 'enBolivia', 'enPeru', 'habit', 'ciclo', 'status', 'alturaMinima', 'alturaMaxima',
                     'notas', 'id_tipo'
             , 'publicacion', 'volumen', 'paginas', 'anio', 'determined', 'id_taxa_origin']
         headers2 = ['id', 'specie_id', 'id_taxa', 'specie scientificName', 'synonymy id', 'synonymy scientificName',
                     'scientificNameFull', 'genus', 'specificEpithet', 'scientificNameAuthorship'
             , 'subespecie', 'autoresSsp', 'variedad', 'autoresVariedad', 'forma', 'autoresForma']
         headers3 = ['id', 'specie_id', 'id_taxa', 'specie scientificName', 'region name', 'region key']
-        species = CatalogView.objects.values_list('id', 'id_taxa', 'kingdom', 'division', 'class_name', 'orden',
+        species = CatalogView.objects.values_list('id', 'id_taxa', 'kingdom', 'division', 'class_name', 'order',
                                                   'family', 'genus', 'scientificName', 'scientificNameFull'
                                                   , 'specificEpithet', 'scientificNameAuthorship', 'subespecie',
                                                   'autoresSsp', 'variedad', 'autoresVariedad', 'forma', 'autoresForma'
-                                                  , 'enArgentina', 'enBolivia', 'enPeru', 'habito', 'ciclo', 'status',
+                                                  , 'enArgentina', 'enBolivia', 'enPeru', 'habit', 'ciclo', 'status',
                                                   'alturaMinima', 'alturaMaxima', 'notas', 'id_tipo'
                                                   , 'publicacion', 'volumen', 'paginas', 'anio', 'determined',
                                                   'id_taxa_origin').order_by('id')
@@ -142,13 +142,13 @@ def catalog_download(request):
                                                      'specificEpithet', 'scientificNameAuthorship'
                                                      , 'subespecie', 'autoresSsp', 'variedad', 'autoresVariedad',
                                                      'forma', 'autoresForma').order_by('id')
-        region_distribution = RegionDistributionView.objects.values_list('id', 'specie_id', 'id_taxa',
+        region = RegionDistributionView.objects.values_list('id', 'specie_id', 'id_taxa',
                                                                          'specie_scientificname', 'region_name',
                                                                          'region_key').order_by('id')
         databook = tablib.Databook()
         data_set1 = tablib.Dataset(*species, headers=headers1, title='Species')
         data_set2 = tablib.Dataset(*synonymys, headers=headers2, title='Synonymys')
-        data_set3 = tablib.Dataset(*region_distribution, headers=headers3, title='Region Distribution')
+        data_set3 = tablib.Dataset(*region, headers=headers3, title='Region Distribution')
         databook.add_sheet(data_set1)
         databook.add_sheet(data_set2)
         databook.add_sheet(data_set3)
@@ -267,8 +267,8 @@ def create_order(request):
         html_instructions = ""
         if form.is_valid():
             try:
-                new_orden = form.save()
-                binnacle = Binnacle(type_update="Nuevo", model="Orden", description="Se crea Orden " + new_orden.name,
+                new_order = form.save()
+                binnacle = Binnacle(type_update="Nuevo", model="order", description="Se crea order " + new_order.name,
                                     created_by=request.user)
                 binnacle.save()
                 CatalogView.refresh_view()
@@ -288,9 +288,9 @@ def update_order(request, id):
     if request.method == 'POST':
         form = OrderForm(request.POST, instance=order)
         if form.is_valid():
-            new_orden = form.save()
-            binnacle = Binnacle(type_update="Actualización", model="Orden",
-                                description="Se actualiza Orden " + order.name + " en " + new_orden.name,
+            new_order = form.save()
+            binnacle = Binnacle(type_update="Actualización", model="order",
+                                description="Se actualiza order " + order.name + " en " + new_order.name,
                                 created_by=request.user)
             binnacle.save()
             CatalogView.refresh_view()
@@ -806,7 +806,7 @@ def merge_taxa(request, id):
                         enArgentina=specie.enArgentina,
                         enBolivia=specie.enBolivia,
                         enPeru=specie.enPeru,
-                        habito=specie.habito,
+                        habit=specie.habit,
                         ciclo=specie.ciclo,
                         status=specie.status,
                         alturaMinima=specie.alturaMinima,
@@ -830,9 +830,9 @@ def merge_taxa(request, id):
                     for synonymy in synonymys:
                         specie_new.synonymys.add(Synonymy.objects.get(id=synonymy))
 
-                    region_distribution = request.POST.getlist('region_distribution')
-                    for region in region_distribution:
-                        specie_new.region_distribution.add(Region.objects.get(id=region))
+                    region = request.POST.getlist('region')
+                    for region in region:
+                        specie_new.region.add(Region.objects.get(id=region))
 
                     new_synonymy = Synonymy(
                         scientificName=taxon_1_scientificName_preview,
@@ -954,7 +954,7 @@ def split_1_taxa(request, id):
                 enArgentina=specie_1.enArgentina,
                 enBolivia=specie_1.enBolivia,
                 enPeru=specie_1.enPeru,
-                habito=specie_1.habito,
+                habit=specie_1.habit,
                 ciclo=specie_1.ciclo,
                 status=specie_1.status,
                 alturaMinima=specie_1.alturaMinima,
@@ -978,9 +978,9 @@ def split_1_taxa(request, id):
             for synonymy in synonymys:
                 specie_new_1.synonymys.add(Synonymy.objects.get(id=synonymy))
 
-            region_distribution = request.POST.getlist('region_distribution')
-            for region in region_distribution:
-                specie_new_1.region_distribution.add(Region.objects.get(id=region))
+            region = request.POST.getlist('region')
+            for region in region:
+                specie_new_1.region.add(Region.objects.get(id=region))
 
             taxon_1 = Species.objects.get(id=id)
 
@@ -1065,7 +1065,7 @@ def split_2_taxa(request, id):
                 enArgentina=specie_1.enArgentina,
                 enBolivia=specie_1.enBolivia,
                 enPeru=specie_1.enPeru,
-                habito=specie_1.habito,
+                habit=specie_1.habit,
                 ciclo=specie_1.ciclo,
                 status=specie_1.status,
                 alturaMinima=specie_1.alturaMinima,
@@ -1089,9 +1089,9 @@ def split_2_taxa(request, id):
             for synonymy in synonymys:
                 specie_new_1.synonymys.add(Synonymy.objects.get(id=synonymy))
 
-            region_distribution = request.POST.getlist('form_taxa_1-region_distribution')
-            for region in region_distribution:
-                specie_new_1.region_distribution.add(Region.objects.get(id=region))
+            region = request.POST.getlist('form_taxa_1-region')
+            for region in region:
+                specie_new_1.region.add(Region.objects.get(id=region))
 
             taxon_1 = Species.objects.get(id=id)
             taxon_1_genus_preview = taxon_1.genus
@@ -1176,7 +1176,7 @@ def split_2_taxa(request, id):
                 enArgentina=specie_2.enArgentina,
                 enBolivia=specie_2.enBolivia,
                 enPeru=specie_2.enPeru,
-                habito=specie_2.habito,
+                habit=specie_2.habit,
                 ciclo=specie_2.ciclo,
                 status=specie_2.status,
                 alturaMinima=specie_2.alturaMinima,
@@ -1200,9 +1200,9 @@ def split_2_taxa(request, id):
             for synonymy in synonymys:
                 specie_new_2.synonymys.add(Synonymy.objects.get(id=synonymy))
 
-            region_distribution = request.POST.getlist('form_taxa_2-region_distribution')
-            for region in region_distribution:
-                specie_new_2.region_distribution.add(Region.objects.get(id=region))
+            region = request.POST.getlist('form_taxa_2-region')
+            for region in region:
+                specie_new_2.region.add(Region.objects.get(id=region))
 
             specie_new_2.synonymys.add(new_synonymy)
             specie_new_2.save()
@@ -1233,7 +1233,7 @@ def get_taxa(request, id):
     data = serializers.serialize('json', [taxa, ])
     json_data = json.loads(data)
     json_data[0]['fields']['id'] = id
-    json_data[0]['fields']['habito_name'] = taxa.habito.name
+    json_data[0]['fields']['habit_name'] = taxa.habit.name
     json_data[0]['fields']['genus_name'] = taxa.genus.name
     json_data[0]['fields']['ciclo_name'] = taxa.ciclo.name
     json_data[0]['fields']['status_name'] = taxa.status.name
@@ -1251,13 +1251,13 @@ def get_taxa(request, id):
         synonymys_id.append(synonymy.id)
     json_data[0]['fields']['synonymys'] = synonymys
     json_data[0]['fields']['synonymys_2'] = synonymys_id
-    region_distribution = ''
-    region_distribution_id = []
-    for region in taxa.region_distribution.all():
-        region_distribution += str(region) + ', '
-        region_distribution_id.append(region.id)
-    json_data[0]['fields']['region_distribution'] = region_distribution
-    json_data[0]['fields']['region_distribution_2'] = region_distribution_id
+    region = ''
+    region_id = []
+    for region in taxa.region.all():
+        region += str(region) + ', '
+        region_id.append(region.id)
+    json_data[0]['fields']['region'] = region
+    json_data[0]['fields']['region_2'] = region_id
     return HttpResponse(json.dumps(json_data), content_type="application/json")
 
 

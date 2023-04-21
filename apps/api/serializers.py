@@ -124,21 +124,21 @@ class ConservationStateSerializer(HyperlinkedModelSerializer):
 class SpecieSerializer(HyperlinkedModelSerializer):
     genus = ReadOnlyField(source='genus.name')
     genus_id = ReadOnlyField(source='genus.id')
-    habito = ReadOnlyField(source='habito.name')
+    habit = ReadOnlyField(source='habit.name')
     ciclo = ReadOnlyField(source='ciclo.name')
     status = ReadOnlyField(source='status.name')
     synonymys = SynonymysSerializer(required=False, many=True)
-    region_distribution = RegionSerializer(required=False, many=True)
+    region = RegionSerializer(required=False, many=True)
     created_by = ReadOnlyField(source='created_by.username')
     family = ReadOnlyField(source='genus.family.name')
     family_id = ReadOnlyField(source='genus.family.id')
-    orden = ReadOnlyField(source='genus.family.orden.name')
-    orden_id = ReadOnlyField(source='genus.family.orden.id')
-    class_name = ReadOnlyField(source='genus.family.orden.class_name.name')
-    class_name_id = ReadOnlyField(source='genus.family.orden.class_name.id')
-    division = ReadOnlyField(source='genus.family.orden.class_name.division.name')
-    division_id = ReadOnlyField(source='genus.family.orden.class_name.division.id')
-    kingdom = ReadOnlyField(source='genus.family.orden.class_name.division.kingdom.name')
+    order = ReadOnlyField(source='genus.family.order.name')
+    order_id = ReadOnlyField(source='genus.family.order.id')
+    class_name = ReadOnlyField(source='genus.family.order.class_name.name')
+    class_name_id = ReadOnlyField(source='genus.family.order.class_name.id')
+    division = ReadOnlyField(source='genus.family.order.class_name.division.name')
+    division_id = ReadOnlyField(source='genus.family.order.class_name.division.id')
+    kingdom = ReadOnlyField(source='genus.family.order.class_name.division.kingdom.name')
     common_names = CommonNameSerializer(required=False, many=True)
     conservation_state = ConservationStateSerializer(required=False, many=True)
     vouchers = SerializerMethodField()
@@ -146,12 +146,12 @@ class SpecieSerializer(HyperlinkedModelSerializer):
 
     class Meta:
         model = Species
-        fields = ['id', 'id_taxa', 'kingdom', 'division', 'division_id', 'class_name', 'class_name_id', 'orden',
-                  'orden_id', 'family', 'family_id', 'genus', 'genus_id', 'scientificName', 'scientificNameDB',
+        fields = ['id', 'id_taxa', 'kingdom', 'division', 'division_id', 'class_name', 'class_name_id', 'order',
+                  'order_id', 'family', 'family_id', 'genus', 'genus_id', 'scientificName', 'scientificNameDB',
                   'scientificNameFull', 'specificEpithet', 'scientificNameAuthorship', 'subespecie', 'autoresSsp',
                   'variedad', 'autoresVariedad', 'forma', 'autoresForma', 'common_names', 'enArgentina', 'enBolivia',
-                  'enPeru', 'habito', 'ciclo', 'status', 'alturaMinima', 'alturaMaxima', 'notas', 'id_tipo',
-                  'publicacion', 'volumen', 'paginas', 'anio', 'synonymys', 'region_distribution', 'created_at',
+                  'enPeru', 'habit', 'ciclo', 'status', 'alturaMinima', 'alturaMaxima', 'notas', 'id_tipo',
+                  'publicacion', 'volumen', 'paginas', 'anio', 'synonymys', 'region', 'created_at',
                   'updated_at', 'created_by', 'determined', 'id_taxa_origin', 'conservation_state', 'id_mma',
                   'vouchers', 'gallery_images']
 
@@ -196,13 +196,13 @@ class SpeciesFinderSerializer(ModelSerializer):
     name = CharField(source='scientificName')
     genus = CharField(source='genus.name')
     family = ReadOnlyField(source='genus.family.name')
-    orden = ReadOnlyField(source='genus.family.orden.name')
-    habit = ReadOnlyField(source='habito.name')
+    order = ReadOnlyField(source='genus.family.order.name')
+    habit = ReadOnlyField(source='habit.name')
     vouchers = SerializerMethodField()
 
     class Meta:
         model = Species
-        fields = ['id', 'name', 'genus', 'specificEpithet', 'family', 'orden', 'scientificNameAuthorship', 'habit',
+        fields = ['id', 'name', 'genus', 'specificEpithet', 'family', 'order', 'scientificNameAuthorship', 'habit',
                   'subespecie', 'autoresSsp', 'variedad', 'autoresVariedad', 'forma', 'autoresForma', 'vouchers']
 
     def get_vouchers(self, obj):
