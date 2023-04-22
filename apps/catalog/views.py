@@ -1,4 +1,5 @@
 import json
+import logging
 import re
 import textwrap
 
@@ -701,7 +702,7 @@ def update_taxa(request, id):
                 binnacle.save()
                 return redirect('list_taxa')
             except Exception as e:
-                print(e)
+                logging.error(e, exc_info=True)
                 pass
     return render(request, 'catalog/update_taxa.html', {'form': form, 'id': id})
 
