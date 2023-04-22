@@ -110,6 +110,8 @@ class SpeciesForm(forms.ModelForm):
             'enBolivia',
             'enPeru',
             'habit',
+            'plant_habit',
+            'env_habit',
             'ciclo',
             'status',
             'alturaMinima',
@@ -144,6 +146,12 @@ class SpeciesForm(forms.ModelForm):
             'enBolivia': forms.CheckboxInput(attrs={'class': "form-check-input"}),
             'enPeru': forms.CheckboxInput(attrs={'class': "form-check-input"}),
             'habit': forms.Select(attrs={'class': "form-control"}),
+            'plant_habit': forms.SelectMultiple(
+                attrs={'class': "selectpicker", 'multiple data-live-search': 'true',
+                       'multiple data-multiple-separator': ' o '}),
+            'env_habit': forms.SelectMultiple(
+                attrs={'class': "selectpicker", 'multiple data-live-search': 'true',
+                       'multiple data-multiple-separator': ' o '}),
             'ciclo': forms.Select(attrs={'class': "form-control"}),
             'status': forms.Select(attrs={'class': "form-control"}),
             'alturaMinima': forms.TextInput(attrs={'class': "form-control", 'type': 'number'}),

@@ -164,6 +164,41 @@ class Habit(models.Model):
         ordering = ['name']
 
 
+class PlantHabit(models.Model):
+    name = models.CharField(max_length=100, blank=True, null=True)
+    created_at = models.DateTimeField(auto_now_add=True, blank=True, null=True, editable=False)
+    updated_at = models.DateTimeField(auto_now=True)
+    created_by = models.ForeignKey(User, on_delete=models.PROTECT, default=1, editable=False)
+
+    def __unicode__(self):
+        return self.name
+
+    def __str__(self):
+        return "%s " % self.name
+
+    class Meta:
+        verbose_name_plural = "Plant Habits"
+        ordering = ['name']
+
+
+class EnvironmentalHabit(models.Model):
+    female_name = models.CharField(max_length=100, blank=True, null=True)
+    male_name = models.CharField(max_length=100, blank=True, null=True)
+    created_at = models.DateTimeField(auto_now_add=True, blank=True, null=True, editable=False)
+    updated_at = models.DateTimeField(auto_now=True)
+    created_by = models.ForeignKey(User, on_delete=models.PROTECT, default=1, editable=False)
+
+    def __unicode__(self):
+        return self.__str__()
+
+    def __str__(self):
+        return "%s / %s" % (self.female_name, self.male_name)
+
+    class Meta:
+        verbose_name_plural = "Environmental Habits"
+        ordering = ['female_name']
+
+
 class Synonymy(models.Model):
     scientificName = models.CharField(max_length=300, blank=True, null=True)
     scientificNameDB = models.CharField(max_length=300, blank=True, null=True)
@@ -266,6 +301,14 @@ class Species(models.Model):
     enBolivia = models.BooleanField(default=False)
     enPeru = models.BooleanField(default=False)
     habit = models.ForeignKey(Habit, on_delete=models.CASCADE, blank=True, null=True, db_column="habit")
+    plant_habit = models.ManyToManyField(
+        PlantHabit, blank=True,
+        db_column="plant_habit"
+    )
+    env_habit = models.ManyToManyField(
+        EnvironmentalHabit, blank=True,
+        db_column="environmental_habit"
+    )
     ciclo = models.ForeignKey(Ciclo, on_delete=models.CASCADE, blank=True, null=True)
     status = models.ForeignKey(Status, on_delete=models.CASCADE, blank=True, null=True)
     alturaMinima = models.IntegerField(blank=True, null=True)
