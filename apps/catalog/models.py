@@ -110,7 +110,10 @@ class Order(models.Model):
 
 class Family(models.Model):
     name = models.CharField(max_length=300, blank=True, null=True)
-    orden = models.ForeignKey(Order, on_delete=models.CASCADE, blank=True, null=True, help_text="Orden")
+    order = models.ForeignKey(
+        Order, on_delete=models.CASCADE, blank=True,
+        null=True, help_text="order", db_column="order"
+    )
     created_at = models.DateTimeField(auto_now_add=True, blank=True, null=True, editable=False)
     updated_at = models.DateTimeField(auto_now=True)
     created_by = models.ForeignKey(User, on_delete=models.PROTECT, default=1, editable=False)
@@ -161,6 +164,41 @@ class Habit(models.Model):
         ordering = ['name']
 
 
+class PlantHabit(models.Model):
+    name = models.CharField(max_length=100, blank=True, null=True)
+    created_at = models.DateTimeField(auto_now_add=True, blank=True, null=True, editable=False)
+    updated_at = models.DateTimeField(auto_now=True)
+    created_by = models.ForeignKey(User, on_delete=models.PROTECT, default=1, editable=False)
+
+    def __unicode__(self):
+        return self.name
+
+    def __str__(self):
+        return "%s " % self.name
+
+    class Meta:
+        verbose_name_plural = "Plant Habits"
+        ordering = ['name']
+
+
+class EnvironmentalHabit(models.Model):
+    female_name = models.CharField(max_length=100, blank=True, null=True)
+    male_name = models.CharField(max_length=100, blank=True, null=True)
+    created_at = models.DateTimeField(auto_now_add=True, blank=True, null=True, editable=False)
+    updated_at = models.DateTimeField(auto_now=True)
+    created_by = models.ForeignKey(User, on_delete=models.PROTECT, default=1, editable=False)
+
+    def __unicode__(self):
+        return self.__str__()
+
+    def __str__(self):
+        return "%s / %s" % (self.female_name, self.male_name)
+
+    class Meta:
+        verbose_name_plural = "Environmental Habits"
+        ordering = ['female_name']
+
+
 class Synonymy(models.Model):
     scientificName = models.CharField(max_length=300, blank=True, null=True)
     scientificNameDB = models.CharField(max_length=300, blank=True, null=True)
@@ -209,7 +247,7 @@ class CommonName(models.Model):
 class Region(models.Model):
     name = models.CharField(max_length=300, blank=True, null=True)
     key = models.CharField(max_length=3, blank=True, null=True)
-    order = models.IntegerField(blank=True, null=True)
+    order = models.IntegerField(blank=True, null=True, db_column="order")
     created_at = models.DateTimeField(auto_now_add=True, blank=True, null=True, editable=False)
     updated_at = models.DateTimeField(auto_now=True)
     created_by = models.ForeignKey(User, on_delete=models.PROTECT, default=1, editable=False)
@@ -228,7 +266,7 @@ class Region(models.Model):
 class ConservationState(models.Model):
     name = models.CharField(max_length=300, blank=True, null=True)
     key = models.CharField(max_length=3, blank=True, null=True)
-    order = models.IntegerField(blank=True, null=True)
+    order = models.IntegerField(blank=True, null=True, db_column="order")
     created_at = models.DateTimeField(auto_now_add=True, blank=True, null=True, editable=False)
     updated_at = models.DateTimeField(auto_now=True)
     created_by = models.ForeignKey(User, on_delete=models.PROTECT, default=1, editable=False)
@@ -262,7 +300,15 @@ class Species(models.Model):
     enArgentina = models.BooleanField(default=False)
     enBolivia = models.BooleanField(default=False)
     enPeru = models.BooleanField(default=False)
-    habito = models.ForeignKey(Habit, on_delete=models.CASCADE, blank=True, null=True)
+    habit = models.ForeignKey(Habit, on_delete=models.CASCADE, blank=True, null=True, db_column="habit")
+    plant_habit = models.ManyToManyField(
+        PlantHabit, blank=True,
+        db_column="plant_habit"
+    )
+    env_habit = models.ManyToManyField(
+        EnvironmentalHabit, blank=True,
+        db_column="environmental_habit"
+    )
     ciclo = models.ForeignKey(Ciclo, on_delete=models.CASCADE, blank=True, null=True)
     status = models.ForeignKey(Status, on_delete=models.CASCADE, blank=True, null=True)
     alturaMinima = models.IntegerField(blank=True, null=True)
@@ -274,7 +320,7 @@ class Species(models.Model):
     paginas = models.CharField(max_length=300, blank=True, null=True)
     anio = models.IntegerField(blank=True, null=True)
     synonymys = models.ManyToManyField(Synonymy, blank=True)
-    region_distribution = models.ManyToManyField(Region, blank=True)
+    region = models.ManyToManyField(Region, blank=True, db_column="region")
     id_mma = models.IntegerField(blank=True, null=True, help_text="")
     conservation_state = models.ManyToManyField(ConservationState, blank=True)
     created_at = models.DateTimeField(auto_now_add=True, blank=True, null=True, editable=False)
@@ -290,17 +336,17 @@ class Species(models.Model):
     def family(self):
         return self.genus.family
 
-    def orden(self):
-        return self.genus.family.orden
+    def order(self):
+        return self.genus.family.order
 
     def class_name(self):
-        return self.genus.family.orden.class_name
+        return self.genus.family.order.class_name
 
     def division(self):
-        return self.genus.family.orden.class_name.division
+        return self.genus.family.order.class_name.division
 
     def kingdom(self):
-        return self.genus.family.orden.class_name.division.kingdom
+        return self.genus.family.order.class_name.division.kingdom
 
     def __unicode__(self):
         return self.scientificName
@@ -329,7 +375,7 @@ class CatalogView(models.Model):
     kingdom = models.CharField(max_length=300, blank=True, null=True)
     division = models.CharField(max_length=300, blank=True, null=True)
     class_name = models.CharField(max_length=300, blank=True, null=True)
-    orden = models.CharField(max_length=300, blank=True, null=True)
+    order = models.CharField(max_length=300, blank=True, null=True, db_column="order")
     family = models.CharField(max_length=300, blank=True, null=True)
     genus = models.CharField(max_length=300, blank=True, null=True)
     scientificName = models.CharField(max_length=500, blank=True, null=True, help_text="sp")
@@ -345,7 +391,7 @@ class CatalogView(models.Model):
     enArgentina = models.BooleanField(default=False)
     enBolivia = models.BooleanField(default=False)
     enPeru = models.BooleanField(default=False)
-    habito = models.CharField(max_length=300, blank=True, null=True)
+    habit = models.CharField(max_length=300, blank=True, null=True, db_column="habit")
     ciclo = models.CharField(max_length=300, blank=True, null=True)
     status = models.CharField(max_length=300, blank=True, null=True)
     alturaMinima = models.IntegerField(blank=True, null=True)
@@ -414,8 +460,8 @@ class RegionDistributionView(models.Model):
     @classmethod
     def refresh_view(cl):
         with connection.cursor() as cursor:
-            cursor.execute("REFRESH MATERIALIZED VIEW CONCURRENTLY region_distribution_view")
+            cursor.execute("REFRESH MATERIALIZED VIEW CONCURRENTLY region_view")
 
     class Meta:
         managed = False
-        db_table = 'region_distribution_view'
+        db_table = 'region_view'

@@ -76,7 +76,7 @@
                     <tr>
                         <th>División</th>
                         <th>Clase</th>
-                        <th>Orden</th>
+                        <th>order</th>
                         <th>Familia</th>
                         <th>Nombre Científico Completo</th>
                         <th>Última Actualización</th>
@@ -92,11 +92,11 @@
                         <tr>
                             <td>{{ specie.division }}</td>
                             <td>{{ specie.class_name }}</td>
-                            <td>{{ specie.orden }}</td>
+                            <td>{{ specie.order }}</td>
                             <td>{{ specie.family }}</td>
                             <td>{{ specie.scientificNameFull }}</td>
                             <td>{{ specie.updated_at }}</td>
-                            <td>{{ specie.habito|default_if_none:"" }}</td>
+                            <td>{{ specie.habit|default_if_none:"" }}</td>
                             <td>{{ specie.ciclo|default_if_none:"" }}</td>
                             <td>{{ specie.status|default_if_none:"" }}</td>
                             <td>{{ specie.determined }}</td>

@@ -31,7 +31,7 @@ class OrderAdmin(ImportExportModelAdmin):
 
 @admin.register(Family)
 class FamilyAdmin(ImportExportModelAdmin):
-    list_display = (['name', 'orden', 'created_by', 'created_at', 'updated_at'])
+    list_display = (['name', 'order', 'created_by', 'created_at', 'updated_at'])
     search_fields = ['name']
 
 

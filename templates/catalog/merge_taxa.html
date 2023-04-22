@@ -5,7 +5,7 @@
 <script type="text/javascript">
   var common_names_1=[{% for common_name in taxa_1.common_names.all %} {{common_name.id}}, {% endfor %}];
   var synonymys_1=[{% for synonymy in taxa_1.synonymys.all %} {{synonymy.id}}, {% endfor %}];
-  var region_distribution_1=[{% for region in taxa_1.region_distribution.all %} {{region.id}}, {% endfor %}];
+  var region_1=[{% for region in taxa_1.region.all %} {{region.id}}, {% endfor %}];
   function get_taxa(id){
     $(document).ajaxSend(function() {
         $("#overlay").fadeIn(300);
@@ -15,8 +15,8 @@
      type: 'GET',
      success : function(response) {
       data=response[0].fields;
-      $("#taxon_habito").empty();
-      $("#taxon_habito").append(data.habito_name);
+      $("#taxon_habit").empty();
+      $("#taxon_habit").append(data.habit_name);
       $("#taxon_genus").empty();
       $("#taxon_genus").append(data.genus_name);
       $("#taxon_specificEpithet").empty();
@@ -65,8 +65,8 @@
       $("#taxon_common_names").append(data.common_names);
       $("#taxon_synonymys").empty();
       $("#taxon_synonymys").append(data.synonymys);
-      $("#taxon_region_distribution").empty();
-      $("#taxon_region_distribution").append(data.region_distribution);
+      $("#taxon_region").empty();
+      $("#taxon_region").append(data.region);
       $("#id_taxon_2").val(data.id);
       $(".selectpicker#id_common_names").val([]);
       common_names_1.forEach(function(common_name){
@@ -110,26 +110,26 @@
           }
           $(".selectpicker#id_synonymys").selectpicker('refresh');
       });
-      $(".selectpicker#id_region_distribution").val([]);
-      region_distribution_1.forEach(function(region){
-          var id_region_distribution = $(".selectpicker#id_region_distribution").val();
-          if(id_region_distribution.indexOf(region)==-1)
+      $(".selectpicker#id_region").val([]);
+      region_1.forEach(function(region){
+          var id_region = $(".selectpicker#id_region").val();
+          if(id_region.indexOf(region)==-1)
           {
-              id_region_distribution.push(region);
-              $(".selectpicker#id_region_distribution").val(id_region_distribution);
-              $("#id_region_distribution option[value="+region+"]").attr('selected', 'selected');
+              id_region.push(region);
+              $(".selectpicker#id_region").val(id_region);
+              $("#id_region option[value="+region+"]").attr('selected', 'selected');
           }
-          $(".selectpicker#id_region_distribution").selectpicker('refresh');
+          $(".selectpicker#id_region").selectpicker('refresh');
       });
-      data.region_distribution_2.forEach(function(region){ 
-          var id_region_distribution = $(".selectpicker#id_region_distribution").val();
-          if(id_region_distribution.indexOf(region)==-1)
+      data.region_2.forEach(function(region){
+          var id_region = $(".selectpicker#id_region").val();
+          if(id_region.indexOf(region)==-1)
           {
-              id_region_distribution.push(region);
-              $(".selectpicker#id_region_distribution").val(id_region_distribution);
-              $("#id_region_distribution option[value="+region+"]").attr('selected', 'selected');
+              id_region.push(region);
+              $(".selectpicker#id_region").val(id_region);
+              $("#id_region option[value="+region+"]").attr('selected', 'selected');
           }
-          $(".selectpicker#id_region_distribution").selectpicker('refresh');
+          $(".selectpicker#id_region").selectpicker('refresh');
       });
 
       $('#id_alturaMaxima').val(Math.max(data.alturaMaxima,{{taxa_1.alturaMaxima|default_if_none:""}}));
@@ -154,7 +154,7 @@
       $('.filter-option-inner-inner').eq(1).html($('.filter-option-inner-inner').eq(1).text().replace(/,/g, "<br>"));
   });
 
-  $('.selectpicker#id_region_distribution').on('rendered.bs.select', function() {
+  $('.selectpicker#id_region').on('rendered.bs.select', function() {
       $('.filter-option-inner-inner').eq(2).html($('.filter-option-inner-inner').eq(2).text().replace(/,/g, "<br>"));
   });
 
@@ -172,11 +172,11 @@
     values.forEach(element => $("#id_synonymys option[value="+element+"]").attr('selected', 'selected'));
   });
 
-  $('.selectpicker#id_region_distribution').on('change', function(){
-    var values = $('.selectpicker#id_region_distribution option:selected').map(function (idx, ele) {
+  $('.selectpicker#id_region').on('change', function(){
+    var values = $('.selectpicker#id_region option:selected').map(function (idx, ele) {
         return $(ele).val();
     }).get();
-    values.forEach(element => $("#id_region_distribution option[value="+element+"]").attr('selected', 'selected'));
+    values.forEach(element => $("#id_region option[value="+element+"]").attr('selected', 'selected'));
   });
 </script>
 {% endblock %}
@@ -220,9 +220,9 @@ Todos los vouchers asociados de ambos taxones son unificados en este nuevo taxa.
         <div class="table-responsive">
           <table class="table">
               <tr>
-                <td><strong>Habito</strong></td>
+                <td><strong>habit</strong></td>
                 <td>
-                  {{ taxa_1.habito }}
+                  {{ taxa_1.habit }}
                 </td>
               </tr>
               <tr>
@@ -370,7 +370,7 @@ Todos los vouchers asociados de ambos taxones son unificados en este nuevo taxa.
               <tr>
                 <td><strong>Distribución Regional</strong></td>
                 <td>
-                  {% for region in taxa_1.region_distribution.all %}
+                  {% for region in taxa_1.region.all %}
                     {{ region }},
                   {% endfor %}
                 </td>
@@ -389,9 +389,9 @@ Todos los vouchers asociados de ambos taxones son unificados en este nuevo taxa.
         <div class="table-responsive">
               <table class="table">
               <tr>
-                <td><strong>Habito</strong></td>
-                <td id="taxon_habito">
-                  {{ taxa_2.habito }}
+                <td><strong>habit</strong></td>
+                <td id="taxon_habit">
+                  {{ taxa_2.habit }}
                 </td>
               </tr>
               <tr>
@@ -538,8 +538,8 @@ Todos los vouchers asociados de ambos taxones son unificados en este nuevo taxa.
               </tr>
               <tr>
                 <td><strong>Distribución Regional</strong></td>
-                <td id="taxon_region_distribution">
-                  {% for region in taxa_2.region_distribution.all %}
+                <td id="taxon_region">
+                  {% for region in taxa_2.region.all %}
                     {{ region }},
                   {% endfor %}
                 </td>
@@ -564,9 +564,9 @@ Todos los vouchers asociados de ambos taxones son unificados en este nuevo taxa.
               {{ form.scientificNameFull }}
               <input type="hidden" name="id_taxon_2" value="" id="id_taxon_2">
               <div class="form-group row">
-                <label class="col-sm-2 col-form-label">Habito</label>
+                <label class="col-sm-2 col-form-label">habit</label>
                 <div class="col-sm-10">
-                  {{ form.habito }}
+                  {{ form.habit }}
                 </div>
               </div>
               <div class="form-group row">
@@ -710,7 +710,7 @@ Todos los vouchers asociados de ambos taxones son unificados en este nuevo taxa.
               <div class="form-group row">
                 <label class="col-sm-2 col-form-label">Distribución Regional</label>
                 <div class="col-sm-10">
-                  {{ form.region_distribution }}
+                  {{ form.region }}
                 </div>
               </div>
               <div class="form-group row">

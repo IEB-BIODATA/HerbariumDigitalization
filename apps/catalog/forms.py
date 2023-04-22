@@ -49,12 +49,12 @@ class FamilyForm(forms.ModelForm):
         model = Family
         fields = (
             'name',
-            'orden',
+            'order',
         )
 
         widgets = {
             'name': forms.TextInput(attrs={'required': True, 'class': "form-control"}),
-            'orden': forms.Select(attrs={'required': True, 'class': "form-control"}),
+            'order': forms.Select(attrs={'required': True, 'class': "form-control"}),
         }
 
 
@@ -109,14 +109,16 @@ class SpeciesForm(forms.ModelForm):
             'enArgentina',
             'enBolivia',
             'enPeru',
-            'habito',
+            'habit',
+            'plant_habit',
+            'env_habit',
             'ciclo',
             'status',
             'alturaMinima',
             'alturaMaxima',
             'synonymys',
             'common_names',
-            'region_distribution',
+            'region',
             'notas',
             'publicacion',
             'volumen',
@@ -143,7 +145,13 @@ class SpeciesForm(forms.ModelForm):
             'enArgentina': forms.CheckboxInput(attrs={'class': "form-check-input"}),
             'enBolivia': forms.CheckboxInput(attrs={'class': "form-check-input"}),
             'enPeru': forms.CheckboxInput(attrs={'class': "form-check-input"}),
-            'habito': forms.Select(attrs={'class': "form-control"}),
+            'habit': forms.Select(attrs={'class': "form-control"}),
+            'plant_habit': forms.SelectMultiple(
+                attrs={'class': "selectpicker", 'multiple data-live-search': 'true',
+                       'multiple data-multiple-separator': ' o '}),
+            'env_habit': forms.SelectMultiple(
+                attrs={'class': "selectpicker", 'multiple data-live-search': 'true',
+                       'multiple data-multiple-separator': ' o '}),
             'ciclo': forms.Select(attrs={'class': "form-control"}),
             'status': forms.Select(attrs={'class': "form-control"}),
             'alturaMinima': forms.TextInput(attrs={'class': "form-control", 'type': 'number'}),
@@ -152,7 +160,7 @@ class SpeciesForm(forms.ModelForm):
                                                      'multiple data-multiple-separator': ','}),
             'common_names': forms.SelectMultiple(attrs={'class': "selectpicker", 'multiple data-live-search': 'true',
                                                         'multiple data-multiple-separator': ','}),
-            'region_distribution': forms.SelectMultiple(
+            'region': forms.SelectMultiple(
                 attrs={'class': "selectpicker", 'multiple data-live-search': 'true',
                        'multiple data-multiple-separator': ','}),
             'notas': forms.Textarea(attrs={'class': "form-control", 'rows': 3, 'cols': 5}),
