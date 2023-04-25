@@ -1,10 +1,13 @@
+import logging
+from typing import Union, List
+
 from django.contrib.auth.models import User
 from rest_framework import serializers
 from rest_framework.serializers import HyperlinkedModelSerializer, ModelSerializer, CharField, ReadOnlyField, \
     SerializerMethodField
 
 from apps.catalog.models import Species, Family, Genus, Habit, Synonymy, Region, Division, Class_name, Order, Status, \
-    Ciclo, CommonName, ConservationState
+    Ciclo, CommonName, ConservationState, PlantHabit, EnvironmentalHabit
 from apps.digitalization.models import VoucherImported, GalleryImage
 
 
@@ -48,6 +51,18 @@ class HabitSerializer(HyperlinkedModelSerializer):
     class Meta:
         model = Habit
         fields = ['id', 'name', ]
+
+
+class PlantHabitSerializer(HyperlinkedModelSerializer):
+    class Meta:
+        model = PlantHabit
+        fields = ["id", "name", ]
+
+
+class EnvHabitSerializer(HyperlinkedModelSerializer):
+    class Meta:
+        model = EnvironmentalHabit
+        fields = ["id", "female_name", "male_name", ]
 
 
 class SpeciesSerializer(HyperlinkedModelSerializer):
@@ -101,20 +116,6 @@ class GallerySerializer(HyperlinkedModelSerializer):
         fields = ['id', 'species', 'image', 'taken_by', 'upload_at', ]  # 'licence', ]
 
 
-"""
-    def get_licence(self, obj):
-        licence = obj.licence_set.all()
-        response = LicenceSerializer(licence, many=True, context=self.context).data
-        return response
-
-
-class LicenceSerializer(ModelSerializer):
-    class Meta:
-        model = Licence
-        fields = ['name', ]
-"""
-
-
 class ConservationStateSerializer(HyperlinkedModelSerializer):
     class Meta:
         model = ConservationState
@@ -124,7 +125,7 @@ class ConservationStateSerializer(HyperlinkedModelSerializer):
 class SpecieSerializer(HyperlinkedModelSerializer):
     genus = ReadOnlyField(source='genus.name')
     genus_id = ReadOnlyField(source='genus.id')
-    habit = ReadOnlyField(source='habit.name')
+    habit = SerializerMethodField()
     ciclo = ReadOnlyField(source='ciclo.name')
     status = ReadOnlyField(source='status.name')
     synonymys = SynonymysSerializer(required=False, many=True)
@@ -174,6 +175,18 @@ class SpecieSerializer(HyperlinkedModelSerializer):
             "gallery": GallerySerializer(galleries_entries, many=True, context=self.context).data
         }
         return response
+
+    def get_habit(self, obj):
+        plant_habit = obj.plant_habit.all()
+        env_habit = get_habit_name(
+            obj.env_habit.all(),
+            env=True,
+            plant_habit=list(plant_habit)[-1]
+        )
+        if env_habit != "":
+            return "{} {}".format(get_habit_name(plant_habit), env_habit)
+        else:
+            return get_habit_name(plant_habit)
 
 
 class SynonymySerializer(HyperlinkedModelSerializer):
@@ -273,3 +286,26 @@ class CommonNameFinderSerializer(ModelSerializer):
     class Meta:
         model = CommonName
         fields = ['id', 'name', ]
+
+
+def get_habit_name(
+        habit: List[Union[PlantHabit, EnvironmentalHabit]],
+        env: bool = False,
+        plant_habit: PlantHabit = None
+) -> str:
+    if len(habit) == 0:
+        return ""
+    elif len(habit) == 1:
+        return env_habit_name(habit[0], plant_habit) if env else habit[0].name
+    else:
+        return "{} o {}".format(
+            env_habit_name(habit[0], plant_habit) if env else habit[0].name,
+            env_habit_name(habit[1], plant_habit) if env else habit[1].name,
+        )
+
+
+def env_habit_name(env_habit: EnvironmentalHabit, plant_habit: PlantHabit) -> str:
+    if plant_habit.id == 3:
+        return env_habit.female_name
+    else:
+        return env_habit.male_name

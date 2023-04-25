@@ -16,14 +16,14 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 
 from apps.catalog.models import Species, Synonymy, Family, Division, Class_name, Order, Habit, Status, Ciclo, Genus, \
-    CommonName, Region, ConservationState
+    CommonName, Region, ConservationState, PlantHabit, EnvironmentalHabit
 from apps.digitalization.models import VoucherImported, GalleryImage, BannerImage
 from web import settings
 from .serializers import SpecieSerializer, SynonymySerializer, SpeciesSerializer, SpeciesFinderSerializer, \
     SynonymysFinderSerializer, FamilysFinderSerializer, DivisionSerializer, ClassSerializer, OrderSerializer, \
     FamilySerializer, HabitSerializer, StatusSerializer, CicloSerializer, GenusFinderSerializer, \
     DistributionSerializer, ImagesSerializer, CommonNameFinderSerializer, RegionSerializer, ConservationStateSerializer, \
-    GalleryPhotosSerializer
+    GalleryPhotosSerializer, PlantHabitSerializer, EnvHabitSerializer
 
 
 class LimitPagination(MultipleModelLimitOffsetPagination):
@@ -329,6 +329,14 @@ class MenuFilterApiView(ObjectMultipleModelAPIView):
             "model": Habit,
             "serializer": HabitSerializer
         },
+        "plant_habit": {
+            "model": PlantHabit,
+            "serializer": PlantHabitSerializer
+        },
+        "env_habit": {
+            "model": EnvironmentalHabit,
+            "serializer": EnvHabitSerializer
+        },
         "status": {
             "model": Status,
             "serializer": StatusSerializer
@@ -385,9 +393,12 @@ class MenuFilterApiView(ObjectMultipleModelAPIView):
                             tag = "species__{}__".format(parameter_name)
                 logging.debug("Query: {}\tParameter: {}\n{}in".format(query_name, parameter_name, tag))
                 if len(parameters) > 0 and tag != "":
+                    if parameter_name == "plant_habit" and '2' in parameters:
+                        logging.debug("Adding 5 (Small tree) to 2 (tree) filter")
+                        parameters += ['5']
                     query &= Q(**{"{}in".format(tag): parameters})
                     logging.debug(query)
-            results = self.QUERIES[query_name]["model"].objects.filter(query).distinct().order_by('name')
+            results = self.QUERIES[query_name]["model"].objects.filter(query).distinct()  # .order_by('name')
             if limit != 0 and query_name not in list(self.QUERIES.keys())[0:2] + ["status"]:
                 results = results[:limit]
             querylist.append({
