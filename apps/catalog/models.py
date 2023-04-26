@@ -20,8 +20,8 @@ class Status(models.Model):
         ordering = ['name']
 
 
-class Ciclo(models.Model):
-    name = models.CharField(max_length=300, blank=True, null=True)
+class Cycle(models.Model):
+    name = models.CharField(max_length=100, blank=True, null=True)
     created_at = models.DateTimeField(auto_now_add=True, blank=True, null=True, editable=False)
     updated_at = models.DateTimeField(auto_now=True)
     created_by = models.ForeignKey(User, on_delete=models.PROTECT, default=1, editable=False)
@@ -144,23 +144,6 @@ class Genus(models.Model):
 
     class Meta:
         verbose_name_plural = "Genus"
-        ordering = ['name']
-
-
-class Habit(models.Model):
-    name = models.CharField(max_length=300, blank=True, null=True)
-    created_at = models.DateTimeField(auto_now_add=True, blank=True, null=True, editable=False)
-    updated_at = models.DateTimeField(auto_now=True)
-    created_by = models.ForeignKey(User, on_delete=models.PROTECT, default=1, editable=False)
-
-    def __unicode__(self):
-        return self.name
-
-    def __str__(self):
-        return "%s " % self.name
-
-    class Meta:
-        verbose_name_plural = "Habits"
         ordering = ['name']
 
 
@@ -300,7 +283,6 @@ class Species(models.Model):
     enArgentina = models.BooleanField(default=False)
     enBolivia = models.BooleanField(default=False)
     enPeru = models.BooleanField(default=False)
-    habit = models.ForeignKey(Habit, on_delete=models.CASCADE, blank=True, null=True, db_column="habit")
     plant_habit = models.ManyToManyField(
         PlantHabit, blank=True,
         db_column="plant_habit"
@@ -309,7 +291,10 @@ class Species(models.Model):
         EnvironmentalHabit, blank=True,
         db_column="environmental_habit"
     )
-    ciclo = models.ForeignKey(Ciclo, on_delete=models.CASCADE, blank=True, null=True)
+    cycle = models.ManyToManyField(
+        Cycle, blank=True,
+        db_column="cycle"
+    )
     status = models.ForeignKey(Status, on_delete=models.CASCADE, blank=True, null=True)
     alturaMinima = models.IntegerField(blank=True, null=True)
     alturaMaxima = models.IntegerField(blank=True, null=True)
@@ -391,8 +376,6 @@ class CatalogView(models.Model):
     enArgentina = models.BooleanField(default=False)
     enBolivia = models.BooleanField(default=False)
     enPeru = models.BooleanField(default=False)
-    habit = models.CharField(max_length=300, blank=True, null=True, db_column="habit")
-    ciclo = models.CharField(max_length=300, blank=True, null=True)
     status = models.CharField(max_length=300, blank=True, null=True)
     alturaMinima = models.IntegerField(blank=True, null=True)
     alturaMaxima = models.IntegerField(blank=True, null=True)
