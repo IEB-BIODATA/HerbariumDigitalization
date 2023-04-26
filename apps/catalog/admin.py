@@ -1,6 +1,6 @@
 from django.contrib import admin
 from import_export.admin import ImportExportModelAdmin
-from .models import Species, Synonymy, Kingdom, Division, Class_name, Order, Family, Genus, Habit, Region, Ciclo, \
+from .models import Species, Synonymy, Kingdom, Division, Class_name, Order, Family, Genus, Region, \
     Status, CommonName, ConservationState, Binnacle
 from .resources import SpeciesAdminResource
 
@@ -41,12 +41,6 @@ class GenusAdmin(ImportExportModelAdmin):
     search_fields = ['name']
 
 
-@admin.register(Habit)
-class HabitAdmin(ImportExportModelAdmin):
-    list_display = (['name', 'created_by', 'created_at', 'updated_at'])
-    search_fields = ['name']
-
-
 @admin.register(Species)
 class SpeciesAdmin(ImportExportModelAdmin):
     resource_class = SpeciesAdminResource
@@ -62,12 +56,6 @@ class SynonymyAdmin(ImportExportModelAdmin):
 
 @admin.register(Region)
 class RegionAdmin(ImportExportModelAdmin):
-    list_display = (['name', 'created_by', 'created_at', 'updated_at'])
-    search_fields = ['name']
-
-
-@admin.register(Ciclo)
-class CicloAdmin(ImportExportModelAdmin):
     list_display = (['name', 'created_by', 'created_at', 'updated_at'])
     search_fields = ['name']
 

@@ -199,15 +199,24 @@ def upload_priority_vouchers_file(request):
     if request.method == 'POST':
         form = LoadPriorityVoucherForm(request.user, request.POST, request.FILES)
         if form.is_valid():
+            logging.info("Upload priority voucher valid")
             file_form = form.save()
             file_form.created_by = request.user
             file_form.created_at = datetime.now(tz=pytz.timezone('America/Santiago'))
+            logging.info("Loading vouchers...")
             data = load_vouchers(file_form, request.user)
             if json.loads(data['response'])['result'] == 'error':
+                logging.error("Error on load")
+                logging.error(data['response'])
                 file_form.delete()
             else:
+                logging.info("Priority vouchers upload correctly")
                 file_form.save()
             return HttpResponse(json.dumps(data), content_type="application/json")
+        else:
+            logging.error("Error uploading priority voucher by {}".format(request.user))
+            logging.error(form.errors)
+            return HttpResponseBadRequest(content=form.errors)
 
 
 @login_required

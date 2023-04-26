@@ -15,15 +15,15 @@ from rest_framework.renderers import JSONRenderer
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
-from apps.catalog.models import Species, Synonymy, Family, Division, Class_name, Order, Habit, Status, Ciclo, Genus, \
-    CommonName, Region, ConservationState
+from apps.catalog.models import Species, Synonymy, Family, Division, Class_name, Order, Status, Genus, \
+    CommonName, Region, ConservationState, PlantHabit, EnvironmentalHabit, Cycle
 from apps.digitalization.models import VoucherImported, GalleryImage, BannerImage
 from web import settings
 from .serializers import SpecieSerializer, SynonymySerializer, SpeciesSerializer, SpeciesFinderSerializer, \
     SynonymysFinderSerializer, FamilysFinderSerializer, DivisionSerializer, ClassSerializer, OrderSerializer, \
-    FamilySerializer, HabitSerializer, StatusSerializer, CicloSerializer, GenusFinderSerializer, \
+    FamilySerializer, StatusSerializer, GenusFinderSerializer, \
     DistributionSerializer, ImagesSerializer, CommonNameFinderSerializer, RegionSerializer, ConservationStateSerializer, \
-    GalleryPhotosSerializer
+    GalleryPhotosSerializer, PlantHabitSerializer, EnvHabitSerializer, CycleSerializer
 
 
 class LimitPagination(MultipleModelLimitOffsetPagination):
@@ -84,19 +84,6 @@ class FamilyList(ListAPIView):
             items = Family.objects.all()[:int(limit)]
         families = FamilySerializer(items, many=True)
         return Response(status=status.HTTP_200_OK, data=families.data)
-
-
-class HabitList(ListAPIView):
-    serializer_class = HabitSerializer
-    queryset = Habit.objects.all()
-
-    def get(self, request, limit=None, **kwargs):
-        if int(limit) == 0:
-            items = Habit.objects.all()
-        else:
-            items = Habit.objects.all()[:int(limit)]
-        habits = HabitSerializer(items, many=True)
-        return Response(status=status.HTTP_200_OK, data=habits.data)
 
 
 class SpeciesList(ListAPIView):
@@ -226,10 +213,14 @@ class SpeciesFilterApiView(FlatMultipleModelAPIView):
         if family:
             query_species &= Q(genus__family_id__in=family)
             query_synonymy &= Q(species__genus__family_id__in=family)
-        habit = self.request.query_params.getlist('habit')
-        if habit:
-            query_species &= Q(habit_id__in=habit)
-            query_synonymy &= Q(species__habit_id__in=habit)
+        plant_habit = self.request.query_params.getlist('plant_habit')
+        if plant_habit:
+            query_species &= Q(plant_habit__in=plant_habit)
+            query_synonymy &= Q(species__plant_habit__in=plant_habit)
+        env_habit = self.request.query_params.getlist('env_habit')
+        if env_habit:
+            query_species &= Q(env_habit__in=env_habit)
+            query_synonymy &= Q(species__env_habit__in=env_habit)
         genus = self.request.query_params.getlist('genus')
         if genus:
             query_species &= Q(genus_id__in=genus)
@@ -298,7 +289,8 @@ class MenuApiView(ObjectMultipleModelAPIView):
             {'queryset': Class_name.objects.all().order_by('name'), 'serializer_class': ClassSerializer},
             {'queryset': Order.objects.all().order_by('name')[:5], 'serializer_class': OrderSerializer},
             {'queryset': Family.objects.all().order_by('name')[:5], 'serializer_class': FamilySerializer},
-            {'queryset': Habit.objects.all().order_by('name')[:5], 'serializer_class': HabitSerializer},
+            {'queryset': PlantHabit.objects.all().order_by('name')[:5], 'serializer_class': PlantHabitSerializer},
+            {'queryset': EnvironmentalHabit.objects.all().order_by('name')[:5], 'serializer_class': EnvHabitSerializer},
             {'queryset': Region.objects.all().order_by('name')[:5], 'serializer_class': RegionSerializer},
             {'queryset': ConservationState.objects.all().order_by('order')[:5],
              'serializer_class': ConservationStateSerializer},
@@ -325,17 +317,21 @@ class MenuFilterApiView(ObjectMultipleModelAPIView):
             "model": Family,
             "serializer": FamilySerializer
         },
-        "habit": {
-            "model": Habit,
-            "serializer": HabitSerializer
+        "plant_habit": {
+            "model": PlantHabit,
+            "serializer": PlantHabitSerializer
+        },
+        "env_habit": {
+            "model": EnvironmentalHabit,
+            "serializer": EnvHabitSerializer
         },
         "status": {
             "model": Status,
             "serializer": StatusSerializer
         },
-        "ciclo": {
-            "model": Ciclo,
-            "serializer": CicloSerializer
+        "cycle": {
+            "model": Cycle,
+            "serializer": CycleSerializer
         },
         "region": {
             "model": Region,
@@ -385,9 +381,12 @@ class MenuFilterApiView(ObjectMultipleModelAPIView):
                             tag = "species__{}__".format(parameter_name)
                 logging.debug("Query: {}\tParameter: {}\n{}in".format(query_name, parameter_name, tag))
                 if len(parameters) > 0 and tag != "":
+                    if parameter_name == "plant_habit" and '2' in parameters:
+                        logging.debug("Adding 5 (Small tree) to 2 (tree) filter")
+                        parameters += ['5']
                     query &= Q(**{"{}in".format(tag): parameters})
                     logging.debug(query)
-            results = self.QUERIES[query_name]["model"].objects.filter(query).distinct().order_by('name')
+            results = self.QUERIES[query_name]["model"].objects.filter(query).distinct()  # .order_by('name')
             if limit != 0 and query_name not in list(self.QUERIES.keys())[0:2] + ["status"]:
                 results = results[:limit]
             querylist.append({

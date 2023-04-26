@@ -2,6 +2,7 @@ import json
 import logging
 import re
 import textwrap
+import urllib
 
 import pandas as pd
 import tablib
