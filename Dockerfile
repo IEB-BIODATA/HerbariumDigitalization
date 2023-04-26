@@ -36,5 +36,6 @@ ENTRYPOINT [ \
     "--bind", "0.0.0.0:8000", \
     "--log-level", "debug", \
     "--access-logformat", "'%(h)s %(l)s %(u)s %(t)s \"%(r)s\" %(s)s %(b)s \"%(f)s\" \"%(a)s\" %(L)s \"%({header_name}i)s\"'", \
-    "--access-logfile", "/var/log/gunicorn/access.log" \
+    "--access-logfile", "/var/log/gunicorn/access.log", \
+    "--workers=2" \
 ]
