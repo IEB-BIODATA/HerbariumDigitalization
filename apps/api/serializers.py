@@ -171,15 +171,18 @@ class SpecieSerializer(HyperlinkedModelSerializer):
 
     def get_habit(self, obj):
         plant_habit = obj.plant_habit.all()
-        env_habit = get_habit_name(
-            obj.env_habit.all(),
-            env=True,
-            plant_habit=list(plant_habit)[-1]
-        )
-        if env_habit != "":
-            return "{} {}".format(get_habit_name(plant_habit), env_habit)
+        if len(list(plant_habit)) > 0:
+            env_habit = get_habit_name(
+                obj.env_habit.all(),
+                env=True,
+                plant_habit=list(plant_habit)[-1]
+            )
+            if env_habit != "":
+                return "{} {}".format(get_habit_name(plant_habit), env_habit)
+            else:
+                return get_habit_name(plant_habit)
         else:
-            return get_habit_name(plant_habit)
+            return ""
 
     def get_cycle(self, obj):
         cycles = list(obj.cycle.all())
@@ -230,15 +233,18 @@ class SpeciesFinderSerializer(ModelSerializer):
 
     def get_habit(self, obj):
         plant_habit = obj.plant_habit.all()
-        env_habit = get_habit_name(
-            obj.env_habit.all(),
-            env=True,
-            plant_habit=list(plant_habit)[-1]
-        )
-        if env_habit != "":
-            return "{} {}".format(get_habit_name(plant_habit), env_habit)
+        if len(list(plant_habit)) > 0:
+            env_habit = get_habit_name(
+                obj.env_habit.all(),
+                env=True,
+                plant_habit=list(plant_habit)[-1]
+            )
+            if env_habit != "":
+                return "{} {}".format(get_habit_name(plant_habit), env_habit)
+            else:
+                return get_habit_name(plant_habit)
         else:
-            return get_habit_name(plant_habit)
+            return ""
 
 
 class SynonymysFinderSerializer(ModelSerializer):

@@ -235,8 +235,8 @@ class SpeciesFilterApiView(FlatMultipleModelAPIView):
             query_synonymy &= Q(species__status__in=status)
         cycle = self.request.query_params.getlist('cycle')
         if cycle:
-            query_species &= Q(ciclo__in=cycle)
-            query_synonymy &= Q(species__ciclo__in=cycle)
+            query_species &= Q(cycle__in=cycle)
+            query_synonymy &= Q(species__cycle__in=cycle)
         region = self.request.query_params.getlist('region')
         if region:
             query_species &= Q(region__in=region)
@@ -516,8 +516,8 @@ class SpeciesCountView(APIView):
             query_synonymy &= Q(species__status__in=status)
         cycle = self.request.query_params.getlist('cycle')
         if cycle:
-            query_species &= Q(ciclo__in=cycle)
-            query_synonymy &= Q(species__ciclo__in=cycle)
+            query_species &= Q(cycle__in=cycle)
+            query_synonymy &= Q(species__cycle__in=cycle)
         region = self.request.query_params.getlist('region')
         if region:
             query_species &= Q(region__in=region)
