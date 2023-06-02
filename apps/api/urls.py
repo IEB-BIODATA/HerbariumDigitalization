@@ -45,5 +45,6 @@ urlpatterns = [
     re_path(r'^total_images/$', TotalImages.as_view()),
     re_path(r'^total_species/$', TotalSpecies.as_view()),
     re_path(r'^banner/(?P<specie_id>\d+)/$', BannerSpecie.as_view()),
+    re_path(r'^names/$', views.get_names, name='get_names'),
     re_path(r'^login$', views.login, name='login'),
 ]

@@ -1,120 +1,25 @@
 import json
 import logging
 import re
-import textwrap
-import urllib
 
 import pandas as pd
 import tablib
-from PIL import Image, ImageFont, ImageDraw
 from django.contrib.auth.decorators import login_required
 from django.core import serializers
+from django.core.paginator import Paginator
+from django.db.models import Q
 from django.forms.utils import ErrorList
-from django.http import HttpResponse
+from django.http import HttpResponse, JsonResponse
 from django.shortcuts import render, redirect
 
 from apps.digitalization.models import VoucherImported
 from .forms import DivisionForm, ClassForm, OrderForm, FamilyForm, GenusForm, SpeciesForm, SynonymyForm, BinnacleForm, \
     CommonNameForm
 from .models import Species, CatalogView, SynonymyView, RegionDistributionView, Division, Class_name, Order, Family, \
-    Genus, Synonymy, Region, CommonName, Binnacle
-
-
-def generate_etiquete(id):
-    voucher = VoucherImported.objects.get(id=id)
-    file = urllib.request.urlretrieve(voucher.image.url, voucher.occurrenceID.code.replace(':', '_') + '.jpg')
-    voucher_image = Image.open(voucher.occurrenceID.code.replace(':', '_') + '.jpg')
-    voucher_image_editable = ImageDraw.Draw(voucher_image)
-    herbarium_code = voucher.herbarium.collection_code
-    herbarium_name = voucher.herbarium.name
-    scientificNameFull = voucher.scientificName.scientificNameFull
-    family = voucher.scientificName.genus.family.name.title()
-    catalogNumber = voucher.catalogNumber
-    recordNumber = voucher.recordNumber
-    recordedBy = voucher.recordedBy
-    locality = voucher.locality
-    identifiedBy = voucher.identifiedBy
-    dateIdentified = voucher.dateIdentified
-    georeferencedDate = voucher.georeferencedDate.strftime('%d-%m-%Y')
-    organismRemarks = voucher.organismRemarks
-    if herbarium_code == 'CONC':
-        delta_x = 0
-        delta_y = 230
-        shape = [(2046 + delta_x, 4384 + delta_y), (3915 + delta_x, 5528 + delta_y)]
-        voucher_image_editable.rectangle(shape, fill='#d7d6e0', outline="black", width=4)
-        title_font = ImageFont.truetype('static/font/arial.ttf', 70)
-        voucher_image_editable.text((((4000 - 2150) / 2) + 2150 + delta_x, 4530 + delta_y), herbarium_name, (0, 0, 0),
-                                    anchor="ms", font=title_font, stroke_width=2, stroke_fill="black")
-        number_font = ImageFont.truetype('static/font/arial.ttf', 55)
-        voucher_image_editable.text((2250 + delta_x, 4660 + delta_y), herbarium_code + ' ' + str(catalogNumber),
-                                    (0, 0, 0), font=number_font, stroke_width=2, stroke_fill="black")
-        scientificName_font = ImageFont.truetype('static/font/arial_italic.ttf', 48)
-        voucher_image_editable.text((((4000 - 2150) / 2) + 2150 + delta_x, 4810 + delta_y), scientificNameFull + ' ',
-                                    (0, 0, 0), anchor="ms", font=scientificName_font)
-        normal_font = ImageFont.truetype('static/font/arial.ttf', 48)
-        voucher_image_editable.text((((4000 - 2150) / 2) + 2150 + delta_x, 4870 + delta_y), family, (0, 0, 0),
-                                    anchor="ms", font=normal_font)
-
-        if locality:
-            voucher_image_editable.text((2250 + delta_x, 4980 + delta_y), locality, (0, 0, 0), font=normal_font)
-
-        voucher_image_editable.text((2250 + delta_x, 5130 + delta_y), 'Fecha Col. ' + georeferencedDate, (0, 0, 0),
-                                    font=normal_font)
-        voucher_image_editable.text((2900 + delta_x, 5130 + delta_y), 'Leg. ' + recordedBy + ' ' + recordNumber,
-                                    (0, 0, 0), font=normal_font)
-
-        if dateIdentified:
-            voucher_image_editable.text((2250 + delta_x, 5200 + delta_y), 'Fecha Det. ' + str(dateIdentified),
-                                        (0, 0, 0), font=normal_font)
-
-        if identifiedBy:
-            voucher_image_editable.text((2900 + delta_x, 5200 + delta_y), 'Det. ' + str(identifiedBy), (0, 0, 0),
-                                        font=normal_font)
-
-        if organismRemarks and organismRemarks != 'nan':
-            observation = textwrap.fill(str(organismRemarks), width=60, break_long_words=False)
-            voucher_image_editable.text((2250 + delta_x, 5350 + delta_y), 'Obs.: ' + observation, (0, 0, 0),
-                                        font=normal_font)
-    else:
-        shape = [(2150, 4650), (4000, 5690)]
-        voucher_image_editable.rectangle(shape, fill='#d7d6e0', outline="black", width=4)
-        title_font = ImageFont.truetype('static/font/arial.ttf', 70)
-        voucher_image_editable.text((((4000 - 2150) / 2) + 2150, 4800), herbarium_name, (0, 0, 0), anchor="ms",
-                                    font=title_font, stroke_width=2, stroke_fill="black")
-        number_font = ImageFont.truetype('static/font/arial.ttf', 55)
-        voucher_image_editable.text((2250, 4900), herbarium_code + ' ' + str(catalogNumber), (0, 0, 0),
-                                    font=number_font, stroke_width=2, stroke_fill="black")
-        scientificName_font = ImageFont.truetype('static/font/arial_italic.ttf', 48)
-        voucher_image_editable.text((((4000 - 2150) / 2) + 2150, 5000), scientificNameFull, (0, 0, 0), anchor="ms",
-                                    font=scientificName_font)
-        normal_font = ImageFont.truetype('static/font/arial.ttf', 48)
-        voucher_image_editable.text((((4000 - 2150) / 2) + 2150, 5070), family, (0, 0, 0), anchor="ms",
-                                    font=normal_font)
-
-        if locality:
-            voucher_image_editable.text((2250, 5170), locality, (0, 0, 0), font=normal_font)
-
-        voucher_image_editable.text((2250, 5270), 'Fecha Col. ' + georeferencedDate, (0, 0, 0), font=normal_font)
-        voucher_image_editable.text((2900, 5270), 'Leg. ' + recordedBy + ' ' + recordNumber, (0, 0, 0),
-                                    font=normal_font)
-
-        if dateIdentified:
-            voucher_image_editable.text((2250, 5340), 'Fecha Det. ' + str(dateIdentified), (0, 0, 0), font=normal_font)
-
-        if identifiedBy:
-            voucher_image_editable.text((2900, 5340), 'Det. ' + str(identifiedBy), (0, 0, 0), font=normal_font)
-
-        if organismRemarks and organismRemarks != 'nan':
-            observation = textwrap.fill(str(organismRemarks), width=60, break_long_words=False)
-            voucher_image_editable.text((2250, 5440), 'Obs.: ' + observation, (0, 0, 0), font=normal_font)
-
-    voucher_image.save(voucher_image.filename.replace(".jpg", "_public.jpg"))
-    buffer = BytesIO()
-    voucher_image.save(buffer, "JPEG")
-    image_file = InMemoryUploadedFile(buffer, None, voucher_image.filename, 'image/jpeg', buffer.tell, None)
-    voucher.image_public.save(voucher_image.filename, image_file)
-    voucher.save()
-    return voucher_image.filename.replace(".jpg", "_public.jpg")
+    Genus, Synonymy, Region, CommonName, Binnacle, PlantHabit, EnvironmentalHabit, Cycle
+from .utils import generate_etiquete
+from .tasks import update_voucher_name
+from ..api.serializers import SynonymySerializer, SpeciesSerializer
 
 
 @login_required
@@ -617,8 +522,15 @@ def create_taxa(request):
     return render(request, 'catalog/create_taxa.html', {'form': form})
 
 
-def update_taxa(request, id):
-    species = Species.objects.get(id=id)
+def update_taxa(request, specie_id):
+    species = Species.objects.get(id=specie_id)
+    warnings = list()
+    if species.galleryimage_set.exists():
+        warnings.append("gallery")
+    if species.voucherimported_set.exists():
+        warnings.append("voucher")
+    if species.synonymys.exists():
+        warnings.append("synonymy")
     genus_preview = species.genus
     specificEpithet_preview = species.specificEpithet
     scientificNameAuthorship_preview = species.scientificNameAuthorship
@@ -705,18 +617,36 @@ def update_taxa(request, id):
             except Exception as e:
                 logging.error(e, exc_info=True)
                 pass
-    return render(request, 'catalog/update_taxa.html', {'form': form, 'id': id})
+    return render(request, 'catalog/update_taxa.html', {
+        'form': form,
+        'specie_id': specie_id,
+        'species_name': species.scientificNameFull,
+        'warnings': warnings
+    })
 
 
-def delete_taxa(request, id):
-    species = Species.objects.get(id=id)
+def delete_taxa(request, species_id):
+    species = Species.objects.get(id=species_id)
+    name = species.scientificNameFull
     try:
+        logging.info("Taxa to be deleted {}:{}".format(
+            species_id, name
+        ))
         species.delete()
+        binnacle = Binnacle(
+            type_update="Eliminación", model="Taxón",
+            description="Se elimina Taxón {}".format(name),
+            created_by=request.user
+        )
+        binnacle.save()
         CatalogView.refresh_view()
         SynonymyView.refresh_view()
         RegionDistributionView.refresh_view()
-    except:
-        pass
+    except Exception as e:
+        logging.error("Error deleting species {}:{}".format(
+            species_id, name
+        ))
+        logging.error(e, exc_info=True)
     return redirect('list_taxa')
 
 
@@ -905,13 +835,35 @@ def merge_taxa(request, id):
 
 
 @login_required
-def split_1_taxa(request, id):
-    taxa_1 = Species.objects.get(id=id)
+def split_1_taxa(request, specie_id):
+    taxa_1 = Species.objects.get(id=specie_id)
     form_taxa_1 = SpeciesForm(instance=taxa_1)
     if request.method == "POST":
         form_taxa_1 = SpeciesForm(request.POST)
         if form_taxa_1.is_valid():
             specie_1 = form_taxa_1.save(commit=False)
+
+            new_synonymy = Synonymy.objects.create(
+                scientificName=taxa_1.scientificName,
+                scientificNameDB=taxa_1.scientificNameDB,
+                scientificNameFull=taxa_1.scientificNameFull,
+                genus=taxa_1.genus,
+                specificEpithet=taxa_1.specificEpithet,
+                scientificNameAuthorship=taxa_1.scientificNameAuthorship,
+                subespecie=taxa_1.subespecie,
+                autoresSsp=taxa_1.autoresSsp,
+                variedad=taxa_1.variedad,
+                autoresVariedad=taxa_1.autoresVariedad,
+                forma=taxa_1.forma,
+                autoresForma=taxa_1.autoresForma,
+                created_at=taxa_1.created_at,
+                created_by=taxa_1.created_by
+            )
+
+            logging.info("New synonym (id: {}) created from species `{}`".format(
+                new_synonymy.id,
+                taxa_1.scientificName,
+            ))
 
             genus = str(specie_1.genus).capitalize()
             specificEpithet = str(specie_1.specificEpithet)
@@ -939,68 +891,78 @@ def split_1_taxa(request, id):
             if specie_1.autoresForma != None:
                 scientificNameFull += " fma. " + forma + " " + autoresForma
 
-            specie_new_1 = Species(
-                id_taxa=specie_1.id_taxa,
-                genus=specie_1.genus,
-                scientificName=scientificName,
-                scientificNameDB=scientificName.upper(),
-                scientificNameFull=scientificNameFull,
-                specificEpithet=specie_1.specificEpithet,
-                scientificNameAuthorship=specie_1.scientificNameAuthorship,
-                subespecie=specie_1.subespecie,
-                autoresSsp=specie_1.autoresSsp,
-                variedad=specie_1.variedad,
-                autoresVariedad=specie_1.autoresVariedad,
-                forma=specie_1.forma,
-                autoresForma=specie_1.autoresForma,
-                enArgentina=specie_1.enArgentina,
-                enBolivia=specie_1.enBolivia,
-                enPeru=specie_1.enPeru,
-                habit=specie_1.habit,
-                ciclo=specie_1.ciclo,
-                status=specie_1.status,
-                alturaMinima=specie_1.alturaMinima,
-                alturaMaxima=specie_1.alturaMaxima,
-                notas=specie_1.notas,
-                id_tipo=specie_1.id_tipo,
-                publicacion=specie_1.publicacion,
-                volumen=specie_1.volumen,
-                paginas=specie_1.paginas,
-                anio=specie_1.anio,
-                determined=True
-            )
+            taxa_1.genus = specie_1.genus
+            taxa_1.scientificName = scientificName
+            taxa_1.scientificNameDB = scientificName.upper()
+            taxa_1.scientificNameFull = scientificNameFull
+            taxa_1.specificEpithet = specie_1.specificEpithet
+            taxa_1.scientificNameAuthorship = specie_1.scientificNameAuthorship
+            taxa_1.subespecie = specie_1.subespecie
+            taxa_1.autoresSsp = specie_1.autoresSsp
+            taxa_1.variedad = specie_1.variedad
+            taxa_1.autoresVariedad = specie_1.autoresVariedad
+            taxa_1.forma = specie_1.forma
+            taxa_1.autoresForma = specie_1.autoresForma
+            taxa_1.status = specie_1.status
+            taxa_1.enArgentina = specie_1.enArgentina
+            taxa_1.enBolivia = specie_1.enBolivia
+            taxa_1.enPeru = specie_1.enPeru
+            taxa_1.status = specie_1.status
+            taxa_1.alturaMinima = specie_1.alturaMinima
+            taxa_1.alturaMaxima = specie_1.alturaMaxima
+            taxa_1.notas = specie_1.notas
+            taxa_1.id_tipo = specie_1.id_tipo
+            taxa_1.publicacion = specie_1.publicacion
+            taxa_1.volumen = specie_1.volumen
+            taxa_1.paginas = specie_1.paginas
+            taxa_1.anio = specie_1.anio
+            taxa_1.determined = specie_1.determined
 
-            specie_new_1.save()
+            plant_habit = request.POST.getlist('plant_habit')
+            for habit in plant_habit:
+                taxa_1.plant_habit.add(PlantHabit.objects.get(id=habit))
+
+            env_habit = request.POST.getlist('env_habit')
+            for habit in env_habit:
+                taxa_1.env_habit.add(EnvironmentalHabit.objects.get(id=habit))
+
+            cycles = request.POST.getlist('cycle')
+            for cycle in cycles:
+                taxa_1.cycle.add(Cycle.objects.get(id=cycle))
 
             common_names = request.POST.getlist('common_names')
             for common_name in common_names:
-                specie_new_1.common_names.add(CommonName.objects.get(id=common_name))
+                taxa_1.common_names.add(CommonName.objects.get(id=common_name))
 
             synonymys = request.POST.getlist('synonymys')
             for synonymy in synonymys:
-                specie_new_1.synonymys.add(Synonymy.objects.get(id=synonymy))
+                taxa_1.synonymys.add(Synonymy.objects.get(id=synonymy))
+            taxa_1.synonymys.add(new_synonymy)
 
             region = request.POST.getlist('region')
             for region in region:
-                specie_new_1.region.add(Region.objects.get(id=region))
+                taxa_1.region.add(Region.objects.get(id=region))
 
-            taxon_1 = Species.objects.get(id=id)
-
-            specie_new_1.save()
+            taxa_1.save()
+            logging.info("Species `{}` updated to `{}`".format(
+                taxa_1.id,
+                taxa_1.scientificName
+            ))
 
             binnacle = Binnacle(
                 type_update="División 1",
                 model="Especie",
-                description="Se divide en una nueva Especie " + taxon_1.scientificName + " en " + specie_new_1.scientificName,
+                description="Se divide en una nueva Especie {} en {}".format(
+                    new_synonymy.scientificName,
+                    taxa_1.scientificName
+                ),
                 created_by=request.user
             )
             binnacle.save()
 
-            VoucherImported.objects.filter(scientificName=taxon_1.id).update(scientificName=specie_new_1.id)
-
-            vouchers = VoucherImported.objects.filter(occurrenceID__voucher_state=7, scientificName__id=specie_new_1.id)
-            for voucher in vouchers:
-                generate_etiquete(voucher.id)
+            vouchers = VoucherImported.objects.filter(occurrenceID__voucher_state=7, scientificName__id=taxa_1.id)
+            logging.info("Updating name on images")
+            update_voucher_name.delay([voucher.id for voucher in vouchers])
 
             CatalogView.refresh_view()
             SynonymyView.refresh_view()
@@ -1009,7 +971,7 @@ def split_1_taxa(request, id):
             return redirect('list_taxa')
 
     return render(request, 'catalog/split_1_taxa.html',
-                  {'form_taxa_1': form_taxa_1, 'taxa_1': taxa_1, 'id_taxon_1': id})
+                  {'form_taxa_1': form_taxa_1, 'taxa_1': taxa_1, 'id_taxon_1': specie_id})
 
 
 @login_required
@@ -1265,8 +1227,36 @@ def get_taxa(request, id):
 
 @login_required
 def list_synonymy(request):
+    return render(request, 'catalog/list_synonymy.html')
+
+
+def synonymy_table(request):
     synonymys = Synonymy.objects.all()
-    return render(request, 'catalog/list_synonymy.html', {'synonymys': synonymys})
+
+    search_value = request.GET.get('search[value]', None)
+    if search_value:
+        synonymys = synonymys.filter(
+            Q(scientificNameFull__icontains=search_value)
+        )
+
+    paginator = Paginator(synonymys, request.GET.get('length', 10))
+    page_number = int(request.GET.get('start', 0)) // int(request.GET.get('length', 10)) + 1
+    page_obj = paginator.get_page(page_number)
+    data = list()
+
+    for item in page_obj:
+        data.append(SynonymySerializer(
+            instance=item,
+            many=False,
+            context=request
+        ).data)
+
+    return JsonResponse({
+        'draw': int(request.GET.get('draw', 0)),
+        'recordsTotal': synonymys.count(),
+        'recordsFiltered': paginator.count,
+        'data': data,
+    })
 
 
 def create_synonymy(request):
@@ -1385,10 +1375,18 @@ def delete_synonymy(request, id):
         binnacle = Binnacle(type_update="Eliminación", model="Sinónimo",
                             description="Se elimina Sinónimo " + synonymy.scientificName, created_by=request.user)
         binnacle.save()
+        logging.info("Synonym to be deleted {}:{}".format(
+            synonymy.id,
+            synonymy.scientificNameFull
+        ))
         synonymy.delete()
         SynonymyView.refresh_view()
-    except:
-        pass
+    except Exception as e:
+        logging.error("Error deleting synonym {}:{}".format(
+            synonymy.id,
+            synonymy.scientificNameFull
+        ))
+        logging.error(e, exc_info=True)
     return redirect('list_synonymy')
 
 

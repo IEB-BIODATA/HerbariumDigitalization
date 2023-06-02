@@ -37,5 +37,6 @@ ENTRYPOINT [ \
     "--log-level", "debug", \
     "--access-logformat", "'%(h)s %(l)s %(u)s %(t)s \"%(r)s\" %(s)s %(b)s \"%(f)s\" \"%(a)s\" %(L)s \"%({header_name}i)s\"'", \
     "--access-logfile", "/var/log/gunicorn/access.log", \
-    "--workers=2" \
+    "--workers=2", \
+    "--preload" \
 ]

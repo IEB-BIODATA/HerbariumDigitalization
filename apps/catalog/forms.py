@@ -124,11 +124,12 @@ class SpeciesForm(forms.ModelForm):
             'paginas',
             'id_tipo',
             'conservation_state',
+            'determined',
             'id_mma',
         )
 
         widgets = {
-            'id_taxa': forms.TextInput(attrs={'class': "form-control", 'readonly': 'true'}),
+            'id_taxa': forms.HiddenInput(),
             'genus': forms.Select(attrs={'class': "form-control"}),
             'scientificName': forms.HiddenInput(),
             'scientificNameFull': forms.HiddenInput(),
@@ -171,6 +172,7 @@ class SpeciesForm(forms.ModelForm):
             'conservation_state': forms.SelectMultiple(
                 attrs={'class': "selectpicker", 'multiple data-live-search': 'true',
                        'multiple data-multiple-separator': ','}),
+            'determined': forms.CheckboxInput(attrs={'class': "form-check-input"}),
             'id_mma': forms.TextInput(attrs={'class': "form-control"}),
         }
 

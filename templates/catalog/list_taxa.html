@@ -76,7 +76,7 @@
                     <tr>
                         <th>División</th>
                         <th>Clase</th>
-                        <th>order</th>
+                        <th>Orden</th>
                         <th>Familia</th>
                         <th>Nombre Científico Completo</th>
                         <th>Última Actualización</th>
@@ -97,11 +97,10 @@
                             <td>{{ specie.status|default_if_none:"" }}</td>
                             <td>{{ specie.determined }}</td>
                             <td style="width: 10%">
-                                <a href="{% url 'update_taxa' id=specie.id %}"><i class="fas fa-fw fa-edit text-primary"></i> Editar</a><br/>
-                                <a href="{% url 'split_1_taxa' id=specie.id %}"><i class="fas fa-sharp fa-solid fa-expand-arrows-alt text-primary"></i> Dividir con 1 nuevo taxón</a><br/>
+                                <a href="{% url 'update_taxa' specie_id=specie.id %}"><i class="fas fa-fw fa-edit text-primary"></i> Editar</a><br/>
+                                <a href="{% url 'split_1_taxa' specie_id=specie.id %}"><i class="fas fa-sharp fa-solid fa-expand-arrows-alt text-primary"></i> Dividir con 1 nuevo taxón</a><br/>
                                 <a href="{% url 'split_2_taxa' id=specie.id %}"><i class="fas fa-sharp fa-solid fa-expand-arrows-alt text-primary"></i> Dividir a 2 nuevos taxones</a><br/>
                                 <a href="{% url 'merge_taxa' id=specie.id %}"><i class="fas fa-sharp fa-solid fa-compress text-primary"></i> Unir</a>
-                                <!--<br/><a href="" class="text-danger"><i class="fas fa-fw fa-trash text-danger"></i> Eliminar</a>-->
                             </td>
                         </tr>
                     {% endfor%}

@@ -46,22 +46,11 @@
         </div>
         <div class="card-body">
             <div class="table-responsive">
-                <form action="/catalog/update_taxa/{{id}}/" method="post" class="form-horizontal">
+                <form action="/catalog/update_taxa/{{specie_id}}/" method="post" class="form-horizontal">
                     {% csrf_token %}
+                    {{ form.id_taxa }}
                     {{ form.scientificName }}
                     {{ form.scientificNameFull }}
-                    <div class="form-group row">
-                        <label class="col-sm-2 col-form-label">Hábito</label>
-                        <div class="col-sm-10">
-                            {{ form.plant_habit }}
-                        </div>
-                    </div>
-                    <div class="form-group row">
-                        <div class="col-sm-2"></div>
-                        <div class="col-sm-10">
-                            {{ form.env_habit }}
-                        </div>
-                    </div>
                     <div class="form-group row">
                         <label class="col-sm-2 col-form-label">Genero</label>
                         <div class="col-sm-10">
@@ -117,13 +106,25 @@
                         </div>
                     </div>
                     <div class="form-group row">
-                        <label class="col-sm-2 col-form-label">Ciclo</label>
+                        <label class="col-sm-2 col-form-label">Hábito</label>
+                        <div class="col-sm-10">
+                            {{ form.plant_habit }}
+                        </div>
+                    </div>
+                    <div class="form-group row">
+                        <div class="col-sm-2">Forma de vida</div>
+                        <div class="col-sm-10">
+                            {{ form.env_habit }}
+                        </div>
+                    </div>
+                    <div class="form-group row">
+                        <label class="col-sm-2 col-form-label">Ciclo de Vida</label>
                         <div class="col-sm-10">
                             {{ form.cycle }}
                         </div>
                     </div>
                     <div class="form-group row">
-                        <label class="col-sm-2 col-form-label">Estado</label>
+                        <label class="col-sm-2 col-form-label">Origen</label>
                         <div class="col-sm-10">
                             {{ form.status }}
                         </div>
@@ -213,6 +214,12 @@
                         </div>
                     </div>
                     <div class="form-group row">
+                        <label class="col-sm-2 form-check-label">¿Terminal?</label>
+                        <div class="col-sm-10">
+                            {{ form.determined }}
+                        </div>
+                    </div>
+                    <div class="form-group row">
                         <label class="col-sm-2 col-form-label">ID MMA</label>
                         <div class="col-sm-10">
                             {{ form.id_mma }}
@@ -229,11 +236,47 @@
                     {% endif %}
                     <div class="form-group row">
                         <div class="col-sm-10">
-                            <input type="submit" class="btn btn-primary" value="Guardar"><a href="{% url 'list_taxa' %}" class="btn btn-danger">Cancelar</a>
+                            <input type="submit" class="btn btn-primary" value="Guardar">
+                            <a href="{% url 'list_taxa' %}" class="btn btn-danger">Cancelar</a>
                         </div>
-
+                        <div class="col-sm-2"
+                             data-toggle="{% if warnings %}tooltip{% endif %}"
+                             data-placement="{% if warnings %}top{% endif %}"
+                             data-html="true"
+                             title="Esta especie no puede ser eliminada debido a que está asociada a
+{% for warning in warnings %}{% if warning == "synonymy" %}sinónimos
+{% endif %}{% if warning == "gallery" %}galería
+{% endif %}{% if warning == "voucher" %}scans
+{% endif %}{% endfor %}"
+                        >
+                            <a href="#"
+                               data-toggle="modal"
+                               data-target="#warningModalDelete"
+                               style="cursor: pointer;"
+                               class="btn btn-danger {% if warnings %}disabled{% endif %}"
+                            >
+                                <i class="fas fa-fw fa-trash"></i>
+                                Eliminar
+                            </a>
+                        </div>
                     </div>
                 </form>
+            </div>
+        </div>
+    </div>
+    <div class="modal fade" id="warningModalDelete" tabindex="-1" aria-labelledby="warningModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="warningModalLabel">¡Cuidado!</h5>
+                </div>
+                <div class="modal-body">
+                    ¿Estás seguro que deseas borrar la especie {{ species_name }}?
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancelar</button>
+                    <a href="{% url 'delete_taxa' species_id=specie_id %}" class="btn btn-danger">Borrar</a>
+                </div>
             </div>
         </div>
     </div>

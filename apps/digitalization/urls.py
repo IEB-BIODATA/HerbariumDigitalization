@@ -37,5 +37,6 @@ urlpatterns = [
     re_path(r'^get_pending_images$', views.get_pending_images, name='get_pending_images'),
     re_path(r'^process_pending_images$', views.process_pending_images, name='process_pending_images'),
     re_path(r'^vouchers_download$', views.vouchers_download, name='vochers_download'),
+    re_path(r'^download_catalog$', views.download_catalog, name='download_catalog'),
     re_path(r'^update_voucher/(?P<id>\d+)/$', views.update_voucher, name='update_voucher'),
 ]

@@ -1,54 +1,68 @@
 {% extends "base.html" %}
 {% load static %}
 {% block javascript %}
-<script src="{% static 'vendor/datatables/jquery.dataTables.js' %}"></script>
-<script src="{% static 'vendor/datatables/dataTables.bootstrap4.js' %}"></script>
-  <script type="text/javascript">
-  $(document).ready(function() {
-    $('#CatalogTable').DataTable();
-  });
-  </script>
+    <script src="{% static 'vendor/datatables/jquery.dataTables.js' %}"></script>
+    <script src="{% static 'vendor/datatables/dataTables.bootstrap4.js' %}"></script>
+    <script src="{% static 'js/common.js' %}"></script>
+    <script type="text/javascript">
+        $(document).ready(function() {
+            $('#CatalogTable').DataTable({
+                "order": [[6, 'desc']],
+                "columnDefs": [
+                    {
+                        "targets": [5, 6],
+                        "render": function(val, type) {
+                            if (type === 'sort')
+                                return parseDate(val);
+                            else
+                                return val;
+                        }
+                    }
+                ]
+            });
+        });
+    </script>
 {% endblock %}
 {% block content %}
-<h1>Bitácora de Cambios</h1>
-<!-- DataTables Example -->
-<div class="card mb-3">
-  <div class="card-header">
-    <i class="fas fa-table"></i>
-    Bitácora</div>
-  <div class="card-body">
-    <div class="table-responsive">
-      <table class="table table-bordered" id="CatalogTable" width="100%" cellspacing="0">
-        <thead>
-          <tr>
-            <th>Tipo Actualización</th>
-            <th>Modelo</th>
-            <th>Descripción</th>
-            <th>Nota</th>
-            <th>Creado por</th>
-            <th>Fecha Creación</th>
-            <th>Fecha Actualización</th>  
-            <th>Acción</th>            
-          </tr>
-        </thead>
-        <tbody>
-          {% for binnacle in binnacles %}
-            <tr>
-              <td>{{ binnacle.type_update }}</td>
-              <td>{{ binnacle.model }}</td>
-              <td>{{ binnacle.description }}</td>
-              <td>{{ binnacle.note|default_if_none:"" }}</td>
-              <td>{{ binnacle.created_by }}</td>
-              <td>{{ binnacle.created_at }}</td>
-              <td>{{ binnacle.updated_at }}</td>
-              <td>                
-                <a href="{% url 'update_binnacle' id=binnacle.id %}"><i class="fas fa-fw fa-edit text-primary"></i></a>
-              </td>
-            </tr>
-          {% endfor%}
-        </tbody>
-      </table>
+    <h1>Bitácora de Cambios</h1>
+    <!-- DataTables Example -->
+    <div class="card mb-3">
+        <div class="card-header">
+            <i class="fas fa-table"></i>
+            Bitácora</div>
+        <div class="card-body">
+            <div class="table-responsive">
+                <table class="table table-bordered" id="CatalogTable" width="100%" cellspacing="0">
+                    <thead>
+                    <tr>
+                        <th>Tipo Actualización</th>
+                        <th>Modelo</th>
+                        <th>Descripción</th>
+                        <th>Nota</th>
+                        <th>Creado por</th>
+                        <th>Fecha Creación</th>
+                        <th>Fecha Actualización</th>
+                        <th>Acción</th>
+                    </tr>
+                    </thead>
+                    <tbody>
+                    {% for binnacle in binnacles %}
+                        <tr>
+                            <td>{{ binnacle.type_update }}</td>
+                            <td>{{ binnacle.model }}</td>
+                            <td>{{ binnacle.description }}</td>
+                            <td>{{ binnacle.note|default_if_none:"" }}</td>
+                            <td>{{ binnacle.created_by }}</td>
+                            <td>{{ binnacle.created_at }}</td>
+                            <td>{{ binnacle.updated_at }}</td>
+                            <td>
+                                <a href="{% url 'update_binnacle' id=binnacle.id %}"><i class="fas fa-fw fa-edit text-primary"></i></a>
+                            </td>
+                        </tr>
+                    {% endfor%}
+                    </tbody>
+                </table>
+            </div>
+        </div>
     </div>
-  </div>
-</div>
 {% endblock %}

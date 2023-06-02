@@ -1,56 +1,107 @@
 {% extends "base.html" %}
 {% load static %}
 {% block javascript %}
-<script src="{% static 'vendor/datatables/jquery.dataTables.js' %}"></script>
-<script src="{% static 'vendor/datatables/dataTables.bootstrap4.js' %}"></script>
-  <script type="text/javascript">
-  $(document).ready(function() {
-    $('#CatalogTable').DataTable();
-  });
-  </script>
+    <script src="{% static 'vendor/datatables/jquery.dataTables.js' %}"></script>
+    <script src="{% static 'vendor/datatables/dataTables.bootstrap4.js' %}"></script>
+    <script src="{% static 'js/common.js' %}"></script>
+    <script type="text/javascript">
+        $(document).ready(function() {
+            $('#CatalogTable').DataTable({
+                serverSide: true,
+                ajax: {
+                    url: '{% url 'synonymy_table' %}',
+                    type: 'GET',
+                    dataSrc: 'data',
+                },
+                columnDefs: [
+                    {
+                        targets: 0,
+                        data: 'scientificNameFull',
+                    },
+                    {
+                        targets: 1,
+                        render: function (data, type, row) {
+                            let speciesHtml = '';
+                            for (let i = 0; i < row.species.length; i++) {
+                                speciesHtml += row.species[i].scientificName + '<br/>';
+                            }
+                            return speciesHtml;
+                        }
+                    },
+                    {
+                        targets: 2,
+                        render: function (data, type, row) {
+                            return row.created_by.username;
+                        }
+                    },
+                    {
+                        targets: 3,
+                        render: function(data, type, row) {
+                            let created_at = new Date(row.created_at);
+                            if (type === 'display' || type === 'search'){
+                                return dateFormat(created_at);
+                            } else if (type === 'sort'){
+                                return created_at.toISOString();
+                            } else {
+                                return created_at;
+                            }
+                        }
+                    },
+                    {
+                        targets: 4,
+                        render: function(data, type, row) {
+                            let updated_at = new Date(row.updated_at);
+                            if (type === 'display' || type === 'search'){
+                                return dateFormat(updated_at);
+                            } else if (type === 'sort'){
+                                return updated_at.toISOString();
+                            } else {
+                                return updated_at;
+                            }
+                        }
+                    },
+                    {
+                        targets: 5,
+                        render: function(data, type, row) {
+                            return '<a href="/catalog/update_synonymy/' + row.id + '/"><i class="fas fa-fw fa-edit text-primary"></i></a> ' +
+                           '<a href="/catalog/delete_synonymy/' + row.id + '/"><i class="fas fa-fw fa-trash text-danger"></i></a>';
+                        }
+                    }
+                ]
+            });
+        });
+    </script>
 {% endblock %}
 {% block content %}
-<h1>Sinónimos</h1>
-<!-- DataTables Example -->
-<div class="card mb-3">
-  <div class="row">
-    <div class="col-3">
-     <a class="btn btn-primary btn-block" href="{% url 'create_synonymy' %}">Nuevo</a>
+    <h1>Sinónimos</h1>
+    <!-- DataTables Example -->
+    <div class="card mb-3">
+        <div class="row">
+            <div class="col-3">
+                <a class="btn btn-primary btn-block" href="{% url 'create_synonymy' %}">Nuevo</a>
+            </div>
+        </div>
+        <div class="card-header">
+            <i class="fas fa-table"></i>
+            Sinónimos</div>
+        <div class="card-body">
+            <div class="table-responsive">
+                <table class="table table-bordered" id="CatalogTable" width="100%" cellspacing="0">
+                    <thead>
+                        <tr>
+                            <th>Nombre Científico Completo</th>
+                            <th>Especie</th>
+                            <th>Creado por</th>
+                            <th>Fecha Creación</th>
+                            <th>Fecha Actualización</th>
+                            <th>Acción</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <!-- To be populated -->
+                    </tbody>
+                </table>
+            </div>
+        </div>
     </div>
-  </div>
-  <div class="card-header">
-    <i class="fas fa-table"></i>
-    Sinónimos</div>
-  <div class="card-body">
-    <div class="table-responsive">
-      <table class="table table-bordered" id="CatalogTable" width="100%" cellspacing="0">
-        <thead>
-          <tr>
-            <th>Nombre Científico Completo</th>
-            <th>Especie</th>
-            <th>Creado por</th>
-            <th>Fecha Creación</th>
-            <th>Fecha Actualización</th>
-            <th>Acción</th>
-          </tr>
-        </thead>
-        <tbody>
-          {% for item in synonymys %}
-            <tr>
-              <td>{{ item.scientificNameFull }}</td>
-              <td>{% for specie in item.species_set.all %}{{ specie }}<br/>{% endfor %}</td>
-              <td>{{ item.created_by }}</td>
-              <td>{{ item.created_at }}</td>
-              <td>{{ item.updated_at }}</td>
-              <td width="10%">                
-                <a href="{% url 'update_synonymy' id=item.id %}"><i class="fas fa-fw fa-edit text-primary"></i></a>
-                <a href="{% url 'delete_synonymy' id=item.id %}"><i class="fas fa-fw fa-trash text-danger"></i></a>
-              </td>
-            </tr>
-          {% endfor%}
-        </tbody>
-      </table>
-    </div>
-  </div>
-</div>
 {% endblock %}

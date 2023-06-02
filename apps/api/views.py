@@ -1,5 +1,6 @@
 import base64
 import datetime as dt
+import json
 import logging
 import os
 
@@ -10,6 +11,7 @@ from django.http import HttpResponseBadRequest, JsonResponse, HttpResponse
 from drf_multiple_model.pagination import MultipleModelLimitOffsetPagination
 from drf_multiple_model.views import FlatMultipleModelAPIView, ObjectMultipleModelAPIView
 from rest_framework import status
+from rest_framework.decorators import renderer_classes
 from rest_framework.generics import ListAPIView
 from rest_framework.renderers import JSONRenderer
 from rest_framework.response import Response
@@ -379,13 +381,13 @@ class MenuFilterApiView(ObjectMultipleModelAPIView):
                             to_delete = "{}{}__".format(to_delete, parameter_name)
                         else:
                             tag = "species__{}__".format(parameter_name)
-                logging.debug("Query: {}\tParameter: {}\n{}in".format(query_name, parameter_name, tag))
+                logging.debug("Query: {}\tParameter: {}\n({}in)".format(query_name, parameter_name, tag))
                 if len(parameters) > 0 and tag != "":
                     if parameter_name == "plant_habit" and '2' in parameters:
                         logging.debug("Adding 5 (Small tree) to 2 (tree) filter")
                         parameters += ['5']
                     query &= Q(**{"{}in".format(tag): parameters})
-                    logging.debug(query)
+                logging.debug(query)
             results = self.QUERIES[query_name]["model"].objects.filter(query).distinct()  # .order_by('name')
             if limit != 0 and query_name not in list(self.QUERIES.keys())[0:2] + ["status"]:
                 results = results[:limit]
@@ -658,6 +660,28 @@ class BannerSpecie(APIView):
                 specie_id
             )
         })
+
+
+def get_names(request):
+    logging.debug(request.GET)
+    taxonomy_models = {
+        'genus': Genus,
+        'family': Family,
+    }
+    info = dict()
+    for name, model in taxonomy_models.items():
+        request_list = request.GET.getlist(name)
+        if request_list is not None:
+            info[name] = dict()
+            for m in request_list:
+                logging.debug(name)
+                logging.debug(model)
+                try:
+                    info[name][m] = model.objects.get(pk=m).name
+                except model.DoesNotExist:
+                    info[name][m] = None
+                logging.debug(info)
+    return JsonResponse(info)
 
 
 def login(request):

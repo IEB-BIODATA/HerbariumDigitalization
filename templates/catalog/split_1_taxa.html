@@ -1,5 +1,6 @@
 {% extends "base.html" %}
 {% load static %}
+{% load join_list %}
 {% block javascript %}
 <script src="{% static 'js/bootstrap-select.js' %}"></script>
 <script type="text/javascript">
@@ -67,12 +68,6 @@
         <div class="table-responsive">
           <table class="table">
               <tr>
-                <td><strong>habit</strong></td>
-                <td>
-                  {{ taxa_1.habit }}
-                </td>
-              </tr>
-              <tr>
                 <td><strong>Genero</strong></td>
                 <td>
                   {{ taxa_1.genus }}
@@ -127,13 +122,25 @@
                 </td>
               </tr>
               <tr>
-                <td><strong>Ciclo</strong></td>
+                <td><strong>Hábito</strong></td>
                 <td>
-                  {{ taxa_1.ciclo|default_if_none:"" }}
+                    {{ taxa_1.plant_habit.all|join_with_or }}
                 </td>
               </tr>
               <tr>
-                <td><strong>Estado</strong></td>
+                <td><strong>Forma de vida</strong></td>
+                <td>
+                    {{ taxa_1.env_habit.all|join_with_or }}
+                </td>
+              </tr>
+              <tr>
+                <td><strong>Ciclo de vida</strong></td>
+                <td>
+                  {{ taxa_1.cycle.all|join_with_or }}
+                </td>
+              </tr>
+              <tr>
+                <td><strong>Origen</strong></td>
                 <td>
                   {{ taxa_1.status|default_if_none:"" }}
                 </td>
@@ -228,6 +235,12 @@
                   </ul>
                 </td>
               </tr>
+              <tr>
+                <td><strong>¿Terminal?</strong></td>
+                <td>
+                  {{ taxa_1.determined|default_if_none:"" }}
+                </td>
+              </tr>
             </table>
         </div>
       </div>
@@ -248,12 +261,7 @@
         <div class="card-body">
           <div class="table-responsive">
               <input type="hidden" name="id_taxon_2" value="" id="id_taxon_2">
-              <div class="form-group row">
-                <label class="col-sm-2 col-form-label">habit</label>
-                <div class="col-sm-10">
-                  {{ form_taxa_1.habit }}
-                </div>
-              </div>
+              {{ form_taxa_1.id_taxa }}
               <div class="form-group row">
                 <label class="col-sm-2 col-form-label">Genero</label>
                 <div class="col-sm-10">
@@ -309,13 +317,25 @@
                 </div>
               </div>
               <div class="form-group row">
-                <label class="col-sm-2 col-form-label">Ciclo</label>
+                <label class="col-sm-2 col-form-label">Hábito</label>
                 <div class="col-sm-10">
-                  {{ form_taxa_1.ciclo }}
+                  {{ form_taxa_1.plant_habit }}
                 </div>
               </div>
               <div class="form-group row">
-                <label class="col-sm-2 col-form-label">Estado</label>
+                <label class="col-sm-2 col-form-label">Forma de vida</label>
+                <div class="col-sm-10">
+                  {{ form_taxa_1.env_habit }}
+                </div>
+              </div>
+              <div class="form-group row">
+                <label class="col-sm-2 col-form-label">Ciclo de vida</label>
+                <div class="col-sm-10">
+                  {{ form_taxa_1.cycle }}
+                </div>
+              </div>
+              <div class="form-group row">
+                <label class="col-sm-2 col-form-label">Origen</label>
                 <div class="col-sm-10">
                   {{ form_taxa_1.status }}
                 </div>
@@ -396,6 +416,12 @@
                 <label class="col-sm-2 col-form-label">Distribución Regional</label>
                 <div class="col-sm-10">
                   {{ form_taxa_1.region }}
+                </div>
+              </div>
+              <div class="form-group row">
+                <label class="col-sm-2 col-form-label">¿Terminal?</label>
+                <div class="col-sm-10">
+                  {{ form_taxa_1.determined }}
                 </div>
               </div>
               <div class="form-group row">

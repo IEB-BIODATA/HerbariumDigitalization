@@ -254,7 +254,7 @@ class GalleryImage(models.Model):
 
 
 class BannerImage(models.Model):
-    specie_id = models.OneToOneField(Species, on_delete=models.CASCADE)
+    specie = models.OneToOneField(Species, on_delete=models.CASCADE)
     banner = models.ImageField(upload_to="banners", storage=PublicMediaStorage())
     image = models.ForeignKey(VoucherImported, on_delete=models.CASCADE)
     updated = models.DateTimeField(auto_now=True)

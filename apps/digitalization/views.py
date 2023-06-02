@@ -490,16 +490,21 @@ def upload_color_profile_file(request):
     if request.method == 'POST':
         form = LoadColorProfileForm(request.POST, request.FILES)
         if form.is_valid():
-            form.created_by = request.user
-            form.created_at = datetime.now(tz=pytz.timezone('America/Santiago'))
-            color_profile = form.save()
-            generated_page_id = request.POST['generated_page_id']
-            page = GeneratedPage.objects.get(pk=generated_page_id)
-            if page.color_profile:
-                page.color_profile.delete()
-            page.color_profile = color_profile
-            page.save()
-            data = {'result': 'ok', 'url': color_profile.file.url}
+            try:
+                form.created_by = request.user
+                form.created_at = datetime.now(tz=pytz.timezone('America/Santiago'))
+                color_profile = form.save()
+                generated_page_id = request.POST['generated_page_id']
+                page = GeneratedPage.objects.get(pk=generated_page_id)
+                if page.color_profile:
+                    page.color_profile.delete()
+                page.color_profile = color_profile
+                page.save()
+                data = {'result': 'ok', 'url': color_profile.file.url}
+            except Exception as e:
+                logging.error("Error on uploading profile color")
+                logging.error(e, exc_info=True)
+                data = {'result': 'error'}
         else:
             data = {'result': 'error'}
         return HttpResponse(json.dumps(data), content_type="application/json")
@@ -802,7 +807,9 @@ def process_pending_images(request):
 @login_required
 def vouchers_download(request):
     if request.method == 'GET':
+        logging.debug("Refreshing vouchers")
         VouchersView.refresh_view()
+        logging.info("Generating voucher excel...")
         headers1 = ['id', 'file', 'code', 'voucher_state', 'collection_code', 'otherCatalogNumbers', 'catalogNumber',
                     'recordedBy',
                     'recordNumber', 'organismRemarks', 'scientificName', 'locality', 'verbatimElevation',
@@ -821,6 +828,31 @@ def vouchers_download(request):
         databook.add_sheet(data_set1)
         response = HttpResponse(databook.xlsx, content_type='application/vnd.ms-Excel')
         response['Content-Disposition'] = "attachment; filename=vochers.xlsx"
+        logging.info("Voucher excel sent")
+        return response
+
+
+@login_required
+def download_catalog(request):
+    if request.method == 'GET':
+        logging.info("Generating catalog excel...")
+        headers = [
+            'id', 'id taxa',
+            'Family', 'Genus', 'Species',
+            'Scientific Name', 'Scientific Name Full',
+            'Scientific Name DB', 'Determined'
+        ]
+        species = Species.objects.values_list(
+            'id', 'id_taxa', 'genus__family__name', 'genus__name',
+            'specificEpithet', 'scientificName',
+            'scientificNameFull', 'scientificNameDB', 'determined'
+        ).order_by('id')
+        databook = tablib.Databook()
+        data_set = tablib.Dataset(*species, headers=headers, title='Catalog')
+        databook.add_sheet(data_set)
+        response = HttpResponse(databook.xlsx, content_type='application/vnd.ms-Excel')
+        response['Content-Disposition'] = "attachment; filename=vochers.xlsx"
+        logging.info("Catalog excel sent")
         return response
 
 
