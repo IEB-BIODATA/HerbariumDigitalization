@@ -5,7 +5,19 @@
     <script src="{% static 'vendor/datatables/dataTables.bootstrap4.js' %}"></script>
     <script src="{% static 'js/common.js' %}"></script>
     <script type="text/javascript">
-        $(document).ready(function() {
+        const tempSearchBar = document.getElementById('temp-search-bar');
+
+        tempSearchBar.addEventListener('input', function () {
+            if (tempSearchBar.value.length > 3) {
+                document.getElementById("TemporalSearch").setAttribute("style", "display: none;");
+                load_table();
+                const searchBar = document.getElementById("CatalogTable_filter").children[0].children[0];
+                searchBar.value = tempSearchBar.value;
+                searchBar.focus();
+            }
+        })
+
+        function load_table() {
             $('#CatalogTable').DataTable({
                 serverSide: true,
                 ajax: {
@@ -67,9 +79,9 @@
                            '<a href="/catalog/delete_synonymy/' + row.id + '/"><i class="fas fa-fw fa-trash text-danger"></i></a>';
                         }
                     }
-                ]
+                ],
             });
-        });
+        }
     </script>
 {% endblock %}
 {% block content %}
@@ -85,6 +97,14 @@
             <i class="fas fa-table"></i>
             Sinónimos</div>
         <div class="card-body">
+            <div class="row" id="TemporalSearch">
+                <div class="col-sm-12 col-md-6"></div>
+                <div class="col-sm-12 col-md-6" style="text-align: right;">
+                    <label>Buscar:
+                        <input id="temp-search-bar" type="search" class="form-control form-control-sm" style="display: inline-block;box-sizing: border-box;width: auto;">
+                    </label>
+                </div>
+            </div>
             <div class="table-responsive">
                 <table class="table table-bordered" id="CatalogTable" width="100%" cellspacing="0">
                     <thead>
@@ -98,7 +118,17 @@
                         </tr>
                     </thead>
                     <tbody>
-                        <!-- To be populated -->
+                    <!-- To be populated -->
+                        <tr>
+                            <td colspan="6" >
+                                <div class="d-flex justify-content-center">
+                                    <button type="button" class="btn btn-info" onclick="load_table()">
+                                        <i class="fas fa-fw fa-sync"></i>
+                                        Cargar tabla
+                                    </button>
+                                </div>
+                            </td>
+                        </tr>
                     </tbody>
                 </table>
             </div>
