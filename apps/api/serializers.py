@@ -223,8 +223,13 @@ class SpeciesFinderSerializer(ModelSerializer):
 
     class Meta:
         model = Species
-        fields = ['id', 'name', 'genus', 'specificEpithet', 'family', 'order', 'scientificNameAuthorship', 'habit',
-                  'subespecie', 'autoresSsp', 'variedad', 'autoresVariedad', 'forma', 'autoresForma', 'vouchers']
+        fields = [
+            'id', 'name', 'genus', 'specificEpithet',
+            'family', 'order', 'scientificNameAuthorship',
+            'habit', 'subespecie', 'autoresSsp',
+            'variedad', 'autoresVariedad', 'forma',
+            'autoresForma', 'vouchers', 'determined'
+        ]
 
     def get_vouchers(self, obj):
         vouchers = obj.voucherimported_set.all().exclude(image_public_resized_10__exact='')[:1]
