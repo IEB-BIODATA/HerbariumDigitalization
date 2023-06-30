@@ -169,8 +169,8 @@ DATA_UPLOAD_MAX_NUMBER_FIELDS = 5000
 
 # Geographical libraries
 GEOS_LIBRARY_PATH = '/usr/lib/x86_64-linux-gnu/libgeos_c.so'
-GDAL_LIBRARY_PATH = '/usr/lib/libgdal.so'
-PROJ_LIBRARY_PATH = '/usr/lib/libproj.so'
+GDAL_LIBRARY_PATH = '/usr/lib/x86_64-linux-gnu/libgdal.so'
+PROJ_LIBRARY_PATH = '/usr/lib/x86_64-linux-gnu/libproj.so'
 
 CELERY_TASK_TRACK_STARTED = True
 CELERY_TASK_TIME_LIMIT = 24 * 60 * 60

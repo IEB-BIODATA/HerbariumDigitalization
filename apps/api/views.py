@@ -196,6 +196,11 @@ class SpeciesFilterApiView(FlatMultipleModelAPIView):
     sorting_fields = ['name']
     pagination_class = LimitPagination
 
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
+        self.species_count = 0
+        self.synonymys_count = 0
+
     def get_querylist(self):
         query_species = Q()
         query_synonymy = Q()
@@ -247,39 +252,44 @@ class SpeciesFilterApiView(FlatMultipleModelAPIView):
         if conservation:
             query_species &= Q(conservation_state__in=conservation)
             query_synonymy &= Q(species__conservation_state__in=conservation)
+        search = self.request.query_params.get('search')
+        if search:
+            query_species &= Q(scientificName__icontains=search)
+            query_synonymy &= Q(scientificName__icontains=search)
 
         species = self.request.query_params.get('species_filter')
         synonymys = self.request.query_params.get('synonymys_filter')
         images_filter = self.request.query_params.get('images_filter')
+        species_results = Species.objects.none()
+        synonymys_results = Synonymy.objects.none()
         if images_filter:
-            querylist = [
-                {'queryset': Species.objects.filter(query_species).exclude(voucherimported__isnull=True).exclude(
-                    voucherimported__image_public_resized_10__exact=''), 'serializer_class': SpeciesFinderSerializer},
-            ]
+            species_results = Species.objects.filter(query_species).exclude(voucherimported__isnull=True).exclude(
+                    voucherimported__image_public_resized_10__exact='')
         else:
-            if species and synonymys:
-                querylist = [
-                    {'queryset': Species.objects.filter(query_species), 'serializer_class': SpeciesFinderSerializer},
-                    {'queryset': Synonymy.objects.filter(query_synonymy),
-                     'serializer_class': SynonymysFinderSerializer},
-                ]
-            elif species:
-                querylist = [
-                    {'queryset': Species.objects.filter(query_species), 'serializer_class': SpeciesFinderSerializer},
-                ]
-            elif synonymys:
-                querylist = [
-                    {'queryset': Synonymy.objects.filter(query_synonymy),
-                     'serializer_class': SynonymysFinderSerializer},
-                ]
-            else:
-                querylist = [
-                    {'queryset': Species.objects.filter(query_species), 'serializer_class': SpeciesFinderSerializer},
-                    {'queryset': Synonymy.objects.filter(query_synonymy),
-                     'serializer_class': SynonymysFinderSerializer},
-                ]
+            if species:
+                species_results = Species.objects.filter(query_species)
+            if synonymys:
+                synonymys_results = Synonymy.objects.filter(query_synonymy)
+            if not species and not synonymys:
+                species_results = Species.objects.filter(query_species)
+                synonymys_results = Synonymy.objects.filter(query_synonymy)
 
-        return querylist
+        self.species_count = species_results.count()
+        self.synonymys_count = synonymys_results.count()
+
+        return [
+            {'queryset': species_results, 'serializer_class': SpeciesFinderSerializer},
+            {'queryset': synonymys_results, 'serializer_class': SynonymysFinderSerializer},
+        ]
+
+    def list(self, request, *args, **kwargs):
+        response = super().list(request, *args, **kwargs)
+
+        # Modify the response data
+        response.data['species_count'] = self.species_count
+        response.data['synonymys_count'] = self.synonymys_count
+
+        return response
 
 
 class MenuApiView(ObjectMultipleModelAPIView):
@@ -473,84 +483,6 @@ class ImagesFilterApiView(FlatMultipleModelAPIView):
 
         ]
         return querylist
-
-
-class SpeciesCountView(APIView):
-    """
-    A view that returns the count of active species.
-    """
-    renderer_classes = (JSONRenderer,)
-
-    def get(self, request, format=None):
-        query_species = Q()
-        query_synonymy = Q()
-        division = self.request.query_params.get('division')
-        if division:
-            query_species &= Q(genus__family__order__class_name__division_id__in=division)
-            query_synonymy &= Q(species__genus__family__order__class_name__division_id__in=division)
-        class_name = self.request.query_params.getlist('class_name')
-        if class_name:
-            query_species &= Q(genus__family__order__class_name_id__in=class_name)
-            query_synonymy &= Q(species__genus__family__order__class_name_id__in=class_name)
-        order = self.request.query_params.getlist('order')
-        if order:
-            query_species &= Q(genus__family__order_id__in=order)
-            query_synonymy &= Q(species__genus__family__order_id__in=order)
-        family = self.request.query_params.getlist('family')
-        if family:
-            query_species &= Q(genus__family_id__in=family)
-            query_synonymy &= Q(species__genus__family_id__in=family)
-        habit = self.request.query_params.getlist('habit')
-        if habit:
-            query_species &= Q(habit_id__in=habit)
-            query_synonymy &= Q(species__habit_id__in=habit)
-        genus = self.request.query_params.getlist('genus')
-        if genus:
-            query_species &= Q(genus_id__in=genus)
-            query_synonymy &= Q(species__genus_id__in=genus)
-        common_name = self.request.query_params.getlist('common_name')
-        if common_name:
-            query_species &= Q(common_names__in=common_name)
-            query_synonymy &= Q(species__common_names__in=common_name)
-        status = self.request.query_params.getlist('status')
-        if status:
-            query_species &= Q(status__in=status)
-            query_synonymy &= Q(species__status__in=status)
-        cycle = self.request.query_params.getlist('cycle')
-        if cycle:
-            query_species &= Q(cycle__in=cycle)
-            query_synonymy &= Q(species__cycle__in=cycle)
-        region = self.request.query_params.getlist('region')
-        if region:
-            query_species &= Q(region__in=region)
-            query_synonymy &= Q(species__region__in=region)
-        conservation = self.request.query_params.getlist('conservation')
-        if conservation:
-            query_species &= Q(conservation_state__in=conservation)
-            query_synonymy &= Q(species__conservation_state__in=conservation)
-        species = self.request.query_params.get('species_filter')
-        synonymys = self.request.query_params.get('synonymys_filter')
-        images_filter = self.request.query_params.get('images_filter')
-        if images_filter:
-            species_count = Species.objects.filter(query_species).exclude(voucherimported__isnull=True).exclude(
-                voucherimported__image_public_resized_10__exact='').count()
-            synonymys_count = 0
-        else:
-            if species and synonymys:
-                species_count = Species.objects.filter(query_species).count()
-                synonymys_count = Synonymy.objects.filter(query_synonymy).count()
-            elif species:
-                species_count = Species.objects.filter(query_species).count()
-                synonymys_count = 0
-            elif synonymys:
-                species_count = 0
-                synonymys_count = Synonymy.objects.filter(query_synonymy).count()
-            else:
-                species_count = Species.objects.filter(query_species).count()
-                synonymys_count = Synonymy.objects.filter(query_synonymy).count()
-
-        content = {'species_count': species_count, 'synonymys_count': synonymys_count}
-        return Response(content)
 
 
 class ImagesCountApiView(APIView):

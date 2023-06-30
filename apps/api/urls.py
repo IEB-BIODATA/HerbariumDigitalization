@@ -19,7 +19,7 @@ from . import views
 from .views import SpeciesList, FinderApiView, MenuApiView, SpecieDetails, GalleryList, BannerSpecie
 from .views import SynonymyDetails, DivisionList, ClassList, OrderList
 from .views import FamilyList, SpeciesFilterApiView, MenuFilterApiView
-from .views import DistributionList, ImagesList, ImagesFilterApiView, SpeciesCountView
+from .views import DistributionList, ImagesList, ImagesFilterApiView
 from .views import ImagesCountApiView, ImageDetails, TotalImages, TotalSpecies, RegionList
 
 urlpatterns = [
@@ -39,7 +39,6 @@ urlpatterns = [
     re_path(r'^images/(?P<specie_id>\d+)/$', ImagesList.as_view()),
     re_path(r'^gallery/(?P<specie_id>\d+)/$', GalleryList.as_view()),
     re_path(r'^images_filter/$', ImagesFilterApiView.as_view()),
-    re_path(r'^species_count/$', SpeciesCountView.as_view()),
     re_path(r'^images_count/$', ImagesCountApiView.as_view()),
     re_path(r'^image/(?P<voucher_id>\d+)/$', ImageDetails.as_view()),
     re_path(r'^total_images/$', TotalImages.as_view()),
