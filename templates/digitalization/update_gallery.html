@@ -2,11 +2,26 @@
 {% load static %}
 {% load roles %}
 {% block javascript %}
-    <script src="{% static 'vendor/datatables/jquery.dataTables.js' %}"></script>
-    <script src="{% static 'vendor/datatables/dataTables.bootstrap4.js' %}"></script>
+    <script src="https://cdn.datatables.net/1.13.5/js/jquery.dataTables.min.js"></script>
+    <script src="https://cdn.datatables.net/1.13.5/js/dataTables.bootstrap5.min.js"></script>
+    <script src="{% static 'js/common.js' %}"></script>
     <script type="text/javascript">
         $(document).ready(function() {
-            $('#CatalogTable').DataTable();
+            $('#CatalogTable').DataTable({
+                order: [[5, 'desc']],
+                language: languageTable.spanish,
+                columnDefs: [
+                    {
+                        targets: [5],
+                        render: function(val, type){
+                            if (type === 'sort')
+                                return parseDate(val);
+                            else
+                                return val;
+                        }
+                    }
+                ]
+            });
         });
     </script>
 {% endblock %}

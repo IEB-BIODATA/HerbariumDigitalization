@@ -1,5 +1,5 @@
 from django import forms
-from .models import Division, Class_name, Order, Family, Genus, Species, Synonymy, Binnacle, CommonName
+from .models import Division, ClassName, Order, Family, Genus, Species, Synonymy, Binnacle, CommonName
 
 
 class DivisionForm(forms.ModelForm):
@@ -18,7 +18,7 @@ class DivisionForm(forms.ModelForm):
 
 class ClassForm(forms.ModelForm):
     class Meta:
-        model = Class_name
+        model = ClassName
         fields = (
             'name',
             'division',

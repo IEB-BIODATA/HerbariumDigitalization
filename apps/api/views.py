@@ -17,7 +17,7 @@ from rest_framework.renderers import JSONRenderer
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
-from apps.catalog.models import Species, Synonymy, Family, Division, Class_name, Order, Status, Genus, \
+from apps.catalog.models import Species, Synonymy, Family, Division, ClassName, Order, Status, Genus, \
     CommonName, Region, ConservationState, PlantHabit, EnvironmentalHabit, Cycle
 from apps.digitalization.models import VoucherImported, GalleryImage, BannerImage
 from web import settings
@@ -51,13 +51,13 @@ class DivisionList(ListAPIView):
 
 class ClassList(ListAPIView):
     serializer_class = ClassSerializer
-    queryset = Class_name.objects.all()
+    queryset = ClassName.objects.all()
 
     def get(self, request, limit=None, **kwargs):
         if int(limit) == 0:
-            items = Class_name.objects.all()
+            items = ClassName.objects.all()
         else:
-            items = Class_name.objects.all()[:int(limit)]
+            items = ClassName.objects.all()[:int(limit)]
         classes = ClassSerializer(items, many=True)
         return Response(status=status.HTTP_200_OK, data=classes.data)
 
@@ -298,7 +298,7 @@ class MenuApiView(ObjectMultipleModelAPIView):
     def get_querylist(self):
         querylist = [
             {'queryset': Division.objects.all().order_by('name'), 'serializer_class': DivisionSerializer},
-            {'queryset': Class_name.objects.all().order_by('name'), 'serializer_class': ClassSerializer},
+            {'queryset': ClassName.objects.all().order_by('name'), 'serializer_class': ClassSerializer},
             {'queryset': Order.objects.all().order_by('name')[:5], 'serializer_class': OrderSerializer},
             {'queryset': Family.objects.all().order_by('name')[:5], 'serializer_class': FamilySerializer},
             {'queryset': PlantHabit.objects.all().order_by('name')[:5], 'serializer_class': PlantHabitSerializer},
@@ -318,7 +318,7 @@ class MenuFilterApiView(ObjectMultipleModelAPIView):
             "serializer": DivisionSerializer
         },
         "class_name": {
-            "model": Class_name,
+            "model": ClassName,
             "serializer": ClassSerializer
         },
         "order": {

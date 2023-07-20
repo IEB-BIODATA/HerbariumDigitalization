@@ -1,6 +1,6 @@
 from django.contrib import admin
 from import_export.admin import ImportExportModelAdmin
-from .models import Species, Synonymy, Kingdom, Division, Class_name, Order, Family, Genus, Region, \
+from .models import Species, Synonymy, Kingdom, Division, ClassName, Order, Family, Genus, Region, \
     Status, CommonName, ConservationState, Binnacle
 from .resources import SpeciesAdminResource
 
@@ -17,8 +17,8 @@ class DivisionAdmin(ImportExportModelAdmin):
     search_fields = ['name']
 
 
-@admin.register(Class_name)
-class Class_nameAdmin(ImportExportModelAdmin):
+@admin.register(ClassName)
+class ClassNameAdmin(ImportExportModelAdmin):
     list_display = (['name', 'division', 'created_by', 'created_at', 'updated_at'])
     search_fields = ['name']
 

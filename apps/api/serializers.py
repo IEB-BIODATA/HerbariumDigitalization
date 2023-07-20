@@ -5,8 +5,8 @@ from rest_framework import serializers
 from rest_framework.serializers import HyperlinkedModelSerializer, ModelSerializer, CharField, ReadOnlyField, \
     SerializerMethodField
 
-from apps.catalog.models import Species, Family, Genus, Synonymy, Region, Division, Class_name, Order, Status, \
-    CommonName, ConservationState, PlantHabit, EnvironmentalHabit, Cycle
+from apps.catalog.models import Species, Family, Genus, Synonymy, Region, Division, ClassName, Order, Status, \
+    CommonName, ConservationState, PlantHabit, EnvironmentalHabit, Cycle, Kingdom, TaxonomicModel, CatalogView
 from apps.digitalization.models import VoucherImported, GalleryImage
 
 
@@ -22,28 +22,53 @@ class CycleSerializer(HyperlinkedModelSerializer):
         fields = ['id', 'name', ]
 
 
-class DivisionSerializer(HyperlinkedModelSerializer):
+class TaxonomicSerializer(HyperlinkedModelSerializer):
+    created_by = ReadOnlyField(source='created_by.username')
+
+    class Meta:
+        model = TaxonomicModel
+        fields = ['id', 'created_by', 'created_at', 'updated_at', ]
+        abstract = True
+
+
+class DivisionSerializer(TaxonomicSerializer):
+    kingdom = ReadOnlyField(source='kingdom.name')
+
     class Meta:
         model = Division
-        fields = ['id', 'name', ]
+        fields = TaxonomicSerializer.Meta.fields + ['name', 'kingdom']
 
 
-class ClassSerializer(HyperlinkedModelSerializer):
+class ClassSerializer(TaxonomicSerializer):
+    division = ReadOnlyField(source='division.name')
+
     class Meta:
-        model = Class_name
-        fields = ['id', 'name', ]
+        model = ClassName
+        fields = TaxonomicSerializer.Meta.fields + ['name', 'division']
 
 
-class OrderSerializer(HyperlinkedModelSerializer):
+class OrderSerializer(TaxonomicSerializer):
+    class_name = ReadOnlyField(source='class_name.name')
+
     class Meta:
         model = Order
-        fields = ['id', 'name', ]
+        fields = TaxonomicSerializer.Meta.fields + ['name', 'class_name']
 
 
-class FamilySerializer(HyperlinkedModelSerializer):
+class FamilySerializer(TaxonomicSerializer):
+    order = ReadOnlyField(source='order.name')
+
     class Meta:
         model = Family
-        fields = ['id', 'name', ]
+        fields = TaxonomicSerializer.Meta.fields + ['name', 'order']
+
+
+class GenusSerializer(TaxonomicSerializer):
+    family = ReadOnlyField(source='family.name')
+
+    class Meta:
+        model = Family
+        fields = TaxonomicSerializer.Meta.fields + ['name', 'family']
 
 
 class PlantHabitSerializer(HyperlinkedModelSerializer):
@@ -58,16 +83,34 @@ class EnvHabitSerializer(HyperlinkedModelSerializer):
         fields = ["id", "female_name", "male_name", ]
 
 
-class SpeciesSerializer(HyperlinkedModelSerializer):
+class SpeciesSerializer(TaxonomicSerializer):
+    genus = ReadOnlyField(source='genus.name')
+
     class Meta:
         model = Species
-        fields = ['id', 'scientificName', ]
+        fields = TaxonomicSerializer.Meta.fields + ['scientificName', 'genus']
 
 
-class SynonymysSerializer(HyperlinkedModelSerializer):
+class CatalogViewSerializer(HyperlinkedModelSerializer):
+
+    class Meta:
+        model = CatalogView
+        fields = TaxonomicSerializer.Meta.fields + [
+            'division', 'class_name', 'order', 'family',
+            'scientificNameFull', 'status', 'determined',
+        ]
+
+
+class SynonymysSerializer(TaxonomicSerializer):
+    species = SerializerMethodField()
+
     class Meta:
         model = Synonymy
-        fields = ['id', 'scientificName', 'scientificNameFull', ]
+        fields = TaxonomicSerializer.Meta.fields + ['scientificName', 'scientificNameFull', 'species']
+
+    def get_species(self, obj):
+        species = obj.species_set.all()
+        return "\n".join([specie.scientificName for specie in species])
 
 
 class RegionSerializer(HyperlinkedModelSerializer):
@@ -76,10 +119,16 @@ class RegionSerializer(HyperlinkedModelSerializer):
         fields = ['id', 'name', ]
 
 
-class CommonNameSerializer(HyperlinkedModelSerializer):
+class CommonNameSerializer(TaxonomicSerializer):
+    species = SerializerMethodField()
+
     class Meta:
         model = CommonName
-        fields = ['id', 'name', ]
+        fields = TaxonomicSerializer.Meta.fields + ['name', 'species']
+
+    def get_species(self, obj):
+        species = obj.species_set.all()
+        return "\n".join([specie.scientificName for specie in species])
 
 
 class UserSerializer(HyperlinkedModelSerializer):

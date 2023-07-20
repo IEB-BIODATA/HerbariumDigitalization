@@ -1,11 +1,30 @@
 {% extends "base.html" %}
 {% load static %}
 {% block javascript %}
-    <script src="{% static 'vendor/datatables/jquery.dataTables.js' %}"></script>
-    <script src="{% static 'vendor/datatables/dataTables.bootstrap4.js' %}"></script>
+    <script src="https://cdn.datatables.net/1.13.5/js/jquery.dataTables.min.js"></script>
+    <script src="https://cdn.datatables.net/1.13.5/js/dataTables.bootstrap5.min.js"></script>
+    <script src="{% static 'js/common.js' %}"></script>
     <script type="text/javascript">
         $(document).ready(function() {
-            $('#PagesTable').DataTable({order: [[0, 'desc']],});
+            $('#PagesTable').DataTable({
+                order: [[0, 'desc']],
+                language: languageTable.spanish,
+                columnDefs: [
+                    {
+                        targets: [2],
+                        render: function(val, type){
+                            if (type === 'sort')
+                                return parseDate(val);
+                            else
+                                return val;
+                        }
+                    },
+                    {
+                        targets: [7, 8],
+                        orderable: false,
+                    },
+                ]
+            });
         });
 
         function load_file(form_id){
@@ -26,11 +45,11 @@
                         $("#file_link_"+form_id).append(url)
                         $("#digitalized_link_"+form_id).removeClass();
                         $("#digitalized_link_"+form_id).removeAttr("style");
-                        $("#digitalized_link_"+form_id).addClass("btn btn-primary btn-block");
+                        $("#digitalized_link_"+form_id).addClass("btn btn-primary");
                         $("#digitalized_link_"+form_id).attr('onclick', 'get_vouchers('+form_id+',-1); return false;');
                         $("#terminated_link_"+form_id).removeClass();
                         $("#terminated_link_"+form_id).removeAttr("style");
-                        $("#terminated_link_"+form_id).addClass("btn btn-danger btn-block");
+                        $("#terminated_link_"+form_id).addClass("btn btn-danger");
                         $("#terminated_link_"+form_id).attr('onclick', 'terminate_session('+form_id+'); return false;');
                     }
                 },
@@ -57,27 +76,27 @@
                         switch(state_voucher) {
                             case 0:
                                 $('#id_button_class_found_'+pk).removeClass();
-                                $('#id_button_class_found_'+pk).addClass('btn btn-light btn-block');
+                                $('#id_button_class_found_'+pk).addClass('btn btn-light');
                                 $('#id_button_class_not_found_'+pk).removeClass();
-                                $('#id_button_class_not_found_'+pk).addClass('btn btn-light btn-block');
+                                $('#id_button_class_not_found_'+pk).addClass('btn btn-light');
                                 $('#id_button_class_non_state_'+pk).removeClass();
-                                $('#id_button_class_non_state_'+pk).addClass('btn btn-warning btn-block');
+                                $('#id_button_class_non_state_'+pk).addClass('btn btn-warning');
                                 break;
                             case 1:
                                 $('#id_button_class_found_'+pk).removeClass();
-                                $('#id_button_class_found_'+pk).addClass('btn btn-success btn-block');
+                                $('#id_button_class_found_'+pk).addClass('btn btn-success');
                                 $('#id_button_class_not_found_'+pk).removeClass();
-                                $('#id_button_class_not_found_'+pk).addClass('btn btn-light btn-block');
+                                $('#id_button_class_not_found_'+pk).addClass('btn btn-light');
                                 $('#id_button_class_non_state_'+pk).removeClass();
-                                $('#id_button_class_non_state_'+pk).addClass('btn btn-light btn-block');
+                                $('#id_button_class_non_state_'+pk).addClass('btn btn-light');
                                 break;
                             case 2:
                                 $('#id_button_class_found_'+pk).removeClass();
-                                $('#id_button_class_found_'+pk).addClass('btn btn-light btn-block');
+                                $('#id_button_class_found_'+pk).addClass('btn btn-light');
                                 $('#id_button_class_not_found_'+pk).removeClass();
-                                $('#id_button_class_not_found_'+pk).addClass('btn btn-danger btn-block');
+                                $('#id_button_class_not_found_'+pk).addClass('btn btn-danger');
                                 $('#id_button_class_non_state_'+pk).removeClass();
-                                $('#id_button_class_non_state_'+pk).addClass('btn btn-light btn-block');
+                                $('#id_button_class_non_state_'+pk).addClass('btn btn-light');
                                 break;
                         }
                     }
@@ -115,7 +134,7 @@
                                 button_class_notfound='btn-danger';
                                 break;
                         }
-                        table += '<tr><td><a class="btn '+button_class_found+' btn-block" href="#" onclick="set_state('+data[i].pk+',1); return false;" id="id_button_class_found_'+data[i].pk+'">Encontrado</a><a class="btn '+button_class_nonstate+' btn-block" href="#" onclick="set_state('+data[i].pk+',0); return false;" id="id_button_class_non_state_'+data[i].pk+'">Sin Estado</a><a class="btn '+button_class_notfound+' btn-block" href="#" onclick="set_state('+data[i].pk+',2); return false;" id="id_button_class_not_found_'+data[i].pk+'">No Encontrado</a></td><td>'+data[i].fields.catalogNumber+'</td><td>'+data[i].fields.scientificNameStr+'</td><td>'+data[i].fields.recordedBy+'</td><td>'+data[i].fields.recordNumber+'</td><td>'+data[i].fields.locality+'</td></tr>';
+                        table += '<tr><td><a class="btn '+button_class_found+'" href="#" onclick="set_state('+data[i].pk+',1); return false;" id="id_button_class_found_'+data[i].pk+'">Encontrado</a><a class="btn '+button_class_nonstate+'" href="#" onclick="set_state('+data[i].pk+',0); return false;" id="id_button_class_non_state_'+data[i].pk+'">Sin Estado</a><a class="btn '+button_class_notfound+'" href="#" onclick="set_state('+data[i].pk+',2); return false;" id="id_button_class_not_found_'+data[i].pk+'">No Encontrado</a></td><td>'+data[i].fields.catalogNumber+'</td><td>'+data[i].fields.scientificNameStr+'</td><td>'+data[i].fields.recordedBy+'</td><td>'+data[i].fields.recordNumber+'</td><td>'+data[i].fields.locality+'</td></tr>';
                     }
                     $("[id^=dataTable]").remove()
                     table += "</tbody>";
@@ -212,10 +231,10 @@
                                     </form>
                                 {% endif %}
                             </td>
-                            <td id="td_link_{{generated_page.id}}">
+                            <td id="td_link_{{ generated_page.id }}" class="d-grid gap-2">
                                 {% if not generated_page.terminated %}
-                                    <a id="digitalized_link_{{generated_page.id}}" href="#" {% if generated_page.color_profile %} class="btn btn-primary btn-block" onclick="get_vouchers({{generated_page.id}},-1); return false;" {% else %} class="btn btn-secondary btn-block"  style="pointer-events: none;cursor: default;" {% endif %}>Digitalizar</a>
-                                    <a id="terminated_link_{{generated_page.id}}" href="#" {% if generated_page.color_profile %} class="btn btn-danger btn-block" onclick="terminate_session({{generated_page.id}}); return false;" {% else %} class="btn btn-secondary btn-block"  style="pointer-events: none;cursor: default;" {% endif %}>Terminar</a>
+                                    <a id="digitalized_link_{{generated_page.id}}" href="#" {% if generated_page.color_profile %} class="btn btn-primary" onclick="get_vouchers({{generated_page.id}},-1); return false;" {% else %} class="btn btn-secondary"  style="pointer-events: none;cursor: default;" {% endif %}>Digitalizar</a>
+                                    <a id="terminated_link_{{generated_page.id}}" href="#" {% if generated_page.color_profile %} class="btn btn-danger" onclick="terminate_session({{generated_page.id}}); return false;" {% else %} class="btn btn-secondary"  style="pointer-events: none;cursor: default;" {% endif %}>Terminar</a>
                                 {% else %}
                                     <b>Terminada</b>
                                 {% endif %}

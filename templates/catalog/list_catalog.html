@@ -24,38 +24,26 @@
                 processing: true,
                 language: languageTable.spanish,
                 ajax: {
-                    url: "{% url 'taxa_table' %}",
+                    url: '{{ table_url }}',
                     type: 'GET',
                     dataSrc: 'data',
                 },
-                order: [[7, 'desc']],
+                order: [[4, 'desc']],
                 columnDefs: [
                     {
                         targets: 0,
-                        data: 'division',
+                        data: '{{ rank_name }}',
                     },
                     {
                         targets: 1,
-                        data: 'class_name'
+                        data: '{{ parent_rank }}'
                     },
                     {
                         targets: 2,
-                        data: 'order'
-                    },
-                    {
-                        targets: 3,
-                        data: 'family'
-                    },
-                    {
-                        targets: 4,
-                        data: 'scientificNameFull'
-                    },
-                    {
-                        targets: 5,
                         data: 'created_by'
                     },
                     {
-                        targets: 6,
+                        targets: 3,
                         render: function(data, type, row) {
                             let created_at = new Date(row.created_at);
                             if (type === 'display' || type === 'search'){
@@ -68,7 +56,7 @@
                         }
                     },
                     {
-                        targets: 7,
+                        targets: 4,
                         render: function(data, type, row) {
                             let updated_at = new Date(row.updated_at);
                             if (type === 'display' || type === 'search'){
@@ -81,88 +69,39 @@
                         }
                     },
                     {
-                        targets: 8,
-                        data: 'status'
-                    },
-                    {
-                        targets: 9,
-                        data: 'determined'
-                    },
-                    {
-                        targets: 10,
+                        targets: 5,
                         orderable: false,
                         render: function(data, type, row) {
-                            return '<a href="/catalog/update_taxa/' + row.id + '/" style="white-space: nowrap"><i class="fas fa-fw fa-edit text-primary"></i> Editar</a><br/>' +
-                            '<a href="/catalog/split_1_taxa/' + row.id + '/" style="white-space: nowrap"><i class="fas fa-sharp fa-solid fa-expand-arrows-alt text-primary"></i> Dividir con 1 nuevo taxón</a><br/>' +
-                            '<a href="/catalog/split_2_taxa/' + row.id + '/" style="white-space: nowrap"><i class="fas fa-sharp fa-solid fa-expand-arrows-alt text-primary"></i> Dividir a 2 nuevos taxones</a><br/>' +
-                            '<a href="/catalog/merge_taxa/' + row.id + '/" style="white-space: nowrap"><i class="fas fa-sharp fa-solid fa-compress text-primary"></i> Unir</a>';
+                            let deletable = {{ deletable }};
+                            let buttonActions = '<a href="{{ update_rank_url }}"><i class="fas fa-fw fa-edit text-primary"></i></a>'.replace(
+                                "0", row.id
+                            )
+                            if (deletable === 1)
+                                buttonActions += '<a href="{{ update_rank_url }}"><i class="fas fa-fw fa-trash text-danger"></i></a>'.replace(
+                                    "update", "delete"
+                                ).replace(
+                                    "0", row.id
+                                );
+                            return buttonActions;
                         }
-                    },
-                ],
-            });
-        }
-
-        function download_xlsx(data_error) {
-            $(document).ajaxSend(function() {
-                $("#overlay").fadeIn(300);
-            });
-            $.ajax({
-                url: '/catalog/download',
-                type: 'GET',
-                xhrFields: {
-                    // make sure the response knows we're expecting a binary type in return.
-                    // this is important, without it the excel file is marked corrupted.
-                    responseType: 'arraybuffer'
-                }
-            }).done(function (data, status, xmlHeaderRequest) {
-                const downloadLink = document.createElement('a');
-                const blob = new Blob([data],
-                    {
-                        type: xmlHeaderRequest.getResponseHeader('Content-Type')
-                    });
-                const url = window.URL || window.webkitURL;
-                const downloadUrl = url.createObjectURL(blob);
-                const fileName = 'vouchers_error.xlsx';
-
-                if (typeof window.navigator.msSaveBlob !== 'undefined') {
-                    window.navigator.msSaveBlob(blob, fileName);
-                } else {
-                    if (fileName) {
-                        if (typeof downloadLink.download === 'undefined') {
-                            window.location = downloadUrl;
-                        } else {
-                            downloadLink.href = downloadUrl;
-                            downloadLink.download = "catalog.xlsx";
-                            document.body.appendChild(downloadLink);
-                            downloadLink.click();
-                        }
-                    } else {
-                        window.location = downloadUrl;
                     }
-                    setTimeout(function () {
-                            url.revokeObjectURL(downloadUrl);
-                            $("#overlay").fadeOut(300);
-                        },
-                        100);
-                }
+                ],
             });
         }
     </script>
 {% endblock %}
 {% block content %}
-    <h1>Catálogo</h1>
+    <h1>{{ rank_title }}</h1>
+    <!-- DataTables Example -->
     <div class="card mb-3">
         <div class="row">
             <div class="col-3">
-                <a class="btn btn-primary" href="{% url 'create_taxa' %}">Nuevo</a>
-            </div>
-            <div class="col-3 offset-md-6">
-                <a class="btn btn-primary" href="#" onclick="download_xlsx()">Descargar</a>
+                <a class="btn btn-primary" href="{{ create_rank_url }}">Nuevo</a>
             </div>
         </div>
         <div class="card-header">
             <i class="fas fa-table"></i>
-            Catálogo</div>
+            {{ rank_title }}</div>
         <div class="card-body">
             <div class="row" id="TemporalSearch">
                 <div class="col-sm-12 col-md-6"></div>
@@ -176,23 +115,18 @@
                 <table class="table table-bordered" id="CatalogTable" width="100%" cellspacing="0">
                     <thead>
                     <tr>
-                        <th>División</th>
-                        <th>Clase</th>
-                        <th>Orden</th>
-                        <th>Familia</th>
-                        <th>Nombre Científico Completo</th>
-                        <th>Creado Por</th>
-                        <th>Fecha de Creación</th>
-                        <th>Última Actualización</th>
-                        <th>Status</th>
-                        <th>¿Terminal?</th>
+                        <th>{{ rank_name_title }}</th>
+                        <th>{{ parent_rank_title }}</th>
+                        <th>Creado por</th>
+                        <th>Fecha Creación</th>
+                        <th>Fecha Actualización</th>
                         <th>Acción</th>
                     </tr>
                     </thead>
                     <tbody>
                     <!-- To be populated -->
                         <tr>
-                            <td colspan="11" >
+                            <td colspan="6" >
                                 <div class="d-flex justify-content-center">
                                     <button type="button" class="btn btn-info" onclick="loadTable()">
                                         <i class="fas fa-fw fa-sync"></i>

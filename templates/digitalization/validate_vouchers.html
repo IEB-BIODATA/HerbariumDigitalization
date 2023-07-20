@@ -2,266 +2,288 @@
 {% load static %}
 {% load roles %}
 {% block javascript %}
-<script src="{% static 'vendor/datatables/jquery.dataTables.js' %}"></script>
-<script src="{% static 'vendor/datatables/dataTables.bootstrap4.js' %}"></script>
-  <script type="text/javascript">
-  $(document).ready(function() {
-    $('#PagesTable').DataTable({order: [[0, 'desc']],});
-  });
+    <script src="https://cdn.datatables.net/1.13.5/js/jquery.dataTables.min.js"></script>
+    <script src="https://cdn.datatables.net/1.13.5/js/dataTables.bootstrap5.min.js"></script>
+    <script src="{% static 'js/common.js' %}"></script>
+    <script type="text/javascript">
+        $(document).ready(function() {
+            $('#PagesTable').DataTable({
+                order: [[0, 'desc']],
+                language: languageTable.spanish,
+                columnDefs: [
+                    {
+                        targets: [2],
+                        render: function(val, type) {
+                            if (type === 'sort')
+                                return parseDate(val);
+                            else
+                                return val;
+                        }
+                    },
+                    {
+                        targets: [7],
+                        orderable: false,
+                    }
+                ]
+            });
+        });
 
-  function load_file(voucher_id){
-    $(document).ajaxSend(function() {
-        $("#overlay").fadeIn(300);　
-    });
-    var file_data = $("#file_"+voucher_id).prop("files")[0]; 
-    var data = new FormData($('#file_form_'+voucher_id).get(0));
-    data.append("image", file_data);
-    data.append("voucher_id", voucher_id);
-    $.ajax({
-      data: data,
-      url: '/digitalization/upload_raw_image',
-      type: 'POST',
-      success : function(response) {
-        if(response.result == 'ok'){
-          url='<a href="'+response.file_url+'">Download CR3</a>'
-          $("#file_link_"+voucher_id).empty();
-          $("#file_link_"+voucher_id).append(url)
+        function load_file(voucher_id){
+            $(document).ajaxSend(function() {
+                $("#overlay").fadeIn(300);
+            });
+            var file_data = $("#file_"+voucher_id).prop("files")[0];
+            var data = new FormData($('#file_form_'+voucher_id).get(0));
+            data.append("image", file_data);
+            data.append("voucher_id", voucher_id);
+            $.ajax({
+                data: data,
+                url: '/digitalization/upload_raw_image',
+                type: 'POST',
+                success : function(response) {
+                    if(response.result == 'ok'){
+                        url='<a href="'+response.file_url+'">Download CR3</a>'
+                        $("#file_link_"+voucher_id).empty();
+                        $("#file_link_"+voucher_id).append(url)
+                    }
+                },
+                cache: false,
+                processData: false,
+                contentType: false,
+            }).done(function() {
+                setTimeout(function(){
+                    $("#overlay").fadeOut(300);
+                },500);
+            })
         }
-      },
-    cache: false,
-    processData: false,
-    contentType: false,
-    }).done(function() {
-          setTimeout(function(){
-            $("#overlay").fadeOut(300);
-          },500);
-    })
-  }
 
-  function get_vouchers(page_id,voucher_state){
-    $(document).ajaxSend(function() {
-        $("#overlay").fadeIn(300);
-    });
-    $.ajax({
-     url: '/digitalization/get_vouchers_to_validate?page_id='+page_id+'&state_voucher='+voucher_state,
-     type: 'GET',
-     success : function(response) {
-      $('#page_name').text(response.page);
-      data=response.data
-      var table = '<thead><tr><th>Estado</th><th>ID Herbario</th><th>Nombre Especie</th><th>Colectado por</th><th>Numero de Colecta</th><th>Ubicación</th><th>Imagen</th></tr></thead><tbody>'
-      var ol = '';
-      var items = '';
-      var download = '';
-      var active_bool = false;
-      $('#vouchers-content').empty();
-      $('#dataTable'+page_id).empty(); 
-      $('#myCarouselOl').empty(); 
-      $('#myCarouselItems').empty(); 
-      j=0;
-      for(var i=0; i<data.length; i++)
-      {
-          switch(data[i].fields.voucherStateID) {
-            case 0:
-              class_state='bg-light text-dark';
-              break;
-            case 1:
-              class_state='bg-success text-white';
-              break;
-            case 2:
-              class_state='bg-danger text-white';
-              break;
-            case 3:
-              class_state='bg-warning text-dark';
-              break;
-            case 4:
-              class_state='bg-warning text-white';
-              break;
-            case 5:
-              class_state='bg-info text-dark';
-              break;
-            case 6:
-              class_state='bg-info text-dark';
-              break;
-            case 7:
-              class_state='bg-primary text-white';
-              break;
-          }
-          if (data[i].fields.image_voucher_thumb_url == '#' && data[i].fields.image_voucher_cr3_raw_url == '#')
-          {
-            image = '(Sin Imagen)';
-            download='<form id="file_form_'+data[i].fields.id+'" action="" method="post" enctype="multipart/form-data"><input type="file" id="file_'+data[i].fields.id+'" style="display: none;" onchange="load_file('+data[i].fields.id+'); return false;" accept=".CR3"/><input type="button" value="Subir imagen..." onclick="document.getElementById('+String.fromCharCode(39)+'file_'+data[i].fields.id+String.fromCharCode(39)+').click();" /><input id="generated_page_id" name="generated_page_id" type="hidden" value="'+data[i].fields.id+'"></form><div id='+String.fromCharCode(39)+'file_link_'+data[i].fields.id+String.fromCharCode(39)+'>Download CR3</div>';
-          }
-          else if (data[i].fields.image_voucher_thumb_url == '#' && data[i].fields.image_voucher_cr3_raw_url != '#')
-          {
-            image = '(Sin Imagen)';
-            download='<form id="file_form_'+data[i].fields.id+'" action="" method="post" enctype="multipart/form-data"><input type="file" id="file_'+data[i].fields.id+'" style="display: none;" onchange="load_file('+data[i].fields.id+'); return false;" accept=".CR3"/><input type="button" value="Subir imagen..." onclick="document.getElementById('+String.fromCharCode(39)+'file_'+data[i].fields.id+String.fromCharCode(39)+').click();" /><input id="generated_page_id" name="generated_page_id" type="hidden" value="'+data[i].fields.id+'"></form><a href="'+data[i].fields.image_voucher_cr3_raw_url+'" target=_"blank">Download CR3</a>';
-          }
-          else
-          {
-            active="";
-            if(!active_bool) {active="active";active_bool=true;};
-            image = '<div class="gallery-box wow fadeInDown"><div data-toggle="modal" data-target="#myModal"><img width="200px" src="'+data[i].fields.image_voucher_thumb_url+'" data-target="#myCarousel" data-slide-to="'+j+'"></div>';
-            ol += '<li data-target="#myCarousel" data-slide-to="'+j+'" class="'+active+'"></li>';
-            items += '<div class="carousel-item '+active+'"><img src="'+data[i].fields.image_voucher_url+'" class="d-block w-100"></div>';
-            download='<a href="'+data[i].fields.image_voucher_jpg_raw_url+'" target=_"blank">Download JPG Original</a><br/><a href="'+data[i].fields.image_voucher_jpg_raw_url_public+'" target=_"blank">Download JPG Público</a><br/><a href="'+data[i].fields.image_voucher_cr3_raw_url+'" target=_"blank">Download CR3</a>';
-            j++;
-          }
-          table += '<tr><td><div class="p-3 mb-2 '+class_state+' ">'+data[i].fields.voucherStateName+'</div></td><td>'+data[i].fields.catalogNumber+'</td><td>'+data[i].fields.scientificNameStr+'</td><td>'+data[i].fields.recordedBy+'</td><td>'+data[i].fields.recordNumber+'</td><td>'+data[i].fields.locality+'</td><td>'+image+download+'</td></tr>';
-      }
-      $("[id^=dataTable]").remove()
-      table += "</tbody>";
-      $('#vouchers-content').append('<table class="table table-bordered" id="dataTable'+page_id+'" width="100%" cellspacing="0"></table>');
-      $('#dataTable'+page_id).append(table); 
-      $("#vouchers-table").show("slow");
-      $('#myCarouselOl').append(ol); 
-      $('#myCarouselItems').append(items);     
-     },
-      cache: false,
-      processData: false,
-      contentType: false,
-    }).done(function() {
-          $('#dataTable'+page_id).DataTable();
-          $('#dataTable'+page_id+'_length').append('<label class="p-3">Filtrar Estado <select id="voucher_state" name="VouchersTable_length" aria-controls="VouchersTable" class="custom-select custom-select-sm form-control form-control-sm" onchange="get_vouchers('+page_id+',this.value);"><option value="-1">Todos</option><option value="1">Encontrado</option><option value="0">Sin Estado</option><option value="2">No Encontrado</option><option value="3">En Préstamo</option><option value="4">Extraviado</option><option value="5">En Préstado Encontrado</option><option value="6">Extraviado Encontrado</option><option value="7">Digitalizado</option></select></label>');
-          $('#voucher_state option[value='+voucher_state+']').attr('selected','selected');
-          setTimeout(function(){
-            $("#overlay").fadeOut(300);
-          },500);
-    });
-  }
-
-  function process_pending_images(){
-    $(document).ajaxSend(function() {
-        $("#overlay").fadeIn(300);　
-    });
-
-    $.ajax({
-      url: '/digitalization/process_pending_images',
-      type: 'GET',
-      success : function(response) {
-        if(response.result == 'ok'){
-          $("#alert").addClass("alert-success");
-          var messaje = '<p>Proceso exitoso</p>';
+        function get_vouchers(page_id,voucher_state){
+            $(document).ajaxSend(function() {
+                $("#overlay").fadeIn(300);
+            });
+            $.ajax({
+                url: '/digitalization/get_vouchers_to_validate?page_id='+page_id+'&state_voucher='+voucher_state,
+                type: 'GET',
+                success : function(response) {
+                    $('#page_name').text(response.page);
+                    data=response.data
+                    var table = '<thead><tr><th>Estado</th><th>ID Herbario</th><th>Nombre Especie</th><th>Colectado por</th><th>Numero de Colecta</th><th>Ubicación</th><th>Imagen</th></tr></thead><tbody>'
+                    var ol = '';
+                    var items = '';
+                    var download = '';
+                    var active_bool = false;
+                    $('#vouchers-content').empty();
+                    $('#dataTable'+page_id).empty();
+                    $('#myCarouselOl').empty();
+                    $('#myCarouselItems').empty();
+                    j=0;
+                    for(var i=0; i<data.length; i++)
+                    {
+                        switch(data[i].fields.voucherStateID) {
+                            case 0:
+                                class_state='bg-light text-dark';
+                                break;
+                            case 1:
+                                class_state='bg-success text-white';
+                                break;
+                            case 2:
+                                class_state='bg-danger text-white';
+                                break;
+                            case 3:
+                                class_state='bg-warning text-dark';
+                                break;
+                            case 4:
+                                class_state='bg-warning text-white';
+                                break;
+                            case 5:
+                                class_state='bg-info text-dark';
+                                break;
+                            case 6:
+                                class_state='bg-info text-dark';
+                                break;
+                            case 7:
+                                class_state='bg-primary text-white';
+                                break;
+                        }
+                        if (data[i].fields.image_voucher_thumb_url == '#' && data[i].fields.image_voucher_cr3_raw_url == '#')
+                        {
+                            image = '(Sin Imagen)';
+                            download='<form id="file_form_'+data[i].fields.id+'" action="" method="post" enctype="multipart/form-data"><input type="file" id="file_'+data[i].fields.id+'" style="display: none;" onchange="load_file('+data[i].fields.id+'); return false;" accept=".CR3"/><input type="button" value="Subir imagen..." onclick="document.getElementById('+String.fromCharCode(39)+'file_'+data[i].fields.id+String.fromCharCode(39)+').click();" /><input id="generated_page_id" name="generated_page_id" type="hidden" value="'+data[i].fields.id+'"></form><div id='+String.fromCharCode(39)+'file_link_'+data[i].fields.id+String.fromCharCode(39)+'>Download CR3</div>';
+                        }
+                        else if (data[i].fields.image_voucher_thumb_url == '#' && data[i].fields.image_voucher_cr3_raw_url != '#')
+                        {
+                            image = '(Sin Imagen)';
+                            download='<form id="file_form_'+data[i].fields.id+'" action="" method="post" enctype="multipart/form-data"><input type="file" id="file_'+data[i].fields.id+'" style="display: none;" onchange="load_file('+data[i].fields.id+'); return false;" accept=".CR3"/><input type="button" value="Subir imagen..." onclick="document.getElementById('+String.fromCharCode(39)+'file_'+data[i].fields.id+String.fromCharCode(39)+').click();" /><input id="generated_page_id" name="generated_page_id" type="hidden" value="'+data[i].fields.id+'"></form><a href="'+data[i].fields.image_voucher_cr3_raw_url+'" target=_"blank">Download CR3</a>';
+                        }
+                        else
+                        {
+                            active="";
+                            if(!active_bool) {active="active";active_bool=true;};
+                            image = '<div class="gallery-box wow fadeInDown"><div data-toggle="modal" data-target="#myModal"><img width="200px" src="'+data[i].fields.image_voucher_thumb_url+'" data-target="#myCarousel" data-slide-to="'+j+'"></div>';
+                            ol += '<li data-target="#myCarousel" data-slide-to="'+j+'" class="'+active+'"></li>';
+                            items += '<div class="carousel-item '+active+'"><img src="'+data[i].fields.image_voucher_url+'" class="d-block w-100"></div>';
+                            download='<a href="'+data[i].fields.image_voucher_jpg_raw_url+'" target=_"blank">Download JPG Original</a><br/><a href="'+data[i].fields.image_voucher_jpg_raw_url_public+'" target=_"blank">Download JPG Público</a><br/><a href="'+data[i].fields.image_voucher_cr3_raw_url+'" target=_"blank">Download CR3</a>';
+                            j++;
+                        }
+                        table += '<tr><td><div class="p-3 mb-2 '+class_state+' ">'+data[i].fields.voucherStateName+'</div></td><td>'+data[i].fields.catalogNumber+'</td><td>'+data[i].fields.scientificNameStr+'</td><td>'+data[i].fields.recordedBy+'</td><td>'+data[i].fields.recordNumber+'</td><td>'+data[i].fields.locality+'</td><td>'+image+download+'</td></tr>';
+                    }
+                    $("[id^=dataTable]").remove()
+                    table += "</tbody>";
+                    $('#vouchers-content').append('<table class="table table-bordered" id="dataTable'+page_id+'" width="100%" cellspacing="0"></table>');
+                    $('#dataTable'+page_id).append(table);
+                    $("#vouchers-table").show("slow");
+                    $('#myCarouselOl').append(ol);
+                    $('#myCarouselItems').append(items);
+                },
+                cache: false,
+                processData: false,
+                contentType: false,
+            }).done(function() {
+                $('#dataTable'+page_id).DataTable({
+                    order: [[4, 'desc']],
+                    language: languageTable.spanish,
+                });
+                $('#dataTable'+page_id+'_length').append('<label class="p-3">Filtrar Estado <select id="voucher_state" name="VouchersTable_length" aria-controls="VouchersTable" class="custom-select custom-select-sm form-control form-control-sm" onchange="get_vouchers('+page_id+',this.value);"><option value="-1">Todos</option><option value="1">Encontrado</option><option value="0">Sin Estado</option><option value="2">No Encontrado</option><option value="3">En Préstamo</option><option value="4">Extraviado</option><option value="5">En Préstado Encontrado</option><option value="6">Extraviado Encontrado</option><option value="7">Digitalizado</option></select></label>');
+                $('#voucher_state option[value='+voucher_state+']').attr('selected','selected');
+                setTimeout(function(){
+                    $("#overlay").fadeOut(300);
+                },500);
+            });
         }
-        else
-        {
-          $("#alert").addClass("alert-danger");
-          var messaje = '<p>Error al iniciar el proceso</p>';
+
+        function process_pending_images(){
+            $(document).ajaxSend(function() {
+                $("#overlay").fadeIn(300);
+            });
+
+            $.ajax({
+                url: '/digitalization/process_pending_images',
+                type: 'GET',
+                success : function(response) {
+                    if(response.result == 'ok'){
+                        $("#alert").addClass("alert-success");
+                        var messaje = '<p>Proceso exitoso</p>';
+                    }
+                    else
+                    {
+                        $("#alert").addClass("alert-danger");
+                        var messaje = '<p>Error al iniciar el proceso</p>';
+                    }
+                    $('#alert').append(messaje);
+                    $("#alert").show("slow");
+                },
+                cache: false,
+                processData: false,
+                contentType: false,
+            }).done(function() {
+                setTimeout(function(){
+                    $("#overlay").fadeOut(300);
+                },500);
+            })
         }
-        $('#alert').append(messaje);
-        $("#alert").show("slow");
-      },
-    cache: false,
-    processData: false,
-    contentType: false,
-    }).done(function() {
-          setTimeout(function(){
-            $("#overlay").fadeOut(300);
-          },500);
-    })
-  }
-  </script>
+    </script>
 {% endblock %}
 {% block content %}
-<h1>Digitalización de Especímenes</h1>
-<!-- DataTables Example -->
-<div class="card mb-3">
-  <div class="row">
-    <div class="col-3">
-     <a class="btn btn-primary btn-block" href="#" onclick="process_pending_images()" {% if request.user|has_group:"Test" %} style="visibility: hidden;"{% endif %}>Procesar imagenes pendientes</a>
-    </div>
-  </div>
-  <div class="row">
-    <div class="col-3">
-      <div class="alert" role="alert" style="display: none;" id="alert"></div>
-    </div>
-  </div>
-  <div class="card-header">
-    <i class="fas fa-table"></i>
-    Tabla de Páginas</div>
-  <div class="card-body">
-    <div class="table-responsive">
-      <table class="table table-bordered" id="PagesTable" width="100%" cellspacing="0">
-        <thead>
-          <tr>
-            <th>Sesión</th>
-            <th>Creado por</th>
-            <th>Fecha creación</th>
-            <th>Sin Estado</th>
-            <th>Encontrados</th>
-            <th>No Encontrados</th>
-            <th>Digitalizados</th>
-            <th>Link</th>
-          </tr>
-        </thead>
-        <tbody>
-          {% for generated_page in generated_pages%}
-            <tr>
-              <td>{{ generated_page.id }}</td>
-              <td>{{ generated_page.created_by }}</td>
-              <td>{{ generated_page.created_at }}</td>
-              <td>{{ generated_page.StatelessCount }}</td>
-              <td>{{ generated_page.FoundCount }}</td>
-              <td>{{ generated_page.NotFoundCount }}</td>
-              <td>{{ generated_page.Digitalized }}</td>
-              <td id="td_link_{{generated_page.id}}">
-                {% if generated_page.terminated %}
-                  <a id="digitalized_link_{{generated_page.id}}" href="#" {% if generated_page.color_profile %} class="btn btn-primary btn-block" onclick="get_vouchers({{generated_page.id}},-1); return false;" {% else %} class="btn btn-secondary btn-block"  style="pointer-events: none;cursor: default;" {% endif %}>Revisar</a>
-                {% else %}
-                  <p>Esta sesión aún no termina.</p>
-                {% endif %}
-              </td>
-            </tr>
-          {% endfor%}
-        </tbody>
-      </table>
-    </div>
-  </div>
-</div>
-<div class="card mb-3" id="vouchers-table" style="display: none;">
-  <div class="card-header">
-    <i class="fas fa-table"></i><div id="page_name" style="display: contents;"></div>
-  </div>
-  <div class="card-body">
-    <div class="table-responsive" id="vouchers-content">
-      <table class="table table-bordered" id="dataTable2" width="100%" cellspacing="0">
-      </table>
-    </div>
-  </div>
-  <div class="card-footer small text-muted">Updated yesterday at 11:59 PM</div>
-</div>
-<!-- Lightbox (made with Bootstrap modal and carousel) -->
-<!-- Modal -->
-<div class="modal fade" id="myModal" tabindex="-1" aria-hidden="true">
-    <div class="modal-dialog">
-        <div class="modal-content">
-            <div class="modal-header">
-                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
-                    <span aria-hidden="true">&times;</span>
-                </button>
+    <h1>Digitalización de Especímenes</h1>
+    <!-- DataTables Example -->
+    <div class="card mb-3">
+        <div class="row">
+            <div class="col-3">
+                <a class="btn btn-primary" href="#" onclick="process_pending_images()" {% if request.user|has_group:"Test" %} style="visibility: hidden;"{% endif %}>Procesar imagenes pendientes</a>
             </div>
-            <div class="modal-body">
- 
-                <!-- Carousel -->
-                <div id="myCarousel" class="carousel slide">
-                    <ol class="carousel-indicators" id="myCarouselOl">
-                    </ol>
-                    <div class="carousel-inner" id="myCarouselItems">
-                    </div>
-                    <a class="carousel-control-prev" href="#myCarousel" role="button" data-slide="prev">
-                        <span class="carousel-control-prev-icon" aria-hidden="true"></span>
-                        <span class="sr-only">Previous</span>
-                    </a>
-                    <a class="carousel-control-next" href="#myCarousel" role="button" data-slide="next">
-                        <span class="carousel-control-next-icon" aria-hidden="true"></span>
-                        <span class="sr-only">Next</span>
-                    </a>
-                </div>
- 
+        </div>
+        <div class="row">
+            <div class="col-3">
+                <div class="alert" role="alert" style="display: none;" id="alert"></div>
             </div>
-            <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" data-dismiss="modal">Cerrar</button>
+        </div>
+        <div class="card-header">
+            <i class="fas fa-table"></i>
+            Tabla de Páginas</div>
+        <div class="card-body">
+            <div class="table-responsive">
+                <table class="table table-bordered" id="PagesTable" width="100%" cellspacing="0">
+                    <thead>
+                    <tr>
+                        <th>Sesión</th>
+                        <th>Creado por</th>
+                        <th>Fecha creación</th>
+                        <th>Sin Estado</th>
+                        <th>Encontrados</th>
+                        <th>No Encontrados</th>
+                        <th>Digitalizados</th>
+                        <th>Link</th>
+                    </tr>
+                    </thead>
+                    <tbody>
+                    {% for generated_page in generated_pages%}
+                        <tr>
+                            <td>{{ generated_page.id }}</td>
+                            <td>{{ generated_page.created_by }}</td>
+                            <td>{{ generated_page.created_at }}</td>
+                            <td>{{ generated_page.StatelessCount }}</td>
+                            <td>{{ generated_page.FoundCount }}</td>
+                            <td>{{ generated_page.NotFoundCount }}</td>
+                            <td>{{ generated_page.Digitalized }}</td>
+                            <td id="td_link_{{generated_page.id}}" class="d-grid">
+                                {% if generated_page.terminated %}
+                                    <a id="digitalized_link_{{generated_page.id}}" href="#" {% if generated_page.color_profile %} class="btn btn-primary" onclick="get_vouchers({{generated_page.id}},-1); return false;" {% else %} class="btn btn-secondary"  style="pointer-events: none;cursor: default;" {% endif %}>Revisar</a>
+                                {% else %}
+                                    <p>Esta sesión aún no termina.</p>
+                                {% endif %}
+                            </td>
+                        </tr>
+                    {% endfor%}
+                    </tbody>
+                </table>
             </div>
         </div>
     </div>
-</div>
+    <div class="card mb-3" id="vouchers-table" style="display: none;">
+        <div class="card-header">
+            <i class="fas fa-table"></i><div id="page_name" style="display: contents;"></div>
+        </div>
+        <div class="card-body">
+            <div class="table-responsive" id="vouchers-content">
+                <table class="table table-bordered" id="dataTable2" width="100%" cellspacing="0">
+                </table>
+            </div>
+        </div>
+        <div class="card-footer small text-muted">Updated yesterday at 11:59 PM</div>
+    </div>
+    <!-- Lightbox (made with Bootstrap modal and carousel) -->
+    <!-- Modal -->
+    <div class="modal fade" id="myModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                        <span aria-hidden="true">&times;</span>
+                    </button>
+                </div>
+                <div class="modal-body">
+
+                    <!-- Carousel -->
+                    <div id="myCarousel" class="carousel slide">
+                        <ol class="carousel-indicators" id="myCarouselOl">
+                        </ol>
+                        <div class="carousel-inner" id="myCarouselItems">
+                        </div>
+                        <a class="carousel-control-prev" href="#myCarousel" role="button" data-slide="prev">
+                            <span class="carousel-control-prev-icon" aria-hidden="true"></span>
+                            <span class="sr-only">Previous</span>
+                        </a>
+                        <a class="carousel-control-next" href="#myCarousel" role="button" data-slide="next">
+                            <span class="carousel-control-next-icon" aria-hidden="true"></span>
+                            <span class="sr-only">Next</span>
+                        </a>
+                    </div>
+
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-dismiss="modal">Cerrar</button>
+                </div>
+            </div>
+        </div>
+    </div>
 {% endblock %}

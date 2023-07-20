@@ -54,8 +54,8 @@
               <td>{{ generated_page.name }}</td>
               <td>{{ generated_page.created_by }}</td>
               <td>{{ generated_page.created_at }}</td>
-              <td><a class="btn btn-primary btn-block" href="#" onclick="code_generator({{generated_page.id}}); return false;">Imprimir Lista</a></td>
-              <td><a class="btn btn-primary btn-block" href="#" onclick="code_generator({{generated_page.id}}); return false;">Imprimir QRS</a></td>
+              <td><a class="btn btn-primary" href="#" onclick="code_generator({{generated_page.id}}); return false;">Imprimir Lista</a></td>
+              <td><a class="btn btn-primary" href="#" onclick="code_generator({{generated_page.id}}); return false;">Imprimir QRS</a></td>
             </tr>
           {% endfor%}
         </tbody>

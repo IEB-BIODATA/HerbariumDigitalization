@@ -1,149 +1,168 @@
 {% extends "base.html" %}
 {% load static %}
 {% block javascript %}
-  <script src="{% static 'vendor/datatables/jquery.dataTables.js' %}"></script>
-  <script src="{% static 'vendor/datatables/dataTables.bootstrap4.js' %}"></script>
-  <script type="text/javascript">
-    $(document).ready(function() {
-      $('#dataTable').DataTable({"order": []});
-    });
-      
-    function page_gr_generator(historical_page_id) {
-      $(document).ajaxSend(function() {
-        $("#overlay").fadeIn(300);　
-      });
-      $.ajax({
-         data: $("#qr_generator_form").serialize() + "&csrfmiddlewaretoken=" + $('input[name=csrfmiddlewaretoken]').val(),
-         url: '/digitalization/historical_page_download?historical_page_id='+historical_page_id,
-         type: 'GET',
-         success : function(data) {
-          var pdfFile=new Blob([data], {type: "application/pdf"});
-          var pdfUrl = URL.createObjectURL(pdfFile);
-          printJS(pdfUrl);
-         }
-      }).done(function() {
-        setTimeout(function(){
-          $("#overlay").fadeOut(300);
-        },500);
-      });
-    }
-    function page_priority_voucher_generator(historical_page_id) {
-      $(document).ajaxSend(function() {
-        $("#overlay").fadeIn(300);　
-      });
-      $.ajax({
-         data: $("#qr_generator_form").serialize() + "&csrfmiddlewaretoken=" + $('input[name=csrfmiddlewaretoken]').val(),
-         url: '/digitalization/historical_priority_voucher_page_download?historical_page_id='+historical_page_id,
-         type: 'GET',
-         success : function(data) {
-          var pdfFile=new Blob([data], {type: "application/pdf"});
-          var pdfUrl = URL.createObjectURL(pdfFile);
-          printJS(pdfUrl);
-         }
-      }).done(function() {
-        setTimeout(function(){
-          $("#overlay").fadeOut(300);
-        },500);
-      });
-    }
-    function code_generator() {
-      $(document).ajaxSend(function() {
-        $("#overlay").fadeIn(300);　
-      });
-      var confirmation = confirm("¿Está seguro que desea generar esta página de códigos?");
-      if (confirmation) {
-        $.ajax({
-           data: $("#qr_generator_form").serialize() + "&csrfmiddlewaretoken=" + $('input[name=csrfmiddlewaretoken]').val(),
-           url: '/digitalization/code_generator',
-           type: 'POST',
-           success : function(data) {
-            if (data.result=='error') 
-            {
-              $("#alert").addClass("alert-danger");
-              if (data.type=='no data') 
-              {  
-                var messaje = '<p>No hay registros disponibles para generar códigos QR.</p>'
-                $('#alert').append(messaje); 
-              }
-              else if (data.type=='no terminated') 
-              {  
-                var messaje = '<p>Deben estar todas las sesiones terminadas para generar una nueva.</p>'
-                $('#alert').append(messaje); 
-              }
-            }
-            else if (data.result=='OK')
-            {
-              $("#dataTable").append('<tr><td>'+data.generated_page.id+'</td><td>'+data.generated_page.herbarium+'</td><td>'+data.generated_page.created_by+'</td><td>'+data.generated_page.created_at+'</td><td>'+data.generated_page.Total+'</td><td>No</td><td><a class="btn btn-primary btn-block" href="#" onclick="page_priority_voucher_generator('+data.generated_page.id+'); return false;">Imprimir Lista</a></td><td><a class="btn btn-primary btn-block" href="#" onclick="page_gr_generator('+data.generated_page.id+'); return false;">Imprimir QRS</a></td></tr>');
-              var messaje = '<p>Se generaron los códigos QR correctamente</p>'
-              $('#alert').append(messaje); 
-              $("#alert").addClass("alert-success");
-            }
-            $("#alert").show("slow");
-           }
-        }).done(function() {
-          setTimeout(function(){
-            $("#overlay").fadeOut(300);
-          },500);
+    <script src="https://cdn.datatables.net/1.13.5/js/jquery.dataTables.min.js"></script>
+    <script src="https://cdn.datatables.net/1.13.5/js/dataTables.bootstrap5.min.js"></script>
+    <script src="{% static 'js/common.js' %}"></script>
+    <script type="text/javascript">
+        $(document).ready(function() {
+            $('#dataTable').DataTable({
+                order: [[0, 'desc']],
+                language: languageTable.spanish,
+                columnDefs: [
+                    {
+                        targets: [3],
+                        render: function(val, type) {
+                            if (type === 'sort')
+                                return parseDate(val);
+                            else
+                                return val;
+                        }
+                    },
+                    {
+                        targets: [6, 7],
+                        orderable: false,
+                    }
+                ],
+            });
         });
-      }
-    }
-  </script>
+
+        function page_gr_generator(historical_page_id) {
+            $(document).ajaxSend(function() {
+                $("#overlay").fadeIn(300);
+            });
+            $.ajax({
+                data: $("#qr_generator_form").serialize() + "&csrfmiddlewaretoken=" + $('input[name=csrfmiddlewaretoken]').val(),
+                url: '/digitalization/historical_page_download?historical_page_id='+historical_page_id,
+                type: 'GET',
+                success : function(data) {
+                    var pdfFile=new Blob([data], {type: "application/pdf"});
+                    var pdfUrl = URL.createObjectURL(pdfFile);
+                    printJS(pdfUrl);
+                }
+            }).done(function() {
+                setTimeout(function(){
+                    $("#overlay").fadeOut(300);
+                },500);
+            });
+        }
+        function page_priority_voucher_generator(historical_page_id) {
+            $(document).ajaxSend(function() {
+                $("#overlay").fadeIn(300);
+            });
+            $.ajax({
+                data: $("#qr_generator_form").serialize() + "&csrfmiddlewaretoken=" + $('input[name=csrfmiddlewaretoken]').val(),
+                url: '/digitalization/historical_priority_voucher_page_download?historical_page_id='+historical_page_id,
+                type: 'GET',
+                success : function(data) {
+                    var pdfFile=new Blob([data], {type: "application/pdf"});
+                    var pdfUrl = URL.createObjectURL(pdfFile);
+                    printJS(pdfUrl);
+                }
+            }).done(function() {
+                setTimeout(function(){
+                    $("#overlay").fadeOut(300);
+                },500);
+            });
+        }
+        function code_generator() {
+            $(document).ajaxSend(function() {
+                $("#overlay").fadeIn(300);
+            });
+            var confirmation = confirm("¿Está seguro que desea generar esta página de códigos?");
+            if (confirmation) {
+                $.ajax({
+                    data: $("#qr_generator_form").serialize() + "&csrfmiddlewaretoken=" + $('input[name=csrfmiddlewaretoken]').val(),
+                    url: '/digitalization/code_generator',
+                    type: 'POST',
+                    success : function(data) {
+                        if (data.result=='error')
+                        {
+                            $("#alert").addClass("alert-danger");
+                            if (data.type=='no data')
+                            {
+                                var messaje = '<p>No hay registros disponibles para generar códigos QR.</p>'
+                                $('#alert').append(messaje);
+                            }
+                            else if (data.type=='no terminated')
+                            {
+                                var messaje = '<p>Deben estar todas las sesiones terminadas para generar una nueva.</p>'
+                                $('#alert').append(messaje);
+                            }
+                        }
+                        else if (data.result=='OK')
+                        {
+                            $("#dataTable").append('<tr><td>'+data.generated_page.id+'</td><td>'+data.generated_page.herbarium+'</td><td>'+data.generated_page.created_by+'</td><td>'+data.generated_page.created_at+'</td><td>'+data.generated_page.Total+'</td><td>No</td><td><a class="btn btn-primary" href="#" onclick="page_priority_voucher_generator('+data.generated_page.id+'); return false;">Imprimir Lista</a></td><td><a class="btn btn-primary" href="#" onclick="page_gr_generator('+data.generated_page.id+'); return false;">Imprimir QRS</a></td></tr>');
+                            var messaje = '<p>Se generaron los códigos QR correctamente</p>'
+                            $('#alert').append(messaje);
+                            $("#alert").addClass("alert-success");
+                        }
+                        $("#alert").show("slow");
+                    }
+                }).done(function() {
+                    setTimeout(function(){
+                        $("#overlay").fadeOut(300);
+                    },500);
+                });
+            }
+        }
+    </script>
 {% endblock %}
 {% block content %}
-<h1>Generación de Códigos QR</h1>
-<form id="qr_generator_form" class="qr_generator_form" action="" method="post" onsubmit="code_generator(); return false;">
-  {% csrf_token %}
-  <div class="form-group">
-    <label for="herbarium_label">Herbario</label>
-    <select class="form-control" id="herbarium_input" name="herbarium_input" required>
-      {% for herbarium in herbariums %}
-        <option value="{{ herbarium.id }}">{{ herbarium.name }}</option>
-      {% endfor %}
-    </select>
-    <label for="quantity_pages_label">Ingrese la cantidad de páginas de códigos QR que desea generar el día de hoy (35 qr's / página):</label>
-    <input class="form-control" type="number" value="1" name="quantity_pages_input" id="quantity_pages_input" min="1" max="10" required>
-    <button type="submit" class="btn btn-primary" id="qr_quantity_button">Generar</button>
-  </div>
-</form>
-<div class="alert" role="alert" style="display: none;" id="alert">
-</div>
-<h1>Histórico de Códigos QR</h1>
-<!-- DataTables Example -->
-<div class="card mb-3">
-  <div class="card-header">
-    <i class="fas fa-table"></i>
-    Tabla de páginas generadas</div>
-  <div class="card-body">
-    <div class="table-responsive">
-      <table class="table table-bordered" id="dataTable" width="100%" cellspacing="0">
-        <thead>
-          <tr>
-            <th>Sesión</th>
-            <th>Herbario</th>
-            <th>Creado por</th>
-            <th>Fecha creación</th>
-            <th>Cantidad QRs</th>
-            <th>¿Terminada?</th>
-            <th>Lista</th>
-            <th>QRs</th>
-          </tr>
-        </thead>
-        <tbody>
-          {% for generated_page in generated_pages%}
-            <tr>
-              <td>{{ generated_page.id }}</td>
-              <td>{{ generated_page.herbarium.name }}</td>
-              <td>{{ generated_page.created_by }}</td>
-              <td>{{ generated_page.created_at }}</td>
-              <td>{{ generated_page.Total }}</td>
-              <td>{% if generated_page.terminated %} Si {% else %} No {% endif %}</td>
-              <td><a class="btn btn-primary btn-block" href="#" onclick="page_priority_voucher_generator({{generated_page.id}}); return false;">Imprimir Lista</a></td>
-              <td><a class="btn btn-primary btn-block" href="#" onclick="page_gr_generator({{generated_page.id}}); return false;">Imprimir QRS</a></td>
-            </tr>
-          {% endfor%}
-        </tbody>
-      </table>
+    <h1>Generación de Códigos QR</h1>
+    <form id="qr_generator_form" class="qr_generator_form" action="" method="post" onsubmit="code_generator(); return false;">
+        {% csrf_token %}
+        <div class="form-group">
+            <label for="herbarium_label">Herbario</label>
+            <select class="form-control" id="herbarium_input" name="herbarium_input" required>
+                {% for herbarium in herbariums %}
+                    <option value="{{ herbarium.id }}">{{ herbarium.name }}</option>
+                {% endfor %}
+            </select>
+            <label for="quantity_pages_label">Ingrese la cantidad de páginas de códigos QR que desea generar el día de hoy (35 qr's / página):</label>
+            <input class="form-control" type="number" value="1" name="quantity_pages_input" id="quantity_pages_input" min="1" max="10" required>
+            <button type="submit" class="btn btn-primary" id="qr_quantity_button">Generar</button>
+        </div>
+    </form>
+    <div class="alert" role="alert" style="display: none;" id="alert">
     </div>
-  </div>
-</div>
+    <h1>Histórico de Códigos QR</h1>
+    <!-- DataTables Example -->
+    <div class="card mb-3">
+        <div class="card-header">
+            <i class="fas fa-table"></i>
+            Tabla de páginas generadas</div>
+        <div class="card-body">
+            <div class="table-responsive">
+                <table class="table table-bordered" id="dataTable" width="100%" cellspacing="0">
+                    <thead>
+                    <tr>
+                        <th>Sesión</th>
+                        <th>Herbario</th>
+                        <th>Creado por</th>
+                        <th>Fecha creación</th>
+                        <th>Cantidad QRs</th>
+                        <th>¿Terminada?</th>
+                        <th>Lista</th>
+                        <th>QRs</th>
+                    </tr>
+                    </thead>
+                    <tbody>
+                    {% for generated_page in generated_pages%}
+                        <tr>
+                            <td>{{ generated_page.id }}</td>
+                            <td>{{ generated_page.herbarium.name }}</td>
+                            <td>{{ generated_page.created_by }}</td>
+                            <td>{{ generated_page.created_at }}</td>
+                            <td>{{ generated_page.Total }}</td>
+                            <td>{% if generated_page.terminated %} Si {% else %} No {% endif %}</td>
+                            <td><a class="btn btn-primary text-nowrap" href="#" onclick="page_priority_voucher_generator({{generated_page.id}}); return false;">Imprimir Lista</a></td>
+                            <td><a class="btn btn-primary text-nowrap" href="#" onclick="page_gr_generator({{generated_page.id}}); return false;">Imprimir QRS</a></td>
+                        </tr>
+                    {% endfor%}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
 {% endblock %}

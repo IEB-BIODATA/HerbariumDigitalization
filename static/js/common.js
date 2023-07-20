@@ -30,3 +30,21 @@ function dateFormat(date){
 
     return `${justDate} a las ${time}`;
 }
+
+const languageTable = {
+    spanish: {
+        search: "Buscar:",
+        lengthMenu: "Mostrando _MENU_ registros",
+        info: "Mostrando _START_ hasta _END_ de _TOTAL_ registros",
+        emptyTable: "No hay información",
+        zeroRecords: "No hay información",
+        infoEmpty: "No se encontraron registros",
+        infoFiltered: "(filtrados de un total de _MAX_ registros)",
+        paginate: {
+            first: "Primero",
+            last: "Último",
+            next: "Siguiente",
+            previous: "Anterior",
+        }
+    }
+};

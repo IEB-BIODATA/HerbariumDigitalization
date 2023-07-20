@@ -1,7 +1,7 @@
 {% extends "base.html" %}
 {% load static %}
 {% block javascript %}
-    <script src="{% static 'js/bootstrap-select.js' %}"></script>
+
     <script type="text/javascript">
         $('.selectpicker#id_common_names').on('rendered.bs.select', function() {
             $('.filter-option-inner-inner').eq(0).html($('.filter-option-inner-inner').eq(0).text().replace(/,/g, "<br>"));

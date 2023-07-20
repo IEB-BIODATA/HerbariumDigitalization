@@ -1,25 +1,31 @@
 import json
 import logging
 import re
+from typing import Dict, List
 
 import pandas as pd
 import tablib
 from django.contrib.auth.decorators import login_required
 from django.core import serializers
+from django.core.handlers.wsgi import WSGIRequest
 from django.core.paginator import Paginator
 from django.db.models import Q
 from django.forms.utils import ErrorList
 from django.http import HttpResponse, JsonResponse
 from django.shortcuts import render, redirect
+from django.urls import reverse
+from rest_framework.serializers import SerializerMetaclass
 
 from apps.digitalization.models import VoucherImported
 from .forms import DivisionForm, ClassForm, OrderForm, FamilyForm, GenusForm, SpeciesForm, SynonymyForm, BinnacleForm, \
     CommonNameForm
-from .models import Species, CatalogView, SynonymyView, RegionDistributionView, Division, Class_name, Order, Family, \
-    Genus, Synonymy, Region, CommonName, Binnacle, PlantHabit, EnvironmentalHabit, Cycle
+from .models import Species, CatalogView, SynonymyView, RegionDistributionView, Division, ClassName, Order, Family, \
+    Genus, Synonymy, Region, CommonName, Binnacle, PlantHabit, EnvironmentalHabit, Cycle, TaxonomicModel
 from .utils import generate_etiquete
 from .tasks import update_voucher_name
-from ..api.serializers import SynonymySerializer, SpeciesSerializer
+from ..api.serializers import DivisionSerializer, ClassSerializer, OrderSerializer, \
+    FamilySerializer, GenusSerializer, SynonymysSerializer, CommonNameSerializer, SpeciesSerializer, \
+    CatalogViewSerializer
 
 
 @login_required
@@ -64,10 +70,93 @@ def catalog_download(request):
         return response
 
 
+def __catalog_table__(
+        request: WSGIRequest,
+        model: TaxonomicModel,
+        serializer: SerializerMetaclass,
+        sort_by_func: Dict[int, str],
+        model_name: str,
+        add_searchable: Q = None
+) -> JsonResponse:
+    entries = model.objects.all()
+    search_value = request.GET.get('search[value]', None)
+    if search_value:
+        logging.debug("Searching with {}".format(search_value))
+        search_query = (
+                model.get_query_name(search_value) |
+                model.get_parent_query(search_value) |
+                model.get_created_by_query(search_value) |
+                Q(created_at__icontains=search_value) |
+                Q(updated_at__icontains=search_value)
+        )
+        if add_searchable:
+            search_query = search_query | add_searchable
+        entries = entries.filter(search_query)
+    sort_by = int(request.GET.get('order[0][column]', 4))
+    sort_type = request.GET.get('order[0][dir]', 'desc')
+
+    if sort_by in sort_by_func:
+        logging.debug("Order by {} ({}) in {} order".format(
+            sort_by,
+            sort_by_func[sort_by],
+            "ascending" if sort_type == "asc" else "descending"
+        ))
+        entries = entries.order_by(
+            ('' if sort_type == 'asc' else '-') + sort_by_func[sort_by]
+        )
+
+    length = int(request.GET.get('length', 10))
+    start = int(request.GET.get('start', 0))
+    paginator = Paginator(entries, length)
+    page_number = start // length + 1
+    page_obj = paginator.get_page(page_number)
+    data = list()
+
+    logging.debug("Returning {} {}, starting at {} with {} items".format(
+        entries.count(), model_name, start + 1, length
+    ))
+
+    for item in page_obj:
+        data.append(serializer(
+            instance=item,
+            many=False,
+            context=request
+        ).data)
+    return JsonResponse({
+        'draw': int(request.GET.get('draw', 0)),
+        'recordsTotal': entries.count(),
+        'recordsFiltered': paginator.count,
+        'data': data
+    })
+
+
 @login_required
 def list_division(request):
-    division = Division.objects.all()
-    return render(request, 'catalog/list_division.html', {'division': division})
+    return render(request, 'catalog/list_catalog.html', {
+        'table_url': reverse('division_table'),
+        'rank_name': 'name',
+        'parent_rank': 'kingdom',
+        'update_rank_url': reverse('update_division', kwargs={"id": 0}),
+        'rank_title': 'División',
+        'rank_name_title': 'Nombre',
+        'parent_rank_title': 'Reino',
+        'deletable': 0,
+    })
+
+
+@login_required
+def division_table(request):
+    sort_by_func = {
+        0: 'name',
+        1: 'kingdom__name',
+        2: 'created_by__username',
+        3: 'created_at',
+        4: 'updated_at',
+    }
+    return __catalog_table__(
+        request, Division, DivisionSerializer,
+        sort_by_func, "divisions"
+    )
 
 
 @login_required
@@ -115,8 +204,31 @@ def update_division(request, id):
 
 @login_required
 def list_class(request):
-    classes = Class_name.objects.all()
-    return render(request, 'catalog/list_class.html', {'classes': classes})
+    return render(request, 'catalog/list_catalog.html', {
+        'table_url': reverse('class_table'),
+        'rank_name': 'name',
+        'parent_rank': 'division',
+        'update_rank_url': reverse('update_class', kwargs={"id": 0}),
+        'rank_title': 'Clase',
+        'rank_name_title': 'Nombre',
+        'parent_rank_title': 'División',
+        'deletable': 0,
+    })
+
+
+@login_required
+def class_table(request):
+    sort_by_func = {
+        0: 'name',
+        1: 'division__name',
+        2: 'created_by__username',
+        3: 'created_at',
+        4: 'updated_at',
+    }
+    return __catalog_table__(
+        request, ClassName, ClassSerializer,
+        sort_by_func, "classes"
+    )
 
 
 @login_required
@@ -142,13 +254,17 @@ def create_class(request):
 
 
 def update_class(request, id):
-    class_name = Class_name.objects.get(id=id)
+    class_name = ClassName.objects.get(id=id)
     if request.method == 'POST':
         form = ClassForm(request.POST, instance=class_name)
         if form.is_valid():
             new_class = form.save()
             binnacle = Binnacle(type_update="Actualización", model="Clase",
-                                description="Se actualiza Clase " + class_name.name + " en " + new_class.name,
+                                description="Se actualiza Clase {} ({}) en {}".format(
+                                    class_name.name,
+                                    class_name.id,
+                                    new_class.name
+                                ),
                                 created_by=request.user)
             binnacle.save()
             CatalogView.refresh_view()
@@ -163,8 +279,31 @@ def update_class(request, id):
 
 @login_required
 def list_order(request):
-    order = Order.objects.all()
-    return render(request, 'catalog/list_order.html', {'order': order})
+    return render(request, 'catalog/list_catalog.html', {
+        'table_url': reverse('order_table'),
+        'rank_name': 'name',
+        'parent_rank': 'class_name',
+        'update_rank_url': reverse('update_order', kwargs={"id": 0}),
+        'rank_title': 'Orden',
+        'rank_name_title': 'Nombre',
+        'parent_rank_title': 'Clase',
+        'deletable': 0,
+    })
+
+
+@login_required
+def order_table(request):
+    sort_by_func = {
+        0: 'name',
+        1: 'class_name__name',
+        2: 'created_by__username',
+        3: 'created_at',
+        4: 'updated_at',
+    }
+    return __catalog_table__(
+        request, Order, OrderSerializer,
+        sort_by_func, "orders"
+    )
 
 
 @login_required
@@ -197,7 +336,11 @@ def update_order(request, id):
         if form.is_valid():
             new_order = form.save()
             binnacle = Binnacle(type_update="Actualización", model="order",
-                                description="Se actualiza order " + order.name + " en " + new_order.name,
+                                description="Se actualiza order {} ({}) en {}".format(
+                                    order.name,
+                                    order.id,
+                                    new_order.name
+                                ),
                                 created_by=request.user)
             binnacle.save()
             CatalogView.refresh_view()
@@ -212,8 +355,31 @@ def update_order(request, id):
 
 @login_required
 def list_family(request):
-    family = Family.objects.all()
-    return render(request, 'catalog/list_family.html', {'family': family})
+    return render(request, 'catalog/list_catalog.html', {
+        'table_url': reverse('family_table'),
+        'rank_name': 'name',
+        'parent_rank': 'order',
+        'update_rank_url': reverse('update_family', kwargs={"id": 0}),
+        'rank_title': 'Familia',
+        'rank_name_title': 'Nombre',
+        'parent_rank_title': 'Orden',
+        'deletable': 0,
+    })
+
+
+@login_required
+def family_table(request):
+    sort_by_func = {
+        0: 'name',
+        1: 'order__name',
+        2: 'created_by__username',
+        3: 'created_at',
+        4: 'updated_at',
+    }
+    return __catalog_table__(
+        request, Family, FamilySerializer,
+        sort_by_func, "families"
+    )
 
 
 @login_required
@@ -265,8 +431,31 @@ def update_family(request, id):
 
 @login_required
 def list_genus(request):
-    genus = Genus.objects.all()
-    return render(request, 'catalog/list_genus.html', {'genus': genus})
+    return render(request, 'catalog/list_catalog.html', {
+        'table_url': reverse('genus_table'),
+        'rank_name': 'name',
+        'parent_rank': 'family',
+        'update_rank_url': reverse('update_genus', kwargs={"id": 0}),
+        'rank_title': 'Género',
+        'rank_name_title': 'Nombre',
+        'parent_rank_title': 'Familia',
+        'deletable': 0,
+    })
+
+
+@login_required
+def genus_table(request):
+    sort_by_func = {
+        0: 'name',
+        1: 'family__name',
+        2: 'created_by__username',
+        3: 'created_at',
+        4: 'updated_at',
+    }
+    return __catalog_table__(
+        request, Genus, GenusSerializer,
+        sort_by_func, "genuses"
+    )
 
 
 @login_required
@@ -466,8 +655,36 @@ def update_genus_family(request, id):
 
 @login_required
 def list_taxa(request):
-    species = CatalogView.objects.all()
-    return render(request, 'catalog/list_taxa.html', {'species': species})
+    return render(request, 'catalog/list_taxa.html')
+
+
+@login_required
+def taxa_table(request):
+    sort_by_func = {
+        0: 'division',
+        1: 'class_name',
+        2: 'order',
+        3: 'family',
+        4: 'scientificNameFull',
+        5: 'created_by',
+        6: 'created_at',
+        7: 'updated_at',
+        8: 'status',
+        9: 'determined'
+    }
+    search_value = request.GET.get('search[value]', None)
+    return __catalog_table__(
+        request, CatalogView, CatalogViewSerializer,
+        sort_by_func, "species",
+        add_searchable=(
+            Q(division__icontains=search_value) |
+            Q(class_name__icontains=search_value) |
+            Q(order__icontains=search_value) |
+            Q(family__icontains=search_value) |
+            Q(status__icontains=search_value) |
+            Q(determined__icontains=search_value)
+        )
+    )
 
 
 def create_taxa(request):
@@ -738,8 +955,6 @@ def merge_taxa(request, id):
                         enArgentina=specie.enArgentina,
                         enBolivia=specie.enBolivia,
                         enPeru=specie.enPeru,
-                        habit=specie.habit,
-                        ciclo=specie.ciclo,
                         status=specie.status,
                         alturaMinima=specie.alturaMinima,
                         alturaMaxima=specie.alturaMaxima,
@@ -765,6 +980,18 @@ def merge_taxa(request, id):
                     region = request.POST.getlist('region')
                     for region in region:
                         specie_new.region.add(Region.objects.get(id=region))
+
+                    plant_habit = request.POST.getlist('plant_habit')
+                    for habit in plant_habit:
+                        specie_new.plant_habit.add(PlantHabit.objects.get(id=habit))
+
+                    env_habit = request.POST.getlist('env_habit')
+                    for habit in env_habit:
+                        specie_new.env_habit.add(EnvironmentalHabit.objects.get(id=habit))
+
+                    cycles = request.POST.getlist('cycle')
+                    for cycle in cycles:
+                        specie_new.cycle.add(Cycle.objects.get(id=cycle))
 
                     new_synonymy = Synonymy(
                         scientificName=taxon_1_scientificName_preview,
@@ -1197,9 +1424,7 @@ def get_taxa(request, id):
     data = serializers.serialize('json', [taxa, ])
     json_data = json.loads(data)
     json_data[0]['fields']['id'] = id
-    json_data[0]['fields']['habit_name'] = taxa.habit.name
     json_data[0]['fields']['genus_name'] = taxa.genus.name
-    json_data[0]['fields']['ciclo_name'] = taxa.ciclo.name
     json_data[0]['fields']['status_name'] = taxa.status.name
     common_names = ''
     common_names_id = []
@@ -1215,48 +1440,64 @@ def get_taxa(request, id):
         synonymys_id.append(synonymy.id)
     json_data[0]['fields']['synonymys'] = synonymys
     json_data[0]['fields']['synonymys_2'] = synonymys_id
-    region = ''
+    plant_habit = ''
+    plant_habit_id = []
+    for habit in taxa.plant_habit.all():
+        plant_habit += str(habit) + ', '
+        plant_habit_id.append(habit.id)
+    json_data[0]['fields']['plant_habit'] = plant_habit
+    json_data[0]['fields']['plant_habit_2'] = plant_habit_id
+    env_habit = ''
+    env_habit_id = []
+    for habit in taxa.env_habit.all():
+        env_habit += str(habit) + ', '
+        env_habit_id.append(habit.id)
+    json_data[0]['fields']['env_habit'] = env_habit
+    json_data[0]['fields']['env_habit_2'] = env_habit_id
+    cycles = ''
+    cycle_id = []
+    for cycle in taxa.cycle.all():
+        cycles += str(cycle) + ', '
+        cycle_id.append(cycle.id)
+    json_data[0]['fields']['cycle'] = cycles
+    json_data[0]['fields']['cycle_2'] = cycle_id
+    regions = ''
     region_id = []
     for region in taxa.region.all():
-        region += str(region) + ', '
+        regions += str(region) + ', '
         region_id.append(region.id)
-    json_data[0]['fields']['region'] = region
+    json_data[0]['fields']['region'] = regions
     json_data[0]['fields']['region_2'] = region_id
     return HttpResponse(json.dumps(json_data), content_type="application/json")
 
 
 @login_required
 def list_synonymy(request):
-    return render(request, 'catalog/list_synonymy.html')
-
-
-def synonymy_table(request):
-    synonymys = Synonymy.objects.all()
-
-    search_value = request.GET.get('search[value]', None)
-    if search_value:
-        synonymys = synonymys.filter(
-            Q(scientificNameFull__icontains=search_value)
-        )
-
-    paginator = Paginator(synonymys, request.GET.get('length', 10))
-    page_number = int(request.GET.get('start', 0)) // int(request.GET.get('length', 10)) + 1
-    page_obj = paginator.get_page(page_number)
-    data = list()
-
-    for item in page_obj:
-        data.append(SynonymySerializer(
-            instance=item,
-            many=False,
-            context=request
-        ).data)
-
-    return JsonResponse({
-        'draw': int(request.GET.get('draw', 0)),
-        'recordsTotal': synonymys.count(),
-        'recordsFiltered': paginator.count,
-        'data': data,
+    return render(request, 'catalog/list_catalog.html', {
+        'table_url': reverse('synonymy_table'),
+        'rank_name': 'scientificNameFull',
+        'parent_rank': 'species',
+        'update_rank_url': reverse('update_synonymy', kwargs={"id": 0}),
+        'rank_title': 'Sinónimos',
+        'rank_name_title': 'Nombre Científico Completo',
+        'parent_rank_title': 'Especie',
+        'deletable': 1,
     })
+
+
+@login_required
+def synonymy_table(request):
+    sort_by_func = {
+        0: 'scientificNameFull',
+        1: 'species__scientificName',
+        2: 'created_by__username',
+        3: 'created_at',
+        4: 'updated_at',
+    }
+    return __catalog_table__(
+        request, Synonymy, SynonymysSerializer,
+        sort_by_func, "synonyms"
+    )
 
 
 def create_synonymy(request):
@@ -1410,8 +1651,31 @@ def update_binnacle(request, id):
 
 @login_required
 def list_common_name(request):
-    common_names = CommonName.objects.all()
-    return render(request, 'catalog/list_common_name.html', {'common_names': common_names})
+    return render(request, 'catalog/list_catalog.html', {
+        'table_url': reverse('common_name_table'),
+        'rank_name': 'name',
+        'parent_rank': 'species',
+        'update_rank_url': reverse('update_common_name', kwargs={"id": 0}),
+        'rank_title': 'Nombre Común',
+        'rank_name_title': 'Nombre',
+        'parent_rank_title': 'Especie',
+        'deletable': 1,
+    })
+
+
+@login_required
+def common_name_table(request):
+    sort_by_func = {
+        0: 'name',
+        1: 'species__scientificName',
+        2: 'created_by__username',
+        3: 'created_at',
+        4: 'updated_at',
+    }
+    return __catalog_table__(
+        request, CommonName, CommonNameSerializer,
+        sort_by_func, "divisions"
+    )
 
 
 @login_required

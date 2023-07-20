@@ -1,6 +1,9 @@
+from abc import abstractmethod
+
 from django.db import models
 from django.contrib.auth.models import User
 from django.db import connection
+from django.db.models import Q
 
 
 class Status(models.Model):
@@ -37,7 +40,28 @@ class Cycle(models.Model):
         ordering = ['name']
 
 
-class Kingdom(models.Model):
+class TaxonomicModel(models.Model):
+
+    class Meta:
+        abstract = True
+
+    @staticmethod
+    @abstractmethod
+    def get_query_name(search: str) -> Q:
+        return Q(name__icontains=search)
+
+    @staticmethod
+    @abstractmethod
+    def get_parent_query(search: str) -> Q:
+        pass
+
+    @staticmethod
+    @abstractmethod
+    def get_created_by_query(search: str) -> Q:
+        return Q(created_by__username__icontains=search)
+
+
+class Kingdom(TaxonomicModel):
     name = models.CharField(max_length=300, blank=True, null=True)
     created_at = models.DateTimeField(auto_now_add=True, blank=True, null=True, editable=False)
     updated_at = models.DateTimeField(auto_now=True)
@@ -49,12 +73,24 @@ class Kingdom(models.Model):
     def __str__(self):
         return "%s " % self.name
 
+    @staticmethod
+    def get_query_name(search: str) -> Q:
+        return TaxonomicModel.get_query_name(search)
+
+    @staticmethod
+    def get_parent_query(search: str) -> Q:
+        raise NotImplementedError("Kingdom does not have a parent taxonomy")
+
+    @staticmethod
+    def get_created_by_query(search: str) -> Q:
+        return TaxonomicModel.get_created_by_query(search)
+
     class Meta:
         verbose_name_plural = "Kingdoms"
         ordering = ['name']
 
 
-class Division(models.Model):
+class Division(TaxonomicModel):
     name = models.CharField(max_length=300, blank=True, null=True)
     kingdom = models.ForeignKey(Kingdom, on_delete=models.CASCADE, blank=True, null=True, help_text="Reino")
     created_at = models.DateTimeField(auto_now_add=True, blank=True, null=True, editable=False)
@@ -67,12 +103,24 @@ class Division(models.Model):
     def __str__(self):
         return "%s " % self.name
 
+    @staticmethod
+    def get_query_name(search: str) -> Q:
+        return TaxonomicModel.get_query_name(search)
+
+    @staticmethod
+    def get_parent_query(search: str) -> Q:
+        return Q(kingdom__name__icontains=search)
+
+    @staticmethod
+    def get_created_by_query(search: str) -> Q:
+        return TaxonomicModel.get_created_by_query(search)
+
     class Meta:
         verbose_name_plural = "Divisions"
         ordering = ['name']
 
 
-class Class_name(models.Model):
+class ClassName(TaxonomicModel):
     name = models.CharField(max_length=300, blank=True, null=True)
     division = models.ForeignKey(Division, on_delete=models.CASCADE, blank=True, null=True)
     created_at = models.DateTimeField(auto_now_add=True, blank=True, null=True, editable=False)
@@ -85,14 +133,27 @@ class Class_name(models.Model):
     def __str__(self):
         return "%s " % self.name
 
+    @staticmethod
+    def get_query_name(search: str) -> Q:
+        return TaxonomicModel.get_query_name(search)
+
+    @staticmethod
+    def get_parent_query(search: str) -> Q:
+        return Q(division__name__icontains=search)
+
+    @staticmethod
+    def get_created_by_query(search: str) -> Q:
+        return TaxonomicModel.get_created_by_query(search)
+
     class Meta:
+        db_table = "catalog_class_name"
         verbose_name_plural = "Classes"
         ordering = ['name']
 
 
-class Order(models.Model):
+class Order(TaxonomicModel):
     name = models.CharField(max_length=300, blank=True, null=True)
-    class_name = models.ForeignKey(Class_name, on_delete=models.CASCADE, blank=True, null=True, help_text="Clase")
+    class_name = models.ForeignKey(ClassName, on_delete=models.CASCADE, blank=True, null=True, help_text="Clase")
     created_at = models.DateTimeField(auto_now_add=True, blank=True, null=True, editable=False)
     updated_at = models.DateTimeField(auto_now=True)
     created_by = models.ForeignKey(User, on_delete=models.PROTECT, default=1, editable=False)
@@ -103,12 +164,24 @@ class Order(models.Model):
     def __str__(self):
         return "%s " % self.name
 
+    @staticmethod
+    def get_query_name(search: str) -> Q:
+        return TaxonomicModel.get_query_name(search)
+
+    @staticmethod
+    def get_parent_query(search: str) -> Q:
+        return Q(class_name__name__icontains=search)
+
+    @staticmethod
+    def get_created_by_query(search: str) -> Q:
+        return TaxonomicModel.get_created_by_query(search)
+
     class Meta:
         verbose_name_plural = "Orders"
         ordering = ['name']
 
 
-class Family(models.Model):
+class Family(TaxonomicModel):
     name = models.CharField(max_length=300, blank=True, null=True)
     order = models.ForeignKey(
         Order, on_delete=models.CASCADE, blank=True,
@@ -117,6 +190,18 @@ class Family(models.Model):
     created_at = models.DateTimeField(auto_now_add=True, blank=True, null=True, editable=False)
     updated_at = models.DateTimeField(auto_now=True)
     created_by = models.ForeignKey(User, on_delete=models.PROTECT, default=1, editable=False)
+
+    @staticmethod
+    def get_query_name(search: str) -> Q:
+        return TaxonomicModel.get_query_name(search)
+
+    @staticmethod
+    def get_parent_query(search: str) -> Q:
+        return Q(order__name__icontains=search)
+
+    @staticmethod
+    def get_created_by_query(search: str) -> Q:
+        return TaxonomicModel.get_created_by_query(search)
 
     def __unicode__(self):
         return self.name
@@ -129,7 +214,7 @@ class Family(models.Model):
         ordering = ['name']
 
 
-class Genus(models.Model):
+class Genus(TaxonomicModel):
     name = models.CharField(max_length=300, blank=True, null=True)
     family = models.ForeignKey(Family, on_delete=models.CASCADE, blank=True, null=True, help_text="Familia")
     created_at = models.DateTimeField(auto_now_add=True, blank=True, null=True, editable=False)
@@ -141,6 +226,18 @@ class Genus(models.Model):
 
     def __str__(self):
         return "%s " % self.name
+
+    @staticmethod
+    def get_query_name(search: str) -> Q:
+        return TaxonomicModel.get_query_name(search)
+
+    @staticmethod
+    def get_parent_query(search: str) -> Q:
+        return Q(family__name__icontains=search)
+
+    @staticmethod
+    def get_created_by_query(search: str) -> Q:
+        return TaxonomicModel.get_created_by_query(search)
 
     class Meta:
         verbose_name_plural = "Genus"
@@ -182,7 +279,7 @@ class EnvironmentalHabit(models.Model):
         ordering = ['female_name']
 
 
-class Synonymy(models.Model):
+class Synonymy(TaxonomicModel):
     scientificName = models.CharField(max_length=300, blank=True, null=True)
     scientificNameDB = models.CharField(max_length=300, blank=True, null=True)
     scientificNameFull = models.CharField(max_length=800, blank=True, null=True)
@@ -205,12 +302,24 @@ class Synonymy(models.Model):
     def __str__(self):
         return "%s " % self.scientificNameFull
 
+    @staticmethod
+    def get_query_name(search: str) -> Q:
+        return Q(scientificNameFull__icontains=search)
+
+    @staticmethod
+    def get_parent_query(search: str) -> Q:
+        return Q(species__scientificName__icontains=search)
+
+    @staticmethod
+    def get_created_by_query(search: str) -> Q:
+        return TaxonomicModel.get_created_by_query(search)
+
     class Meta:
         verbose_name_plural = "Synonyms"
         ordering = ['scientificName']
 
 
-class CommonName(models.Model):
+class CommonName(TaxonomicModel):
     name = models.CharField(max_length=300, blank=True, null=True)
     created_at = models.DateTimeField(auto_now_add=True, blank=True, null=True, editable=False)
     updated_at = models.DateTimeField(auto_now=True)
@@ -221,6 +330,18 @@ class CommonName(models.Model):
 
     def __str__(self):
         return "%s " % self.name
+
+    @staticmethod
+    def get_query_name(search: str) -> Q:
+        return TaxonomicModel.get_query_name(search)
+
+    @staticmethod
+    def get_parent_query(search: str) -> Q:
+        return Q(species__scientificName__icontains=search)
+
+    @staticmethod
+    def get_created_by_query(search: str) -> Q:
+        return TaxonomicModel.get_created_by_query(search)
 
     class Meta:
         verbose_name_plural = "Common Names"
@@ -265,7 +386,7 @@ class ConservationState(models.Model):
         ordering = ['order']
 
 
-class Species(models.Model):
+class Species(TaxonomicModel):
     id_taxa = models.IntegerField(blank=True, null=True, help_text="")
     genus = models.ForeignKey(Genus, on_delete=models.CASCADE, blank=True, null=True, help_text="Género")
     scientificName = models.CharField(max_length=500, blank=True, null=True, help_text="sp")
@@ -333,6 +454,18 @@ class Species(models.Model):
     def kingdom(self):
         return self.genus.family.order.class_name.division.kingdom
 
+    @staticmethod
+    def get_query_name(search: str) -> Q:
+        return Q(scientificNameFull__icontains=search)
+
+    @staticmethod
+    def get_parent_query(search: str) -> Q:
+        return Q(genus__name__icontains=search)
+
+    @staticmethod
+    def get_created_by_query(search: str) -> Q:
+        return TaxonomicModel.get_created_by_query(search)
+
     def __unicode__(self):
         return self.scientificName
 
@@ -354,7 +487,7 @@ class Binnacle(models.Model):
         ordering = ['updated_at']
 
 
-class CatalogView(models.Model):
+class CatalogView(TaxonomicModel):
     id = models.IntegerField(primary_key=True, blank=False, null=False, help_text="")
     id_taxa = models.IntegerField(blank=False, null=False, help_text="")
     kingdom = models.CharField(max_length=300, blank=True, null=True)
@@ -395,6 +528,18 @@ class CatalogView(models.Model):
     def refresh_view(cl):
         with connection.cursor() as cursor:
             cursor.execute("REFRESH MATERIALIZED VIEW CONCURRENTLY catalog_view")
+
+    @staticmethod
+    def get_query_name(search: str) -> Q:
+        return Q(scientificNameFull__icontains=search)
+
+    @staticmethod
+    def get_parent_query(search: str) -> Q:
+        return Q(genus__icontains=search)
+
+    @staticmethod
+    def get_created_by_query(search: str) -> Q:
+        return Q(created_by__icontains=search)
 
     class Meta:
         managed = False
