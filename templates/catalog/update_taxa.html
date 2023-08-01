@@ -1,7 +1,6 @@
 {% extends "base.html" %}
 {% load static %}
 {% block javascript %}
-
     <script type="text/javascript">
         $('.selectpicker#id_common_names').on('rendered.bs.select', function() {
             $('.filter-option-inner-inner').eq(0).html($('.filter-option-inner-inner').eq(0).text().replace(/,/g, "<br>"));
@@ -46,7 +45,7 @@
         </div>
         <div class="card-body">
             <div class="table-responsive">
-                <form action="/catalog/update_taxa/{{specie_id}}/" method="post" class="form-horizontal">
+                <form action="{% url 'update_taxa' species_id=id %}" method="post" class="form-horizontal">
                     {% csrf_token %}
                     {{ form.id_taxa }}
                     {{ form.scientificName }}
@@ -240,18 +239,12 @@
                             <a href="{% url 'list_taxa' %}" class="btn btn-danger">Cancelar</a>
                         </div>
                         <div class="col-sm-2"
-                             data-toggle="{% if warnings %}tooltip{% endif %}"
-                             data-placement="{% if warnings %}top{% endif %}"
-                             data-html="true"
-                             title="Esta especie no puede ser eliminada debido a que está asociada a
-{% for warning in warnings %}{% if warning == "synonymy" %}sinónimos
-{% endif %}{% if warning == "gallery" %}galería
-{% endif %}{% if warning == "voucher" %}scans
-{% endif %}{% endfor %}"
-                        >
+                             data-bs-toggle="{% if warnings %}tooltip{% endif %}"
+                             data-bs-placement="{% if warnings %}top{% endif %}"
+                             title="{{ warning_text }}">
                             <a href="#"
-                               data-toggle="modal"
-                               data-target="#warningModalDelete"
+                               data-bs-toggle="modal"
+                               data-bs-target="#warningModalDelete"
                                style="cursor: pointer;"
                                class="btn btn-danger {% if warnings %}disabled{% endif %}"
                             >
@@ -274,8 +267,8 @@
                     ¿Estás seguro que deseas borrar la especie {{ species_name }}?
                 </div>
                 <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancelar</button>
-                    <a href="{% url 'delete_taxa' species_id=specie_id %}" class="btn btn-danger">Borrar</a>
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                    <a href="{% url 'delete_taxa' species_id=id %}" class="btn btn-danger">Borrar</a>
                 </div>
             </div>
         </div>

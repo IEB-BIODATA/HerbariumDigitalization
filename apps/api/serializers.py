@@ -3,11 +3,11 @@ from typing import Union, List
 from django.contrib.auth.models import User
 from rest_framework import serializers
 from rest_framework.serializers import HyperlinkedModelSerializer, ModelSerializer, CharField, ReadOnlyField, \
-    SerializerMethodField
+    SerializerMethodField, IntegerField
 
 from apps.catalog.models import Species, Family, Genus, Synonymy, Region, Division, ClassName, Order, Status, \
-    CommonName, ConservationState, PlantHabit, EnvironmentalHabit, Cycle, Kingdom, TaxonomicModel, CatalogView
-from apps.digitalization.models import VoucherImported, GalleryImage
+    CommonName, ConservationState, PlantHabit, EnvironmentalHabit, Cycle, TaxonomicModel, CatalogView
+from apps.digitalization.models import VoucherImported, GalleryImage, BiodataCode, GeneratedPage
 
 
 class StatusSerializer(HyperlinkedModelSerializer):
@@ -106,11 +106,14 @@ class SynonymysSerializer(TaxonomicSerializer):
 
     class Meta:
         model = Synonymy
-        fields = TaxonomicSerializer.Meta.fields + ['scientificName', 'scientificNameFull', 'species']
+        fields = TaxonomicSerializer.Meta.fields + [
+            'scientificName', 'scientificNameFull',
+            'species'
+        ]
 
     def get_species(self, obj):
         species = obj.species_set.all()
-        return "\n".join([specie.scientificName for specie in species])
+        return "\t".join([specie.scientificName for specie in species])
 
 
 class RegionSerializer(HyperlinkedModelSerializer):
@@ -128,7 +131,7 @@ class CommonNameSerializer(TaxonomicSerializer):
 
     def get_species(self, obj):
         species = obj.species_set.all()
-        return "\n".join([specie.scientificName for specie in species])
+        return "\t".join([specie.scientificName for specie in species])
 
 
 class UserSerializer(HyperlinkedModelSerializer):
@@ -148,6 +151,71 @@ class VoucherSerializer(HyperlinkedModelSerializer):
                   'recordNumber', 'organismRemarks', 'species', 'locality', 'verbatimElevation', 'georeferencedDate',
                   'identifiedBy', 'dateIdentified', 'image_public', 'image_public_resized_10',
                   'image_public_resized_60']
+
+
+class GeneratedPageSerializer(HyperlinkedModelSerializer):
+    class Meta:
+        model = GeneratedPage
+        fields = [
+            "id", "name",
+        ]
+
+
+class BiodataCodeSerializer(HyperlinkedModelSerializer):
+    voucher_state_name = SerializerMethodField()
+
+    class Meta:
+        model = BiodataCode
+        fields = [
+            "id", "voucher_state", "voucher_state_name",
+        ]
+
+    def get_voucher_state_name(self, obj):
+        return obj.get_voucher_state_display()
+
+
+class MinimizedVoucherSerializer(HyperlinkedModelSerializer):
+    species = CharField(source='scientificName')
+    occurrence_id = SerializerMethodField()
+    image_voucher_url = SerializerMethodField()
+    image_voucher_thumb_url = SerializerMethodField()
+    image_voucher_cr3_raw_url = SerializerMethodField()
+    image_voucher_jpg_raw_url = SerializerMethodField()
+    image_voucher_jpg_raw_url_public = SerializerMethodField()
+
+    class Meta:
+        model = VoucherImported
+        fields = [
+            'id', 'occurrence_id', 'catalogNumber',
+            'recordedBy', 'recordNumber',
+            'species', 'locality',
+            'image_voucher_url',
+            'image_voucher_thumb_url',
+            'image_voucher_cr3_raw_url',
+            'image_voucher_jpg_raw_url',
+            'image_voucher_jpg_raw_url_public',
+        ]
+
+    def get_occurrence_id(self, obj):
+        return BiodataCodeSerializer(
+            instance=obj.occurrenceID,
+            many=False,
+        ).data
+
+    def get_image_voucher_url(self, obj):
+        return obj.image_voucher_url()
+
+    def get_image_voucher_thumb_url(self, obj):
+        return obj.image_voucher_thumb_url()
+
+    def get_image_voucher_cr3_raw_url(self, obj):
+        return obj.image_voucher_cr3_raw_url()
+
+    def get_image_voucher_jpg_raw_url(self, obj):
+        return obj.image_voucher_jpg_raw_url()
+
+    def get_image_voucher_jpg_raw_url_public(self, obj):
+        return obj.image_voucher_jpg_raw_url_public()
 
 
 class GallerySerializer(HyperlinkedModelSerializer):

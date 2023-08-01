@@ -2,9 +2,7 @@
 {% load static %}
 {% block javascript %}
     <script type="text/javascript">
-        $(function () {
-            $('#id_synonymys').selectpicker();
-        });
+        $.fn.selectpicker.Constructor.DEFAULTS.noneSelectedText = "Nada seleccionado";
     </script>
 {% endblock %}
 {% block content %}

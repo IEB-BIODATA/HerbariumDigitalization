@@ -1,9 +1,6 @@
 {% extends "base.html" %}
 {% load static %}
 {% block javascript %}
-    <script src="https://cdn.datatables.net/1.13.5/js/jquery.dataTables.min.js"></script>
-    <script src="https://cdn.datatables.net/1.13.5/js/dataTables.bootstrap5.min.js"></script>
-    <script src="{% static 'js/common.js' %}"></script>
     <script type="text/javascript">
         $(document).ready(function() {
             $('#VouchersTable').DataTable({

@@ -12,20 +12,20 @@ from drf_multiple_model.pagination import MultipleModelLimitOffsetPagination
 from drf_multiple_model.views import FlatMultipleModelAPIView, ObjectMultipleModelAPIView
 from rest_framework import status
 from rest_framework.decorators import renderer_classes
-from rest_framework.generics import ListAPIView
+from rest_framework.generics import ListAPIView, RetrieveAPIView
 from rest_framework.renderers import JSONRenderer
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
 from apps.catalog.models import Species, Synonymy, Family, Division, ClassName, Order, Status, Genus, \
     CommonName, Region, ConservationState, PlantHabit, EnvironmentalHabit, Cycle
-from apps.digitalization.models import VoucherImported, GalleryImage, BannerImage
+from apps.digitalization.models import VoucherImported, GalleryImage, BannerImage, GeneratedPage
 from web import settings
 from .serializers import SpecieSerializer, SynonymySerializer, SpeciesSerializer, SpeciesFinderSerializer, \
     SynonymysFinderSerializer, FamilysFinderSerializer, DivisionSerializer, ClassSerializer, OrderSerializer, \
     FamilySerializer, StatusSerializer, GenusFinderSerializer, \
     DistributionSerializer, ImagesSerializer, CommonNameFinderSerializer, RegionSerializer, ConservationStateSerializer, \
-    GalleryPhotosSerializer, PlantHabitSerializer, EnvHabitSerializer, CycleSerializer
+    GalleryPhotosSerializer, PlantHabitSerializer, EnvHabitSerializer, CycleSerializer, GeneratedPageSerializer
 
 
 class LimitPagination(MultipleModelLimitOffsetPagination):
@@ -539,6 +539,12 @@ class ImageDetails(ListAPIView):
         items = VoucherImported.objects.get(pk=voucher_id)
         voucher = ImagesSerializer(items, many=False, context={'request': request})
         return Response(status=status.HTTP_200_OK, data=voucher.data)
+
+
+class GeneratedPageView(RetrieveAPIView):
+    queryset = GeneratedPage.objects.all()
+    renderer_classes = (JSONRenderer,)
+    serializer_class = GeneratedPageSerializer
 
 
 class TotalImages(APIView):

@@ -1,9 +1,6 @@
 {% extends "base.html" %}
 {% load static %}
 {% block javascript %}
-    <script src="https://cdn.datatables.net/1.13.5/js/jquery.dataTables.min.js"></script>
-    <script src="https://cdn.datatables.net/1.13.5/js/dataTables.bootstrap5.min.js"></script>
-    <script src="{% static 'js/common.js' %}"></script>
     <script type="text/javascript">
         const tempSearchBar = document.getElementById('temp-search-bar');
 
@@ -56,27 +53,29 @@
                     },
                     {
                         targets: 6,
-                        render: function(data, type, row) {
-                            let created_at = new Date(row.created_at);
+                        data: 'created_at',
+                        render: (data, type) => {
+                            let date = new Date(data);
                             if (type === 'display' || type === 'search'){
-                                return dateFormat(created_at);
+                                return dateFormat(date);
                             } else if (type === 'sort'){
-                                return created_at.toISOString();
+                                return date.toISOString();
                             } else {
-                                return created_at;
+                                return date;
                             }
                         }
                     },
                     {
                         targets: 7,
-                        render: function(data, type, row) {
-                            let updated_at = new Date(row.updated_at);
+                        data: 'updated_at',
+                        render: (data, type) => {
+                            let date = new Date(data);
                             if (type === 'display' || type === 'search'){
-                                return dateFormat(updated_at);
+                                return dateFormat(date);
                             } else if (type === 'sort'){
-                                return updated_at.toISOString();
+                                return date.toISOString();
                             } else {
-                                return updated_at;
+                                return date;
                             }
                         }
                     },
@@ -91,11 +90,12 @@
                     {
                         targets: 10,
                         orderable: false,
-                        render: function(data, type, row) {
-                            return '<a href="/catalog/update_taxa/' + row.id + '/" style="white-space: nowrap"><i class="fas fa-fw fa-edit text-primary"></i> Editar</a><br/>' +
-                            '<a href="/catalog/split_1_taxa/' + row.id + '/" style="white-space: nowrap"><i class="fas fa-sharp fa-solid fa-expand-arrows-alt text-primary"></i> Dividir con 1 nuevo taxón</a><br/>' +
-                            '<a href="/catalog/split_2_taxa/' + row.id + '/" style="white-space: nowrap"><i class="fas fa-sharp fa-solid fa-expand-arrows-alt text-primary"></i> Dividir a 2 nuevos taxones</a><br/>' +
-                            '<a href="/catalog/merge_taxa/' + row.id + '/" style="white-space: nowrap"><i class="fas fa-sharp fa-solid fa-compress text-primary"></i> Unir</a>';
+                        data: 'id',
+                        render: (data) => {
+                            return `<a href="/catalog/update_taxa/${data}/" style="white-space: nowrap"><i class="fas fa-fw fa-edit text-primary"></i> Editar</a><br/>` +
+                            `<a href="/catalog/split_1_taxa/${data}/" style="white-space: nowrap"><i class="fas fa-sharp fa-solid fa-expand-arrows-alt text-primary"></i> Dividir con 1 nuevo taxón</a><br/>` +
+                            `<a href="/catalog/split_2_taxa/${data}/" style="white-space: nowrap"><i class="fas fa-sharp fa-solid fa-expand-arrows-alt text-primary"></i> Dividir a 2 nuevos taxones</a><br/>` +
+                            `<a href="/catalog/merge_taxa/${data}/" style="white-space: nowrap"><i class="fas fa-sharp fa-solid fa-compress text-primary"></i> Unir</a>`;
                         }
                     },
                 ],

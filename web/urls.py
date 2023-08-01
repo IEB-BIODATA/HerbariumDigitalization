@@ -28,9 +28,9 @@ from . import views
 schema_view = get_schema_view(
    openapi.Info(
       title="Herbarium Catalog API",
-      default_version='v1',
-      description="Catálogo de Plantas Vasculares",
-      contact=openapi.Contact(email="daniel.ortiz@ieb-chile.cl"),
+      default_version='v3',
+      description="Catálogo de Plantas Vasculares y digitalización de Herbarios",
+      contact=openapi.Contact(email="jmsaez@ieb-chile.cl"),
    ),
    public=True,
    permission_classes=[permissions.AllowAny],

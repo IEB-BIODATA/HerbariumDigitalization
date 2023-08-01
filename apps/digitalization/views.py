@@ -24,12 +24,15 @@ from django.core import serializers
 from django.core.files import File
 from django.core.files.base import ContentFile
 from django.core.files.uploadedfile import InMemoryUploadedFile
+from django.core.paginator import Paginator
 from django.db.models import Q
-from django.http import HttpResponse, HttpResponseBadRequest, HttpResponseServerError, HttpResponseRedirect
+from django.http import HttpResponse, HttpResponseBadRequest, HttpResponseServerError, HttpResponseRedirect, \
+    JsonResponse
 from django.shortcuts import render, redirect
 from django.template.loader import get_template
 from django.views.decorators.csrf import csrf_exempt
 from django.views.decorators.http import require_POST, require_GET
+from rest_framework.request import Request
 from xhtml2pdf import pisa
 
 from apps.catalog.models import Species, CatalogView
@@ -38,6 +41,7 @@ from .models import BiodataCode, Herbarium, GeneratedPage, VoucherImported, Prio
     GalleryImage, BannerImage
 from .vouchers import PriorityVouchers
 from ..api.decorators import backend_authenticated
+from ..api.serializers import MinimizedVoucherSerializer
 
 
 class HttpResponsePreconditionFailed(HttpResponse):
@@ -445,42 +449,66 @@ def control_vouchers(request):
 
 
 @login_required
-@csrf_exempt
-def get_vouchers_to_validate(request):
-    if request.method == 'GET' and 'state_voucher' in request.GET:
-        page_id = request.GET['page_id']
-        page = GeneratedPage.objects.get(pk=page_id)
-        state_voucher = int(request.GET['state_voucher'])
-        if state_voucher == -1:
-            biodata_codes = VoucherImported.objects.filter(herbarium__herbariummember__user__id=request.user.id,
-                                                           occurrenceID__qr_generated=True,
-                                                           occurrenceID__page=page).order_by('scientificName',
-                                                                                             'catalogNumber')
-        else:
-            biodata_codes = VoucherImported.objects.filter(herbarium__herbariummember__user__id=request.user.id,
-                                                           occurrenceID__qr_generated=True,
-                                                           occurrenceID__voucher_state=state_voucher,
-                                                           occurrenceID__page=page).order_by('scientificName',
-                                                                                             'catalogNumber')
-        data = serializers.serialize('json', biodata_codes, fields=(
-            'occurrenceID', 'catalogNumber', 'recordedBy', 'recordNumber', 'scientificName', 'locality',))
-        json_data = json.loads(data)
-        for index, value in enumerate(json_data):
-            value['fields']['id'] = biodata_codes[index].id
-            value['fields']['voucherStateID'] = biodata_codes[index].occurrenceID.voucher_state
-            value['fields']['voucherStateName'] = str(biodata_codes[index].occurrenceID.get_voucher_state_display())
-            value['fields']['Herbarium'] = biodata_codes[index].occurrenceID.herbarium.name
-            value['fields']['PageDate'] = biodata_codes[index].occurrenceID.page.created_at.strftime('%d-%m-%Y %H:%M')
-            value['fields']['scientificNameStr'] = biodata_codes[index].scientificName.scientificName
-            value['fields']['image_voucher_thumb_url'] = biodata_codes[index].image_voucher_thumb_url()
-            value['fields']['image_voucher_url'] = biodata_codes[index].image_voucher_url()
-            value['fields']['image_voucher_jpg_raw_url'] = biodata_codes[index].image_voucher_jpg_raw_url()
-            value['fields']['image_voucher_jpg_raw_url_public'] = biodata_codes[
-                index].image_voucher_jpg_raw_url_public()
-            value['fields']['image_voucher_cr3_raw_url'] = biodata_codes[index].image_voucher_cr3_raw_url()
+def get_vouchers_to_validate(request, page_id, voucher_state):
+    logging.debug("Testing this view!")
+    if request.method == 'GET':
+        try:
+            page = GeneratedPage.objects.get(id=int(page_id))
+            filters = {
+                "herbarium__herbariummember__user__id": request.user.id,
+                "occurrenceID__qr_generated": True,
+                "occurrenceID__page": page,
+            }
+            if int(voucher_state) != -1:
+                filters["occurrenceID__voucher_state"] = int(voucher_state)
+            biodata_codes = VoucherImported.objects.filter(
+                **filters
+            ).order_by('scientificName', 'catalogNumber')
+            search_value = request.GET.get("search[value]", None)
+            if search_value:
+                logging.debug("Searching with {}".format(search_value))
+            logging.debug(request.GET.__dict__)
+            length = int(request.GET.get("length", 10))
+            start = int(request.GET.get("start", 0))
+            paginator = Paginator(biodata_codes, length)
+            page_number = start // length + 1
+            page_obj = paginator.get_page(page_number)
+
+            data = MinimizedVoucherSerializer(
+                page_obj,
+                many=True,
+                context={"request": Request(request)}
+            ).data
+            """
+            json_data = json.loads(data)
+            for index, value in enumerate(json_data):
+                value['fields']['id'] = biodata_codes[index].id
+                value['fields']['voucherStateID'] = biodata_codes[index].occurrenceID.voucher_state
+                value['fields']['voucherStateName'] = str(biodata_codes[index].occurrenceID.get_voucher_state_display())
+                value['fields']['Herbarium'] = biodata_codes[index].occurrenceID.herbarium.name
+                value['fields']['PageDate'] = biodata_codes[index].occurrenceID.page.created_at.strftime('%d-%m-%Y %H:%M')
+                value['fields']['scientificNameStr'] = biodata_codes[index].scientificName.scientificName
+                value['fields']['image_voucher_thumb_url'] = biodata_codes[index].image_voucher_thumb_url()
+                value['fields']['image_voucher_url'] = biodata_codes[index].image_voucher_url()
+                value['fields']['image_voucher_jpg_raw_url'] = biodata_codes[index].image_voucher_jpg_raw_url()
+                value['fields']['image_voucher_jpg_raw_url_public'] = biodata_codes[
+                    index].image_voucher_jpg_raw_url_public()
+                value['fields']['image_voucher_cr3_raw_url'] = biodata_codes[index].image_voucher_cr3_raw_url()
+                """
+            return JsonResponse({
+                "draw": int(request.GET.get("draw", 0)),
+                'page': page.name,
+                "recordsTotal": biodata_codes.count(),
+                "recordsFiltered": paginator.count,
+                'data': data
+            })
+        except Exception as e:
+            logging.error("Error getting vouchers to validate: {}".format(e), exc_info=True)
+            return HttpResponseServerError()
     else:
-        json_data = {'result': 'error'}
-    return HttpResponse(json.dumps({'data': json_data}), content_type="application/json")
+        data = {"result": "{} HTTP Method not implemented".format(request.method)}
+        return JsonResponse({'data': data})
+
 
 
 @login_required

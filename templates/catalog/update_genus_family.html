@@ -1,23 +1,15 @@
 {% extends "base.html" %}
 {% load static %}
-{% block javascript %}
-
-<script type="text/javascript">
-  $(function () {
-    $('#id_synonymys').selectpicker();
-  });
-</script>
-{% endblock %}
 {% block content %}
-<h1>Genero</h1>
+<h1>Género</h1>
 <!-- DataTables Example -->
 <div class="card mb-3">
   <div class="card-header">
     <i class="fas fa-table"></i>
-    Actualizar Genero</div>
+    Actualizar Género</div>
   <div class="card-body">
     <div class="table-responsive">
-      <form action="/catalog/update_genus_family/{{id}}/" method="post" class="form-horizontal">
+      <form action="{% url 'update_genus_family' genus_id=id %}" method="post" class="form-horizontal">
           {% csrf_token %}
           <div class="form-group row">
             <label class="col-sm-2 col-form-label">Nombre</label>

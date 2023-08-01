@@ -1,11 +1,9 @@
 {% extends "base.html" %}
 {% load static %}
 {% block javascript %}
-    <script src="https://cdn.datatables.net/1.13.5/js/jquery.dataTables.min.js"></script>
-    <script src="https://cdn.datatables.net/1.13.5/js/dataTables.bootstrap5.min.js"></script>
-    <script src="{% static 'js/common.js' %}"></script>
     <script type="text/javascript">
         const tempSearchBar = document.getElementById('temp-search-bar');
+        const warningModelDelete = document.getElementById('warningModalDelete')
 
         tempSearchBar.addEventListener('input', function () {
             if (tempSearchBar.value.length > 3) {
@@ -15,6 +13,16 @@
                 searchBar.value = tempSearchBar.value;
                 searchBar.focus();
             }
+        })
+
+        warningModelDelete.addEventListener('show.bs.modal', event => {
+            const button = event.relatedTarget;
+            const rank_name = button.getAttribute('data-bs-name');
+            const url = button.getAttribute('data-bs-url');
+            const modalBody = warningModelDelete.querySelector('.modal-body');
+            modalBody.innerHTML = modalBody.innerHTML.replace("rank_name", rank_name);
+            const deleteButton = document.getElementById('delete_url');
+            deleteButton.href = url;
         })
 
         function loadTable(){
@@ -36,52 +44,62 @@
                     },
                     {
                         targets: 1,
-                        data: '{{ parent_rank }}'
+                        data: '{{ parent_rank }}',
+                        render: data => {
+                            if (data === null)
+                                return ""
+                            else
+                                return data.replaceAll("\t", "<br>");
+                        },
                     },
                     {
                         targets: 2,
-                        data: 'created_by'
+                        data: 'created_by',
                     },
                     {
                         targets: 3,
-                        render: function(data, type, row) {
-                            let created_at = new Date(row.created_at);
+                        data: 'created_at',
+                        render: (data, type) => {
+                            let date = new Date(data);
                             if (type === 'display' || type === 'search'){
-                                return dateFormat(created_at);
+                                return dateFormat(date);
                             } else if (type === 'sort'){
-                                return created_at.toISOString();
+                                return date.toISOString();
                             } else {
-                                return created_at;
+                                return date;
                             }
                         }
                     },
                     {
                         targets: 4,
-                        render: function(data, type, row) {
-                            let updated_at = new Date(row.updated_at);
+                        data: 'updated_at',
+                        render: (data, type) => {
+                            let date = new Date(data);
                             if (type === 'display' || type === 'search'){
-                                return dateFormat(updated_at);
+                                return dateFormat(date);
                             } else if (type === 'sort'){
-                                return updated_at.toISOString();
+                                return date.toISOString();
                             } else {
-                                return updated_at;
+                                return date;
                             }
                         }
                     },
                     {
                         targets: 5,
+                        date: '{{ rank_name }}',
                         orderable: false,
-                        render: function(data, type, row) {
+                        render: (data, type, row) => {
+                            let update_rank_url = "{{ update_rank_url }}".replace("0", row.id);
+                            let delete_rank_url = update_rank_url.replace("update", "delete");
+                            let rank_title = "{{ rank_title }}";
                             let deletable = {{ deletable }};
-                            let buttonActions = '<a href="{{ update_rank_url }}"><i class="fas fa-fw fa-edit text-primary"></i></a>'.replace(
-                                "0", row.id
-                            )
+                            let buttonActions = `<a href="${update_rank_url}"><i class="fas fa-fw fa-edit text-primary"></i></a>`;
                             if (deletable === 1)
-                                buttonActions += '<a href="{{ update_rank_url }}"><i class="fas fa-fw fa-trash text-danger"></i></a>'.replace(
-                                    "update", "delete"
-                                ).replace(
-                                    "0", row.id
-                                );
+                                buttonActions += `<a href="#" data-bs-toggle="modal" data-bs-target="#warningModalDelete" data-bs-name="${data}" data-bs-url="${delete_rank_url}"><i class="fas fa-fw fa-trash text-danger"></i></a>`
+                            if (rank_title === 'Género') {
+                                update_rank_url = update_rank_url.replace("genus", "genus_family");
+                                buttonActions += `<a href="${update_rank_url}" data-toggle="tooltip" data-placement="top" title="Editar Familia de Genero"><i class="fas fa-fw fa-long-arrow-alt-down text-primary"></i></a>`;
+                            }
                             return buttonActions;
                         }
                     }
@@ -101,7 +119,8 @@
         </div>
         <div class="card-header">
             <i class="fas fa-table"></i>
-            {{ rank_title }}</div>
+            {{ rank_title }}
+        </div>
         <div class="card-body">
             <div class="row" id="TemporalSearch">
                 <div class="col-sm-12 col-md-6"></div>
@@ -137,6 +156,22 @@
                         </tr>
                     </tbody>
                 </table>
+            </div>
+        </div>
+    </div>
+    <div class="modal fade" id="warningModalDelete" tabindex="-1" aria-labelledby="warningModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="warningModalLabel">¡Cuidado!</h5>
+                </div>
+                <div class="modal-body">
+                    ¿Estás seguro que deseas borrar {{ rank_title }} rank_name?
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                    <a id="delete_url" href="#" class="btn btn-danger">Borrar</a>
+                </div>
             </div>
         </div>
     </div>

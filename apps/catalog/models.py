@@ -1,4 +1,8 @@
+from __future__ import annotations
+import logging
 from abc import abstractmethod
+from copy import deepcopy
+from typing import List
 
 from django.db import models
 from django.contrib.auth.models import User
@@ -13,10 +17,13 @@ class Status(models.Model):
     created_by = models.ForeignKey(User, on_delete=models.PROTECT, default=1, editable=False)
 
     def __unicode__(self):
-        return self.name
+        return u"%s" % self.name
 
     def __str__(self):
-        return "%s " % self.name
+        return "%s" % self.name
+
+    def __repr__(self):
+        return "Status::%s" % self.name
 
     class Meta:
         verbose_name_plural = "Status"
@@ -30,10 +37,13 @@ class Cycle(models.Model):
     created_by = models.ForeignKey(User, on_delete=models.PROTECT, default=1, editable=False)
 
     def __unicode__(self):
-        return self.name
+        return u"%s" % self.name
 
     def __str__(self):
-        return "%s " % self.name
+        return "%s" % self.name
+
+    def __repr__(self):
+        return "Cycle::%s" % self.name
 
     class Meta:
         verbose_name_plural = "Ciclos"
@@ -41,9 +51,25 @@ class Cycle(models.Model):
 
 
 class TaxonomicModel(models.Model):
+    created_at = models.DateTimeField(auto_now_add=True, blank=True, null=True, editable=False)
+    updated_at = models.DateTimeField(auto_now=True)
+    created_by = models.ForeignKey(User, on_delete=models.PROTECT, default=1, editable=False)
 
-    class Meta:
-        abstract = True
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        if self.id is not None:
+            self.__original__ = deepcopy(self)
+        else:
+            self.__original__ = None
+
+    def __hash__(self):
+        return super().__hash__()
+
+    def __eq__(self, other: object):
+        return isinstance(other, TaxonomicModel)
+
+    def __ne__(self, other: object):
+        return not self.__eq__(other)
 
     @staticmethod
     @abstractmethod
@@ -60,18 +86,54 @@ class TaxonomicModel(models.Model):
     def get_created_by_query(search: str) -> Q:
         return Q(created_by__username__icontains=search)
 
+    def save(self, force_insert=False, force_update=False, using=None, update_fields=None, **kwargs):
+        if self.id is None:
+            try:
+                super().save(
+                    force_insert=force_insert,
+                    force_update=force_update,
+                    using=using,
+                    update_fields=update_fields
+                )
+                Binnacle.new_entry(self, kwargs["user"], notes=kwargs.get("notes", None))
+            except Exception as e:
+                raise e
+        elif self.__original__ != self:
+            prev_entry = repr(self.__original__)
+            self.__original__ = deepcopy(self)
+            Binnacle.update_entry(prev_entry, self, kwargs["user"], notes=kwargs.get("notes", None))
+            return super().save(
+                force_insert=force_insert,
+                force_update=force_update,
+                using=using,
+                update_fields=update_fields
+            )
+        else:
+            logging.warning("Same value not saving")
+            return
+
+    class Meta:
+        abstract = True
+
 
 class Kingdom(TaxonomicModel):
     name = models.CharField(max_length=300, blank=True, null=True)
-    created_at = models.DateTimeField(auto_now_add=True, blank=True, null=True, editable=False)
-    updated_at = models.DateTimeField(auto_now=True)
-    created_by = models.ForeignKey(User, on_delete=models.PROTECT, default=1, editable=False)
+
+    def __hash__(self):
+        return super().__hash__()
+
+    def __eq__(self, other):
+        return super().__eq__(other) and \
+            self.name == other.name
 
     def __unicode__(self):
-        return self.name
+        return u"%s" % self.name
 
     def __str__(self):
-        return "%s " % self.name
+        return "%s" % self.name
+
+    def __repr__(self):
+        return "%s" % self.name
 
     @staticmethod
     def get_query_name(search: str) -> Q:
@@ -93,15 +155,23 @@ class Kingdom(TaxonomicModel):
 class Division(TaxonomicModel):
     name = models.CharField(max_length=300, blank=True, null=True)
     kingdom = models.ForeignKey(Kingdom, on_delete=models.CASCADE, blank=True, null=True, help_text="Reino")
-    created_at = models.DateTimeField(auto_now_add=True, blank=True, null=True, editable=False)
-    updated_at = models.DateTimeField(auto_now=True)
-    created_by = models.ForeignKey(User, on_delete=models.PROTECT, default=1, editable=False)
+
+    def __hash__(self):
+        return super().__hash__()
+
+    def __eq__(self, other):
+        return super().__eq__(other) and \
+            self.kingdom == other.kingdom and \
+            self.name == other.name
 
     def __unicode__(self):
-        return self.name
+        return u"%s" % self.name
 
     def __str__(self):
-        return "%s " % self.name
+        return "%s" % self.name
+
+    def __repr__(self):
+        return "%s|Kingdom::%s" % (self.name, self.kingdom)
 
     @staticmethod
     def get_query_name(search: str) -> Q:
@@ -123,15 +193,23 @@ class Division(TaxonomicModel):
 class ClassName(TaxonomicModel):
     name = models.CharField(max_length=300, blank=True, null=True)
     division = models.ForeignKey(Division, on_delete=models.CASCADE, blank=True, null=True)
-    created_at = models.DateTimeField(auto_now_add=True, blank=True, null=True, editable=False)
-    updated_at = models.DateTimeField(auto_now=True)
-    created_by = models.ForeignKey(User, on_delete=models.PROTECT, default=1, editable=False)
+
+    def __hash__(self):
+        return super().__hash__()
+
+    def __eq__(self, other):
+        return super().__eq__(other) and \
+            self.division == other.division and \
+            self.name == other.name
 
     def __unicode__(self):
-        return self.name
+        return u"%s" % self.name
 
     def __str__(self):
-        return "%s " % self.name
+        return "%s" % self.name
+
+    def __repr__(self):
+        return "%s|Division::%s" % (self.name, self.division)
 
     @staticmethod
     def get_query_name(search: str) -> Q:
@@ -154,15 +232,23 @@ class ClassName(TaxonomicModel):
 class Order(TaxonomicModel):
     name = models.CharField(max_length=300, blank=True, null=True)
     class_name = models.ForeignKey(ClassName, on_delete=models.CASCADE, blank=True, null=True, help_text="Clase")
-    created_at = models.DateTimeField(auto_now_add=True, blank=True, null=True, editable=False)
-    updated_at = models.DateTimeField(auto_now=True)
-    created_by = models.ForeignKey(User, on_delete=models.PROTECT, default=1, editable=False)
+
+    def __hash__(self):
+        return super().__hash__()
+
+    def __eq__(self, other):
+        return super().__eq__(other) and \
+            self.class_name == other.class_name and \
+            self.name == other.name
 
     def __unicode__(self):
-        return self.name
+        return u"%s" % self.name
 
     def __str__(self):
-        return "%s " % self.name
+        return "%s" % self.name
+
+    def __repr__(self):
+        return "%s|Class::%s" % (self.name, self.class_name)
 
     @staticmethod
     def get_query_name(search: str) -> Q:
@@ -187,9 +273,23 @@ class Family(TaxonomicModel):
         Order, on_delete=models.CASCADE, blank=True,
         null=True, help_text="order", db_column="order"
     )
-    created_at = models.DateTimeField(auto_now_add=True, blank=True, null=True, editable=False)
-    updated_at = models.DateTimeField(auto_now=True)
-    created_by = models.ForeignKey(User, on_delete=models.PROTECT, default=1, editable=False)
+
+    def __hash__(self):
+        return super().__hash__()
+
+    def __eq__(self, other):
+        return super().__eq__(other) and \
+            self.order == other.order and \
+            self.name == other.name
+
+    def __unicode__(self):
+        return u"%s" % self.name
+
+    def __str__(self):
+        return "%s" % self.name
+
+    def __repr__(self):
+        return "%s|Order::%s" % (self.name, self.order)
 
     @staticmethod
     def get_query_name(search: str) -> Q:
@@ -203,12 +303,6 @@ class Family(TaxonomicModel):
     def get_created_by_query(search: str) -> Q:
         return TaxonomicModel.get_created_by_query(search)
 
-    def __unicode__(self):
-        return self.name
-
-    def __str__(self):
-        return "%s " % self.name
-
     class Meta:
         verbose_name_plural = "Familys"
         ordering = ['name']
@@ -217,15 +311,23 @@ class Family(TaxonomicModel):
 class Genus(TaxonomicModel):
     name = models.CharField(max_length=300, blank=True, null=True)
     family = models.ForeignKey(Family, on_delete=models.CASCADE, blank=True, null=True, help_text="Familia")
-    created_at = models.DateTimeField(auto_now_add=True, blank=True, null=True, editable=False)
-    updated_at = models.DateTimeField(auto_now=True)
-    created_by = models.ForeignKey(User, on_delete=models.PROTECT, default=1, editable=False)
+
+    def __hash__(self):
+        return super().__hash__()
+
+    def __eq__(self, other):
+        return super().__eq__(other) and \
+            self.family == other.family and \
+            self.name == other.name
 
     def __unicode__(self):
-        return self.name
+        return u"%s" % self.name
 
     def __str__(self):
-        return "%s " % self.name
+        return "%s" % self.name
+
+    def __repr__(self):
+        return "%s|Family::%s" % (self.name, self.family)
 
     @staticmethod
     def get_query_name(search: str) -> Q:
@@ -251,10 +353,13 @@ class PlantHabit(models.Model):
     created_by = models.ForeignKey(User, on_delete=models.PROTECT, default=1, editable=False)
 
     def __unicode__(self):
-        return self.name
+        return u"%s" % self.name
 
     def __str__(self):
-        return "%s " % self.name
+        return "%s" % self.name
+
+    def __repr__(self):
+        return "Plant Habit::%s" % self.name
 
     class Meta:
         verbose_name_plural = "Plant Habits"
@@ -269,17 +374,20 @@ class EnvironmentalHabit(models.Model):
     created_by = models.ForeignKey(User, on_delete=models.PROTECT, default=1, editable=False)
 
     def __unicode__(self):
-        return self.__str__()
+        return u"%s" % self.__str__()
 
     def __str__(self):
         return "%s / %s" % (self.female_name, self.male_name)
+
+    def __repr__(self):
+        return "Environmental Habit::%s" % self.__str__()
 
     class Meta:
         verbose_name_plural = "Environmental Habits"
         ordering = ['female_name']
 
 
-class Synonymy(TaxonomicModel):
+class ScientificName(TaxonomicModel):
     scientificName = models.CharField(max_length=300, blank=True, null=True)
     scientificNameDB = models.CharField(max_length=300, blank=True, null=True)
     scientificNameFull = models.CharField(max_length=800, blank=True, null=True)
@@ -292,15 +400,24 @@ class Synonymy(TaxonomicModel):
     autoresVariedad = models.CharField(max_length=500, blank=True, null=True)
     forma = models.CharField(max_length=300, blank=True, null=True)
     autoresForma = models.CharField(max_length=500, blank=True, null=True)
-    created_at = models.DateTimeField(auto_now_add=True, blank=True, null=True, editable=False)
-    updated_at = models.DateTimeField(auto_now=True)
-    created_by = models.ForeignKey(User, on_delete=models.PROTECT, default=1, editable=False)
+
+    def __hash__(self):
+        return super().__hash__()
+
+    def __eq__(self, other):
+        return super().__eq__(other) and \
+            self.scientificName == other.scientificName and \
+            self.scientificNameDB == other.scientificNameDB and \
+            self.scientificNameFull == other.scientificNameFull
 
     def __unicode__(self):
-        return self.scientificName
+        return u"%s" % self.scientificName
 
     def __str__(self):
-        return "%s " % self.scientificNameFull
+        return "%s" % self.scientificNameFull
+
+    def __repr__(self):
+        return "%s/%s" % (self.scientificName, self.scientificNameFull)
 
     @staticmethod
     def get_query_name(search: str) -> Q:
@@ -314,6 +431,85 @@ class Synonymy(TaxonomicModel):
     def get_created_by_query(search: str) -> Q:
         return TaxonomicModel.get_created_by_query(search)
 
+    def __update_scientific_name__(self):
+        genus = str(self.genus).capitalize()
+        self.scientificName = "{genus} {epithet}{sub_ssp}{var}{fma}".format(
+            genus=genus, epithet=self.specificEpithet,
+            sub_ssp=" subsp. {}".format(self.subespecie) if self.subespecie is not None else "",
+            var=" var. {}".format(self.variedad) if self.variedad is not None else "",
+            fma=" fma. {}".format(self.forma) if self.forma is not None else "",
+        )
+        self.scientificNameFull = "{genus} {epithet}{authorship}{sub_ssp}{var}{fma}".format(
+            genus=genus, epithet=self.specificEpithet,
+            authorship=" {}".format(
+                self.scientificNameAuthorship
+            ) if self.scientificNameAuthorship is not None else "",
+            sub_ssp=" subsp. {}{}".format(
+                self.subespecie,
+                " {}".format(
+                    self.autoresSsp
+                ) if self.autoresSsp is not None else ""
+            ) if self.subespecie is not None else "",
+            var=" var. {}{}".format(
+                self.variedad,
+                " {}".format(
+                    self.autoresVariedad
+                ) if self.autoresVariedad is not None else ""
+            ) if self.variedad is not None else "",
+            fma=" fma. {}{}".format(
+                self.forma,
+                " {}".format(
+                    self.autoresForma
+                ) if self.autoresForma is not None else ""
+            ) if self.forma is not None else "",
+        )
+        self.scientificNameDB = self.scientificName.upper()
+        return
+
+    class Meta:
+        abstract = True
+
+
+class Synonymy(ScientificName):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        if "species" in kwargs:
+            species: Species = kwargs["species"]
+            self.genus = str(species.genus).capitalize()
+            self.scientificName = species.scientificName
+            self.scientificNameDB = species.scientificNameDB
+            self.scientificNameFull = species.scientificNameFull
+            self.specificEpithet = species.specificEpithet
+            self.scientificNameAuthorship = species.scientificNameAuthorship
+            self.subespecie = species.subespecie
+            self.autoresSsp = species.autoresSsp
+            self.autoresVariedad = species.autoresVariedad
+            self.forma = species.forma
+            self.autoresForma = species.autoresForma
+
+    @staticmethod
+    def get_query_name(search: str) -> Q:
+        return Q(scientificNameFull__icontains=search)
+
+    @staticmethod
+    def get_parent_query(search: str) -> Q:
+        return Q(species__scientificName__icontains=search)
+
+    @staticmethod
+    def get_created_by_query(search: str) -> Q:
+        return TaxonomicModel.get_created_by_query(search)
+
+    def save(self, force_insert=False, force_update=False, using=None, update_fields=None, **kwargs):
+        self.genus = str(self.genus).capitalize()
+        self.__update_scientific_name__()
+        return super().save(
+            force_insert=force_insert,
+            force_update=force_update,
+            using=using,
+            update_fields=update_fields,
+            **kwargs
+        )
+
     class Meta:
         verbose_name_plural = "Synonyms"
         ordering = ['scientificName']
@@ -321,15 +517,21 @@ class Synonymy(TaxonomicModel):
 
 class CommonName(TaxonomicModel):
     name = models.CharField(max_length=300, blank=True, null=True)
-    created_at = models.DateTimeField(auto_now_add=True, blank=True, null=True, editable=False)
-    updated_at = models.DateTimeField(auto_now=True)
-    created_by = models.ForeignKey(User, on_delete=models.PROTECT, default=1, editable=False)
+
+    def __hash__(self):
+        return super().__hash__()
+
+    def __eq__(self, other: object):
+        return super().__eq__(other) and self.name == other.name
 
     def __unicode__(self):
-        return self.name
+        return u"%s" % self.name
 
     def __str__(self):
-        return "%s " % self.name
+        return "%s" % self.name
+
+    def __repr__(self):
+        return "%s" % self.name
 
     @staticmethod
     def get_query_name(search: str) -> Q:
@@ -357,10 +559,13 @@ class Region(models.Model):
     created_by = models.ForeignKey(User, on_delete=models.PROTECT, default=1, editable=False)
 
     def __unicode__(self):
-        return self.name
+        return u"%s" % self.name
 
     def __str__(self):
         return "%s " % self.name
+
+    def __repr__(self):
+        return "Region::%s" % self.name
 
     class Meta:
         verbose_name_plural = "Regions"
@@ -376,30 +581,41 @@ class ConservationState(models.Model):
     created_by = models.ForeignKey(User, on_delete=models.PROTECT, default=1, editable=False)
 
     def __unicode__(self):
-        return self.name
+        return u"%s" % self.name
 
     def __str__(self):
-        return "%s " % self.name
+        return "%s" % self.name
+
+    def __repr__(self):
+        return "Conservation State::%s" % self.name
 
     class Meta:
         verbose_name_plural = "Conservation States"
         ordering = ['order']
 
 
-class Species(TaxonomicModel):
+class Species(ScientificName):
+    __attributes__ = {
+        "id_taxa": "id del taxa",
+        "enArgentina": "en Argentina",
+        "enBolivia": "en Bolivia",
+        "enPeru": "en Perú",
+        "status": "origen",
+        "alturaMinima": "altura mínima",
+        "alturaMaxima": "altura máxima",
+        "notas": "notas",
+        "id_tipo": "id de tipo",
+        "publicacion": "publicación",
+        "volumen": "volumen",
+        "paginas": "páginas",
+        "anio": "año de publicación",
+        "id_mma": "id del MMA",
+        "determined": "terminal",
+        "id_taxa_origin": "id del taxón de origen",
+    }
+
     id_taxa = models.IntegerField(blank=True, null=True, help_text="")
     genus = models.ForeignKey(Genus, on_delete=models.CASCADE, blank=True, null=True, help_text="Género")
-    scientificName = models.CharField(max_length=500, blank=True, null=True, help_text="sp")
-    scientificNameDB = models.CharField(max_length=500, blank=True, null=True, help_text="spdb")
-    scientificNameFull = models.CharField(max_length=800, blank=True, null=True, help_text="spCompleto")
-    specificEpithet = models.CharField(max_length=300, blank=True, null=True, help_text="EpitetoEspecifico")
-    scientificNameAuthorship = models.CharField(max_length=500, blank=True, null=True, help_text="AutoresSp")
-    subespecie = models.CharField(max_length=300, blank=True, null=True)
-    autoresSsp = models.CharField(max_length=500, blank=True, null=True)
-    variedad = models.CharField(max_length=300, blank=True, null=True)
-    autoresVariedad = models.CharField(max_length=500, blank=True, null=True)
-    forma = models.CharField(max_length=300, blank=True, null=True)
-    autoresForma = models.CharField(max_length=500, blank=True, null=True)
     common_names = models.ManyToManyField(CommonName, blank=True)
     enArgentina = models.BooleanField(default=False)
     enBolivia = models.BooleanField(default=False)
@@ -429,15 +645,32 @@ class Species(TaxonomicModel):
     region = models.ManyToManyField(Region, blank=True, db_column="region")
     id_mma = models.IntegerField(blank=True, null=True, help_text="")
     conservation_state = models.ManyToManyField(ConservationState, blank=True)
-    created_at = models.DateTimeField(auto_now_add=True, blank=True, null=True, editable=False)
-    updated_at = models.DateTimeField(auto_now=True)
-    created_by = models.ForeignKey(User, on_delete=models.PROTECT, default=1, editable=False)
     determined = models.BooleanField(default=False)
     id_taxa_origin = models.IntegerField(blank=True, null=True, help_text="")
 
-    class Meta:
-        verbose_name_plural = "Species"
-        ordering = ['scientificName']
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        if self.id is not None:
+            self.__prev__ = Synonymy(species=self)
+        else:
+            self.__prev__ = None
+
+    def __hash__(self):
+        return super().__hash__()
+
+    def __eq__(self, other):
+        return super().__eq__(other) and len(self.__difference__(other)) == 0
+
+    def __difference__(self, other: Species) -> List[str]:
+        difference = list()
+        for attribute in self.__attributes__:
+            if getattr(self, attribute) != getattr(other, attribute):
+                difference.append("'{}' de '{}' a '{}'".format(
+                    self.__attributes__[attribute],
+                    getattr(self, attribute),
+                    getattr(other, attribute)
+                ))
+        return difference
 
     def family(self):
         return self.genus.family
@@ -466,14 +699,46 @@ class Species(TaxonomicModel):
     def get_created_by_query(search: str) -> Q:
         return TaxonomicModel.get_created_by_query(search)
 
-    def __unicode__(self):
-        return self.scientificName
+    def save(self, force_insert=False, force_update=False, using=None, update_fields=None, **kwargs):
+        self.__update_scientific_name__()
+        if self.__prev__ is not None:
+            if self.__original__ != self:
+                if self.__original__.scientificName != self.scientificName or \
+                        self.__original__.scientificNameFull != self.scientificNameFull:
+                    try:
+                        self.__prev__.save(user=kwargs["user"])
+                        self.synonymys.add(self.__prev__)
+                    except Exception as e:
+                        logging.error("Error saving synonymy\n{}".format(e), exc_info=True)
+                if len(self.__difference__(self.__original__)) > 0:
+                    kwargs["notes"] = "Actualización de {}".format(
+                        "; ".join(self.__difference__(self.__original__))
+                    )
+        return super().save(
+            force_insert=force_insert,
+            force_update=force_update,
+            using=using,
+            update_fields=update_fields,
+            **kwargs
+        )
 
-    def __str__(self):
-        return "%s " % self.scientificName
+    class Meta:
+        verbose_name_plural = "Species"
+        ordering = ['scientificName']
 
 
 class Binnacle(models.Model):
+    TAXONOMIC_MODEL_NAME = {
+        "Division": "División",
+        "ClassName": "Clase",
+        "Order": "Orden",
+        "Family": "Familia",
+        "Genus": "Género",
+        "Synonymy": "Sinónimo",
+        "CommonName": "Nombre Común",
+        "Species": "Especie",
+    }
+
     type_update = models.CharField(max_length=100, blank=True, null=True, help_text="tipo")
     model = models.CharField(max_length=100, blank=True, null=True, help_text="modelo")
     description = models.CharField(max_length=1000, blank=True, null=True, help_text="descripción")
@@ -482,12 +747,139 @@ class Binnacle(models.Model):
     updated_at = models.DateTimeField(auto_now=True)
     created_by = models.ForeignKey(User, on_delete=models.PROTECT, default=1, editable=False)
 
+    def __unicode__(self):
+        return u"%s" % self.description
+
+    def __str__(self):
+        return "%s" % self.description
+
+    def __repr__(self):
+        return "Binnacle::%s" % self.description
+
     class Meta:
         verbose_name_plural = "Binnacles"
-        ordering = ['updated_at']
+        ordering = ['-updated_at']
+
+    @staticmethod
+    def __get_taxonomic_name__(model: TaxonomicModel) -> str:
+        return Binnacle.TAXONOMIC_MODEL_NAME[
+            model.__class__.__name__
+        ]
+
+    @staticmethod
+    def new_entry(model: TaxonomicModel, created_by: User, notes: str = None) -> None:
+        rank_name = Binnacle.__get_taxonomic_name__(model)
+        description = "Se crea {} {} ({})".format(
+            rank_name,
+            repr(model),
+            model.id
+        )
+        logging.info("{}: {}".format(created_by.username, description))
+        binnacle = Binnacle(
+            type_update="Nuevo",
+            model=rank_name,
+            description=description,
+            created_by=created_by,
+            note=notes
+        )
+        return binnacle.save()
+
+    @staticmethod
+    def update_entry(prev_model: str, model: TaxonomicModel, created_by: User, notes: str = None) -> None:
+        rank_name = Binnacle.__get_taxonomic_name__(model)
+        description = "Se actualiza {} {} ({}) en {}".format(
+            rank_name,
+            prev_model,
+            model.id,
+            repr(model)
+        )
+        logging.info("{}: {}".format(created_by.username, description))
+        binnacle = Binnacle(
+            type_update="Actualización",
+            model=rank_name,
+            description=description,
+            created_by=created_by,
+            note=notes
+        )
+        return binnacle.save()
+
+    @staticmethod
+    def delete_entry(model: TaxonomicModel, created_by: User, notes: str = None) -> None:
+        rank_name = Binnacle.__get_taxonomic_name__(model)
+        description = "Se elimina {} {} ({})".format(
+            rank_name,
+            repr(model),
+            model.id
+        )
+        try:
+            model.delete()
+            logging.info("{}: {}".format(created_by, description))
+            binnacle = Binnacle(
+                type_update="Eliminación",
+                model=rank_name,
+                description=description,
+                created_by=created_by,
+                note=notes
+            )
+            binnacle.save()
+        except Exception as e:
+            logging.error("Error on '{}'".format(description))
+            raise e
 
 
 class CatalogView(TaxonomicModel):
+    """
+    CREATE MATERIALIZED VIEW catalog_view AS
+    SELECT species.id,
+           species.id_taxa,
+           kingdom.name    AS kingdom,
+           division.name   AS division,
+           class.name      AS class_name,
+           "order".name    AS "order",
+           family.name     AS family,
+           genus.name      AS genus,
+           species."scientificName",
+           species."scientificNameFull",
+           species."specificEpithet",
+           species."scientificNameAuthorship",
+           species.subespecie,
+           species."autoresSsp",
+           species.variedad,
+           species."autoresVariedad",
+           species.forma,
+           species."autoresForma",
+           species."enArgentina",
+           species."enBolivia",
+           species."enPeru",
+           status.name     AS status,
+           species."alturaMinima",
+           species."alturaMaxima",
+           species.notas,
+           species.id_tipo,
+           species.publicacion,
+           species.volumen,
+           species.paginas,
+           species.anio,
+           species.determined,
+           species.id_taxa_origin,
+           species.created_at,
+           species.updated_at,
+           "user".username AS created_by
+    FROM catalog_species species
+         JOIN auth_user "user" ON species.created_by_id = "user".id
+         JOIN catalog_genus genus ON species.genus_id = genus.id
+         JOIN catalog_family family ON genus.family_id = family.id
+         JOIN catalog_order "order" ON family."order" = "order".id
+         JOIN catalog_class_name class ON "order".class_name_id = class.id
+         JOIN catalog_division division ON class.division_id = division.id
+         JOIN catalog_kingdom kingdom ON division.kingdom_id = kingdom.id
+         LEFT JOIN catalog_status status ON species.status_id = status.id;
+
+    ALTER MATERIALIZED VIEW catalog_view OWNER TO <POSTGRES_USER>;
+
+    CREATE UNIQUE INDEX catalog_view_id_idx
+        ON catalog_view (id);
+    """
     id = models.IntegerField(primary_key=True, blank=False, null=False, help_text="")
     id_taxa = models.IntegerField(blank=False, null=False, help_text="")
     kingdom = models.CharField(max_length=300, blank=True, null=True)
@@ -546,7 +938,38 @@ class CatalogView(TaxonomicModel):
         db_table = 'catalog_view'
 
 
-class SynonymyView(models.Model):
+class SynonymyView(TaxonomicModel):
+    """
+    CREATE MATERIALIZED VIEW synonymy_view AS
+    SELECT synonymy.id,
+           species.id               AS specie_id,
+           species.id_taxa,
+           species."scientificName" AS specie_scientificname,
+           species_synonymy.id      AS synonymy_id,
+           synonymy."scientificName",
+           synonymy."scientificNameFull",
+           synonymy.genus,
+           synonymy."specificEpithet",
+           synonymy."scientificNameAuthorship",
+           synonymy.subespecie,
+           synonymy."autoresSsp",
+           synonymy.variedad,
+           synonymy."autoresVariedad",
+           synonymy.forma,
+           synonymy."autoresForma",
+           synonymy.created_at,
+           synonymy.updated_at,
+           "user".username          AS created_by
+    FROM catalog_synonymy synonymy
+        LEFT JOIN catalog_species_synonymys species_synonymy ON species_synonymy.synonymy_id = synonymy.id
+        LEFT JOIN catalog_species species ON species_synonymy.species_id = species.id
+        LEFT JOIN auth_user "user" ON synonymy.created_by_id = "user".id;
+
+    ALTER MATERIALIZED VIEW synonymy_view OWNER TO <POSTGRES_USER>;
+
+    CREATE UNIQUE INDEX synonymy_view_id_idx
+        ON synonymy_view (synonymy_id);
+    """
     id = models.IntegerField(primary_key=True, blank=False, null=False, help_text="")
     specie_id = models.IntegerField(blank=False, null=False, help_text="")
     id_taxa = models.IntegerField(blank=False, null=False, help_text="")
@@ -567,6 +990,18 @@ class SynonymyView(models.Model):
     updated_at = models.DateTimeField()
     created_by = models.CharField(max_length=300, blank=True, null=True)
 
+    @staticmethod
+    def get_query_name(search: str) -> Q:
+        return Q(scientificNameFull__icontains=search)
+
+    @staticmethod
+    def get_parent_query(search: str) -> Q:
+        return Q(specie_scientificname__icontains=search)
+
+    @staticmethod
+    def get_created_by_query(search: str) -> Q:
+        return Q(created_by__icontains=search)
+
     @classmethod
     def refresh_view(cl):
         with connection.cursor() as cursor:
@@ -578,6 +1013,24 @@ class SynonymyView(models.Model):
 
 
 class RegionDistributionView(models.Model):
+    """
+    CREATE MATERIALIZED VIEW region_view AS
+    SELECT species_region.id,
+           species.id               AS specie_id,
+           species.id_taxa,
+           species."scientificName" AS specie_scientificname,
+           region.name              AS region_name,
+           region.key               AS region_key
+    FROM catalog_species_region species_region
+         JOIN catalog_species species ON species_region.species_id = species.id_taxa
+         JOIN catalog_region region ON species_region.region_id = region.id
+    ORDER BY species_region.id;
+
+    ALTER MATERIALIZED VIEW region_view OWNER TO <POSTGRES_USER>;
+
+    CREATE UNIQUE INDEX region_distribution_view_id_idx
+        ON region_view (id);
+    """
     id = models.IntegerField(primary_key=True, blank=False, null=False, help_text="")
     specie_id = models.IntegerField(blank=False, null=False, help_text="")
     id_taxa = models.IntegerField(blank=False, null=False, help_text="")

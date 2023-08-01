@@ -23,7 +23,11 @@ urlpatterns = [
     re_path(r'^terminate_session$', views.terminate_session, name='validate_vouchers'),
     re_path(r'^validate_vouchers$', views.validate_vouchers, name='validate_vouchers'),
     re_path(r'^upload_gallery_image$', views.upload_gallery_image, name='upload_gallery_image'),
-    re_path(r'^get_vouchers_to_validate$', views.get_vouchers_to_validate, name='get_vouchers_to_validate'),
+    re_path(
+        r'^get_vouchers_to_validate/(?P<page_id>\d+)/(?P<voucher_state>-?\d+)$',
+        views.get_vouchers_to_validate,
+        name='get_vouchers_to_validate'
+    ),
     re_path(r'^upload_images$', views.upload_images, name='upload_images'),
     re_path(r'^upload_gallery$', views.upload_gallery, name='upload_gallery'),
     re_path(r'^modify_gallery/(?P<catalog_id>\d+)$', views.modify_gallery, name='modify_gallery'),

@@ -173,51 +173,45 @@ class VoucherImported(models.Model):
 
     def image_voucher_thumb(self):
         if self.image_resized_10:
-            image_resized_10 = self.image_resized_10.url
             return u'<img width="200px" height="auto" src="%s" data-target="#myCarousel" data-slide-to="%s"/>' % (
-            image_resized_10, self.id)
+                self.image_resized_10.url, self.id
+            )
         else:
             return '(Sin imagen)'
 
     def image_voucher_thumb_url(self):
         if self.image_resized_10:
-            image_resized_10 = self.image_resized_10.url
-            return image_resized_10
+            return self.image_resized_10.url
         else:
             return '#'
 
     def image_voucher_url(self):
         if self.image_resized_60:
-            image_resized_60 = self.image_resized_60.url
-            return image_resized_60
+            return self.image_resized_60.url
         else:
             return '#'
 
     def image_voucher_jpg_raw_url(self):
         if self.image:
-            image = self.image.url
-            return image
+            return self.image.url
         else:
             return '#'
 
     def image_voucher_cr3_raw_url(self):
         if self.image_raw:
-            image_raw = self.image_raw.url
-            return image_raw
+            return self.image_raw.url
         else:
             return '#'
 
     def image_voucher_jpg_raw_url_public(self):
         if self.image_public:
-            image = self.image_public.url
-            return image
+            return self.image_public.url
         else:
             return '#'
 
     def image_voucher(self):
         if self.image_resized_60:
-            image_resized_60 = self.image_resized_60.url
-            return u'<img width="200px" height="auto" src="%s" />' % image_resized_60
+            return u'<img width="200px" height="auto" src="%s" />' % self.image_resized_60.url
         else:
             return '(Sin imagen)'
 
@@ -326,6 +320,40 @@ def pre_save_image(sender, instance, *args, **kwargs):
 
 
 class VouchersView(models.Model):
+    """
+    CREATE MATERIALIZED VIEW vouchers_view AS
+    SELECT voucher.id,
+           voucherfile.file,
+           biodatacode.code,
+           biodatacode.voucher_state,
+           herbarium.collection_code,
+           voucher."otherCatalogNumbers",
+           voucher."catalogNumber",
+           voucher."recordedBy",
+           voucher."recordNumber",
+           voucher."organismRemarks",
+           species."scientificName",
+           voucher.locality,
+           voucher."verbatimElevation",
+           voucher."georeferencedDate",
+           voucher."decimalLatitude",
+           voucher."decimalLongitude",
+           voucher."identifiedBy",
+           voucher."dateIdentified",
+           voucher."decimalLatitude_public",
+           voucher."decimalLongitude_public",
+           voucher.priority
+    FROM digitalization_voucherimported voucher
+         JOIN digitalization_herbarium herbarium ON voucher.herbarium_id = herbarium.id
+         JOIN digitalization_priorityvouchersfile voucherfile ON voucher.vouchers_file_id = voucherfile.id
+         JOIN digitalization_biodatacode biodatacode ON voucher."occurrenceID_id" = biodatacode.id
+         JOIN catalog_species species ON voucher."scientificName_id" = species.id;
+
+    ALTER MATERIALIZED VIEW vouchers_view OWNER TO <POSTGRES_USER>;
+
+    CREATE UNIQUE INDEX vouchers_view_id_idx
+        ON vouchers_view (id);
+    """
     id = models.IntegerField(primary_key=True, blank=False, null=False, help_text="")
     file = models.CharField(max_length=300, blank=True, null=True)
     code = models.CharField(max_length=300, blank=True, null=True)

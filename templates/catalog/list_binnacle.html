@@ -1,9 +1,6 @@
 {% extends "base.html" %}
 {% load static %}
 {% block javascript %}
-    <script src="https://cdn.datatables.net/1.13.5/js/jquery.dataTables.min.js"></script>
-    <script src="https://cdn.datatables.net/1.13.5/js/dataTables.bootstrap5.min.js"></script>
-    <script src="{% static 'js/common.js' %}"></script>
     <script type="text/javascript">
         $(document).ready(function() {
             $('#CatalogTable').DataTable({
@@ -12,12 +9,16 @@
                 columnDefs: [
                     {
                         targets: [5, 6],
-                        render: function(val, type) {
+                        render: (val, type) => {
                             if (type === 'sort')
                                 return parseDate(val);
                             else
                                 return val;
                         }
+                    },
+                    {
+                        targets: [7],
+                        orderable: false,
                     }
                 ]
             });
@@ -57,7 +58,7 @@
                             <td>{{ binnacle.created_at }}</td>
                             <td>{{ binnacle.updated_at }}</td>
                             <td>
-                                <a href="{% url 'update_binnacle' id=binnacle.id %}"><i class="fas fa-fw fa-edit text-primary"></i></a>
+                                <a href="{% url 'update_binnacle' binnacle_id=binnacle.id %}"><i class="fas fa-fw fa-edit text-primary"></i></a>
                             </td>
                         </tr>
                     {% endfor%}
