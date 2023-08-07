@@ -1,14 +1,24 @@
 import textwrap
-import urllib
 from io import BytesIO
-
-from PIL import Image,ImageDraw, ImageFont
+from PIL import Image, ImageDraw, ImageFont
 from django.core.files.uploadedfile import InMemoryUploadedFile
-
 from apps.digitalization.models import VoucherImported
+from apps.digitalization.storage_backends import PrivateMediaStorage
 
 
-def generate_etiquete(voucher_id):
+def generate_etiquette(voucher_id: int) -> None:
+    """
+    Generates etiquette above images and inserts it
+
+    Parameters
+    ----------
+    voucher_id : int
+        Voucher unique id
+
+    Returns
+    -------
+    None
+    """
     voucher = VoucherImported.objects.get(id=voucher_id)
     file = urllib.request.urlretrieve(voucher.image.url, voucher.occurrenceID.code.replace(':', '_') + '.jpg')
     voucher_image = Image.open(voucher.occurrenceID.code.replace(':', '_') + '.jpg')

@@ -303,6 +303,27 @@ class Family(TaxonomicModel):
     def get_created_by_query(search: str) -> Q:
         return TaxonomicModel.get_created_by_query(search)
 
+    def save(self, force_insert=False, force_update=False, using=None, update_fields=None, **kwargs):
+        if self.__original__.name != self.name:
+            logging.debug("Name from {} to {}. Change etiquettes".format(
+                self.__original__.name, self.name
+            ))
+            for genus in self.genus_set.all():
+                for species in genus.species_set.all():
+                    vouchers = species.voucherimported_set.all()
+                    logging.debug("Vouchers on {} ({}): {}".format(
+                        species.scientificNameFull, species.id, vouchers.count()
+                    ))
+                    for voucher in vouchers:
+                        voucher.generate_etiquette()
+        return super().save(
+            force_insert=force_insert,
+            force_update=force_update,
+            using=using,
+            update_fields=update_fields,
+            **kwargs
+        )
+
     class Meta:
         verbose_name_plural = "Familys"
         ordering = ['name']
@@ -705,6 +726,15 @@ class Species(ScientificName):
             if self.__original__ != self:
                 if self.__original__.scientificName != self.scientificName or \
                         self.__original__.scientificNameFull != self.scientificNameFull:
+                    if self.__original__.scientificNameFull != self.scientificNameFull:
+                        logging.debug("Name changed")
+                        logging.debug("Listing specimen")
+                        logging.debug("\n".join([
+                            specimen.occurrenceID.code
+                            for specimen in self.voucherimported_set.all()
+                        ]))
+                        for specimen in self.voucherimported_set.all():
+                            specimen.generate_etiquette()
                     try:
                         self.__prev__.save(user=kwargs["user"])
                         self.synonymys.add(self.__prev__)

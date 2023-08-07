@@ -3,7 +3,7 @@ from typing import List
 
 from celery import shared_task
 
-from apps.catalog.utils import generate_etiquete
+from apps.catalog.utils import generate_etiquette
 from apps.digitalization.models import VoucherImported
 
 
@@ -18,4 +18,4 @@ def update_voucher_name(vouchers: List[int]):
             voucher.id,
             voucher.scientificName
         ))
-        generate_etiquete(voucher.id)
+        generate_etiquette(voucher.id)

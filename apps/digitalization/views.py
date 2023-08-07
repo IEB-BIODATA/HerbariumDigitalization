@@ -6,8 +6,6 @@ import json
 import logging
 import os
 import subprocess
-import textwrap
-import urllib.request
 from datetime import datetime, date
 from http import HTTPStatus
 from io import BytesIO
@@ -17,13 +15,12 @@ import numpy
 import pytz
 import qrcode
 import tablib
-from PIL import Image, ImageFont, ImageDraw
+from PIL import Image
 from django.contrib.auth.decorators import login_required
 from django.contrib.gis.geos import GEOSGeometry
 from django.core import serializers
 from django.core.files import File
 from django.core.files.base import ContentFile
-from django.core.files.uploadedfile import InMemoryUploadedFile
 from django.core.paginator import Paginator
 from django.db.models import Q
 from django.http import HttpResponse, HttpResponseBadRequest, HttpResponseServerError, HttpResponseRedirect, \
@@ -42,6 +39,7 @@ from .models import BiodataCode, Herbarium, GeneratedPage, VoucherImported, Prio
 from .vouchers import PriorityVouchers
 from ..api.decorators import backend_authenticated
 from ..api.serializers import MinimizedVoucherSerializer
+from ..catalog.utils import generate_etiquette
 
 
 class HttpResponsePreconditionFailed(HttpResponse):
@@ -90,15 +88,20 @@ def litering_by_three(a):
 def code_generator(request):
     if request.method == 'POST':
         herbarium_input = request.POST['herbarium_input']
+        logging.debug(herbarium_input)
         herbarium = Herbarium.objects.get(id=herbarium_input)
         quantity_pages_input = request.POST['quantity_pages_input']
+        logging.debug("Pages required {}".format(quantity_pages_input))
         col = 5
         row = 7
         qr_per_page = col * row
         num_qrs = qr_per_page * int(quantity_pages_input)
         vouchers = VoucherImported.objects.filter(occurrenceID__qr_generated=False, herbarium=herbarium).order_by(
-            '-priority', 'scientificName__genus__family__name', 'scientificName__scientificName', 'catalogNumber')[
-                   :num_qrs]
+            '-priority', 'scientificName__genus__family__name', 'scientificName__scientificName', 'catalogNumber'
+        )
+        logging.debug(vouchers)
+        logging.debug(vouchers[:num_qrs])
+        vouchers = vouchers[:num_qrs]
         if vouchers.count() > 0:
             generated_pages_count = GeneratedPage.objects.filter(herbarium=herbarium, terminated=False).count()
             if generated_pages_count == 0:
@@ -450,7 +453,6 @@ def control_vouchers(request):
 
 @login_required
 def get_vouchers_to_validate(request, page_id, voucher_state):
-    logging.debug("Testing this view!")
     if request.method == 'GET':
         try:
             page = GeneratedPage.objects.get(id=int(page_id))
@@ -467,7 +469,39 @@ def get_vouchers_to_validate(request, page_id, voucher_state):
             search_value = request.GET.get("search[value]", None)
             if search_value:
                 logging.debug("Searching with {}".format(search_value))
-            logging.debug(request.GET.__dict__)
+                biodata_codes = biodata_codes.filter(
+                    Q(catalogNumber__icontains=search_value) |
+                    Q(scientificName__scientificName__icontains=search_value) |
+                    Q(recordedBy__icontains=search_value) |
+                    Q(recordNumber__icontains=search_value) |
+                    Q(locality__icontains=search_value)
+                )
+
+            sort_by_func = {
+                1: "catalogNumber",
+                2: "scientificName__scientificName",
+                3: "recordedBy",
+                4: "recordNumber",
+                5: "locality",
+            }
+
+            first_sort_by = int(request.GET.get("order[0][column]", 2))
+            first_sort_type = request.GET.get("order[0][dir]", "asc")
+            second_sort_by = int(request.GET.get("order[1][column]", 4))
+            second_sort_type = request.GET.get("order[1][dir]", "asc")
+
+            if first_sort_by:
+                logging.debug("Order by {} ({}) in {} order and {} ({}) in {} order".format(
+                    sort_by_func[first_sort_by], first_sort_by,
+                    "ascending" if first_sort_type == "asc" else "descending",
+                    sort_by_func[second_sort_by], second_sort_by,
+                    "ascending" if second_sort_type == "asc" else "descending"
+                ))
+                biodata_codes = biodata_codes.order_by(
+                    ("" if first_sort_type == "asc" else "-") + sort_by_func[first_sort_by],
+                    ("" if second_sort_type == "asc" else "-") + sort_by_func[second_sort_by]
+                )
+
             length = int(request.GET.get("length", 10))
             start = int(request.GET.get("start", 0))
             paginator = Paginator(biodata_codes, length)
@@ -479,22 +513,6 @@ def get_vouchers_to_validate(request, page_id, voucher_state):
                 many=True,
                 context={"request": Request(request)}
             ).data
-            """
-            json_data = json.loads(data)
-            for index, value in enumerate(json_data):
-                value['fields']['id'] = biodata_codes[index].id
-                value['fields']['voucherStateID'] = biodata_codes[index].occurrenceID.voucher_state
-                value['fields']['voucherStateName'] = str(biodata_codes[index].occurrenceID.get_voucher_state_display())
-                value['fields']['Herbarium'] = biodata_codes[index].occurrenceID.herbarium.name
-                value['fields']['PageDate'] = biodata_codes[index].occurrenceID.page.created_at.strftime('%d-%m-%Y %H:%M')
-                value['fields']['scientificNameStr'] = biodata_codes[index].scientificName.scientificName
-                value['fields']['image_voucher_thumb_url'] = biodata_codes[index].image_voucher_thumb_url()
-                value['fields']['image_voucher_url'] = biodata_codes[index].image_voucher_url()
-                value['fields']['image_voucher_jpg_raw_url'] = biodata_codes[index].image_voucher_jpg_raw_url()
-                value['fields']['image_voucher_jpg_raw_url_public'] = biodata_codes[
-                    index].image_voucher_jpg_raw_url_public()
-                value['fields']['image_voucher_cr3_raw_url'] = biodata_codes[index].image_voucher_cr3_raw_url()
-                """
             return JsonResponse({
                 "draw": int(request.GET.get("draw", 0)),
                 'page': page.name,
@@ -795,14 +813,27 @@ def get_voucher_info(request):
 def upload_raw_image(request):
     if request.method == 'POST':
         voucher_id = request.POST['voucher_id']
+        logging.debug(voucher_id)
         image = request.FILES['image']
         image_content = ContentFile(image.read())
         voucher_imported = VoucherImported.objects.get(pk=voucher_id)
-        voucher_imported.image_raw.save(image.name, image_content)
-        data = {'result': 'ok', 'file_url': voucher_imported.image_raw.url}
-        voucher_imported.save()
+        image_name = "{}_{}_{:07}.CR3".format(
+            voucher_imported.herbarium.institution_code,
+            voucher_imported.herbarium.collection_code,
+            voucher_imported.catalogNumber
+        )
+        logging.info("Saving image {}".format(image_name))
+        try:
+            voucher_imported.image_raw.save(image_name, image_content)
+            voucher_imported.occurrenceID.voucher_state = 8
+            voucher_imported.occurrenceID.save()
+            voucher_imported.save()
+            data = {'result': 'ok', 'file_url': voucher_imported.image_raw.url}
+        except Exception as e:
+            logging.warning("Voucher {} could not save".format(voucher_id))
+            logging.warning(e, exc_info=True)
     else:
-        data = {'result': 'error'}
+        return HttpResponseBadRequest("Wrong Http Method")
     return HttpResponse(json.dumps(data), content_type="application/json")
 
 
@@ -884,103 +915,6 @@ def download_catalog(request):
         return response
 
 
-def generate_etiquete(id):
-    voucher = VoucherImported.objects.get(id=id)
-    file = urllib.request.urlretrieve(voucher.image.url, voucher.occurrenceID.code.replace(':', '_') + '.jpg')
-    voucher_image = Image.open(voucher.occurrenceID.code.replace(':', '_') + '.jpg')
-    voucher_image_editable = ImageDraw.Draw(voucher_image)
-    herbarium_code = voucher.herbarium.collection_code
-    herbarium_name = voucher.herbarium.name
-    scientificNameFull = voucher.scientificName.scientificNameFull
-    family = voucher.scientificName.genus.family.name.title()
-    catalogNumber = voucher.catalogNumber
-    recordNumber = voucher.recordNumber
-    recordedBy = voucher.recordedBy
-    locality = voucher.locality
-    identifiedBy = voucher.identifiedBy
-    dateIdentified = voucher.dateIdentified
-    georeferencedDate = voucher.georeferencedDate.strftime('%d-%m-%Y')
-    organismRemarks = voucher.organismRemarks
-    if herbarium_code == 'CONC':
-        delta_x = 0
-        delta_y = 230
-        shape = [(2046 + delta_x, 4384 + delta_y), (3915 + delta_x, 5528 + delta_y)]
-        voucher_image_editable.rectangle(shape, fill='#d7d6e0', outline="black", width=4)
-        title_font = ImageFont.truetype('static/font/arial.ttf', 70)
-        voucher_image_editable.text((((4000 - 2150) / 2) + 2150 + delta_x, 4530 + delta_y), herbarium_name, (0, 0, 0),
-                                    anchor="ms", font=title_font, stroke_width=2, stroke_fill="black")
-        number_font = ImageFont.truetype('static/font/arial.ttf', 55)
-        voucher_image_editable.text((2250 + delta_x, 4660 + delta_y), herbarium_code + ' ' + str(catalogNumber),
-                                    (0, 0, 0), font=number_font, stroke_width=2, stroke_fill="black")
-        scientificName_font = ImageFont.truetype('static/font/arial_italic.ttf', 48)
-        voucher_image_editable.text((((4000 - 2150) / 2) + 2150 + delta_x, 4810 + delta_y), scientificNameFull + ' ',
-                                    (0, 0, 0), anchor="ms", font=scientificName_font)
-        normal_font = ImageFont.truetype('static/font/arial.ttf', 48)
-        voucher_image_editable.text((((4000 - 2150) / 2) + 2150 + delta_x, 4870 + delta_y), family, (0, 0, 0),
-                                    anchor="ms", font=normal_font)
-
-        if locality:
-            voucher_image_editable.text((2250 + delta_x, 4980 + delta_y), locality, (0, 0, 0), font=normal_font)
-
-        voucher_image_editable.text((2250 + delta_x, 5130 + delta_y), 'Fecha Col. ' + georeferencedDate, (0, 0, 0),
-                                    font=normal_font)
-        voucher_image_editable.text((2900 + delta_x, 5130 + delta_y), 'Leg. ' + recordedBy + ' ' + recordNumber,
-                                    (0, 0, 0), font=normal_font)
-
-        if dateIdentified:
-            voucher_image_editable.text((2250 + delta_x, 5200 + delta_y), 'Fecha Det. ' + str(dateIdentified),
-                                        (0, 0, 0), font=normal_font)
-
-        if identifiedBy:
-            voucher_image_editable.text((2900 + delta_x, 5200 + delta_y), 'Det. ' + str(identifiedBy), (0, 0, 0),
-                                        font=normal_font)
-
-        if organismRemarks and organismRemarks != 'nan':
-            observation = textwrap.fill(str(organismRemarks), width=60, break_long_words=False)
-            voucher_image_editable.text((2250 + delta_x, 5350 + delta_y), 'Obs.: ' + observation, (0, 0, 0),
-                                        font=normal_font)
-    else:
-        shape = [(2150, 4650), (4000, 5690)]
-        voucher_image_editable.rectangle(shape, fill='#d7d6e0', outline="black", width=4)
-        title_font = ImageFont.truetype('static/font/arial.ttf', 70)
-        voucher_image_editable.text((((4000 - 2150) / 2) + 2150, 4800), herbarium_name, (0, 0, 0), anchor="ms",
-                                    font=title_font, stroke_width=2, stroke_fill="black")
-        number_font = ImageFont.truetype('static/font/arial.ttf', 55)
-        voucher_image_editable.text((2250, 4900), herbarium_code + ' ' + str(catalogNumber), (0, 0, 0),
-                                    font=number_font, stroke_width=2, stroke_fill="black")
-        scientificName_font = ImageFont.truetype('static/font/arial_italic.ttf', 48)
-        voucher_image_editable.text((((4000 - 2150) / 2) + 2150, 5000), scientificNameFull, (0, 0, 0), anchor="ms",
-                                    font=scientificName_font)
-        normal_font = ImageFont.truetype('static/font/arial.ttf', 48)
-        voucher_image_editable.text((((4000 - 2150) / 2) + 2150, 5070), family, (0, 0, 0), anchor="ms",
-                                    font=normal_font)
-
-        if locality:
-            voucher_image_editable.text((2250, 5170), locality, (0, 0, 0), font=normal_font)
-
-        voucher_image_editable.text((2250, 5270), 'Fecha Col. ' + georeferencedDate, (0, 0, 0), font=normal_font)
-        voucher_image_editable.text((2900, 5270), 'Leg. ' + recordedBy + ' ' + recordNumber, (0, 0, 0),
-                                    font=normal_font)
-
-        if dateIdentified:
-            voucher_image_editable.text((2250, 5340), 'Fecha Det. ' + str(dateIdentified), (0, 0, 0), font=normal_font)
-
-        if identifiedBy:
-            voucher_image_editable.text((2900, 5340), 'Det. ' + str(identifiedBy), (0, 0, 0), font=normal_font)
-
-        if organismRemarks and organismRemarks != 'nan':
-            observation = textwrap.fill(str(organismRemarks), width=60, break_long_words=False)
-            voucher_image_editable.text((2250, 5440), 'Obs.: ' + observation, (0, 0, 0), font=normal_font)
-
-    voucher_image.save(voucher_image.filename.replace(".jpg", "_public.jpg"))
-    buffer = BytesIO()
-    voucher_image.save(buffer, "JPEG")
-    image_file = InMemoryUploadedFile(buffer, None, voucher_image.filename, 'image/jpeg', buffer.tell, None)
-    voucher.image_public.save(voucher_image.filename, image_file)
-    voucher.save()
-    return voucher_image.filename.replace(".jpg", "_public.jpg")
-
-
 def public_point(point):
     integer = int(point)
     min_grade = point - integer
@@ -1007,7 +941,7 @@ def update_voucher(request, id):
                     'POINT(' + str(decimalLongitude_public) + ' ' + str(decimalLatitude_public) + ')', srid=4326)
                 voucher.save()
                 if voucher.image:
-                    filename = generate_etiquete(id)
+                    filename = generate_etiquette(id)
                     voucher_image = Image.open(filename)
                     path = Path(filename)
                     with path.open(mode='rb') as f:

@@ -1,14 +1,18 @@
 # -*- coding: utf-8 -*-
 # from django.db import models
+import logging
+import os
+
+import celery
 from django.contrib.auth.models import User
-from .validators import validate_file_size
-from django.dispatch import receiver
-from django.db.models.signals import post_delete, pre_save
-from apps.catalog.models import Species
-from .storage_backends import PublicMediaStorage, PrivateMediaStorage
 from django.contrib.gis.db import models
 from django.db import connection
-import os
+from django.db.models.signals import post_delete, pre_save
+from django.dispatch import receiver
+
+from apps.catalog.models import Species
+from .storage_backends import PublicMediaStorage, PrivateMediaStorage
+from .validators import validate_file_size
 
 VOUCHER_STATE = (
     (0, 'Sin Estado'),
@@ -171,13 +175,17 @@ class VoucherImported(models.Model):
     class Meta:
         verbose_name_plural = "Vouchers"
 
-    def image_voucher_thumb(self):
-        if self.image_resized_10:
-            return u'<img width="200px" height="auto" src="%s" data-target="#myCarousel" data-slide-to="%s"/>' % (
-                self.image_resized_10.url, self.id
-            )
+    def generate_etiquette(self):
+        if self.occurrenceID.voucher_state == 7:
+            logging.debug("Regenerating public image ({})".format(self.id))
+            self.occurrenceID.voucher_state = 8
+            self.occurrenceID.save()
+            self.save()
+            celery.current_app.send_task('etiquette_picture', (self.id, ))
+            return
         else:
-            return '(Sin imagen)'
+            logging.debug("Voucher not digitalized, skipping ({})".format(self.id))
+            return
 
     def image_voucher_thumb_url(self):
         if self.image_resized_10:
@@ -208,15 +216,6 @@ class VoucherImported(models.Model):
             return self.image_public.url
         else:
             return '#'
-
-    def image_voucher(self):
-        if self.image_resized_60:
-            return u'<img width="200px" height="auto" src="%s" />' % self.image_resized_60.url
-        else:
-            return '(Sin imagen)'
-
-    image_voucher.short_description = 'Image Voucher'
-    image_voucher.allow_tags = True
 
 
 class Licence(models.Model):

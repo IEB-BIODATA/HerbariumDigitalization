@@ -23,7 +23,6 @@ from .forms import DivisionForm, ClassForm, OrderForm, FamilyForm, GenusForm, Sp
 from .models import Species, CatalogView, SynonymyView, RegionDistributionView, Division, ClassName, Order, Family, \
     Genus, Synonymy, Region, CommonName, Binnacle, PlantHabit, EnvironmentalHabit, Cycle, TaxonomicModel, \
     ConservationState
-from .utils import generate_etiquete
 from .tasks import update_voucher_name
 from ..api.serializers import DivisionSerializer, ClassSerializer, OrderSerializer, \
     FamilySerializer, GenusSerializer, SynonymysSerializer, CommonNameSerializer, SpeciesSerializer, \
