@@ -49,6 +49,8 @@
                     return 'bg-info text-dark';
                 case 7:
                     return 'bg-primary text-white';
+                case 8:
+                    return 'bg-light text-dark';
                 default:
                     return 'bg-info text-dark';
             }
@@ -86,6 +88,7 @@
                     {
                         targets: 0,
                         data: 'occurrence_id',
+                        orderable: false,
                         render: (data) => {
                             return `<div class="p-3 mb-2 ${getStateClass(data.voucher_state)}">${data.voucher_state_name}</div>`;
                         },
@@ -105,6 +108,9 @@
                     {
                         targets: 4,
                         data: 'recordNumber',
+                        render: (data) => {
+                            if (isNaN(data)) return ""; else return data;
+                        }
                     },
                     {
                         targets: 5,
@@ -112,24 +118,25 @@
                     },
                     {
                         targets: 6,
-                        data: 'occurrence_id',
+                        data: 'id',
+                        orderable: false,
                         render: (data, type, row) => {
                             let j = 0;
                             let image;
                             let download;
                             if (row.image_voucher_thumb_url === "#"){
                                 image = "(Sin Imagen)";
-                                download = `<form id="fileForm${data.id}" action="" method="post" enctype="multipart/form-data">` +
-                                    `<input type="file" id="file${data.id}" style="display: none;" onchange="loadFile(${data.id}); return false;" accept=".CR3"/>` +
-                                    `<input type="button" value="Subir imagen..." onclick="document.getElementById('file${data.id}').click();" />` +
-                                    `<input id="generatedPageId" name="generatedPageId" type="hidden" value="${data.id}">` +
+                                download = `<form id="fileForm${data}" action="" method="post" enctype="multipart/form-data">` +
+                                    `<input type="file" id="file${data}" style="display: none;" onchange="loadFile(${data}, {pageId: ${pageId}, voucherState: ${voucherState}}); return false;" accept=".CR3"/>` +
+                                    `<input type="button" value="Subir imagen..." onclick="document.getElementById('file${data}').click();" />` +
+                                    `<input id="generatedPageId" name="generatedPageId" type="hidden" value="${data}">` +
                                     `</form>`;
                                 if (row.image_voucher_cr3_raw_url === "#")
-                                    download += `<div id='fileLink${data.id}'>Download CR3</div>`;
+                                    download += `<div id='fileLink${data}'>Download CR3</div>`;
                                 else
                                     download += `<a href="${row.image_voucher_cr3_raw_url}" target=_"blank">Download CR3</a>`;
                             } else {
-                                image = `<div class="gallery-box wow fadeInDown"><div data-bs-toggle="modal" data-bs-target="#myModal" data-bs-src="${row.image_voucher_url}"><img width="200px" src="${row.image_voucher_thumb_url}" data-bs-target="#myCarousel" data-slide-to="${j}"></div>`;
+                                image = `<div class="gallery-box wow fadeInDown"><div data-bs-toggle="modal" data-bs-target="#myModal" data-bs-src="${row.image_voucher_url}"><img width="200px" src="${row.image_voucher_thumb_url}" data-bs-target="#myCarousel"></div>`;
                                 download = `<a href="${row.image_voucher_jpg_raw_url}" target=_"blank">Download JPG Original</a><br/><a href="${row.image_voucher_jpg_raw_url_public}" target=_"blank">Download JPG Público</a><br/><a href="${row.image_voucher_cr3_raw_url}" target=_"blank">Download CR3</a>`;
                             }
                             return image + download;
@@ -137,11 +144,14 @@
                     }
                 ],
             });
-            $('#VouchersTable_length').append(`<label class="p-3">Filtrar Estado <select id="voucherState" name="VouchersTable_length" aria-controls="VouchersTable" class="custom-select custom-select-sm form-control form-control-sm" onchange="getVouchers(${pageId}, this.value);"><option value="-1">Todos</option><option value="1">Encontrado</option><option value="0">Sin Estado</option><option value="2">No Encontrado</option><option value="3">En Préstamo</option><option value="4">Extraviado</option><option value="5">En Préstado Encontrado</option><option value="6">Extraviado Encontrado</option><option value="7">Digitalizado</option></select></label>`);
+            $('#VouchersTable_length').append(`<label class="p-3">Filtrar Estado <select id="voucherState" name="VouchersTable_length" aria-controls="VouchersTable" class="custom-select custom-select-sm form-control form-control-sm" onchange="getVouchers(${pageId}, this.value);"><option value="-1">Todos</option><option value="1">Encontrado</option><option value="0">Sin Estado</option><option value="2">No Encontrado</option><option value="3">En Préstamo</option><option value="4">Extraviado</option><option value="5">En Préstado Encontrado</option><option value="6">Extraviado Encontrado</option><option value="7">Digitalizado</option><option value="8">Pendiente</option></select></label>`);
             $(`#voucherState option[value=${voucherState}]`).attr('selected', 'selected');
         }
 
-        function loadFile(voucherId){
+        function loadFile(voucherId, context = {
+            pageId: 1,
+            voucherState: -1
+        }){
             $(document).ajaxSend(function() {
                 $("#overlay").fadeIn(300);
             });
@@ -159,6 +169,7 @@
                         url=`<a href="${response.file_url}">Download CR3</a>`;
                         fileLink.empty();
                         fileLink.append(url);
+                        getVouchers(context.pageId, context.voucherState);
                     }
                 },
                 cache: false,
