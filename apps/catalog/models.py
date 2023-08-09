@@ -227,6 +227,7 @@ class ClassName(TaxonomicModel):
         db_table = "catalog_class_name"
         verbose_name_plural = "Classes"
         ordering = ['name']
+        default_related_name = "class_name"
 
 
 class Order(TaxonomicModel):
