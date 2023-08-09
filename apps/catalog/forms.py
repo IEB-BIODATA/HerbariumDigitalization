@@ -1,4 +1,8 @@
+import logging
+
 from django import forms
+from django.core.exceptions import ValidationError
+
 from .models import Division, ClassName, Order, Family, Genus, Species, Synonymy, Binnacle, CommonName
 
 
@@ -94,39 +98,51 @@ class SpeciesForm(forms.ModelForm):
     class Meta:
         model = Species
         fields = (
-            'id_taxa',
-            'genus',
-            'scientificName',
-            'scientificNameFull',
-            'specificEpithet',
-            'scientificNameAuthorship',
-            'subespecie',
-            'autoresSsp',
-            'variedad',
-            'autoresVariedad',
-            'forma',
-            'autoresForma',
-            'enArgentina',
-            'enBolivia',
-            'enPeru',
-            'plant_habit',
-            'env_habit',
-            'cycle',
-            'status',
-            'alturaMinima',
-            'alturaMaxima',
-            'synonymys',
-            'common_names',
-            'region',
-            'notas',
-            'publicacion',
-            'volumen',
-            'paginas',
+            'id_taxa', 'scientificName', 'scientificNameFull',
+            'genus', 'specificEpithet', 'scientificNameAuthorship',
+            'subespecie', 'autoresSsp',
+            'variedad', 'autoresVariedad',
+            'forma', 'autoresForma',
+            'enArgentina', 'enBolivia', 'enPeru',
+            'plant_habit', 'env_habit', 'cycle', 'status',
+            'alturaMinima', 'alturaMaxima',
+            'synonymys', 'common_names', 'region',
+            'notas', 'publicacion', 'volumen', 'paginas',
             'id_tipo',
-            'conservation_state',
-            'determined',
-            'id_mma',
+            'conservation_state', 'determined', 'id_mma',
         )
+
+        labels = {
+            'genus': 'Género',
+            'specificEpithet': 'Epíteto específico',
+            'scientificNameAuthorship': 'Autor(es)',
+            'subespecie': 'Subespecie',
+            'autoresSsp': 'Autor(es) subespecie',
+            'variedad': 'Variedad',
+            'autoresVariedad': 'Autor(es) variedad',
+            'forma': 'Forma',
+            'autoresForma': 'Autor(es) forma',
+            'plant_habit': 'Hábito',
+            'env_habit': 'Forma de vida',
+            'cycle': 'Ciclo de vida',
+            'status': 'Origen',
+            'enArgentina': 'En Argentica',
+            'enBolivia': 'En Bolivia',
+            'enPeru': 'En Perú',
+            'alturaMaxima': 'Altura Máxima',
+            'alturaMinima': 'Altura Mínima',
+            'notas': 'Notas',
+            'publicacion': 'Publicación',
+            'volumen': 'Volumen',
+            'paginas': 'Páginas',
+            'id_tipo': 'ID Tipo',
+            'common_names': 'Nombres Comunes',
+            'synonymys': 'Sinónimos',
+            'region': 'Distribución Regional',
+            'conservation_state': 'Estado de Conservación',
+            'determined': '¿Terminal?',
+            'id_mma': 'ID MMA',
+        }
 
         widgets = {
             'id_taxa': forms.HiddenInput(),
@@ -175,6 +191,60 @@ class SpeciesForm(forms.ModelForm):
             'determined': forms.CheckboxInput(attrs={'class': "form-check-input"}),
             'id_mma': forms.TextInput(attrs={'class': "form-control"}),
         }
+
+    def clean_genus(self):
+        genus = self.cleaned_data["genus"]
+        if genus is None:
+            raise ValidationError("Género es requerido")
+        return genus
+
+    def clean_specificEpithet(self):
+        specific_epithet = self.cleaned_data["specificEpithet"]
+        if specific_epithet is None:
+            raise ValidationError("Epíteto es requerido")
+        return specific_epithet
+
+    def clean_autoresSsp(self):
+        subspecies_authors = self.cleaned_data["autoresSsp"]
+        if "specificEpithet" in self.cleaned_data:
+            specific_epithet = self.cleaned_data["specificEpithet"]
+        else:
+            return subspecies_authors
+        subspecies = self.cleaned_data["subespecie"]
+        if subspecies is not None and subspecies_authors is None and not (
+                specific_epithet == subspecies
+        ):
+            raise ValidationError("Completar autor(es) de subespecie")
+        return subspecies_authors
+
+    def clean_autoresVariedad(self):
+        variety_authors = self.cleaned_data["autoresVariedad"]
+        if "specificEpithet" in self.cleaned_data:
+            specific_epithet = self.cleaned_data["specificEpithet"]
+        else:
+            return variety_authors
+        subspecies = self.cleaned_data["subespecie"]
+        variety = self.cleaned_data["variedad"]
+        if variety is not None and variety_authors is None and not (
+                specific_epithet == variety or subspecies == variety
+        ):
+            raise ValidationError("Completar autor(es) de variedad")
+        return variety_authors
+
+    def clean_autoresForma(self):
+        form_authors = self.cleaned_data["autoresForma"]
+        if "specificEpithet" in self.cleaned_data:
+            specific_epithet = self.cleaned_data["specificEpithet"]
+        else:
+            return form_authors
+        subspecies = self.cleaned_data["subespecie"]
+        variety = self.cleaned_data["variedad"]
+        form = self.cleaned_data["forma"]
+        if form is not None and form_authors is None and not (
+                specific_epithet == form or subspecies == form or variety == form
+        ):
+            raise ValidationError("Completar autor(es) de forma")
+        return form_authors
 
 
 class SynonymyForm(forms.ModelForm):

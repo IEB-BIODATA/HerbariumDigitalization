@@ -92,10 +92,11 @@
                         orderable: false,
                         data: 'id',
                         render: (data) => {
-                            return `<a href="/catalog/update_taxa/${data}/" style="white-space: nowrap"><i class="fas fa-fw fa-edit text-primary"></i> Editar</a><br/>` +
-                            `<a href="/catalog/split_1_taxa/${data}/" style="white-space: nowrap"><i class="fas fa-sharp fa-solid fa-expand-arrows-alt text-primary"></i> Dividir con 1 nuevo taxón</a><br/>` +
-                            `<a href="/catalog/split_2_taxa/${data}/" style="white-space: nowrap"><i class="fas fa-sharp fa-solid fa-expand-arrows-alt text-primary"></i> Dividir a 2 nuevos taxones</a><br/>` +
-                            `<a href="/catalog/merge_taxa/${data}/" style="white-space: nowrap"><i class="fas fa-sharp fa-solid fa-compress text-primary"></i> Unir</a>`;
+                            const linkUpdate = "{% url 'update_taxa' species_id=0 %}";
+                            const linkMerge = "{% url 'merge_taxa' species_id=0 %}";
+                            let actions = `<a href="${linkUpdate}" style="white-space: nowrap"><i class="fas fa-fw fa-edit text-primary"></i> Editar</a><br/>` +
+                            `<a href="${linkMerge}" style="white-space: nowrap"><i class="fas fa-sharp fa-solid fa-compress text-primary"></i> Unir</a>`;
+                            return actions.replaceAll("0", data);
                         }
                     },
                 ],

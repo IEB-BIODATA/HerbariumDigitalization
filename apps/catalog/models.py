@@ -304,7 +304,7 @@ class Family(TaxonomicModel):
         return TaxonomicModel.get_created_by_query(search)
 
     def save(self, force_insert=False, force_update=False, using=None, update_fields=None, **kwargs):
-        if self.__original__.name != self.name:
+        if self.__original__ is not None and self.__original__.name != self.name:
             logging.debug("Name from {} to {}. Change etiquettes".format(
                 self.__original__.name, self.name
             ))
@@ -361,6 +361,35 @@ class Genus(TaxonomicModel):
     @staticmethod
     def get_created_by_query(search: str) -> Q:
         return TaxonomicModel.get_created_by_query(search)
+
+    def save(self, force_insert=False, force_update=False, using=None, update_fields=None, **kwargs):
+        if self.__original__ is not None and self.__original__ != self:
+            logging.debug("Genus from {} to {}. Changing species...".format(
+                repr(self.__original__), repr(self)
+            ))
+            for species in self.species_set.all():
+                if self.__original__.name != self.name:
+                    species.save(
+                        force_insert=force_insert,
+                        force_update=force_update,
+                        using=using,
+                        update_fields=update_fields,
+                        **kwargs
+                   )
+                else:
+                    vouchers = species.voucherimported_set.all()
+                    logging.debug("Vouchers on {} ({}): {}".format(
+                        species.scientificNameFull, species.id, vouchers.count()
+                    ))
+                    for voucher in vouchers:
+                        voucher.generate_etiquette()
+        return super().save(
+            force_insert=force_insert,
+            force_update=force_update,
+            using=using,
+            update_fields=update_fields,
+            **kwargs
+        )
 
     class Meta:
         verbose_name_plural = "Genus"

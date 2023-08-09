@@ -4,10 +4,10 @@ from io import BytesIO
 
 from PIL import Image, ImageDraw, ImageFont
 from celery import shared_task
-from django.contrib.staticfiles import finders
 
 from apps.digitalization.models import VoucherImported
-from apps.digitalization.storage_backends import PrivateMediaStorage
+from apps.digitalization.storage_backends import PrivateMediaStorage, StaticStorage
+from apps.digitalization.utils import get_static_file
 
 PARAMETERS = {
     "CONC": {
@@ -50,22 +50,22 @@ def etiquette_picture(voucher_id):
         voucher_image = Image.open(image_file)
         voucher_image_editable = ImageDraw.Draw(voucher_image)
         voucher_image_editable.rectangle(parameters["RECTANGLE"], fill='#d7d6e0', outline="black", width=4)
-        title_font = ImageFont.truetype(finders.find('font/arial.ttf'), 70)
+        title_font = ImageFont.truetype(get_static_file('font/arial.ttf'), 70)
         voucher_image_editable.text(
             parameters["TITLE_POS"], voucher.herbarium.name.upper(),
             (0, 0, 0), anchor="ms", font=title_font, stroke_width=2, stroke_fill="black"
         )
-        number_font = ImageFont.truetype(finders.find('font/arial.ttf'), 55)
+        number_font = ImageFont.truetype(get_static_file('font/arial.ttf'), 55)
         voucher_image_editable.text(
             parameters["NUMBER_POS"], voucher.herbarium.collection_code + ' ' + str(voucher.catalogNumber),
             (0, 0, 0), font=number_font, stroke_width=2, stroke_fill="black"
         )
-        scientific_name_font = ImageFont.truetype(finders.find('font/arial_italic.ttf'), 48)
+        scientific_name_font = ImageFont.truetype(get_static_file('font/arial_italic.ttf'), 48)
         voucher_image_editable.text(
             parameters["NAME_POS"], voucher.scientificName.scientificNameFull + ' ',
             (0, 0, 0), anchor="ms", font=scientific_name_font
         )
-        normal_font = ImageFont.truetype(finders.find('font/arial_italic.ttf'), 48)
+        normal_font = ImageFont.truetype(get_static_file('font/arial_italic.ttf'), 48)
         voucher_image_editable.text(
             parameters["FAMILY_POS"], voucher.scientificName.genus.family.name,
             (0, 0, 0), anchor="ms", font=normal_font

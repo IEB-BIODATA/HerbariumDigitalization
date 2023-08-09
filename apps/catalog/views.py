@@ -198,6 +198,10 @@ def __update_catalog__(
             logging.error(e, exc_info=True)
             return False
     else:
+        logging.warning("Error on {}: {}".format(
+            form.instance,
+            form.errors.as_data()
+        ))
         return False
 
 
@@ -516,86 +520,12 @@ def create_genus(request):
 
 @login_required
 def update_genus(request, genus_id):
-    genus = Genus.objects.get(id=genus_id)
-    if request.method == "POST":
-        genus_name = request.POST["genus_name"]
-        family = Family.objects.get(id=request.POST["family_id"])
-        total_species = Species.objects.filter(genus=genus)
-        selected_species = list(filter(lambda x: "specie_id_" in x, request.POST))
-        if len(selected_species) < total_species.count():
-            genus = Genus(name=genus_name, family=family)
-        else:
-            genus.name = genus_name
-            genus.family = family
-        genus.save(user=request.user)
-        for species_id in selected_species:
-            species = Species.objects.get(id=int(species_id.replace("specie_id_", "")))
-            species.genus = genus
-            previous_author = species.scientificNameAuthorship
-            regexp = re.compile("\((.+)\)")
-            if regexp.search(previous_author):
-                previous_author = regexp.search(previous_author).group(0)
-                author = previous_author + " " + request.POST["author_name"]
-            else:
-                author = "(" + previous_author + ") " + request.POST["author_name"]
-            species.scientificNameAuthorship = author
-            species.save(user=request.user)
-        CatalogView.refresh_view()
-        SynonymyView.refresh_view()
-        RegionDistributionView.refresh_view()
-        return redirect("list_genus")
-    else:
-        form = GenusForm(instance=genus)
-    return render(request, "catalog/update_genus.html", {
-        "form": form,
-        "id": genus_id
-    })
-
-
-def proposal_genus(request, genus_id):
-    species = Species.objects.filter(genus=genus_id)
-    prev_genus = Genus.objects.get(id=genus_id)
-    proposal = []
-    genus = request.POST["name"]
-    prev_genus.name = genus
-    family = request.POST["family"]
-    author = request.POST["author"]
-    for specie in species:
-        specie.genus = prev_genus
-        scientific_name_authorship = str(specie.scientificNameAuthorship)
-        regexp = re.compile("\((.+)\)")
-        if regexp.search(scientific_name_authorship):
-            previous_autor = regexp.search(scientific_name_authorship).group(0)
-            specie.scientificNameAuthorship = previous_autor + " " + author
-        else:
-            specie.scientificNameAuthorship = "(" + scientific_name_authorship + ") " + author
-        specie.__update_scientific_name__()
-        proposal.append([
-            specie.id, specie.scientificName, specie.scientificNameFull, specie.scientificNameAuthorship
-        ])
-    result = pd.DataFrame(proposal, columns=["id", "scientificName", "scientificNameFull", "scientificNameAuthorship"])
-    return HttpResponse(
-        json.dumps({
-            "data": result.to_json(),
-            "genus": genus,
-            "family": family,
-            "author": author
-        }),
-        content_type="application/json"
+    return __update_catalog_route__(
+        request, Genus, GenusForm,
+        "genus", "Género",
+        "name", "Nombre", "family", "Familia",
+        genus_id
     )
-
-
-def update_genus_family(request, genus_id):
-    genus = Genus.objects.get(id=genus_id)
-    if request.method == "POST":
-        form = GenusForm(request.POST, instance=genus)
-        if __update_catalog__(form, request.user):
-            return redirect("list_genus")
-    else:
-        form = GenusForm(instance=genus)
-    return render(request, "catalog/update_genus_family.html", {
-        "form": form, "id": genus_id
-    })
 
 
 @login_required
@@ -632,6 +562,7 @@ def taxa_table(request):
     )
 
 
+@login_required
 def create_taxa(request):
     if request.method == "POST":
         form = SpeciesForm(request.POST)
@@ -639,9 +570,13 @@ def create_taxa(request):
             return redirect("list_taxa")
     else:
         form = SpeciesForm()
-    return render(request, "catalog/create_taxa.html", {"form": form})
+    return render(request, "catalog/create_taxa.html", {
+        "form": form,
+        "form_url": reverse("create_taxa")
+    })
 
 
+@login_required
 def update_taxa(request, species_id):
     species = Species.objects.get(id=species_id)
     warnings = False
@@ -664,6 +599,7 @@ def update_taxa(request, species_id):
         form = SpeciesForm(instance=species)
     return render(request, "catalog/update_taxa.html", {
         "form": form,
+        "form_url": reverse("update_taxa", kwargs={"species_id": species_id}),
         "id": species_id,
         "species_name": species.scientificNameFull,
         "warnings": warnings,
@@ -888,363 +824,6 @@ def merge_taxa(request, id):
 
     return render(request, "catalog/merge_taxa.html",
                   {"form": form, "taxa_1": taxa_1, "id_taxon_1": id, "species": species})
-
-
-@login_required
-def split_1_taxa(request, specie_id):
-    taxa_1 = Species.objects.get(id=specie_id)
-    form_taxa_1 = SpeciesForm(instance=taxa_1)
-    if request.method == "POST":
-        form_taxa_1 = SpeciesForm(request.POST)
-        if form_taxa_1.is_valid():
-            specie_1 = form_taxa_1.save(commit=False)
-
-            new_synonymy = Synonymy.objects.create(
-                scientificName=taxa_1.scientificName,
-                scientificNameDB=taxa_1.scientificNameDB,
-                scientificNameFull=taxa_1.scientificNameFull,
-                genus=taxa_1.genus,
-                specificEpithet=taxa_1.specificEpithet,
-                scientificNameAuthorship=taxa_1.scientificNameAuthorship,
-                subespecie=taxa_1.subespecie,
-                autoresSsp=taxa_1.autoresSsp,
-                variedad=taxa_1.variedad,
-                autoresVariedad=taxa_1.autoresVariedad,
-                forma=taxa_1.forma,
-                autoresForma=taxa_1.autoresForma,
-                created_at=taxa_1.created_at,
-                created_by=taxa_1.created_by
-            )
-
-            logging.info("New synonym (id: {}) created from species `{}`".format(
-                new_synonymy.id,
-                taxa_1.scientificName,
-            ))
-
-            genus = str(specie_1.genus).capitalize()
-            specificEpithet = str(specie_1.specificEpithet)
-            scientificName = genus + specificEpithet
-            scientificNameFull = genus + specificEpithet
-            scientificNameAuthorship = str(specie_1.scientificNameAuthorship)
-            subespecie = str(specie_1.subespecie)
-            autoresSsp = str(specie_1.autoresSsp)
-            variedad = str(specie_1.variedad)
-            autoresVariedad = str(specie_1.autoresVariedad)
-            forma = str(specie_1.forma)
-            autoresForma = str(specie_1.autoresForma)
-            if specie_1.scientificNameAuthorship != None:
-                scientificNameFull += " " + scientificNameAuthorship
-            if specie_1.subespecie != None:
-                scientificName += " subsp. " + subespecie
-            if specie_1.autoresSsp != None:
-                scientificNameFull += " subsp. " + subespecie + " " + autoresSsp
-            if specie_1.variedad != None:
-                scientificName += " var. " + variedad
-            if specie_1.autoresVariedad != None:
-                scientificNameFull += " var. " + variedad + " " + autoresVariedad
-            if specie_1.forma != None:
-                scientificName += " fma. " + forma
-            if specie_1.autoresForma != None:
-                scientificNameFull += " fma. " + forma + " " + autoresForma
-
-            taxa_1.genus = specie_1.genus
-            taxa_1.scientificName = scientificName
-            taxa_1.scientificNameDB = scientificName.upper()
-            taxa_1.scientificNameFull = scientificNameFull
-            taxa_1.specificEpithet = specie_1.specificEpithet
-            taxa_1.scientificNameAuthorship = specie_1.scientificNameAuthorship
-            taxa_1.subespecie = specie_1.subespecie
-            taxa_1.autoresSsp = specie_1.autoresSsp
-            taxa_1.variedad = specie_1.variedad
-            taxa_1.autoresVariedad = specie_1.autoresVariedad
-            taxa_1.forma = specie_1.forma
-            taxa_1.autoresForma = specie_1.autoresForma
-            taxa_1.status = specie_1.status
-            taxa_1.enArgentina = specie_1.enArgentina
-            taxa_1.enBolivia = specie_1.enBolivia
-            taxa_1.enPeru = specie_1.enPeru
-            taxa_1.status = specie_1.status
-            taxa_1.alturaMinima = specie_1.alturaMinima
-            taxa_1.alturaMaxima = specie_1.alturaMaxima
-            taxa_1.notas = specie_1.notas
-            taxa_1.id_tipo = specie_1.id_tipo
-            taxa_1.publicacion = specie_1.publicacion
-            taxa_1.volumen = specie_1.volumen
-            taxa_1.paginas = specie_1.paginas
-            taxa_1.anio = specie_1.anio
-            taxa_1.determined = specie_1.determined
-
-            plant_habit = request.POST.getlist("plant_habit")
-            for habit in plant_habit:
-                taxa_1.plant_habit.add(PlantHabit.objects.get(id=habit))
-
-            env_habit = request.POST.getlist("env_habit")
-            for habit in env_habit:
-                taxa_1.env_habit.add(EnvironmentalHabit.objects.get(id=habit))
-
-            cycles = request.POST.getlist("cycle")
-            for cycle in cycles:
-                taxa_1.cycle.add(Cycle.objects.get(id=cycle))
-
-            common_names = request.POST.getlist("common_names")
-            for common_name in common_names:
-                taxa_1.common_names.add(CommonName.objects.get(id=common_name))
-
-            synonymys = request.POST.getlist("synonymys")
-            for synonymy in synonymys:
-                taxa_1.synonymys.add(Synonymy.objects.get(id=synonymy))
-            taxa_1.synonymys.add(new_synonymy)
-
-            region = request.POST.getlist("region")
-            for region in region:
-                taxa_1.region.add(Region.objects.get(id=region))
-
-            taxa_1.save()
-            logging.info("Species `{}` updated to `{}`".format(
-                taxa_1.id,
-                taxa_1.scientificName
-            ))
-
-            binnacle = Binnacle(
-                type_update="División 1",
-                model="Especie",
-                description="Se divide en una nueva Especie {} en {}".format(
-                    new_synonymy.scientificName,
-                    taxa_1.scientificName
-                ),
-                created_by=request.user
-            )
-            binnacle.save()
-
-            vouchers = VoucherImported.objects.filter(occurrenceID__voucher_state=7, scientificName__id=taxa_1.id)
-            logging.info("Updating name on images")
-            update_voucher_name.delay([voucher.id for voucher in vouchers])
-
-            CatalogView.refresh_view()
-            SynonymyView.refresh_view()
-            RegionDistributionView.refresh_view()
-
-            return redirect("list_taxa")
-
-    return render(request, "catalog/split_1_taxa.html",
-                  {"form_taxa_1": form_taxa_1, "taxa_1": taxa_1, "id_taxon_1": specie_id})
-
-
-@login_required
-def split_2_taxa(request, id):
-    taxa_1 = Species.objects.get(id=id)
-    form_taxa_1 = SpeciesForm(instance=taxa_1, prefix="form_taxa_1")
-    form_taxa_2 = SpeciesForm(instance=taxa_1, prefix="form_taxa_2")
-    if request.method == "POST":
-        form_taxa_1 = SpeciesForm(request.POST, prefix="form_taxa_1")
-        form_taxa_2 = SpeciesForm(request.POST, prefix="form_taxa_2")
-        if form_taxa_1.is_valid() and form_taxa_2.is_valid():
-            specie_1 = form_taxa_1.save(commit=False)
-            specie_2 = form_taxa_2.save(commit=False)
-
-            genus = str(specie_1.genus).capitalize()
-            specificEpithet = str(specie_1.specificEpithet)
-            scientificName = genus + specificEpithet
-            scientificNameFull = genus + specificEpithet
-            scientificNameAuthorship = str(specie_1.scientificNameAuthorship)
-            subespecie = str(specie_1.subespecie)
-            autoresSsp = str(specie_1.autoresSsp)
-            variedad = str(specie_1.variedad)
-            autoresVariedad = str(specie_1.autoresVariedad)
-            forma = str(specie_1.forma)
-            autoresForma = str(specie_1.autoresForma)
-            if specie_1.scientificNameAuthorship != None:
-                scientificNameFull += " " + scientificNameAuthorship
-            if specie_1.subespecie != None:
-                scientificName += " subsp. " + subespecie
-            if specie_1.autoresSsp != None:
-                scientificNameFull += " subsp. " + subespecie + " " + autoresSsp
-            if specie_1.variedad != None:
-                scientificName += " var. " + variedad
-            if specie_1.autoresVariedad != None:
-                scientificNameFull += " var. " + variedad + " " + autoresVariedad
-            if specie_1.forma != None:
-                scientificName += " fma. " + forma
-            if specie_1.autoresForma != None:
-                scientificNameFull += " fma. " + forma + " " + autoresForma
-
-            specie_new_1 = Species(
-                id_taxa=specie_1.id_taxa,
-                genus=specie_1.genus,
-                scientificName=scientificName,
-                scientificNameDB=scientificName.upper(),
-                scientificNameFull=scientificNameFull,
-                specificEpithet=specie_1.specificEpithet,
-                scientificNameAuthorship=specie_1.scientificNameAuthorship,
-                subespecie=specie_1.subespecie,
-                autoresSsp=specie_1.autoresSsp,
-                variedad=specie_1.variedad,
-                autoresVariedad=specie_1.autoresVariedad,
-                forma=specie_1.forma,
-                autoresForma=specie_1.autoresForma,
-                enArgentina=specie_1.enArgentina,
-                enBolivia=specie_1.enBolivia,
-                enPeru=specie_1.enPeru,
-                habit=specie_1.habit,
-                ciclo=specie_1.ciclo,
-                status=specie_1.status,
-                alturaMinima=specie_1.alturaMinima,
-                alturaMaxima=specie_1.alturaMaxima,
-                notas=specie_1.notas,
-                id_tipo=specie_1.id_tipo,
-                publicacion=specie_1.publicacion,
-                volumen=specie_1.volumen,
-                paginas=specie_1.paginas,
-                anio=specie_1.anio,
-                determined=True
-            )
-
-            specie_new_1.save()
-
-            common_names = request.POST.getlist("form_taxa_1-common_names")
-            for common_name in common_names:
-                specie_new_1.common_names.add(CommonName.objects.get(id=common_name))
-
-            synonymys = request.POST.getlist("form_taxa_1-synonymys")
-            for synonymy in synonymys:
-                specie_new_1.synonymys.add(Synonymy.objects.get(id=synonymy))
-
-            region = request.POST.getlist("form_taxa_1-region")
-            for region in region:
-                specie_new_1.region.add(Region.objects.get(id=region))
-
-            taxon_1 = Species.objects.get(id=id)
-            taxon_1_genus_preview = taxon_1.genus
-            taxon_1_specificEpithet_preview = taxon_1.specificEpithet
-            taxon_1_scientificNameAuthorship_preview = taxon_1.scientificNameAuthorship
-            taxon_1_subespecie_preview = taxon_1.subespecie
-            taxon_1_autoresSsp_preview = taxon_1.autoresSsp
-            taxon_1_variedad_preview = taxon_1.variedad
-            taxon_1_autoresVariedad_preview = taxon_1.autoresVariedad
-            taxon_1_forma_preview = taxon_1.forma
-            taxon_1_autoresForma_preview = taxon_1.autoresForma
-            taxon_1_scientificName_preview = taxon_1.scientificName
-            taxon_1_scientificNameDB_preview = taxon_1.scientificNameDB
-            taxon_1_scientificNameFull_preview = taxon_1.scientificNameFull
-
-            new_synonymy = Synonymy(
-                scientificName=taxon_1_scientificName_preview,
-                scientificNameDB=taxon_1_scientificNameDB_preview,
-                scientificNameFull=taxon_1_scientificNameFull_preview,
-                genus=taxon_1_genus_preview,
-                specificEpithet=taxon_1_specificEpithet_preview,
-                scientificNameAuthorship=taxon_1_scientificNameAuthorship_preview,
-                subespecie=taxon_1_subespecie_preview,
-                autoresSsp=taxon_1_autoresSsp_preview,
-                variedad=taxon_1_variedad_preview,
-                autoresVariedad=taxon_1_autoresVariedad_preview,
-                forma=taxon_1_forma_preview,
-                autoresForma=taxon_1_autoresForma_preview
-            )
-            new_synonymy.save()
-            specie_new_1.synonymys.add(new_synonymy)
-            specie_new_1.save()
-
-            VoucherImported.objects.filter(scientificName=taxon_1.id).update(scientificName=specie_new_1.id)
-
-            vouchers = VoucherImported.objects.filter(occurrenceID__voucher_state=7, scientificName__id=specie_new_1.id)
-            for voucher in vouchers:
-                generate_etiquete(voucher.id)
-
-            specie_2 = form_taxa_2.save(commit=False)
-
-            genus = str(specie_2.genus).capitalize()
-            specificEpithet = str(specie_2.specificEpithet)
-            scientificName = genus + specificEpithet
-            scientificNameFull = genus + specificEpithet
-            scientificNameAuthorship = str(specie_2.scientificNameAuthorship)
-            subespecie = str(specie_2.subespecie)
-            autoresSsp = str(specie_2.autoresSsp)
-            variedad = str(specie_2.variedad)
-            autoresVariedad = str(specie_2.autoresVariedad)
-            forma = str(specie_2.forma)
-            autoresForma = str(specie_2.autoresForma)
-            if specie_2.scientificNameAuthorship != None:
-                scientificNameFull += " " + scientificNameAuthorship
-            if specie_2.subespecie != None:
-                scientificName += " subsp. " + subespecie
-            if specie_2.autoresSsp != None:
-                scientificNameFull += " subsp. " + subespecie + " " + autoresSsp
-            if specie_2.variedad != None:
-                scientificName += " var. " + variedad
-            if specie_2.autoresVariedad != None:
-                scientificNameFull += " var. " + variedad + " " + autoresVariedad
-            if specie_2.forma != None:
-                scientificName += " fma. " + forma
-            if specie_2.autoresForma != None:
-                scientificNameFull += " fma. " + forma + " " + autoresForma
-
-            specie_new_2 = Species(
-                id_taxa=specie_2.id_taxa,
-                genus=specie_2.genus,
-                scientificName=scientificName,
-                scientificNameDB=scientificName.upper(),
-                scientificNameFull=scientificNameFull,
-                specificEpithet=specie_2.specificEpithet,
-                scientificNameAuthorship=specie_2.scientificNameAuthorship,
-                subespecie=specie_2.subespecie,
-                autoresSsp=specie_2.autoresSsp,
-                variedad=specie_2.variedad,
-                autoresVariedad=specie_2.autoresVariedad,
-                forma=specie_2.forma,
-                autoresForma=specie_2.autoresForma,
-                enArgentina=specie_2.enArgentina,
-                enBolivia=specie_2.enBolivia,
-                enPeru=specie_2.enPeru,
-                habit=specie_2.habit,
-                ciclo=specie_2.ciclo,
-                status=specie_2.status,
-                alturaMinima=specie_2.alturaMinima,
-                alturaMaxima=specie_2.alturaMaxima,
-                notas=specie_2.notas,
-                id_tipo=specie_2.id_tipo,
-                publicacion=specie_2.publicacion,
-                volumen=specie_2.volumen,
-                paginas=specie_2.paginas,
-                anio=specie_2.anio,
-                determined=True
-            )
-
-            specie_new_2.save()
-
-            common_names = request.POST.getlist("form_taxa_2-common_names")
-            for common_name in common_names:
-                specie_new_2.common_names.add(CommonName.objects.get(id=common_name))
-
-            synonymys = request.POST.getlist("form_taxa_2-synonymys")
-            for synonymy in synonymys:
-                specie_new_2.synonymys.add(Synonymy.objects.get(id=synonymy))
-
-            region = request.POST.getlist("form_taxa_2-region")
-            for region in region:
-                specie_new_2.region.add(Region.objects.get(id=region))
-
-            specie_new_2.synonymys.add(new_synonymy)
-            specie_new_2.save()
-
-            binnacle = Binnacle(
-                type_update="División 2",
-                model="Especie",
-                description="Se divide en dos nuevas Especies " + taxon_1.scientificName + " en " + specie_new_1.scientificName + " y " + specie_new_2.scientificName,
-                created_by=request.user
-            )
-            binnacle.save()
-
-            taxon_1.delete()
-
-            CatalogView.refresh_view()
-            SynonymyView.refresh_view()
-            RegionDistributionView.refresh_view()
-
-            return redirect("list_taxa")
-
-    return render(request, "catalog/split_2_taxa.html",
-                  {"form_taxa_1": form_taxa_1, "form_taxa_2": form_taxa_2, "taxa_1": taxa_1, "id_taxon_1": id})
 
 
 @login_required

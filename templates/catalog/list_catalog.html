@@ -91,15 +91,10 @@
                         render: (data, type, row) => {
                             let update_rank_url = "{{ update_rank_url }}".replace("0", row.id);
                             let delete_rank_url = update_rank_url.replace("update", "delete");
-                            let rank_title = "{{ rank_title }}";
                             let deletable = {{ deletable }};
                             let buttonActions = `<a href="${update_rank_url}"><i class="fas fa-fw fa-edit text-primary"></i></a>`;
                             if (deletable === 1)
                                 buttonActions += `<a href="#" data-bs-toggle="modal" data-bs-target="#warningModalDelete" data-bs-name="${data}" data-bs-url="${delete_rank_url}"><i class="fas fa-fw fa-trash text-danger"></i></a>`
-                            if (rank_title === 'Género') {
-                                update_rank_url = update_rank_url.replace("genus", "genus_family");
-                                buttonActions += `<a href="${update_rank_url}" data-toggle="tooltip" data-placement="top" title="Editar Familia de Genero"><i class="fas fa-fw fa-long-arrow-alt-down text-primary"></i></a>`;
-                            }
                             return buttonActions;
                         }
                     }

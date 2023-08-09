@@ -51,6 +51,7 @@ INSTALLED_APPS = [
     'storages',
     'django.contrib.gis',
     'corsheaders',
+    'widget_tweaks',
 ]
 
 MIDDLEWARE = [
