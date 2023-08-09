@@ -1,3 +1,3 @@
 FROM herbarium-api
 
-CMD ["celery", "worker", "--app=web", "--loglevel=debug"]
+ENTRYPOINT ["celery", "-A", "web", "worker", "-l", "INFO"]
