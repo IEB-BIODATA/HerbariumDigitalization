@@ -2,10 +2,12 @@
 # from django.db import models
 import logging
 import os
+from typing import BinaryIO, Union
 
 import celery
 from django.contrib.auth.models import User
 from django.contrib.gis.db import models
+from django.core.files.base import ContentFile, File
 from django.db import connection
 from django.db.models.signals import post_delete, pre_save
 from django.dispatch import receiver
@@ -216,6 +218,39 @@ class VoucherImported(models.Model):
             return self.image_public.url
         else:
             return '#'
+
+    def upload_raw_image(self, image: Union[File, BinaryIO]):
+        self.__upload_image__(image, ".CR3", "image_raw")
+        self.occurrenceID.voucher_state = 8
+        self.occurrenceID.save()
+        self.save()
+        return
+
+    def upload_image(self, image: Union[File, BinaryIO], public: bool = False):
+        add_public = "_public" if public else ""
+        self.__upload_image__(image, f"{add_public}.jpg", f"image{add_public}")
+        self.save()
+        return
+
+    def upload_scaled_image(self, image: Union[File, BinaryIO], scale: int, public: bool = False):
+        add_public = "_public" if public else ""
+        self.__upload_image__(image, f"{add_public}_resized_{scale}.jpg", f"image{add_public}_resized_{scale}")
+        self.save()
+        return
+
+    def __upload_image__(self, image: Union[File, BinaryIO], file_info: str, image_variable: str):
+        image_content = ContentFile(image.read())
+        image_name = "{}_{}_{:07}{}".format(
+            self.herbarium.institution_code,
+            self.herbarium.collection_code,
+            self.catalogNumber,
+            file_info
+        )
+        logging.info("Voucher {}: Saving {} with name {}".format(
+            self.id, image_variable, image_name
+        ))
+        getattr(self, image_variable).save(image_name, image_content, save=True)
+        return
 
 
 class Licence(models.Model):

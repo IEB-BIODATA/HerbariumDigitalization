@@ -16,6 +16,8 @@ import pytz
 import qrcode
 import tablib
 from PIL import Image
+from celery import current_app
+from celery.result import AsyncResult
 from django.contrib.auth.decorators import login_required
 from django.contrib.gis.geos import GEOSGeometry
 from django.core import serializers
@@ -36,10 +38,11 @@ from apps.catalog.models import Species, CatalogView
 from .forms import LoadPriorityVoucherForm, LoadColorProfileForm, VoucherImportedForm, GalleryImageForm, LicenceForm
 from .models import BiodataCode, Herbarium, GeneratedPage, VoucherImported, PriorityVouchersFile, VouchersView, \
     GalleryImage, BannerImage
+from .storage_backends import PrivateMediaStorage
+from .tasks import process_pending_vouchers
 from .vouchers import PriorityVouchers
 from ..api.decorators import backend_authenticated
 from ..api.serializers import MinimizedVoucherSerializer
-from ..catalog.utils import generate_etiquette
 
 
 class HttpResponsePreconditionFailed(HttpResponse):
@@ -815,19 +818,9 @@ def upload_raw_image(request):
         voucher_id = request.POST['voucher_id']
         logging.debug(voucher_id)
         image = request.FILES['image']
-        image_content = ContentFile(image.read())
         voucher_imported = VoucherImported.objects.get(pk=voucher_id)
-        image_name = "{}_{}_{:07}.CR3".format(
-            voucher_imported.herbarium.institution_code,
-            voucher_imported.herbarium.collection_code,
-            voucher_imported.catalogNumber
-        )
-        logging.info("Saving image {}".format(image_name))
         try:
-            voucher_imported.image_raw.save(image_name, image_content)
-            voucher_imported.occurrenceID.voucher_state = 8
-            voucher_imported.occurrenceID.save()
-            voucher_imported.save()
+            voucher_imported.upload_raw_image(image)
             data = {'result': 'ok', 'file_url': voucher_imported.image_raw.url}
         except Exception as e:
             logging.warning("Voucher {} could not save".format(voucher_id))
@@ -853,14 +846,38 @@ def get_pending_images(request):
 
 
 @require_GET
-@csrf_exempt
+@login_required
+def get_pending_vouchers(request):
+    pending_voucher = VoucherImported.objects.filter(
+        Q(occurrenceID__voucher_state=8) | ((~Q(image_raw='')) & Q(image=''))
+    )
+    return HttpResponse(json.dumps({
+        "count": pending_voucher.count(),
+        "vouchers": [voucher.id for voucher in pending_voucher],
+    }), content_type="application/json")
+
+
+@require_POST
+@login_required
 def process_pending_images(request):
-    try:
-        subprocess.call(['sudo', 'bash', '/home/ubuntu/postprocessing_pending.sh', '-p', 'True'])
-        data = {'result': 'ok'}
-    except:
-        data = {'result': 'error'}
-    return HttpResponse(json.dumps(data), content_type="application/json")
+    task_id = process_pending_vouchers.delay(request.POST.getlist('pendingImages[]'))
+    return HttpResponse(task_id)
+
+
+@require_GET
+@login_required
+def get_progress(request, task_id: str):
+    result = AsyncResult(task_id)
+    return HttpResponse(json.dumps({
+        'state': result.state,
+        'details': result.info,
+    }), content_type="application/json")
+
+
+@require_GET
+@login_required
+def get_task_log(request, task_id: str):
+    return HttpResponse(PrivateMediaStorage().url(f"{task_id}.log"))
 
 
 @login_required
@@ -941,7 +958,7 @@ def update_voucher(request, id):
                     'POINT(' + str(decimalLongitude_public) + ' ' + str(decimalLatitude_public) + ')', srid=4326)
                 voucher.save()
                 if voucher.image:
-                    filename = generate_etiquette(id)
+                    filename = ""  # generate_etiquette(id)
                     voucher_image = Image.open(filename)
                     path = Path(filename)
                     with path.open(mode='rb') as f:

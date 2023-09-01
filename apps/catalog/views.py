@@ -23,7 +23,6 @@ from .forms import DivisionForm, ClassForm, OrderForm, FamilyForm, GenusForm, Sp
 from .models import Species, CatalogView, SynonymyView, RegionDistributionView, Division, ClassName, Order, Family, \
     Genus, Synonymy, Region, CommonName, Binnacle, PlantHabit, EnvironmentalHabit, Cycle, TaxonomicModel, \
     ConservationState
-from .tasks import update_voucher_name
 from ..api.serializers import DivisionSerializer, ClassSerializer, OrderSerializer, \
     FamilySerializer, GenusSerializer, SynonymysSerializer, CommonNameSerializer, SpeciesSerializer, \
     CatalogViewSerializer
@@ -811,7 +810,8 @@ def merge_taxa(request, id):
                     vouchers = VoucherImported.objects.filter(occurrenceID__voucher_state=7,
                                                               scientificName__id=specie_new.id)
                     for voucher in vouchers:
-                        generate_etiquete(voucher.id)
+                        pass
+                        # generate_etiquete(voucher.id)
 
                     CatalogView.refresh_view()
                     SynonymyView.refresh_view()
