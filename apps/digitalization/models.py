@@ -2,7 +2,7 @@
 # from django.db import models
 import logging
 import os
-from typing import BinaryIO, Union
+from typing import BinaryIO, Union, Any, Tuple
 
 import celery
 from django.contrib.auth.models import User
@@ -11,6 +11,7 @@ from django.core.files.base import ContentFile, File
 from django.db import connection
 from django.db.models.signals import post_delete, pre_save
 from django.dispatch import receiver
+from django.forms import CharField
 
 from apps.catalog.models import Species
 from .storage_backends import PublicMediaStorage, PrivateMediaStorage
@@ -43,8 +44,8 @@ class Herbarium(models.Model):
     def __str__(self):
         return "%s " % self.name
 
-    def natural_key(self):
-        return (self.id, self.name)
+    def natural_key(self) -> Tuple[Any, CharField]:
+        return self.id, self.name
 
 
 class ColorProfileFile(models.Model):
@@ -92,14 +93,14 @@ class GeneratedPage(models.Model):
     def __str__(self):
         return "%s " % self.name
 
-    def natural_key(self):
-        return (self.id, self.name)
+    def natural_key(self) -> Tuple[Any, CharField]:
+        return self.id, self.name
 
 
 class BiodataCode(models.Model):
     herbarium = models.ForeignKey(Herbarium, on_delete=models.CASCADE)
     code = models.CharField(max_length=30, blank=False, null=False, unique=True)
-    catalogNumber = models.IntegerField(blank=True, null=True)
+    catalog_number = models.IntegerField(blank=True, null=True)
     created_at = models.DateTimeField(blank=True, null=True, editable=False)
     created_by = models.ForeignKey(User, on_delete=models.PROTECT)
     qr_generated = models.BooleanField(default=False)
@@ -115,8 +116,8 @@ class BiodataCode(models.Model):
     def __str__(self):
         return "%s " % self.code
 
-    def natural_key(self):
-        return (self.id, self.code)
+    def natural_key(self) -> Tuple[Any, CharField]:
+        return self.id, self.code
 
 
 class HerbariumMember(models.Model):
@@ -146,21 +147,21 @@ class PriorityVouchersFile(models.Model):
 
 class VoucherImported(models.Model):
     vouchers_file = models.ForeignKey(PriorityVouchersFile, on_delete=models.CASCADE, blank=True, null=True)
-    occurrenceID = models.ForeignKey(BiodataCode, on_delete=models.CASCADE, blank=True, null=True)
+    biodata_code = models.ForeignKey(BiodataCode, on_delete=models.CASCADE, blank=True, null=True)
     herbarium = models.ForeignKey(Herbarium, on_delete=models.CASCADE, blank=True, null=True)
-    otherCatalogNumbers = models.CharField(max_length=13, blank=True, null=True)
-    catalogNumber = models.IntegerField(blank=True, null=True)
-    recordedBy = models.CharField(max_length=300, blank=True, null=True)
-    recordNumber = models.CharField(max_length=13, blank=True, null=True)
-    organismRemarks = models.CharField(max_length=300, blank=True, null=True)
-    scientificName = models.ForeignKey(Species, on_delete=models.CASCADE, blank=True, null=True)
+    other_catalog_numbers = models.CharField(max_length=13, blank=True, null=True)
+    catalog_number = models.IntegerField(blank=True, null=True)
+    recorded_by = models.CharField(max_length=300, blank=True, null=True)
+    record_number = models.CharField(max_length=13, blank=True, null=True)
+    organism_remarks = models.CharField(max_length=300, blank=True, null=True)
+    scientific_name = models.ForeignKey(Species, on_delete=models.CASCADE, blank=True, null=True)
     locality = models.CharField(max_length=300, blank=True, null=True)
-    verbatimElevation = models.IntegerField(blank=True, null=True)
-    georeferencedDate = models.DateTimeField(blank=True, null=True)
-    decimalLatitude = models.FloatField(blank=True, null=True)
-    decimalLongitude = models.FloatField(blank=True, null=True)
-    identifiedBy = models.CharField(max_length=100, blank=True, null=True)
-    dateIdentified = models.CharField(max_length=100, blank=True, null=True)
+    verbatim_elevation = models.IntegerField(blank=True, null=True)
+    georeference_date = models.DateTimeField(blank=True, null=True)
+    decimal_latitude = models.FloatField(blank=True, null=True)
+    decimal_longitude = models.FloatField(blank=True, null=True)
+    identified_by = models.CharField(max_length=100, blank=True, null=True)
+    identified_date = models.CharField(max_length=100, blank=True, null=True)
     image = models.ImageField(storage=PrivateMediaStorage(), blank=True, null=True)
     image_resized_10 = models.ImageField(storage=PrivateMediaStorage(), blank=True, null=True)
     image_resized_60 = models.ImageField(storage=PrivateMediaStorage(), blank=True, null=True)
@@ -169,8 +170,8 @@ class VoucherImported(models.Model):
     image_public_resized_60 = models.ImageField(storage=PublicMediaStorage(), blank=True, null=True)
     image_raw = models.ImageField(storage=PrivateMediaStorage(), blank=True, null=True)
     point = models.PointField(null=True, blank=True, )
-    decimalLatitude_public = models.FloatField(blank=True, null=True)
-    decimalLongitude_public = models.FloatField(blank=True, null=True)
+    decimal_latitude_public = models.FloatField(blank=True, null=True)
+    decimal_longitude_public = models.FloatField(blank=True, null=True)
     point_public = models.PointField(null=True, blank=True, )
     priority = models.IntegerField(blank=True, null=True, default=3)
 
@@ -178,10 +179,10 @@ class VoucherImported(models.Model):
         verbose_name_plural = "Vouchers"
 
     def generate_etiquette(self):
-        if self.occurrenceID.voucher_state == 7:
+        if self.biodata_code.voucher_state == 7:
             logging.debug("Regenerating public image ({})".format(self.id))
-            self.occurrenceID.voucher_state = 8
-            self.occurrenceID.save()
+            self.biodata_code.voucher_state = 8
+            self.biodata_code.save()
             self.save()
             celery.current_app.send_task('etiquette_picture', (self.id, ))
             return
@@ -221,8 +222,8 @@ class VoucherImported(models.Model):
 
     def upload_raw_image(self, image: Union[File, BinaryIO]):
         self.__upload_image__(image, ".CR3", "image_raw")
-        self.occurrenceID.voucher_state = 8
-        self.occurrenceID.save()
+        self.biodata_code.voucher_state = 8
+        self.biodata_code.save()
         self.save()
         return
 
@@ -243,7 +244,7 @@ class VoucherImported(models.Model):
         image_name = "{}_{}_{:07}{}".format(
             self.herbarium.institution_code,
             self.herbarium.collection_code,
-            self.catalogNumber,
+            self.catalog_number,
             file_info
         )
         logging.info("Voucher {}: Saving {} with name {}".format(
@@ -267,7 +268,7 @@ class Licence(models.Model):
 
 
 class GalleryImage(models.Model):
-    scientificName = models.ForeignKey(Species, on_delete=models.CASCADE)
+    scientific_name = models.ForeignKey(Species, on_delete=models.CASCADE)
     image = models.ImageField(upload_to="gallery", storage=PublicMediaStorage())
     specimen = models.ForeignKey(BiodataCode, on_delete=models.SET_NULL, blank=True, null=True)
     taken_by = models.CharField(max_length=300, blank=True, null=True)
@@ -361,27 +362,27 @@ class VouchersView(models.Model):
            biodatacode.code,
            biodatacode.voucher_state,
            herbarium.collection_code,
-           voucher."otherCatalogNumbers",
-           voucher."catalogNumber",
-           voucher."recordedBy",
-           voucher."recordNumber",
-           voucher."organismRemarks",
-           species."scientificName",
+           voucher.other_catalog_numbers,
+           voucher.catalog_number,
+           voucher.recorded_by,
+           voucher.record_number,
+           voucher.organism_remarks,
+           species.scientific_name,
            voucher.locality,
-           voucher."verbatimElevation",
-           voucher."georeferencedDate",
-           voucher."decimalLatitude",
-           voucher."decimalLongitude",
-           voucher."identifiedBy",
-           voucher."dateIdentified",
-           voucher."decimalLatitude_public",
-           voucher."decimalLongitude_public",
+           voucher.verbatim_elevation,
+           voucher.georeference_date,
+           voucher.decimal_latitude,
+           voucher.decimal_longitude,
+           voucher.identified_by,
+           voucher.identified_date,
+           voucher.decimal_latitude_public,
+           voucher.decimal_longitude_public,
            voucher.priority
     FROM digitalization_voucherimported voucher
          JOIN digitalization_herbarium herbarium ON voucher.herbarium_id = herbarium.id
          JOIN digitalization_priorityvouchersfile voucherfile ON voucher.vouchers_file_id = voucherfile.id
-         JOIN digitalization_biodatacode biodatacode ON voucher."occurrenceID_id" = biodatacode.id
-         JOIN catalog_species species ON voucher."scientificName_id" = species.id;
+         JOIN digitalization_biodatacode biodatacode ON voucher.biodata_code = biodatacode.id
+         JOIN catalog_species species ON voucher.scientific_name = species.id;
 
     ALTER MATERIALIZED VIEW vouchers_view OWNER TO <POSTGRES_USER>;
 
@@ -393,21 +394,21 @@ class VouchersView(models.Model):
     code = models.CharField(max_length=300, blank=True, null=True)
     voucher_state = models.CharField(max_length=300, blank=True, null=True)
     collection_code = models.CharField(max_length=300, blank=True, null=True)
-    otherCatalogNumbers = models.CharField(max_length=13, blank=True, null=True)
-    catalogNumber = models.IntegerField(blank=True, null=True)
-    recordedBy = models.CharField(max_length=300, blank=True, null=True)
-    recordNumber = models.CharField(max_length=13, blank=True, null=True)
-    organismRemarks = models.CharField(max_length=300, blank=True, null=True)
-    scientificName = models.CharField(max_length=300, blank=True, null=True)
+    other_catalog_numbers = models.CharField(max_length=13, blank=True, null=True)
+    catalog_number = models.IntegerField(blank=True, null=True)
+    recorded_by = models.CharField(max_length=300, blank=True, null=True)
+    record_number = models.CharField(max_length=13, blank=True, null=True)
+    organism_remarks = models.CharField(max_length=300, blank=True, null=True)
+    scientific_name = models.CharField(max_length=300, blank=True, null=True)
     locality = models.CharField(max_length=300, blank=True, null=True)
-    verbatimElevation = models.IntegerField(blank=True, null=True)
-    georeferencedDate = models.DateTimeField(blank=True, null=True)
-    decimalLatitude = models.FloatField(blank=True, null=True)
-    decimalLongitude = models.FloatField(blank=True, null=True)
-    identifiedBy = models.CharField(max_length=100, blank=True, null=True)
-    dateIdentified = models.CharField(max_length=100, blank=True, null=True)
-    decimalLatitude_public = models.FloatField(blank=True, null=True)
-    decimalLongitude_public = models.FloatField(blank=True, null=True)
+    verbatim_elevation = models.IntegerField(blank=True, null=True)
+    georeference_date = models.DateTimeField(blank=True, null=True)
+    decimal_latitude = models.FloatField(blank=True, null=True)
+    decimal_longitude = models.FloatField(blank=True, null=True)
+    identified_by = models.CharField(max_length=100, blank=True, null=True)
+    identified_date = models.CharField(max_length=100, blank=True, null=True)
+    decimal_latitude_public = models.FloatField(blank=True, null=True)
+    decimal_longitude_public = models.FloatField(blank=True, null=True)
     priority = models.IntegerField(blank=True, null=True, default=3)
 
     @classmethod

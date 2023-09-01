@@ -16,8 +16,8 @@ class HerbariumAdmin(admin.ModelAdmin):
 @admin.register(BiodataCode)
 class BiodataCodeAdmin(admin.ModelAdmin):
     list_display = (
-    ['code', 'catalogNumber', 'herbarium', 'created_by', 'created_at', 'qr_generated', 'page', 'voucher_state'])
-    search_fields = ['catalogNumber', ]
+    ['code', 'catalog_number', 'herbarium', 'created_by', 'created_at', 'qr_generated', 'page', 'voucher_state'])
+    search_fields = ['catalog_number', ]
 
 
 @admin.register(GeneratedPage)
@@ -40,8 +40,8 @@ class PriorityVouchersFileAdmin(admin.ModelAdmin):
 @admin.register(VoucherImported)
 class VoucherImportedAdmin(ImportExportModelAdmin):
     resource_class = VoucherImportedAdminResource
-    list_display = (['herbarium', 'catalogNumber', 'scientificName', 'vouchers_file'])
-    search_fields = ['catalogNumber', ]
+    list_display = (['herbarium', 'catalog_number', 'scientific_name', 'vouchers_file'])
+    search_fields = ['catalog_number', ]
 
 
 @admin.register(ColorProfileFile)

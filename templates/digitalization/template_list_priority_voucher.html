@@ -44,7 +44,7 @@
             <tbody>
             {% for priority_voucher in priority_vouchers %}
                 <tr>
-                    <th style="margin-right: 80px;">{{ priority_voucher.catalogNumber }}</th>
+                    <th style="margin-right: 80px;">{{ priority_voucher.catalog_number }}</th>
                     <td>
                         {% if priority_voucher.scientificName %}
                             {{ priority_voucher.scientificName }}
@@ -53,8 +53,8 @@
                         {% endif %}
                     </td>
                     <td>{{ priority_voucher.scientificName.genus.family.name }}</td>
-                    <td>{{ priority_voucher.recordedBy }}</td>
-                    <td>{{ priority_voucher.recordNumber }}</td>                  
+                    <td>{{ priority_voucher.recorded_by }}</td>
+                    <td>{{ priority_voucher.record_number }}</td>
                 </tr>
             {% endfor %}
             </tbody>

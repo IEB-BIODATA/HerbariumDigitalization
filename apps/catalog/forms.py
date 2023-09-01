@@ -98,46 +98,46 @@ class SpeciesForm(forms.ModelForm):
     class Meta:
         model = Species
         fields = (
-            'id_taxa', 'scientificName', 'scientificNameFull',
-            'genus', 'specificEpithet', 'scientificNameAuthorship',
-            'subespecie', 'autoresSsp',
-            'variedad', 'autoresVariedad',
-            'forma', 'autoresForma',
-            'enArgentina', 'enBolivia', 'enPeru',
+            'id_taxa', 'scientific_name', 'scientific_name_full',
+            'genus', 'specific_epithet', 'scientific_name_authorship',
+            'subspecies', 'ssp_authorship',
+            'variety', 'variety_authorship',
+            'form', 'form_authorship',
+            'in_argentina', 'in_bolivia', 'in_peru',
             'plant_habit', 'env_habit', 'cycle', 'status',
-            'alturaMinima', 'alturaMaxima',
-            'synonymys', 'common_names', 'region',
-            'notas', 'publicacion', 'volumen', 'paginas',
-            'id_tipo',
+            'minimum_height', 'maximum_height',
+            'synonyms', 'common_names', 'region',
+            'notes', 'publication', 'volume', 'pages',
+            'type_id',
             'conservation_state', 'determined', 'id_mma',
         )
 
         labels = {
             'genus': 'Género',
-            'specificEpithet': 'Epíteto específico',
-            'scientificNameAuthorship': 'Autor(es)',
-            'subespecie': 'Subespecie',
-            'autoresSsp': 'Autor(es) subespecie',
-            'variedad': 'Variedad',
-            'autoresVariedad': 'Autor(es) variedad',
-            'forma': 'Forma',
-            'autoresForma': 'Autor(es) forma',
+            'specific_epithet': 'Epíteto específico',
+            'scientific_name_authorship': 'Autor(es)',
+            'subspecies': 'Subespecie',
+            'ssp_authorship': 'Autor(es) subspecies',
+            'variety': 'Variedad',
+            'variety_authorship': 'Autor(es) variedad',
+            'form': 'Forma',
+            'form_authorship': 'Autor(es) forma',
             'plant_habit': 'Hábito',
             'env_habit': 'Forma de vida',
             'cycle': 'Ciclo de vida',
             'status': 'Origen',
-            'enArgentina': 'En Argentica',
-            'enBolivia': 'En Bolivia',
-            'enPeru': 'En Perú',
-            'alturaMaxima': 'Altura Máxima',
-            'alturaMinima': 'Altura Mínima',
-            'notas': 'Notas',
-            'publicacion': 'Publicación',
-            'volumen': 'Volumen',
-            'paginas': 'Páginas',
-            'id_tipo': 'ID Tipo',
+            'in_argentina': 'En Argentica',
+            'in_bolivia': 'En Bolivia',
+            'in_peru': 'En Perú',
+            'maximum_height': 'Altura Máxima',
+            'minimum_height': 'Altura Mínima',
+            'notes': 'Notas',
+            'publication': 'Publicación',
+            'volume': 'Volumen',
+            'pages': 'Páginas',
+            'type_id': 'ID Tipo',
             'common_names': 'Nombres Comunes',
-            'synonymys': 'Sinónimos',
+            'synonyms': 'Sinónimos',
             'region': 'Distribución Regional',
             'conservation_state': 'Estado de Conservación',
             'determined': '¿Terminal?',
@@ -147,20 +147,20 @@ class SpeciesForm(forms.ModelForm):
         widgets = {
             'id_taxa': forms.HiddenInput(),
             'genus': forms.Select(attrs={'class': "form-control"}),
-            'scientificName': forms.HiddenInput(),
-            'scientificNameFull': forms.HiddenInput(),
-            'scientificNameDB': forms.HiddenInput(),
-            'specificEpithet': forms.TextInput(attrs={'class': "form-control"}),
-            'scientificNameAuthorship': forms.TextInput(attrs={'class': "form-control"}),
-            'subespecie': forms.TextInput(attrs={'class': "form-control"}),
-            'autoresSsp': forms.TextInput(attrs={'class': "form-control"}),
-            'variedad': forms.TextInput(attrs={'class': "form-control"}),
-            'autoresVariedad': forms.TextInput(attrs={'class': "form-control"}),
-            'forma': forms.TextInput(attrs={'class': "form-control"}),
-            'autoresForma': forms.TextInput(attrs={'class': "form-control"}),
-            'enArgentina': forms.CheckboxInput(attrs={'class': "form-check-input"}),
-            'enBolivia': forms.CheckboxInput(attrs={'class': "form-check-input"}),
-            'enPeru': forms.CheckboxInput(attrs={'class': "form-check-input"}),
+            'scientific_name': forms.HiddenInput(),
+            'scientific_name_full': forms.HiddenInput(),
+            'scientific_name_db': forms.HiddenInput(),
+            'specific_epithet': forms.TextInput(attrs={'class': "form-control"}),
+            'scientific_name_authorship': forms.TextInput(attrs={'class': "form-control"}),
+            'subspecies': forms.TextInput(attrs={'class': "form-control"}),
+            'ssp_authorship': forms.TextInput(attrs={'class': "form-control"}),
+            'variety': forms.TextInput(attrs={'class': "form-control"}),
+            'variety_authorship': forms.TextInput(attrs={'class': "form-control"}),
+            'form': forms.TextInput(attrs={'class': "form-control"}),
+            'form_authorship': forms.TextInput(attrs={'class': "form-control"}),
+            'in_argentina': forms.CheckboxInput(attrs={'class': "form-check-input"}),
+            'in_bolivia': forms.CheckboxInput(attrs={'class': "form-check-input"}),
+            'in_peru': forms.CheckboxInput(attrs={'class': "form-check-input"}),
             'plant_habit': forms.SelectMultiple(
                 attrs={'class': "selectpicker", 'multiple data-live-search': 'true',
                        'multiple data-multiple-separator': ' o '}),
@@ -171,20 +171,20 @@ class SpeciesForm(forms.ModelForm):
                 attrs={'class': "selectpicker", 'multiple data-live-search': 'true',
                        'multiple data-multiple-separator': ' o '}),
             'status': forms.Select(attrs={'class': "form-control"}),
-            'alturaMinima': forms.TextInput(attrs={'class': "form-control", 'type': 'number'}),
-            'alturaMaxima': forms.TextInput(attrs={'class': "form-control", 'type': 'number'}),
-            'synonymys': forms.SelectMultiple(attrs={'class': "selectpicker", 'multiple data-live-search': 'true',
+            'minimum_height': forms.TextInput(attrs={'class': "form-control", 'type': 'number'}),
+            'maximum_height': forms.TextInput(attrs={'class': "form-control", 'type': 'number'}),
+            'synonyms': forms.SelectMultiple(attrs={'class': "selectpicker", 'multiple data-live-search': 'true',
                                                      'multiple data-multiple-separator': ','}),
             'common_names': forms.SelectMultiple(attrs={'class': "selectpicker", 'multiple data-live-search': 'true',
                                                         'multiple data-multiple-separator': ','}),
             'region': forms.SelectMultiple(
                 attrs={'class': "selectpicker", 'multiple data-live-search': 'true',
                        'multiple data-multiple-separator': ','}),
-            'notas': forms.Textarea(attrs={'class': "form-control", 'rows': 3, 'cols': 5}),
-            'publicacion': forms.TextInput(attrs={'class': "form-control"}),
-            'volumen': forms.TextInput(attrs={'class': "form-control"}),
-            'paginas': forms.TextInput(attrs={'class': "form-control"}),
-            'id_tipo': forms.TextInput(attrs={'class': "form-control"}),
+            'notes': forms.Textarea(attrs={'class': "form-control", 'rows': 3, 'cols': 5}),
+            'publication': forms.TextInput(attrs={'class': "form-control"}),
+            'volume': forms.TextInput(attrs={'class': "form-control"}),
+            'pages': forms.TextInput(attrs={'class': "form-control"}),
+            'type_id': forms.TextInput(attrs={'class': "form-control"}),
             'conservation_state': forms.SelectMultiple(
                 attrs={'class': "selectpicker", 'multiple data-live-search': 'true',
                        'multiple data-multiple-separator': ','}),
@@ -198,48 +198,48 @@ class SpeciesForm(forms.ModelForm):
             raise ValidationError("Género es requerido")
         return genus
 
-    def clean_specificEpithet(self):
-        specific_epithet = self.cleaned_data["specificEpithet"]
+    def clean_specific_epithet(self):
+        specific_epithet = self.cleaned_data["specific_epithet"]
         if specific_epithet is None:
             raise ValidationError("Epíteto es requerido")
         return specific_epithet
 
-    def clean_autoresSsp(self):
-        subspecies_authors = self.cleaned_data["autoresSsp"]
-        if "specificEpithet" in self.cleaned_data:
-            specific_epithet = self.cleaned_data["specificEpithet"]
+    def clean_ssp_authorship(self):
+        subspecies_authors = self.cleaned_data["ssp_authorship"]
+        if "specific_epithet" in self.cleaned_data:
+            specific_epithet = self.cleaned_data["specific_epithet"]
         else:
             return subspecies_authors
-        subspecies = self.cleaned_data["subespecie"]
+        subspecies = self.cleaned_data["subspecies"]
         if subspecies is not None and subspecies_authors is None and not (
                 specific_epithet == subspecies
         ):
-            raise ValidationError("Completar autor(es) de subespecie")
+            raise ValidationError("Completar autor(es) de subspecies")
         return subspecies_authors
 
-    def clean_autoresVariedad(self):
-        variety_authors = self.cleaned_data["autoresVariedad"]
-        if "specificEpithet" in self.cleaned_data:
-            specific_epithet = self.cleaned_data["specificEpithet"]
+    def clean_variety_authorship(self):
+        variety_authors = self.cleaned_data["variety_authorship"]
+        if "specific_epithet" in self.cleaned_data:
+            specific_epithet = self.cleaned_data["specific_epithet"]
         else:
             return variety_authors
-        subspecies = self.cleaned_data["subespecie"]
-        variety = self.cleaned_data["variedad"]
+        subspecies = self.cleaned_data["subspecies"]
+        variety = self.cleaned_data["variety"]
         if variety is not None and variety_authors is None and not (
                 specific_epithet == variety or subspecies == variety
         ):
             raise ValidationError("Completar autor(es) de variedad")
         return variety_authors
 
-    def clean_autoresForma(self):
-        form_authors = self.cleaned_data["autoresForma"]
-        if "specificEpithet" in self.cleaned_data:
-            specific_epithet = self.cleaned_data["specificEpithet"]
+    def clean_form_authorship(self):
+        form_authors = self.cleaned_data["form_authorship"]
+        if "specific_epithet" in self.cleaned_data:
+            specific_epithet = self.cleaned_data["specific_epithet"]
         else:
             return form_authors
-        subspecies = self.cleaned_data["subespecie"]
-        variety = self.cleaned_data["variedad"]
-        form = self.cleaned_data["forma"]
+        subspecies = self.cleaned_data["subspecies"]
+        variety = self.cleaned_data["variety"]
+        form = self.cleaned_data["form"]
         if form is not None and form_authors is None and not (
                 specific_epithet == form or subspecies == form or variety == form
         ):
@@ -251,33 +251,33 @@ class SynonymyForm(forms.ModelForm):
     class Meta:
         model = Synonymy
         fields = (
-            'scientificName',
-            'scientificNameFull',
-            'scientificNameDB',
+            'scientific_name',
+            'scientific_name_full',
+            'scientific_name_db',
             'genus',
-            'specificEpithet',
-            'scientificNameAuthorship',
-            'subespecie',
-            'autoresSsp',
-            'variedad',
-            'autoresVariedad',
-            'forma',
-            'autoresForma',
+            'specific_epithet',
+            'scientific_name_authorship',
+            'subspecies',
+            'ssp_authorship',
+            'variety',
+            'variety_authorship',
+            'form',
+            'form_authorship',
         )
 
         widgets = {
-            'scientificName': forms.HiddenInput(),
-            'scientificNameFull': forms.HiddenInput(),
-            'scientificNameDB': forms.HiddenInput(),
+            'scientific_name': forms.HiddenInput(),
+            'scientific_name_full': forms.HiddenInput(),
+            'scientific_name_db': forms.HiddenInput(),
             'genus': forms.TextInput(attrs={'class': "form-control"}),
-            'specificEpithet': forms.TextInput(attrs={'class': "form-control"}),
-            'scientificNameAuthorship': forms.TextInput(attrs={'class': "form-control"}),
-            'subespecie': forms.TextInput(attrs={'class': "form-control"}),
-            'autoresSsp': forms.TextInput(attrs={'class': "form-control"}),
-            'variedad': forms.TextInput(attrs={'class': "form-control"}),
-            'autoresVariedad': forms.TextInput(attrs={'class': "form-control"}),
-            'forma': forms.TextInput(attrs={'class': "form-control"}),
-            'autoresForma': forms.TextInput(attrs={'class': "form-control"}),
+            'specific_epithet': forms.TextInput(attrs={'class': "form-control"}),
+            'scientific_name_authorship': forms.TextInput(attrs={'class': "form-control"}),
+            'subspecies': forms.TextInput(attrs={'class': "form-control"}),
+            'ssp_authorship': forms.TextInput(attrs={'class': "form-control"}),
+            'variety': forms.TextInput(attrs={'class': "form-control"}),
+            'variety_authorship': forms.TextInput(attrs={'class': "form-control"}),
+            'form': forms.TextInput(attrs={'class': "form-control"}),
+            'form_authorship': forms.TextInput(attrs={'class': "form-control"}),
         }
 
 
