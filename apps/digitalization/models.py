@@ -381,8 +381,8 @@ class VouchersView(models.Model):
     FROM digitalization_voucherimported voucher
          JOIN digitalization_herbarium herbarium ON voucher.herbarium_id = herbarium.id
          JOIN digitalization_priorityvouchersfile voucherfile ON voucher.vouchers_file_id = voucherfile.id
-         JOIN digitalization_biodatacode biodatacode ON voucher.biodata_code = biodatacode.id
-         JOIN catalog_species species ON voucher.scientific_name = species.id;
+         JOIN digitalization_biodatacode biodatacode ON voucher.biodata_code_id = biodatacode.id
+         JOIN catalog_species species ON voucher.scientific_name_id = species.id;
 
     ALTER MATERIALIZED VIEW vouchers_view OWNER TO <POSTGRES_USER>;
 
