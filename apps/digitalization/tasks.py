@@ -4,7 +4,6 @@ import logging
 import os
 import shutil
 import textwrap
-import traceback
 from io import BytesIO
 from typing import List
 
@@ -15,8 +14,9 @@ from django.conf import settings
 
 from apps.digitalization.models import VoucherImported, BiodataCode
 from apps.digitalization.storage_backends import PrivateMediaStorage
-from apps.digitalization.utils import get_static_file, SessionFolder, TaskProcessLogger, cr3_to_dng, dng_to_jpeg, \
-    dng_to_jpeg_color_profile, read_qr, change_image_resolution, empty_folder, HtmlLogger, GroupLogger
+from apps.digitalization.utils import SessionFolder, TaskProcessLogger, HtmlLogger, GroupLogger
+from apps.digitalization.utils import cr3_to_dng, dng_to_jpeg, dng_to_jpeg_color_profile
+from apps.digitalization.utils import read_qr, change_image_resolution, empty_folder
 
 N_BATCH = 1
 WIDTH_CROP = 550
@@ -74,24 +74,24 @@ def etiquette_picture(voucher_id, logger: logging.Logger = None):
         voucher_image = Image.open(image_file)
         voucher_image_editable = ImageDraw.Draw(voucher_image)
         voucher_image_editable.rectangle(parameters["RECTANGLE"], fill='#d7d6e0', outline="black", width=4)
-        title_font = ImageFont.truetype(get_static_file('font/arial.ttf'), 70)
+        title_font = ImageFont.truetype('assets/font/arial.ttf', 70)
         voucher_image_editable.text(
             parameters["TITLE_POS"], voucher.herbarium.name.upper(),
             (0, 0, 0), anchor="ms", font=title_font, stroke_width=2, stroke_fill="black"
         )
-        number_font = ImageFont.truetype(get_static_file('font/arial.ttf'), 55)
+        number_font = ImageFont.truetype('assets/font/arial.ttf', 55)
         voucher_image_editable.text(
-            parameters["NUMBER_POS"], voucher.herbarium.collection_code + ' ' + str(voucher.catalogNumber),
+            parameters["NUMBER_POS"], voucher.herbarium.collection_code + ' ' + str(voucher.catalog_number),
             (0, 0, 0), font=number_font, stroke_width=2, stroke_fill="black"
         )
-        scientific_name_font = ImageFont.truetype(get_static_file('font/arial_italic.ttf'), 48)
+        scientific_name_font = ImageFont.truetype('assets/font/arial_italic.ttf', 48)
         voucher_image_editable.text(
-            parameters["NAME_POS"], voucher.scientificName.scientificNameFull + ' ',
+            parameters["NAME_POS"], voucher.scientific_name.scientific_name_full + ' ',
             (0, 0, 0), anchor="ms", font=scientific_name_font
         )
-        normal_font = ImageFont.truetype(get_static_file('font/arial_italic.ttf'), 48)
+        normal_font = ImageFont.truetype('assets/font/arial_italic.ttf', 48)
         voucher_image_editable.text(
-            parameters["FAMILY_POS"], voucher.scientificName.genus.family.name,
+            parameters["FAMILY_POS"], voucher.scientific_name.genus.family.name,
             (0, 0, 0), anchor="ms", font=normal_font
         )
         if voucher.locality is not None and voucher.locality != "":
@@ -99,8 +99,8 @@ def etiquette_picture(voucher_id, logger: logging.Logger = None):
                 parameters["LOCALITY_POS"], voucher.locality,
                 (0, 0, 0), font=normal_font
             )
-        if voucher.georeferencedDate:
-            georeferenced_date = voucher.georeferencedDate.strftime('%d-%m-%Y')
+        if voucher.georeference_date:
+            georeferenced_date = voucher.georeference_date.strftime('%d-%m-%Y')
         else:
             georeferenced_date = ""
         voucher_image_editable.text(
@@ -108,21 +108,21 @@ def etiquette_picture(voucher_id, logger: logging.Logger = None):
             (0, 0, 0), font=normal_font
         )
         voucher_image_editable.text(
-            parameters["RECORD_POS"], 'Leg. ' + voucher.recordedBy + ' ' + voucher.recordNumber,
+            parameters["RECORD_POS"], 'Leg. ' + voucher.recorded_by + ' ' + voucher.record_number,
             (0, 0, 0), font=normal_font
         )
-        if voucher.dateIdentified is not None and voucher.dateIdentified != "":
+        if voucher.identified_date is not None and voucher.identified_date != "":
             voucher_image_editable.text(
-                parameters["RECORD_DATE_POS"], 'Fecha Det. ' + str(voucher.dateIdentified),
+                parameters["RECORD_DATE_POS"], 'Fecha Det. ' + str(voucher.identified_date),
                 (0, 0, 0), font=normal_font
             )
-        if voucher.identifiedBy is not None and voucher.identifiedBy != "":
+        if voucher.identified_by is not None and voucher.identified_by != "":
             voucher_image_editable.text(
-                parameters["IDENTIFY_POS"], 'Det. ' + str(voucher.identifiedBy),
+                parameters["IDENTIFY_POS"], 'Det. ' + str(voucher.identified_by),
                 (0, 0, 0), font=normal_font
             )
-        if voucher.organismRemarks is not None and voucher.organismRemarks not in ["", "nan"]:
-            observation = textwrap.fill(str(voucher.organismRemarks), width=60, break_long_words=False)
+        if voucher.organism_remarks is not None and voucher.organism_remarks not in ["", "nan"]:
+            observation = textwrap.fill(str(voucher.organism_remarks), width=60, break_long_words=False)
             voucher_image_editable.text(
                 parameters["OBS_POS"], 'Obs.: ' + observation,
                 (0, 0, 0), font=normal_font
@@ -135,8 +135,8 @@ def etiquette_picture(voucher_id, logger: logging.Logger = None):
         for scale_percent in [10, 60]:
             resized_image = change_image_resolution(voucher_image, scale_percent)
             voucher.upload_scaled_image(resized_image, scale_percent, public=True)
-        voucher.occurrenceID.voucher_state = 7
-        voucher.occurrenceID.save()
+        voucher.biodata_code.voucher_state = 7
+        voucher.biodata_code.save()
         voucher.save()
         logger.info("Image saved!")
         return True
@@ -199,7 +199,7 @@ def scheduled_postprocess(input_folder: str, temp_folder: str, log_folder: str):
                                 biodata_code.page.color_profile.file.url,
                                 process_logger, log_cache
                             )
-                            vouchers = VoucherImported.objects.filter(occurrenceID__id=biodata_code.id)
+                            vouchers = VoucherImported.objects.filter(biodata_code__id=biodata_code.id)
                             if vouchers.count() == 1:
                                 voucher: VoucherImported = vouchers[0]
                                 raw_image_path = filename.replace(temp_folder, input_folder).replace(".jpg", ".CR3")
@@ -285,7 +285,7 @@ def process_pending_vouchers(self, pending_vouchers: List[str]):
             })
             dng_to_jpeg_color_profile(
                 temp_folder, temp_folder, voucher_imported.herbarium.collection_code,
-                voucher_imported.occurrenceID.page.color_profile.file.url, logger
+                voucher_imported.biodata_code.page.color_profile.file.url, logger
             )
             self.update_state(state='PROGRESS', meta={
                 "step": i, "total": total, "logs": logger[0].get_logs()

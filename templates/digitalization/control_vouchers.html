@@ -53,7 +53,7 @@
                         if (state_voucher == 2) {
                             founded='<a href="#" class="btn btn-warning" onclick="set_state('+data[i].fields.voucherStateID+',0); return false;" id="id_button_class_found_'+data[i].fields.voucherStateID+'">Encontrado</a>';
                         }
-                        table += '<tr><td><div class="p-3 mb-2 '+class_state+' ">'+data[i].fields.voucherStateName+'</div>'+founded+'</td><td>'+data[i].fields.PageDate+'</td><td>'+data[i].fields.Herbarium+'</td><td>'+data[i].fields.occurrenceID+'</td><td>'+data[i].fields.catalogNumber+'</td><td>'+data[i].fields.scientificName+'</td><td>'+data[i].fields.recordedBy+'</td><td>'+data[i].fields.recordNumber+'</td><td>'+data[i].fields.locality+'</td><td width="10%"><a href="/digitalization/update_voucher/'+data[i].fields.id+'/" id=voucher.id %}"><i class="fas fa-fw fa-edit text-primary"></i> Editar</a></td></tr>';
+                        table += '<tr><td><div class="p-3 mb-2 '+class_state+' ">'+data[i].fields.voucherStateName+'</div>'+founded+'</td><td>'+data[i].fields.PageDate+'</td><td>'+data[i].fields.Herbarium+'</td><td>'+data[i].fields.biodata_code+'</td><td>'+data[i].fields.catalog_number+'</td><td>'+data[i].fields.scientificName+'</td><td>'+data[i].fields.recorded_by+'</td><td>'+data[i].fields.record_number+'</td><td>'+data[i].fields.locality+'</td><td width="10%"><a href="/digitalization/update_voucher/'+data[i].fields.id+'/" id=voucher.id %}"><i class="fas fa-fw fa-edit text-primary"></i> Editar</a></td></tr>';
                     }
                     $("[id^=VouchersTable]").remove()
                     table += "</tbody>";
@@ -127,36 +127,36 @@
                         <tr>
                             <td>
                                 <div id="id_div_class_found_{{ voucher.id }}" class="p-3 mb-2
-                    {% if voucher.occurrenceID.voucher_state == 0 %}
+                    {% if voucher.biodata_code.voucher_state == 0 %}
                       bg-light text-dark
-                    {% elif voucher.occurrenceID.voucher_state == 1 %}
+                    {% elif voucher.biodata_code.voucher_state == 1 %}
                       bg-success text-white
-                    {% elif voucher.occurrenceID.voucher_state == 2 %}
+                    {% elif voucher.biodata_code.voucher_state == 2 %}
                       bg-danger text-white
-                    {% elif voucher.occurrenceID.voucher_state == 3 %}
+                    {% elif voucher.biodata_code.voucher_state == 3 %}
                       bg-warning text-dark
-                    {% elif voucher.occurrenceID.voucher_state == 4 %}
+                    {% elif voucher.biodata_code.voucher_state == 4 %}
                       bg-warning text-white
-                    {% elif voucher.occurrenceID.voucher_state == 5 %}
+                    {% elif voucher.biodata_code.voucher_state == 5 %}
                       bg-info text-dark
-                    {% elif voucher.occurrenceID.voucher_state == 6 %}
+                    {% elif voucher.biodata_code.voucher_state == 6 %}
                       bg-info text-dark
-                    {% elif voucher.occurrenceID.voucher_state == 7 %}
+                    {% elif voucher.biodata_code.voucher_state == 7 %}
                       bg-primary text-white
                     {% endif %}
-                ">{{ voucher.occurrenceID.get_voucher_state_display }}
+                ">{{ voucher.biodata_code.get_voucher_state_display }}
                                 </div>
-                                {% if voucher.occurrenceID.voucher_state == 2 %}
+                                {% if voucher.biodata_code.voucher_state == 2 %}
                                     <a href="#" class="btn btn-warning" onclick="set_state({{voucher.id}},0); return false;" id="id_button_class_found_{{ voucher.id }}">Encontrado</a>
                                 {% endif %}
                             </td>
-                            <td>{{ voucher.occurrenceID.page.created_at }}</td>
+                            <td>{{ voucher.biodata_code.page.created_at }}</td>
                             <td>{{ voucher.herbarium }}</td>
-                            <td>{{ voucher.occurrenceID }}</td>
-                            <td>{{ voucher.catalogNumber }}</td>
+                            <td>{{ voucher.biodata_code }}</td>
+                            <td>{{ voucher.catalog_number }}</td>
                             <td>{{ voucher.scientificName }}</td>
-                            <td>{{ voucher.recordedBy }}</td>
-                            <td>{{ voucher.recordNumber }}</td>
+                            <td>{{ voucher.recorded_by }}</td>
+                            <td>{{ voucher.record_number }}</td>
                             <td>{{ voucher.locality }}</td>
                             <td width="10%"><a href="{% url 'update_voucher' id=voucher.id %}"><i class="fas fa-fw fa-edit text-primary"></i> Editar</a></td>
                         </tr>

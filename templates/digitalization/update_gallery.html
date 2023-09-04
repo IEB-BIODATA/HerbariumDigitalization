@@ -45,7 +45,7 @@
                             <td>{{ specie.class_name }}</td>
                             <td>{{ specie.order }}</td>
                             <td>{{ specie.family }}</td>
-                            <td><a href="{% url 'modify_gallery' catalog_id=specie.id%}">{{ specie.scientificNameFull }}</a></td>
+                            <td><a href="{% url 'modify_gallery' catalog_id=specie.id%}">{{ specie.scientific_name_full }}</a></td>
                             <td>{{ specie.updated_at }}</td>
                         </tr>
                     {% endfor%}

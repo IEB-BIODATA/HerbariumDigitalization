@@ -44,14 +44,14 @@ class GenusAdmin(ImportExportModelAdmin):
 @admin.register(Species)
 class SpeciesAdmin(ImportExportModelAdmin):
     resource_class = SpeciesAdminResource
-    list_display = (['id', 'id_taxa', 'scientificName', 'genus', 'created_by', 'created_at', 'updated_at'])
-    search_fields = ['scientificName']
+    list_display = (['id', 'id_taxa', 'scientific_name', 'genus', 'created_by', 'created_at', 'updated_at'])
+    search_fields = ['scientific_name']
 
 
 @admin.register(Synonymy)
 class SynonymyAdmin(ImportExportModelAdmin):
-    list_display = (['scientificName', 'created_by', 'created_at', 'updated_at'])
-    search_fields = ['scientificName']
+    list_display = (['scientific_name', 'created_by', 'created_at', 'updated_at'])
+    search_fields = ['scientific_name']
 
 
 @admin.register(Region)

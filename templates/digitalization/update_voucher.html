@@ -8,7 +8,7 @@
 <script>
     // Creating map options
     var mapOptions = {
-       center: [{{form.instance.decimalLatitude|stringformat:".6f"}}, {{form.instance.decimalLongitude|stringformat:".6f"}}],
+       center: [{{form.instance.decimal_latitude|stringformat:".6f"}}, {{form.instance.decimal_longitude|stringformat:".6f"}}],
        zoom: 15
     }
     
@@ -28,8 +28,8 @@
     map.addEventListener('click', function(ev) {
        lat = ev.latlng.lat;
        lng = ev.latlng.lng;
-       $('#id_decimalLatitude').val(lat);
-       $('#id_decimalLongitude').val(lng);
+       $('#id_decimal_latitude').val(lat);
+       $('#id_decimal_longitude').val(lng);
     });
     // Creating a Layer object
     var layer = new L.TileLayer('http://{s}.google.com/vt/lyrs=s,h&x={x}&y={y}&z={z}',{
@@ -55,7 +55,7 @@
         icon: customIcon
      }
     var locations = [
-      [{{form.instance.decimalLatitude|stringformat:".6f"}}, {{form.instance.decimalLongitude|stringformat:".6f"}}]
+      [{{form.instance.decimal_latitude|stringformat:".6f"}}, {{form.instance.decimal_longitude|stringformat:".6f"}}]
     ];
 
     for (var i = 0; i < locations.length; i++) {
@@ -78,25 +78,25 @@
           <div class="form-group row">
             <label class="col-sm-2 col-form-label">Número de Catálogo</label>
             <div class="col-sm-10">
-              {{ form.catalogNumber }}
+              {{ form.catalog_number }}
             </div>
           </div>
           <div class="form-group row">
             <label class="col-sm-2 col-form-label">ID Base Dato herbario</label>
             <div class="col-sm-10">
-              {{ form.otherCatalogNumbers }}
+              {{ form.other_catalog_numbers }}
             </div>
           </div>
           <div class="form-group row">
             <label class="col-sm-2 col-form-label">Número de Colecta</label>
             <div class="col-sm-10">
-              {{ form.recordNumber }}
+              {{ form.record_number }}
             </div>
           </div>
           <div class="form-group row">
             <label class="col-sm-2 col-form-label">Colectado por</label>
             <div class="col-sm-10">
-              {{ form.recordedBy }}
+              {{ form.recorded_by }}
             </div>
           </div>
           <div class="form-group row">
@@ -114,31 +114,31 @@
           <div class="form-group row">
             <label class="col-sm-2 col-form-label">Altura</label>
             <div class="col-sm-10">
-              {{ form.verbatimElevation }}
+              {{ form.verbatim_elevation }}
             </div>
           </div>
           <div class="form-group row">
             <label class="col-sm-2 col-form-label">Fecha de Colecta</label>
             <div class="col-sm-10">
-              {{ form.georeferencedDate }}
+              {{ form.georeference_date }}
             </div>
           </div>
           <div class="form-group row">
             <label class="col-sm-2 col-form-label">Determinado por</label>
             <div class="col-sm-10">
-              {{ form.identifiedBy }}
+              {{ form.identified_by }}
             </div>
           </div>
           <div class="form-group row">
             <label class="col-sm-2 col-form-label">Fecha de Determinación</label>
             <div class="col-sm-10">
-              {{ form.dateIdentified }}
+              {{ form.identified_date }}
             </div>
           </div>
           <div class="form-group row">
             <label class="col-sm-2 col-form-label">Observaciones</label>
             <div class="col-sm-10">
-              {{ form.organismRemarks }}
+              {{ form.organism_remarks }}
             </div>
           </div>
           <div class="form-group row">
@@ -158,13 +158,13 @@
           <div class="form-group row">
             <label class="col-sm-2 col-form-label">Latitud</label>
             <div class="col-sm-10">
-              {{ form.decimalLatitude }}
+              {{ form.decimal_latitude }}
             </div>
           </div>
           <div class="form-group row">
             <label class="col-sm-2 col-form-label">Logitud</label>
             <div class="col-sm-10">
-              {{ form.decimalLongitude }}
+              {{ form.decimal_longitude }}
             </div>
           </div>
           <div class="form-group row">

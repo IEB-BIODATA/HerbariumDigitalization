@@ -88,7 +88,7 @@ class SpeciesSerializer(TaxonomicSerializer):
 
     class Meta:
         model = Species
-        fields = TaxonomicSerializer.Meta.fields + ['scientificName', 'genus']
+        fields = TaxonomicSerializer.Meta.fields + ['scientific_name', 'genus']
 
 
 class CatalogViewSerializer(HyperlinkedModelSerializer):
@@ -97,7 +97,7 @@ class CatalogViewSerializer(HyperlinkedModelSerializer):
         model = CatalogView
         fields = TaxonomicSerializer.Meta.fields + [
             'division', 'class_name', 'order', 'family',
-            'scientificNameFull', 'status', 'determined',
+            'scientific_name_full', 'status', 'determined',
         ]
 
 
@@ -107,13 +107,13 @@ class SynonymysSerializer(TaxonomicSerializer):
     class Meta:
         model = Synonymy
         fields = TaxonomicSerializer.Meta.fields + [
-            'scientificName', 'scientificNameFull',
+            'scientific_name', 'scientific_name_full',
             'species'
         ]
 
     def get_species(self, obj):
         species = obj.species_set.all()
-        return "\t".join([specie.scientificName for specie in species])
+        return "\t".join([specie.scientific_name for specie in species])
 
 
 class RegionSerializer(HyperlinkedModelSerializer):
@@ -131,7 +131,7 @@ class CommonNameSerializer(TaxonomicSerializer):
 
     def get_species(self, obj):
         species = obj.species_set.all()
-        return "\t".join([specie.scientificName for specie in species])
+        return "\t".join([specie.scientific_name for specie in species])
 
 
 class UserSerializer(HyperlinkedModelSerializer):
@@ -141,15 +141,15 @@ class UserSerializer(HyperlinkedModelSerializer):
 
 
 class VoucherSerializer(HyperlinkedModelSerializer):
-    species = CharField(source='scientificName')
+    species = CharField(source='scientific_name')
     herbarium = ReadOnlyField(source='herbarium.name')
     herbarium_code = ReadOnlyField(source='herbarium.collection_code')
 
     class Meta:
         model = VoucherImported
-        fields = ['id', 'herbarium', 'herbarium_code', 'otherCatalogNumbers', 'catalogNumber', 'recordedBy',
-                  'recordNumber', 'organismRemarks', 'species', 'locality', 'verbatimElevation', 'georeferencedDate',
-                  'identifiedBy', 'dateIdentified', 'image_public', 'image_public_resized_10',
+        fields = ['id', 'herbarium', 'herbarium_code', 'other_catalog_numbers', 'catalog_number', 'recorded_by',
+                  'record_number', 'organism_remarks', 'species', 'locality', 'verbatim_elevation', 'georeference_date',
+                  'identified_by', 'identified_date', 'image_public', 'image_public_resized_10',
                   'image_public_resized_60']
 
 
@@ -175,7 +175,7 @@ class BiodataCodeSerializer(HyperlinkedModelSerializer):
 
 
 class MinimizedVoucherSerializer(HyperlinkedModelSerializer):
-    species = CharField(source='scientificName')
+    species = CharField(source='scientific_name')
     occurrence_id = SerializerMethodField()
     image_voucher_url = SerializerMethodField()
     image_voucher_thumb_url = SerializerMethodField()
@@ -186,8 +186,8 @@ class MinimizedVoucherSerializer(HyperlinkedModelSerializer):
     class Meta:
         model = VoucherImported
         fields = [
-            'id', 'occurrence_id', 'catalogNumber',
-            'recordedBy', 'recordNumber',
+            'id', 'occurrence_id', 'catalog_number',
+            'recorded_by', 'record_number',
             'species', 'locality',
             'image_voucher_url',
             'image_voucher_thumb_url',
@@ -198,7 +198,7 @@ class MinimizedVoucherSerializer(HyperlinkedModelSerializer):
 
     def get_occurrence_id(self, obj):
         return BiodataCodeSerializer(
-            instance=obj.occurrenceID,
+            instance=obj.biodata_code,
             many=False,
         ).data
 
@@ -219,7 +219,7 @@ class MinimizedVoucherSerializer(HyperlinkedModelSerializer):
 
 
 class GallerySerializer(HyperlinkedModelSerializer):
-    species = CharField(source='scientificName')
+    species = CharField(source='scientific_name')
 
     class Meta:
         model = GalleryImage
@@ -238,7 +238,7 @@ class SpecieSerializer(HyperlinkedModelSerializer):
     habit = SerializerMethodField()
     cycle = SerializerMethodField()
     status = ReadOnlyField(source='status.name')
-    synonymys = SynonymysSerializer(required=False, many=True)
+    synonyms = SynonymysSerializer(required=False, many=True)
     region = RegionSerializer(required=False, many=True)
     created_by = ReadOnlyField(source='created_by.username')
     family = ReadOnlyField(source='genus.family.name')
@@ -258,11 +258,11 @@ class SpecieSerializer(HyperlinkedModelSerializer):
     class Meta:
         model = Species
         fields = ['id', 'id_taxa', 'kingdom', 'division', 'division_id', 'class_name', 'class_name_id', 'order',
-                  'order_id', 'family', 'family_id', 'genus', 'genus_id', 'scientificName', 'scientificNameDB',
-                  'scientificNameFull', 'specificEpithet', 'scientificNameAuthorship', 'subespecie', 'autoresSsp',
-                  'variedad', 'autoresVariedad', 'forma', 'autoresForma', 'common_names', 'enArgentina', 'enBolivia',
-                  'enPeru', 'habit', 'cycle', 'status', 'alturaMinima', 'alturaMaxima', 'notas', 'id_tipo',
-                  'publicacion', 'volumen', 'paginas', 'anio', 'synonymys', 'region', 'created_at',
+                  'order_id', 'family', 'family_id', 'genus', 'genus_id', 'scientific_name', 'scientific_name_db',
+                  'scientific_name_full', 'specific_epithet', 'scientific_name_authorship', 'subspecies', 'ssp_authorship',
+                  'variety', 'variety_authorship', 'form', 'form_authorship', 'common_names', 'in_argentina', 'in_bolivia',
+                  'in_peru', 'habit', 'cycle', 'status', 'minimum_height', 'maximum_height', 'notes', 'type_id',
+                  'publication', 'volume', 'pages', 'year', 'synonyms', 'region', 'created_at',
                   'updated_at', 'created_by', 'determined', 'id_taxa_origin', 'conservation_state', 'id_mma',
                   'vouchers', 'gallery_images']
 
@@ -320,9 +320,9 @@ class SynonymySerializer(HyperlinkedModelSerializer):
 
     class Meta:
         model = Synonymy
-        fields = ['id', 'species', 'genus', 'scientificName', 'scientificNameDB', 'scientificNameFull',
-                  'specificEpithet', 'scientificNameAuthorship', 'subespecie', 'autoresSsp', 'variedad',
-                  'autoresVariedad', 'forma', 'autoresForma', 'created_at', 'updated_at', 'created_by']
+        fields = ['id', 'species', 'genus', 'scientific_name', 'scientific_name_db', 'scientific_name_full',
+                  'specific_epithet', 'scientific_name_authorship', 'subspecies', 'ssp_authorship', 'variety',
+                  'variety_authorship', 'form', 'form_authorship', 'created_at', 'updated_at', 'created_by']
 
     def get_species(self, obj):
         species = obj.species_set.all()
@@ -331,7 +331,7 @@ class SynonymySerializer(HyperlinkedModelSerializer):
 
 
 class SpeciesFinderSerializer(ModelSerializer):
-    name = CharField(source='scientificName')
+    name = CharField(source='scientific_name')
     genus = CharField(source='genus.name')
     family = ReadOnlyField(source='genus.family.name')
     order = ReadOnlyField(source='genus.family.order.name')
@@ -341,11 +341,11 @@ class SpeciesFinderSerializer(ModelSerializer):
     class Meta:
         model = Species
         fields = [
-            'id', 'name', 'genus', 'specificEpithet',
-            'family', 'order', 'scientificNameAuthorship',
-            'habit', 'subespecie', 'autoresSsp',
-            'variedad', 'autoresVariedad', 'forma',
-            'autoresForma', 'vouchers', 'determined'
+            'id', 'name', 'genus', 'specific_epithet',
+            'family', 'order', 'scientific_name_authorship',
+            'habit', 'subspecies', 'ssp_authorship',
+            'variety', 'variety_authorship', 'form',
+            'form_authorship', 'vouchers', 'determined'
         ]
 
     def get_vouchers(self, obj):
@@ -370,13 +370,13 @@ class SpeciesFinderSerializer(ModelSerializer):
 
 
 class SynonymysFinderSerializer(ModelSerializer):
-    name = CharField(source='scientificName')
+    name = CharField(source='scientific_name')
     species = SerializerMethodField()
 
     class Meta:
         model = Synonymy
-        fields = ['id', 'name', 'genus', 'specificEpithet', 'scientificNameAuthorship', 'species', 'subespecie',
-                  'autoresSsp', 'variedad', 'autoresVariedad', 'forma', 'autoresForma']
+        fields = ['id', 'name', 'genus', 'specific_epithet', 'scientific_name_authorship', 'species', 'subspecies',
+                  'ssp_authorship', 'variety', 'variety_authorship', 'form', 'form_authorship']
 
     def get_species(self, obj):
         species = obj.species_set.all()
@@ -402,25 +402,25 @@ class GenusFinderSerializer(ModelSerializer):
 class DistributionSerializer(ModelSerializer):
     class Meta:
         model = VoucherImported
-        fields = ['decimalLatitude_public', 'decimalLongitude_public', ]
+        fields = ['decimal_latitude_public', 'decimal_longitude_public', ]
 
 
 class ImagesSerializer(HyperlinkedModelSerializer):
-    name = CharField(source='scientificName')
-    specie_id = CharField(source='scientificName.id')
+    name = CharField(source='scientific_name')
+    specie_id = CharField(source='scientific_name.id')
     image_name = CharField(source='image_public.name')
     herbarium_code = CharField(source='herbarium.collection_code')
-    georeferencedDate = serializers.DateTimeField(format="%d-%m-%Y")
+    georeference_date = serializers.DateTimeField(format="%d-%m-%Y")
 
     class Meta:
         model = VoucherImported
         fields = ['id', 'name', 'specie_id', 'herbarium_code', 'image_public', 'image_public_resized_10',
-                  'image_public_resized_60', 'image_name', 'catalogNumber', 'recordedBy', 'recordNumber',
-                  'organismRemarks', 'locality', 'identifiedBy', 'dateIdentified', 'georeferencedDate']
+                  'image_public_resized_60', 'image_name', 'catalog_number', 'recorded_by', 'record_number',
+                  'organism_remarks', 'locality', 'identified_by', 'identified_date', 'georeference_date']
 
 
 class GalleryPhotosSerializer(HyperlinkedModelSerializer):
-    name = CharField(source='scientificName.scientificName')
+    name = CharField(source='scientific_name.scientific_name')
 
     class Meta:
         model = GalleryImage

@@ -29,7 +29,7 @@ from ..api.serializers import DivisionSerializer, ClassSerializer, OrderSerializ
 
 MANY_RELATIONS = [
     ("common_names", "nombres comunes", CommonName),
-    ("synonymys", "sinónimos", Synonymy),
+    ("synonyms", "sinónimos", Synonymy),
     ("plant_habit", "hábito", PlantHabit),
     ("env_habit", "forma de vida", EnvironmentalHabit),
     ("cycle", "ciclo de vida", Cycle),
@@ -41,36 +41,36 @@ MANY_RELATIONS = [
 @login_required
 def catalog_download(request):
     if request.method == "GET":
-        headers1 = ["id", "id_taxa", "kingdom", "division", "class_name", "order", "family", "genus", "scientificName",
-                    "scientificNameFull"
-            , "specificEpithet", "scientificNameAuthorship", "subespecie", "autoresSsp", "variedad", "autoresVariedad",
-                    "forma", "autoresForma"
-            , "enArgentina", "enBolivia", "enPeru", "habit", "ciclo", "status", "alturaMinima", "alturaMaxima",
-                    "notas", "id_tipo"
-            , "publicacion", "volumen", "paginas", "anio", "determined", "id_taxa_origin"]
-        headers2 = ["id", "specie_id", "id_taxa", "specie scientificName", "synonymy id", "synonymy scientificName",
-                    "scientificNameFull", "genus", "specificEpithet", "scientificNameAuthorship"
-            , "subespecie", "autoresSsp", "variedad", "autoresVariedad", "forma", "autoresForma"]
-        headers3 = ["id", "specie_id", "id_taxa", "specie scientificName", "region name", "region key"]
+        headers1 = ["id", "id_taxa", "kingdom", "division", "class_name", "order", "family", "genus", "scientific_name",
+                    "scientific_name_full"
+            , "specific_epithet", "scientific_name_authorship", "subspecies", "ssp_authorship", "variety", "variety_authorship",
+                    "form", "form_authorship"
+            , "in_argentina", "in_bolivia", "in_peru", "habit", "ciclo", "status", "minimum_height", "maximum_height",
+                    "notes", "type_id"
+            , "publication", "volume", "pages", "year", "determined", "id_taxa_origin"]
+        headers2 = ["id", "specie_id", "id_taxa", "specie scientific_name", "synonymy id", "synonymy scientific_name",
+                    "scientific_name_full", "genus", "specific_epithet", "scientific_name_authorship"
+            , "subspecies", "ssp_authorship", "variety", "variety_authorship", "form", "form_authorship"]
+        headers3 = ["id", "specie_id", "id_taxa", "specie scientific_name", "region name", "region key"]
         species = CatalogView.objects.values_list("id", "id_taxa", "kingdom", "division", "class_name", "order",
-                                                  "family", "genus", "scientificName", "scientificNameFull"
-                                                  , "specificEpithet", "scientificNameAuthorship", "subespecie",
-                                                  "autoresSsp", "variedad", "autoresVariedad", "forma", "autoresForma"
-                                                  , "enArgentina", "enBolivia", "enPeru", "habit", "ciclo", "status",
-                                                  "alturaMinima", "alturaMaxima", "notas", "id_tipo"
-                                                  , "publicacion", "volumen", "paginas", "anio", "determined",
+                                                  "family", "genus", "scientific_name", "scientific_name_full"
+                                                  , "specific_epithet", "scientific_name_authorship", "subspecies",
+                                                  "ssp_authorship", "variety", "variety_authorship", "form", "form_authorship"
+                                                  , "in_argentina", "in_bolivia", "in_peru", "habit", "ciclo", "status",
+                                                  "minimum_height", "maximum_height", "notes", "type_id"
+                                                  , "publication", "volume", "pages", "year", "determined",
                                                   "id_taxa_origin").order_by("id")
-        synonymys = SynonymyView.objects.values_list("id", "specie_id", "id_taxa", "specie_scientificname",
-                                                     "synonymy_id", "scientificName", "scientificNameFull", "genus",
-                                                     "specificEpithet", "scientificNameAuthorship"
-                                                     , "subespecie", "autoresSsp", "variedad", "autoresVariedad",
-                                                     "forma", "autoresForma").order_by("id")
+        synonyms = SynonymyView.objects.values_list("id", "specie_id", "id_taxa", "specie_scientific_name",
+                                                     "synonymy_id", "scientific_name", "scientific_name_full", "genus",
+                                                     "specific_epithet", "scientific_name_authorship"
+                                                     , "subspecies", "ssp_authorship", "variety", "variety_authorship",
+                                                     "form", "form_authorship").order_by("id")
         region = RegionDistributionView.objects.values_list("id", "specie_id", "id_taxa",
-                                                            "specie_scientificname", "region_name",
+                                                            "specie_scientific_name", "region_name",
                                                             "region_key").order_by("id")
         databook = tablib.Databook()
         data_set1 = tablib.Dataset(*species, headers=headers1, title="Species")
-        data_set2 = tablib.Dataset(*synonymys, headers=headers2, title="Synonymys")
+        data_set2 = tablib.Dataset(*synonyms, headers=headers2, title="Synonymys")
         data_set3 = tablib.Dataset(*region, headers=headers3, title="Region Distribution")
         databook.add_sheet(data_set1)
         databook.add_sheet(data_set2)
@@ -539,7 +539,7 @@ def taxa_table(request):
         1: "class_name",
         2: "order",
         3: "family",
-        4: "scientificNameFull",
+        4: "scientific_name_full",
         5: "created_by",
         6: "created_at",
         7: "updated_at",
@@ -582,7 +582,7 @@ def update_taxa(request, species_id):
     warning_text = ""
     gallery_warning = species.galleryimage_set.exists()
     voucher_warning = species.voucherimported_set.exists()
-    synonymy_warning = species.synonymys.exists()
+    synonymy_warning = species.synonyms.exists()
     if gallery_warning or voucher_warning or synonymy_warning:
         warnings = True
         warning_text = "Esta especie no puede ser eliminada debido a que está asociada a {}{}{}".format(
@@ -600,7 +600,7 @@ def update_taxa(request, species_id):
         "form": form,
         "form_url": reverse("update_taxa", kwargs={"species_id": species_id}),
         "id": species_id,
-        "species_name": species.scientificNameFull,
+        "species_name": species.scientific_name_full,
         "warnings": warnings,
         "warning_text": warning_text,
     })
@@ -608,7 +608,7 @@ def update_taxa(request, species_id):
 
 def delete_taxa(request, species_id):
     species = Species.objects.get(id=species_id)
-    name = species.scientificNameFull
+    name = species.scientific_name_full
     try:
         logging.info("Taxa to be deleted {}:{}".format(
             species_id, name
@@ -648,86 +648,86 @@ def merge_taxa(request, id):
                 else:
                     taxon_1 = Species.objects.get(id=id)
                     taxon_1_genus_preview = taxon_1.genus
-                    taxon_1_specificEpithet_preview = taxon_1.specificEpithet
-                    taxon_1_scientificNameAuthorship_preview = taxon_1.scientificNameAuthorship
-                    taxon_1_subespecie_preview = taxon_1.subespecie
-                    taxon_1_autoresSsp_preview = taxon_1.autoresSsp
-                    taxon_1_variedad_preview = taxon_1.variedad
-                    taxon_1_autoresVariedad_preview = taxon_1.autoresVariedad
-                    taxon_1_forma_preview = taxon_1.forma
-                    taxon_1_autoresForma_preview = taxon_1.autoresForma
-                    taxon_1_scientificName_preview = taxon_1.scientificName
-                    taxon_1_scientificNameDB_preview = taxon_1.scientificNameDB
-                    taxon_1_scientificNameFull_preview = taxon_1.scientificNameFull
+                    taxon_1_specific_epithet_preview = taxon_1.specific_epithet
+                    taxon_1_scientific_name_authorship_preview = taxon_1.scientific_name_authorship
+                    taxon_1_subspecies_preview = taxon_1.subspecies
+                    taxon_1_ssp_authorship_preview = taxon_1.ssp_authorship
+                    taxon_1_variety_preview = taxon_1.variety
+                    taxon_1_variety_authorship_preview = taxon_1.variety_authorship
+                    taxon_1_form_preview = taxon_1.form
+                    taxon_1_form_authorship_preview = taxon_1.form_authorship
+                    taxon_1_scientific_name_preview = taxon_1.scientific_name
+                    taxon_1_scientific_name_db_preview = taxon_1.scientific_name_db
+                    taxon_1_scientific_name_full_preview = taxon_1.scientific_name_full
 
                     taxon_2_id = request.POST["id_taxon_2"]
                     taxon_2 = Species.objects.get(id=taxon_2_id)
                     taxon_2_genus_preview = taxon_2.genus
-                    taxon_2_specificEpithet_preview = taxon_2.specificEpithet
-                    taxon_2_scientificNameAuthorship_preview = taxon_2.scientificNameAuthorship
-                    taxon_2_subespecie_preview = taxon_2.subespecie
-                    taxon_2_autoresSsp_preview = taxon_2.autoresSsp
-                    taxon_2_variedad_preview = taxon_2.variedad
-                    taxon_2_autoresVariedad_preview = taxon_2.autoresVariedad
-                    taxon_2_forma_preview = taxon_2.forma
-                    taxon_2_autoresForma_preview = taxon_2.autoresForma
-                    taxon_2_scientificName_preview = taxon_2.scientificName
-                    taxon_2_scientificNameDB_preview = taxon_2.scientificNameDB
-                    taxon_2_scientificNameFull_preview = taxon_2.scientificNameFull
+                    taxon_2_specific_epithet_preview = taxon_2.specific_epithet
+                    taxon_2_scientific_name_authorship_preview = taxon_2.scientific_name_authorship
+                    taxon_2_subspecies_preview = taxon_2.subspecies
+                    taxon_2_ssp_authorship_preview = taxon_2.ssp_authorship
+                    taxon_2_variety_preview = taxon_2.variety
+                    taxon_2_variety_authorship_preview = taxon_2.variety_authorship
+                    taxon_2_form_preview = taxon_2.form
+                    taxon_2_form_authorship_preview = taxon_2.form_authorship
+                    taxon_2_scientific_name_preview = taxon_2.scientific_name
+                    taxon_2_scientific_name_db_preview = taxon_2.scientific_name_db
+                    taxon_2_scientific_name_full_preview = taxon_2.scientific_name_full
 
                     specie = form.save(commit=False)
                     genus = str(specie.genus).capitalize()
-                    specificEpithet = str(specie.specificEpithet)
-                    scientificName = genus + specificEpithet
-                    scientificNameFull = genus + specificEpithet
-                    scientificNameAuthorship = str(specie.scientificNameAuthorship)
-                    subespecie = str(specie.subespecie)
-                    autoresSsp = str(specie.autoresSsp)
-                    variedad = str(specie.variedad)
-                    autoresVariedad = str(specie.autoresVariedad)
-                    forma = str(specie.forma)
-                    autoresForma = str(specie.autoresForma)
-                    if specie.scientificNameAuthorship != None:
-                        scientificNameFull += " " + scientificNameAuthorship
-                    if specie.subespecie != None:
-                        scientificName += " subsp. " + subespecie
-                    if specie.autoresSsp != None:
-                        scientificNameFull += " subsp. " + subespecie + " " + autoresSsp
-                    if specie.variedad != None:
-                        scientificName += " var. " + variedad
-                    if specie.autoresVariedad != None:
-                        scientificNameFull += " var. " + variedad + " " + autoresVariedad
-                    if specie.forma != None:
-                        scientificName += " fma. " + forma
-                    if specie.autoresForma != None:
-                        scientificNameFull += " fma. " + forma + " " + autoresForma
+                    specific_epithet = str(specie.specific_epithet)
+                    scientific_name = genus + specific_epithet
+                    scientific_name_full = genus + specific_epithet
+                    scientific_name_authorship = str(specie.scientific_name_authorship)
+                    subspecies = str(specie.subspecies)
+                    ssp_authorship = str(specie.ssp_authorship)
+                    variety = str(specie.variety)
+                    variety_authorship = str(specie.variety_authorship)
+                    form = str(specie.form)
+                    form_authorship = str(specie.form_authorship)
+                    if specie.scientific_name_authorship != None:
+                        scientific_name_full += " " + scientific_name_authorship
+                    if specie.subspecies != None:
+                        scientific_name += " subsp. " + subspecies
+                    if specie.ssp_authorship != None:
+                        scientific_name_full += " subsp. " + subspecies + " " + ssp_authorship
+                    if specie.variety != None:
+                        scientific_name += " var. " + variety
+                    if specie.variety_authorship != None:
+                        scientific_name_full += " var. " + variety + " " + variety_authorship
+                    if specie.form != None:
+                        scientific_name += " fma. " + form
+                    if specie.form_authorship != None:
+                        scientific_name_full += " fma. " + form + " " + form_authorship
 
                     specie_new = Species(
                         id_taxa=specie.id_taxa,
                         genus=specie.genus,
-                        scientificName=scientificName,
-                        scientificNameDB=scientificName.upper(),
-                        scientificNameFull=scientificNameFull,
-                        specificEpithet=specie.specificEpithet,
-                        scientificNameAuthorship=specie.scientificNameAuthorship,
-                        subespecie=specie.subespecie,
-                        autoresSsp=specie.autoresSsp,
-                        variedad=specie.variedad,
-                        autoresVariedad=specie.autoresVariedad,
-                        forma=specie.forma,
-                        autoresForma=specie.autoresForma,
-                        enArgentina=specie.enArgentina,
-                        enBolivia=specie.enBolivia,
-                        enPeru=specie.enPeru,
+                        scientific_name=scientific_name,
+                        scientific_name_db=scientific_name.upper(),
+                        scientific_name_full=scientific_name_full,
+                        specific_epithet=specie.specific_epithet,
+                        scientific_name_authorship=specie.scientific_name_authorship,
+                        subspecies=specie.subspecies,
+                        ssp_authorship=specie.ssp_authorship,
+                        variety=specie.variety,
+                        variety_authorship=specie.variety_authorship,
+                        form=specie.form,
+                        form_authorship=specie.form_authorship,
+                        in_argentina=specie.in_argentina,
+                        in_bolivia=specie.in_bolivia,
+                        in_peru=specie.in_peru,
                         status=specie.status,
-                        alturaMinima=specie.alturaMinima,
-                        alturaMaxima=specie.alturaMaxima,
-                        notas=specie.notas,
-                        id_tipo=specie.id_tipo,
-                        publicacion=specie.publicacion,
-                        volumen=specie.volumen,
-                        paginas=specie.paginas,
-                        anio=specie.anio,
+                        minimum_height=specie.minimum_height,
+                        maximum_height=specie.maximum_height,
+                        notes=specie.notes,
+                        type_id=specie.type_id,
+                        publication=specie.publication,
+                        volume=specie.volume,
+                        pages=specie.pages,
+                        year=specie.year,
                         determined=True
                     )
 
@@ -737,9 +737,9 @@ def merge_taxa(request, id):
                     for common_name in common_names:
                         specie_new.common_names.add(CommonName.objects.get(id=common_name))
 
-                    synonymys = request.POST.getlist("synonymys")
-                    for synonymy in synonymys:
-                        specie_new.synonymys.add(Synonymy.objects.get(id=synonymy))
+                    synonyms = request.POST.getlist("synonyms")
+                    for synonymy in synonyms:
+                        specie_new.synonyms.add(Synonymy.objects.get(id=synonymy))
 
                     region = request.POST.getlist("region")
                     for region in region:
@@ -758,43 +758,43 @@ def merge_taxa(request, id):
                         specie_new.cycle.add(Cycle.objects.get(id=cycle))
 
                     new_synonymy = Synonymy(
-                        scientificName=taxon_1_scientificName_preview,
-                        scientificNameDB=taxon_1_scientificNameDB_preview,
-                        scientificNameFull=taxon_1_scientificNameFull_preview,
+                        scientific_name=taxon_1_scientific_name_preview,
+                        scientific_name_db=taxon_1_scientific_name_db_preview,
+                        scientific_name_full=taxon_1_scientific_name_full_preview,
                         genus=taxon_1_genus_preview,
-                        specificEpithet=taxon_1_specificEpithet_preview,
-                        scientificNameAuthorship=taxon_1_scientificNameAuthorship_preview,
-                        subespecie=taxon_1_subespecie_preview,
-                        autoresSsp=taxon_1_autoresSsp_preview,
-                        variedad=taxon_1_variedad_preview,
-                        autoresVariedad=taxon_1_autoresVariedad_preview,
-                        forma=taxon_1_forma_preview,
-                        autoresForma=taxon_1_autoresForma_preview
+                        specific_epithet=taxon_1_specific_epithet_preview,
+                        scientific_name_authorship=taxon_1_scientific_name_authorship_preview,
+                        subspecies=taxon_1_subspecies_preview,
+                        ssp_authorship=taxon_1_ssp_authorship_preview,
+                        variety=taxon_1_variety_preview,
+                        variety_authorship=taxon_1_variety_authorship_preview,
+                        form=taxon_1_form_preview,
+                        form_authorship=taxon_1_form_authorship_preview
                     )
                     new_synonymy.save()
-                    specie_new.synonymys.add(new_synonymy)
+                    specie_new.synonyms.add(new_synonymy)
 
                     new_synonymy = Synonymy(
-                        scientificName=taxon_2_scientificName_preview,
-                        scientificNameDB=taxon_2_scientificNameDB_preview,
-                        scientificNameFull=taxon_2_scientificNameFull_preview,
+                        scientific_name=taxon_2_scientific_name_preview,
+                        scientific_name_db=taxon_2_scientific_name_db_preview,
+                        scientific_name_full=taxon_2_scientific_name_full_preview,
                         genus=taxon_2_genus_preview,
-                        specificEpithet=taxon_2_specificEpithet_preview,
-                        scientificNameAuthorship=taxon_2_scientificNameAuthorship_preview,
-                        subespecie=taxon_2_subespecie_preview,
-                        autoresSsp=taxon_2_autoresSsp_preview,
-                        variedad=taxon_2_variedad_preview,
-                        autoresVariedad=taxon_2_autoresVariedad_preview,
-                        forma=taxon_2_forma_preview,
-                        autoresForma=taxon_2_autoresForma_preview
+                        specific_epithet=taxon_2_specific_epithet_preview,
+                        scientific_name_authorship=taxon_2_scientific_name_authorship_preview,
+                        subspecies=taxon_2_subspecies_preview,
+                        ssp_authorship=taxon_2_ssp_authorship_preview,
+                        variety=taxon_2_variety_preview,
+                        variety_authorship=taxon_2_variety_authorship_preview,
+                        form=taxon_2_form_preview,
+                        form_authorship=taxon_2_form_authorship_preview
                     )
                     new_synonymy.save()
-                    specie_new.synonymys.add(new_synonymy)
+                    specie_new.synonyms.add(new_synonymy)
 
                     specie_new.save()
 
-                    VoucherImported.objects.filter(scientificName=taxon_1.id).update(scientificName=specie_new.id)
-                    VoucherImported.objects.filter(scientificName=taxon_2.id).update(scientificName=specie_new.id)
+                    VoucherImported.objects.filter(scientific_name=taxon_1.id).update(scientific_name=specie_new.id)
+                    VoucherImported.objects.filter(scientific_name=taxon_2.id).update(scientificName=specie_new.id)
 
                     binnacle = Binnacle(
                         type_update="Mezcla",
@@ -807,7 +807,7 @@ def merge_taxa(request, id):
                     taxon_1.delete()
                     taxon_2.delete()
 
-                    vouchers = VoucherImported.objects.filter(occurrenceID__voucher_state=7,
+                    vouchers = VoucherImported.objects.filter(biodata_code__voucher_state=7,
                                                               scientificName__id=specie_new.id)
                     for voucher in vouchers:
                         pass
@@ -841,13 +841,13 @@ def get_taxa(request, id):
         common_names_id.append(common_name.id)
     json_data[0]["fields"]["common_names"] = common_names
     json_data[0]["fields"]["common_names_2"] = common_names_id
-    synonymys = ""
-    synonymys_id = []
-    for synonymy in taxa.synonymys.all():
-        synonymys += str(synonymy) + ", "
-        synonymys_id.append(synonymy.id)
-    json_data[0]["fields"]["synonymys"] = synonymys
-    json_data[0]["fields"]["synonymys_2"] = synonymys_id
+    synonyms = ""
+    synonyms_id = []
+    for synonymy in taxa.synonyms.all():
+        synonyms += str(synonymy) + ", "
+        synonyms_id.append(synonymy.id)
+    json_data[0]["fields"]["synonyms"] = synonyms
+    json_data[0]["fields"]["synonyms_2"] = synonyms_id
     plant_habit = ""
     plant_habit_id = []
     for habit in taxa.plant_habit.all():
@@ -883,7 +883,7 @@ def get_taxa(request, id):
 def list_synonymy(request):
     return render(request, "catalog/list_catalog.html", {
         "table_url": reverse("synonymy_table"),
-        "rank_name": "scientificNameFull",
+        "rank_name": "scientific_name_full",
         "parent_rank": "species",
         "update_rank_url": reverse("update_synonymy", kwargs={"synonymy_id": 0}),
         "rank_title": "Sinónimos",
@@ -897,7 +897,7 @@ def list_synonymy(request):
 @login_required
 def synonymy_table(request):
     sort_by_func = {
-        0: "scientificNameFull",
+        0: "scientific_name_full",
         1: "species",
         2: "created_by__username",
         3: "created_at",

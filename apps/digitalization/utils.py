@@ -9,26 +9,13 @@ import subprocess
 import traceback
 from io import BytesIO
 from typing import Set, Union, Dict, Tuple, List, Any, Sequence
-from urllib.request import urlopen
 
 import cv2
 import numpy as np
 import s3fs
 from PIL.Image import Image
-from django.conf import settings
-from django.contrib.staticfiles import finders
 from django.core.files.base import ContentFile
 from django.core.files.storage import Storage
-
-from apps.digitalization.storage_backends import StaticStorage
-
-
-def get_static_file(file_path: str) -> str:
-    if settings.DEBUG:
-        return finders.find(file_path)
-    else:
-        storage = StaticStorage()
-        return urlopen(storage.url(file_path))
 
 
 class TaskProcessLogger(logging.Logger):
@@ -317,7 +304,7 @@ class SessionFolder:
         """
         try:
             s3.upload(
-                lpath=get_static_file("assets/processed"),
+                lpath="assets/processed",
                 rpath="s3://{}".format(self.__remote_prefix__),
                 recursive=False
             )
@@ -442,7 +429,7 @@ def dng_to_jpeg(
         if os.path.exists(filename.replace(".dng", ".jpg")):
             logger.warning("{} already converted, skipping".format(filename))
             continue
-        processing_profile_file = get_static_file("processing_profiles/herbarium_{}.pp3".format(herbarium))
+        processing_profile_file = "assets/processing_profiles/herbarium_{}.pp3".format(herbarium)
         command = [
             'rawtherapee-cli', '-o', file_path_out,
             '-d', '-j100', '-js3', '-Y',
@@ -460,7 +447,7 @@ def dng_to_jpeg_color_profile(
         logger: logging.Logger,
         log_cache: Set[str] = None
 ) -> None:
-    origin_profile = get_static_file("processing_profiles/herbarium_cdp_{}.pp3".format(herbarium))
+    origin_profile = "assets/processing_profiles/herbarium_cdp_{}.pp3".format(herbarium)
     rawtherapee_profile = os.path.join(file_path_in, "herbarium_cdp_{}.pp3".format(herbarium))
     with open(origin_profile, "r") as file:
         prev_content = file.read()

@@ -313,7 +313,7 @@ class Family(TaxonomicModel):
                 for species in genus.species_set.all():
                     vouchers = species.voucherimported_set.all()
                     logging.debug("Vouchers on {} ({}): {}".format(
-                        species.scientificNameFull, species.id, vouchers.count()
+                        species.scientific_name_full, species.id, vouchers.count()
                     ))
                     for voucher in vouchers:
                         voucher.generate_etiquette()
@@ -380,7 +380,7 @@ class Genus(TaxonomicModel):
                 else:
                     vouchers = species.voucherimported_set.all()
                     logging.debug("Vouchers on {} ({}): {}".format(
-                        species.scientificNameFull, species.id, vouchers.count()
+                        species.scientific_name_full, species.id, vouchers.count()
                     ))
                     for voucher in vouchers:
                         voucher.generate_etiquette()
@@ -439,44 +439,44 @@ class EnvironmentalHabit(models.Model):
 
 
 class ScientificName(TaxonomicModel):
-    scientificName = models.CharField(max_length=300, blank=True, null=True)
-    scientificNameDB = models.CharField(max_length=300, blank=True, null=True)
-    scientificNameFull = models.CharField(max_length=800, blank=True, null=True)
+    scientific_name = models.CharField(max_length=300, blank=True, null=True)
+    scientific_name_db = models.CharField(max_length=300, blank=True, null=True)
+    scientific_name_full = models.CharField(max_length=800, blank=True, null=True)
     genus = models.CharField(max_length=300, blank=True, null=True)
-    specificEpithet = models.CharField(max_length=300, blank=True, null=True, help_text="EpitetoEspecifico")
-    scientificNameAuthorship = models.CharField(max_length=500, blank=True, null=True, help_text="AutoresSp")
-    subespecie = models.CharField(max_length=300, blank=True, null=True)
-    autoresSsp = models.CharField(max_length=500, blank=True, null=True)
-    variedad = models.CharField(max_length=300, blank=True, null=True)
-    autoresVariedad = models.CharField(max_length=500, blank=True, null=True)
-    forma = models.CharField(max_length=300, blank=True, null=True)
-    autoresForma = models.CharField(max_length=500, blank=True, null=True)
+    specific_epithet = models.CharField(max_length=300, blank=True, null=True, help_text="EpitetoEspecifico")
+    scientific_name_authorship = models.CharField(max_length=500, blank=True, null=True, help_text="AutoresSp")
+    subspecies = models.CharField(max_length=300, blank=True, null=True)
+    ssp_authorship = models.CharField(max_length=500, blank=True, null=True)
+    variety = models.CharField(max_length=300, blank=True, null=True)
+    variety_authorship = models.CharField(max_length=500, blank=True, null=True)
+    form = models.CharField(max_length=300, blank=True, null=True)
+    form_authorship = models.CharField(max_length=500, blank=True, null=True)
 
     def __hash__(self):
         return super().__hash__()
 
     def __eq__(self, other):
         return super().__eq__(other) and \
-            self.scientificName == other.scientificName and \
-            self.scientificNameDB == other.scientificNameDB and \
-            self.scientificNameFull == other.scientificNameFull
+            self.scientific_name == other.scientific_name and \
+            self.scientific_name_db == other.scientific_name_db and \
+            self.scientific_name_full == other.scientific_name_full
 
     def __unicode__(self):
-        return u"%s" % self.scientificName
+        return u"%s" % self.scientific_name
 
     def __str__(self):
-        return "%s" % self.scientificNameFull
+        return "%s" % self.scientific_name_full
 
     def __repr__(self):
-        return "%s/%s" % (self.scientificName, self.scientificNameFull)
+        return "%s/%s" % (self.scientific_name, self.scientific_name_full)
 
     @staticmethod
     def get_query_name(search: str) -> Q:
-        return Q(scientificNameFull__icontains=search)
+        return Q(scientific_name_full__icontains=search)
 
     @staticmethod
     def get_parent_query(search: str) -> Q:
-        return Q(species__scientificName__icontains=search)
+        return Q(species__scientific_name__icontains=search)
 
     @staticmethod
     def get_created_by_query(search: str) -> Q:
@@ -484,37 +484,37 @@ class ScientificName(TaxonomicModel):
 
     def __update_scientific_name__(self):
         genus = str(self.genus).capitalize()
-        self.scientificName = "{genus} {epithet}{sub_ssp}{var}{fma}".format(
-            genus=genus, epithet=self.specificEpithet,
-            sub_ssp=" subsp. {}".format(self.subespecie) if self.subespecie is not None else "",
-            var=" var. {}".format(self.variedad) if self.variedad is not None else "",
-            fma=" fma. {}".format(self.forma) if self.forma is not None else "",
+        self.scientific_name = "{genus} {epithet}{sub_ssp}{var}{fma}".format(
+            genus=genus, epithet=self.specific_epithet,
+            sub_ssp=" subsp. {}".format(self.subspecies) if self.subspecies is not None else "",
+            var=" var. {}".format(self.variety) if self.variety is not None else "",
+            fma=" fma. {}".format(self.form) if self.form is not None else "",
         )
-        self.scientificNameFull = "{genus} {epithet}{authorship}{sub_ssp}{var}{fma}".format(
-            genus=genus, epithet=self.specificEpithet,
+        self.scientific_name_full = "{genus} {epithet}{authorship}{sub_ssp}{var}{fma}".format(
+            genus=genus, epithet=self.specific_epithet,
             authorship=" {}".format(
-                self.scientificNameAuthorship
-            ) if self.scientificNameAuthorship is not None else "",
+                self.scientific_name_authorship
+            ) if self.scientific_name_authorship is not None else "",
             sub_ssp=" subsp. {}{}".format(
-                self.subespecie,
+                self.subspecies,
                 " {}".format(
-                    self.autoresSsp
-                ) if self.autoresSsp is not None else ""
-            ) if self.subespecie is not None else "",
+                    self.ssp_authorship
+                ) if self.ssp_authorship is not None else ""
+            ) if self.subspecies is not None else "",
             var=" var. {}{}".format(
-                self.variedad,
+                self.variety,
                 " {}".format(
-                    self.autoresVariedad
-                ) if self.autoresVariedad is not None else ""
-            ) if self.variedad is not None else "",
+                    self.variety_authorship
+                ) if self.variety_authorship is not None else ""
+            ) if self.variety is not None else "",
             fma=" fma. {}{}".format(
-                self.forma,
+                self.form,
                 " {}".format(
-                    self.autoresForma
-                ) if self.autoresForma is not None else ""
-            ) if self.forma is not None else "",
+                    self.form_authorship
+                ) if self.form_authorship is not None else ""
+            ) if self.form is not None else "",
         )
-        self.scientificNameDB = self.scientificName.upper()
+        self.scientific_name_db = self.scientific_name.upper()
         return
 
     class Meta:
@@ -527,24 +527,24 @@ class Synonymy(ScientificName):
         if "species" in kwargs:
             species: Species = kwargs["species"]
             self.genus = str(species.genus).capitalize()
-            self.scientificName = species.scientificName
-            self.scientificNameDB = species.scientificNameDB
-            self.scientificNameFull = species.scientificNameFull
-            self.specificEpithet = species.specificEpithet
-            self.scientificNameAuthorship = species.scientificNameAuthorship
-            self.subespecie = species.subespecie
-            self.autoresSsp = species.autoresSsp
-            self.autoresVariedad = species.autoresVariedad
-            self.forma = species.forma
-            self.autoresForma = species.autoresForma
+            self.scientific_name = species.scientific_name
+            self.scientific_name_db = species.scientific_name_db
+            self.scientific_name_full = species.scientific_name_full
+            self.specific_epithet = species.specific_epithet
+            self.scientific_name_authorship = species.scientific_name_authorship
+            self.subspecies = species.subspecies
+            self.ssp_authorship = species.ssp_authorship
+            self.variety_authorship = species.variety_authorship
+            self.form = species.form
+            self.form_authorship = species.form_authorship
 
     @staticmethod
     def get_query_name(search: str) -> Q:
-        return Q(scientificNameFull__icontains=search)
+        return Q(scientific_name_full__icontains=search)
 
     @staticmethod
     def get_parent_query(search: str) -> Q:
-        return Q(species__scientificName__icontains=search)
+        return Q(species__scientific_name__icontains=search)
 
     @staticmethod
     def get_created_by_query(search: str) -> Q:
@@ -563,7 +563,7 @@ class Synonymy(ScientificName):
 
     class Meta:
         verbose_name_plural = "Synonyms"
-        ordering = ['scientificName']
+        ordering = ['scientific_name']
 
 
 class CommonName(TaxonomicModel):
@@ -590,7 +590,7 @@ class CommonName(TaxonomicModel):
 
     @staticmethod
     def get_parent_query(search: str) -> Q:
-        return Q(species__scientificName__icontains=search)
+        return Q(species__scientific_name__icontains=search)
 
     @staticmethod
     def get_created_by_query(search: str) -> Q:
@@ -648,18 +648,18 @@ class ConservationState(models.Model):
 class Species(ScientificName):
     __attributes__ = {
         "id_taxa": "id del taxa",
-        "enArgentina": "en Argentina",
-        "enBolivia": "en Bolivia",
-        "enPeru": "en Perú",
+        "in_argentina": "en Argentina",
+        "in_bolivia": "en Bolivia",
+        "in_peru": "en Perú",
         "status": "origen",
-        "alturaMinima": "altura mínima",
-        "alturaMaxima": "altura máxima",
-        "notas": "notas",
-        "id_tipo": "id de tipo",
-        "publicacion": "publicación",
-        "volumen": "volumen",
-        "paginas": "páginas",
-        "anio": "año de publicación",
+        "minimum_height": "altura mínima",
+        "maximum_height": "altura máxima",
+        "notes": "notes",
+        "type_id": "id de tipo",
+        "publication": "publicación",
+        "volume": "volume",
+        "pages": "páginas",
+        "year": "año de publicación",
         "id_mma": "id del MMA",
         "determined": "terminal",
         "id_taxa_origin": "id del taxón de origen",
@@ -668,31 +668,22 @@ class Species(ScientificName):
     id_taxa = models.IntegerField(blank=True, null=True, help_text="")
     genus = models.ForeignKey(Genus, on_delete=models.CASCADE, blank=True, null=True, help_text="Género")
     common_names = models.ManyToManyField(CommonName, blank=True)
-    enArgentina = models.BooleanField(default=False)
-    enBolivia = models.BooleanField(default=False)
-    enPeru = models.BooleanField(default=False)
-    plant_habit = models.ManyToManyField(
-        PlantHabit, blank=True,
-        db_column="plant_habit"
-    )
-    env_habit = models.ManyToManyField(
-        EnvironmentalHabit, blank=True,
-        db_column="environmental_habit"
-    )
-    cycle = models.ManyToManyField(
-        Cycle, blank=True,
-        db_column="cycle"
-    )
+    in_argentina = models.BooleanField(default=False)
+    in_bolivia = models.BooleanField(default=False)
+    in_peru = models.BooleanField(default=False)
+    plant_habit = models.ManyToManyField(PlantHabit, blank=True, db_column="plant_habit")
+    env_habit = models.ManyToManyField(EnvironmentalHabit, blank=True, db_column="environmental_habit")
+    cycle = models.ManyToManyField(Cycle, blank=True, db_column="cycle")
     status = models.ForeignKey(Status, on_delete=models.CASCADE, blank=True, null=True)
-    alturaMinima = models.IntegerField(blank=True, null=True)
-    alturaMaxima = models.IntegerField(blank=True, null=True)
-    notas = models.CharField(max_length=1000, blank=True, null=True)
-    id_tipo = models.CharField(max_length=300, blank=True, null=True)
-    publicacion = models.CharField(max_length=300, blank=True, null=True)
-    volumen = models.CharField(max_length=300, blank=True, null=True)
-    paginas = models.CharField(max_length=300, blank=True, null=True)
-    anio = models.IntegerField(blank=True, null=True)
-    synonymys = models.ManyToManyField(Synonymy, blank=True)
+    minimum_height = models.IntegerField(blank=True, null=True)
+    maximum_height = models.IntegerField(blank=True, null=True)
+    notes = models.CharField(max_length=1000, blank=True, null=True)
+    type_id = models.CharField(max_length=300, blank=True, null=True)
+    publication = models.CharField(max_length=300, blank=True, null=True)
+    volume = models.CharField(max_length=300, blank=True, null=True)
+    pages = models.CharField(max_length=300, blank=True, null=True)
+    year = models.IntegerField(blank=True, null=True)
+    synonyms = models.ManyToManyField(Synonymy, blank=True)
     region = models.ManyToManyField(Region, blank=True, db_column="region")
     id_mma = models.IntegerField(blank=True, null=True, help_text="")
     conservation_state = models.ManyToManyField(ConservationState, blank=True)
@@ -740,7 +731,7 @@ class Species(ScientificName):
 
     @staticmethod
     def get_query_name(search: str) -> Q:
-        return Q(scientificNameFull__icontains=search)
+        return Q(scientific_name_full__icontains=search)
 
     @staticmethod
     def get_parent_query(search: str) -> Q:
@@ -754,20 +745,20 @@ class Species(ScientificName):
         self.__update_scientific_name__()
         if self.__prev__ is not None:
             if self.__original__ != self:
-                if self.__original__.scientificName != self.scientificName or \
-                        self.__original__.scientificNameFull != self.scientificNameFull:
-                    if self.__original__.scientificNameFull != self.scientificNameFull:
+                if self.__original__.scientific_name != self.scientific_name or \
+                        self.__original__.scientific_name_full != self.scientific_name_full:
+                    if self.__original__.scientific_name_full != self.scientific_name_full:
                         logging.debug("Name changed")
                         logging.debug("Listing specimen")
                         logging.debug("\n".join([
-                            specimen.occurrenceID.code
+                            specimen.biodata_code.code
                             for specimen in self.voucherimported_set.all()
                         ]))
                         for specimen in self.voucherimported_set.all():
                             specimen.generate_etiquette()
                     try:
                         self.__prev__.save(user=kwargs["user"])
-                        self.synonymys.add(self.__prev__)
+                        self.synonyms.add(self.__prev__)
                     except Exception as e:
                         logging.error("Error saving synonymy\n{}".format(e), exc_info=True)
                 if len(self.__difference__(self.__original__)) > 0:
@@ -784,7 +775,7 @@ class Species(ScientificName):
 
     class Meta:
         verbose_name_plural = "Species"
-        ordering = ['scientificName']
+        ordering = ['scientific_name']
 
 
 class Binnacle(models.Model):
@@ -898,28 +889,28 @@ class CatalogView(TaxonomicModel):
            "order".name    AS "order",
            family.name     AS family,
            genus.name      AS genus,
-           species."scientificName",
-           species."scientificNameFull",
-           species."specificEpithet",
-           species."scientificNameAuthorship",
-           species.subespecie,
-           species."autoresSsp",
-           species.variedad,
-           species."autoresVariedad",
-           species.forma,
-           species."autoresForma",
-           species."enArgentina",
-           species."enBolivia",
-           species."enPeru",
+           species.scientific_name,
+           species.scientific_name_full,
+           species.specific_epithet,
+           species.scientific_name_authorship,
+           species.subspecies,
+           species.ssp_authorship,
+           species.variety,
+           species.variety_authorship,
+           species.form,
+           species.form_authorship,
+           species.in_argentina,
+           species.in_bolivia,
+           species.in_peru,
            status.name     AS status,
-           species."alturaMinima",
-           species."alturaMaxima",
-           species.notas,
-           species.id_tipo,
-           species.publicacion,
-           species.volumen,
-           species.paginas,
-           species.anio,
+           species.minimum_height,
+           species.maximum_height,
+           species.notes,
+           species.type_id,
+           species.publication,
+           species.volume,
+           species.pages,
+           species.year,
            species.determined,
            species.id_taxa_origin,
            species.created_at,
@@ -948,28 +939,28 @@ class CatalogView(TaxonomicModel):
     order = models.CharField(max_length=300, blank=True, null=True, db_column="order")
     family = models.CharField(max_length=300, blank=True, null=True)
     genus = models.CharField(max_length=300, blank=True, null=True)
-    scientificName = models.CharField(max_length=500, blank=True, null=True, help_text="sp")
-    scientificNameFull = models.CharField(max_length=800, blank=True, null=True, help_text="spCompleto")
-    specificEpithet = models.CharField(max_length=300, blank=True, null=True, help_text="EpitetoEspecifico")
-    scientificNameAuthorship = models.CharField(max_length=500, blank=True, null=True, help_text="AutoresSp")
-    subespecie = models.CharField(max_length=300, blank=True, null=True)
-    autoresSsp = models.CharField(max_length=500, blank=True, null=True)
-    variedad = models.CharField(max_length=300, blank=True, null=True)
-    autoresVariedad = models.CharField(max_length=500, blank=True, null=True)
-    forma = models.CharField(max_length=300, blank=True, null=True)
-    autoresForma = models.CharField(max_length=500, blank=True, null=True)
-    enArgentina = models.BooleanField(default=False)
-    enBolivia = models.BooleanField(default=False)
-    enPeru = models.BooleanField(default=False)
+    scientific_name = models.CharField(max_length=500, blank=True, null=True, help_text="sp")
+    scientific_name_full = models.CharField(max_length=800, blank=True, null=True, help_text="spCompleto")
+    specific_epithet = models.CharField(max_length=300, blank=True, null=True, help_text="EpitetoEspecifico")
+    scientific_name_authorship = models.CharField(max_length=500, blank=True, null=True, help_text="AutoresSp")
+    subspecies = models.CharField(max_length=300, blank=True, null=True)
+    ssp_authorship = models.CharField(max_length=500, blank=True, null=True)
+    variety = models.CharField(max_length=300, blank=True, null=True)
+    variety_authorship = models.CharField(max_length=500, blank=True, null=True)
+    form = models.CharField(max_length=300, blank=True, null=True)
+    form_authorship = models.CharField(max_length=500, blank=True, null=True)
+    in_argentina = models.BooleanField(default=False)
+    in_bolivia = models.BooleanField(default=False)
+    in_peru = models.BooleanField(default=False)
     status = models.CharField(max_length=300, blank=True, null=True)
-    alturaMinima = models.IntegerField(blank=True, null=True)
-    alturaMaxima = models.IntegerField(blank=True, null=True)
-    notas = models.CharField(max_length=1000, blank=True, null=True)
-    id_tipo = models.CharField(max_length=300, blank=True, null=True)
-    publicacion = models.CharField(max_length=300, blank=True, null=True)
-    volumen = models.CharField(max_length=300, blank=True, null=True)
-    paginas = models.CharField(max_length=300, blank=True, null=True)
-    anio = models.IntegerField(blank=True, null=True)
+    minimum_height = models.IntegerField(blank=True, null=True)
+    maximum_height = models.IntegerField(blank=True, null=True)
+    notes = models.CharField(max_length=1000, blank=True, null=True)
+    type_id = models.CharField(max_length=300, blank=True, null=True)
+    publication = models.CharField(max_length=300, blank=True, null=True)
+    volume = models.CharField(max_length=300, blank=True, null=True)
+    pages = models.CharField(max_length=300, blank=True, null=True)
+    year = models.IntegerField(blank=True, null=True)
     determined = models.BooleanField(default=False)
     id_taxa_origin = models.IntegerField(blank=True, null=True, help_text="")
     created_at = models.DateTimeField(blank=True, null=True, editable=False)
@@ -983,7 +974,7 @@ class CatalogView(TaxonomicModel):
 
     @staticmethod
     def get_query_name(search: str) -> Q:
-        return Q(scientificNameFull__icontains=search)
+        return Q(scientific_name_full__icontains=search)
 
     @staticmethod
     def get_parent_query(search: str) -> Q:
@@ -1004,24 +995,24 @@ class SynonymyView(TaxonomicModel):
     SELECT synonymy.id,
            species.id               AS specie_id,
            species.id_taxa,
-           species."scientificName" AS specie_scientificname,
+           species.scientific_name AS specie_scientific_name,
            species_synonymy.id      AS synonymy_id,
-           synonymy."scientificName",
-           synonymy."scientificNameFull",
+           synonymy.scientific_name,
+           synonymy.scientific_name_full,
            synonymy.genus,
-           synonymy."specificEpithet",
-           synonymy."scientificNameAuthorship",
-           synonymy.subespecie,
-           synonymy."autoresSsp",
-           synonymy.variedad,
-           synonymy."autoresVariedad",
-           synonymy.forma,
-           synonymy."autoresForma",
+           synonymy.specific_epithet,
+           synonymy.scientific_name_authorship,
+           synonymy.subspecies,
+           synonymy.ssp_authorship,
+           synonymy.variety,
+           synonymy.variety_authorship,
+           synonymy.form,
+           synonymy.form_authorship,
            synonymy.created_at,
            synonymy.updated_at,
            "user".username          AS created_by
     FROM catalog_synonymy synonymy
-        LEFT JOIN catalog_species_synonymys species_synonymy ON species_synonymy.synonymy_id = synonymy.id
+        LEFT JOIN catalog_species_synonyms species_synonymy ON species_synonymy.synonymy_id = synonymy.id
         LEFT JOIN catalog_species species ON species_synonymy.species_id = species.id
         LEFT JOIN auth_user "user" ON synonymy.created_by_id = "user".id;
 
@@ -1033,30 +1024,30 @@ class SynonymyView(TaxonomicModel):
     id = models.IntegerField(primary_key=True, blank=False, null=False, help_text="")
     specie_id = models.IntegerField(blank=False, null=False, help_text="")
     id_taxa = models.IntegerField(blank=False, null=False, help_text="")
-    specie_scientificname = models.CharField(max_length=500, blank=True, null=True, help_text="sp")
+    specie_scientific_name = models.CharField(max_length=500, blank=True, null=True, help_text="sp")
     synonymy_id = models.IntegerField(blank=False, null=False, help_text="")
-    scientificName = models.CharField(max_length=300, blank=True, null=True)
-    scientificNameFull = models.CharField(max_length=800, blank=True, null=True)
+    scientific_name = models.CharField(max_length=300, blank=True, null=True)
+    scientific_name_full = models.CharField(max_length=800, blank=True, null=True)
     genus = models.CharField(max_length=300, blank=True, null=True)
-    specificEpithet = models.CharField(max_length=300, blank=True, null=True)
-    scientificNameAuthorship = models.CharField(max_length=500, blank=True, null=True)
-    subespecie = models.CharField(max_length=300, blank=True, null=True)
-    autoresSsp = models.CharField(max_length=500, blank=True, null=True)
-    variedad = models.CharField(max_length=300, blank=True, null=True)
-    autoresVariedad = models.CharField(max_length=500, blank=True, null=True)
-    forma = models.CharField(max_length=300, blank=True, null=True)
-    autoresForma = models.CharField(max_length=300, blank=True, null=True)
+    specific_epithet = models.CharField(max_length=300, blank=True, null=True)
+    scientific_name_authorship = models.CharField(max_length=500, blank=True, null=True)
+    subspecies = models.CharField(max_length=300, blank=True, null=True)
+    ssp_authorship = models.CharField(max_length=500, blank=True, null=True)
+    variety = models.CharField(max_length=300, blank=True, null=True)
+    variety_authorship = models.CharField(max_length=500, blank=True, null=True)
+    form = models.CharField(max_length=300, blank=True, null=True)
+    form_authorship = models.CharField(max_length=300, blank=True, null=True)
     created_at = models.DateTimeField(blank=True, null=True, editable=False)
     updated_at = models.DateTimeField()
     created_by = models.CharField(max_length=300, blank=True, null=True)
 
     @staticmethod
     def get_query_name(search: str) -> Q:
-        return Q(scientificNameFull__icontains=search)
+        return Q(scientific_name_full__icontains=search)
 
     @staticmethod
     def get_parent_query(search: str) -> Q:
-        return Q(specie_scientificname__icontains=search)
+        return Q(specie_scientific_name__icontains=search)
 
     @staticmethod
     def get_created_by_query(search: str) -> Q:
@@ -1078,7 +1069,7 @@ class RegionDistributionView(models.Model):
     SELECT species_region.id,
            species.id               AS specie_id,
            species.id_taxa,
-           species."scientificName" AS specie_scientificname,
+           species."scientific_name" AS specie_scientific_name,
            region.name              AS region_name,
            region.key               AS region_key
     FROM catalog_species_region species_region
@@ -1094,7 +1085,7 @@ class RegionDistributionView(models.Model):
     id = models.IntegerField(primary_key=True, blank=False, null=False, help_text="")
     specie_id = models.IntegerField(blank=False, null=False, help_text="")
     id_taxa = models.IntegerField(blank=False, null=False, help_text="")
-    specie_scientificname = models.CharField(max_length=500, blank=True, null=True, help_text="sp")
+    specie_scientific_name = models.CharField(max_length=500, blank=True, null=True, help_text="sp")
     region_name = models.CharField(max_length=300, blank=True, null=True)
     region_key = models.CharField(max_length=3, blank=True, null=True)
 
