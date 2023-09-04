@@ -65,6 +65,7 @@
             $.ajax({
                 url: url,
                 type: 'GET',
+                headers: {'X-CSRFToken': csrfToken},
                 success: response => {
                     $('#pageName')[0].innerText = " " + response.name;
                 },
@@ -84,6 +85,7 @@
                     url: url,
                     type: 'GET',
                     dataSrc: 'data',
+                    headers: {'X-CSRFToken': csrfToken},
                 },
                 order: [[2, 'asc'], [4, 'asc']],
                 columnDefs: [
@@ -164,6 +166,7 @@
                 data: data,
                 url: "{% url 'upload_raw_image' %}",
                 type: "POST",
+                headers: {'X-CSRFToken': csrfToken},
                 success : response => {
                     if(response.result === 'ok'){
                         url=`<a href="${response.file_url}">Download CR3</a>`;
@@ -185,6 +188,7 @@
             $.ajax({
                 url: "{% url 'get_pending_vouchers' %}",
                 type: 'GET',
+                headers: {'X-CSRFToken': csrfToken},
                 success: function(response) {
                     console.debug(response);
                     const postBody = document.getElementById('postBody');
