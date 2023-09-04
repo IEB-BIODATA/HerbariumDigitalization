@@ -10,7 +10,7 @@
                 {% csrf_token %}
                 {{ form.id_taxa }}
                 {{ form.scientificName }}
-                {{ form.scientificNameFull }}
+                {{ form.scientific_name_full }}
                 {% for field in form %}
                     {% if not field.is_hidden %}
                         <div class="form-group row">

@@ -25,94 +25,94 @@ class PriorityVouchers:
 
     def import_data(self):
         for index, row in self.__data.iterrows():
-            catalogNumber = row['catalogNumber']
-            new_occurrence_id = self.__herbarium.institution_code + ':' + self.__herbarium.collection_code + ':' + f'{catalogNumber:07d}'
+            catalog_number = row['catalog_number']
+            new_occurrence_id = self.__herbarium.institution_code + ':' + self.__herbarium.collection_code + ':' + f'{catalog_number:07d}'
             code = BiodataCode(
                 herbarium=self.__herbarium,
                 code=new_occurrence_id,
-                catalogNumber=row['catalogNumber'],
+                catalog_number=row['catalog_number'],
                 created_by=self.__user,
                 created_at=datetime.now(tz=pytz.timezone('America/Santiago')),
                 qr_generated=False
             )
             code.save()
-            if numpy.isnan(row['decimalLatitude']):
-                decimalLatitude = None
+            if numpy.isnan(row['decimal_latitude']):
+                decimal_latitude = None
             else:
-                decimalLatitude = float(row['decimalLatitude'])
-            if numpy.isnan(row['decimalLongitude']):
-                decimalLongitude = None
+                decimal_latitude = float(row['decimal_latitude'])
+            if numpy.isnan(row['decimal_longitude']):
+                decimal_longitude = None
             else:
-                decimalLongitude = float(row['decimalLongitude'])
+                decimal_longitude = float(row['decimal_longitude'])
 
             try:
-                organismRemarks = row['organismRemarks']
+                organism_remarks = row['organism_remarks']
             except:
-                organismRemarks = None
+                organism_remarks = None
 
             try:
-                identifiedBy = row['identifiedBy']
+                identified_by = row['identified_by']
             except:
-                identifiedBy = None
+                identified_by = None
 
             try:
-                dateIdentified = row['dateIdentified']
+                identified_date = row['identified_date']
             except:
-                dateIdentified = None
+                identified_date = None
 
             try:
-                verbatimElevation = int(row['verbatimElevation'])
+                verbatim_elevation = int(row['verbatim_elevation'])
             except:
-                verbatimElevation = None
+                verbatim_elevation = None
             try:
                 priority_file = PriorityVouchersFile.objects.get(pk=self.__file_vouchers_id)
-                specie = Species.objects.filter(scientificNameDB=row['scientificName'].strip())
-                georeferencedDate = pandas.to_datetime(row['georeferencedDate'], infer_datetime_format=True,
+                specie = Species.objects.filter(scientific_name_db=row['scientific_name'].strip())
+                georeference_date = pandas.to_datetime(row['georeference_date'], infer_datetime_format=True,
                                                        format='%Y%m%d', utc=True)
-                if pandas.isnull(georeferencedDate):
-                    georeferencedDate = None
-                if row['decimalLatitude'] and row['decimalLongitude']:
+                if pandas.isnull(georeference_date):
+                    georeference_date = None
+                if row['decimal_latitude'] and row['decimal_longitude']:
                     point = GEOSGeometry(
-                        'POINT(' + str(row['decimalLongitude']) + ' ' + str(row['decimalLatitude']) + ')', srid=4326)
-                    if not numpy.isnan(row['decimalLatitude']) and not numpy.isnan(row['decimalLongitude']):
-                        decimalLatitude_public = self.public_point(row['decimalLatitude'])
-                        decimalLongitude_public = self.public_point(row['decimalLongitude'])
+                        'POINT(' + str(row['decimal_longitude']) + ' ' + str(row['decimal_latitude']) + ')', srid=4326)
+                    if not numpy.isnan(row['decimal_latitude']) and not numpy.isnan(row['decimal_longitude']):
+                        decimal_latitude_public = self.public_point(row['decimal_latitude'])
+                        decimal_longitude_public = self.public_point(row['decimal_longitude'])
                         point_public = GEOSGeometry(
-                            'POINT(' + str(decimalLongitude_public) + ' ' + str(decimalLatitude_public) + ')',
+                            'POINT(' + str(decimal_longitude_public) + ' ' + str(decimal_latitude_public) + ')',
                             srid=4326)
                     else:
                         point_public = None
-                        decimalLatitude_public = None
-                        decimalLongitude_public = None
+                        decimal_latitude_public = None
+                        decimal_longitude_public = None
                 else:
                     point = None
                     point_public = None
-                    decimalLatitude_public = None
-                    decimalLongitude_public = None
+                    decimal_latitude_public = None
+                    decimal_longitude_public = None
                 if row['priority']:
                     priority = row['priority']
                 else:
                     priority = 1
                 voucher_imported = VoucherImported(
                     vouchers_file=priority_file,
-                    occurrenceID=code,
+                    biodata_code=code,
                     herbarium=self.__herbarium,
-                    otherCatalogNumbers=row['otherCatalogNumbers'],
-                    catalogNumber=row['catalogNumber'],
-                    recordedBy=row['recordedBy'],
-                    recordNumber=row['recordNumber'],
-                    organismRemarks=organismRemarks,
-                    scientificName=specie[0],
+                    other_catalog_numbers=row['other_catalog_numbers'],
+                    catalog_number=row['catalog_number'],
+                    recorded_by=row['recorded_by'],
+                    record_number=row['record_number'],
+                    organism_remarks=organism_remarks,
+                    scientific_name=specie[0],
                     locality=row['locality'],
-                    verbatimElevation=verbatimElevation,
-                    georeferencedDate=georeferencedDate,
-                    decimalLatitude=decimalLatitude,
-                    decimalLongitude=decimalLongitude,
-                    identifiedBy=identifiedBy,
-                    dateIdentified=dateIdentified,
+                    verbatim_elevation=verbatim_elevation,
+                    georeference_date=georeference_date,
+                    decimal_latitude=decimal_latitude,
+                    decimal_longitude=decimal_longitude,
+                    identified_by=identified_by,
+                    identified_date=identified_date,
                     point=point,
-                    decimalLatitude_public=decimalLatitude_public,
-                    decimalLongitude_public=decimalLongitude_public,
+                    decimal_latitude_public=decimal_latitude_public,
+                    decimal_longitude_public=decimal_longitude_public,
                     point_public=point_public,
                     priority=priority
                 )
@@ -121,71 +121,71 @@ class PriorityVouchers:
                 print(e)
                 print(specie)
                 print(row)
-                data = '{"":{"0":null},"otherCatalogNumbers":{"0":' + str(
-                    row['otherCatalogNumbers']) + '},"catalogNumber":{"0":' + str(
-                    row['catalogNumber']) + '},"recordedBy":{"0":"' + str(
-                    row['recordedBy']) + '"},"recordNumber":{"0":' + str(
-                    row['recordNumber']) + '},"scientificName":{"0":"' + str(
-                    row['scientificName'].strip()) + '"},"locality":{"0":"' + str(
-                    row['locality']) + '"},"verbatimElevation":{"0":' + str(
-                    verbatimElevation) + '},"georeferencedDate":{"0":"' + str(
-                    row['georeferencedDate']) + '"},"decimalLatitude":{"0":' + str(
-                    row['decimalLatitude']) + '},"decimalLongitude":{"0":' + str(row['decimalLongitude']) + '}}'
+                data = '{"":{"0":null},"other_catalog_numbers":{"0":' + str(
+                    row['other_catalog_numbers']) + '},"catalog_number":{"0":' + str(
+                    row['catalog_number']) + '},"recorded_by":{"0":"' + str(
+                    row['recorded_by']) + '"},"record_number":{"0":' + str(
+                    row['record_number']) + '},"scientific_name":{"0":"' + str(
+                    row['scientific_name'].strip()) + '"},"locality":{"0":"' + str(
+                    row['locality']) + '"},"verbatim_elevation":{"0":' + str(
+                    verbatim_elevation) + '},"georeference_date":{"0":"' + str(
+                    row['georeference_date']) + '"},"decimal_latitude":{"0":' + str(
+                    row['decimal_latitude']) + '},"decimal_longitude":{"0":' + str(row['decimal_longitude']) + '}}'
                 return {'result': 'error', 'type': 'code', 'error': str(e), 'data': data}
         return {'result': 'ok'}
 
     def duplicate_number_in_import_file(self):
-        return self.__data[self.__data.duplicated(['catalogNumber'], keep=False)]
+        return self.__data[self.__data.duplicated(['catalog_number'], keep=False)]
 
     def duplicate_number_in_database(self):
         duplicates = []
         for index, row in self.__data.iterrows():
             voucher_imported = VoucherImported.objects.filter(herbarium=self.__herbarium,
-                                                              catalogNumber=row['catalogNumber'])
+                                                              catalog_number=row['catalog_number'])
             if voucher_imported:
                 duplicates.append(row)
         return pandas.DataFrame(duplicates,
-                                columns=['', 'otherCatalogNumbers', 'catalogNumber', 'recordedBy', 'recordNumber',
-                                         'scientificName', 'locality', 'verbatimElevation', 'georeferencedDate',
-                                         'decimalLatitude', 'decimalLongitude'])
+                                columns=['', 'other_catalog_numbers', 'catalog_number', 'recorded_by', 'record_number',
+                                         'scientific_name', 'locality', 'verbatim_elevation', 'georeference_date',
+                                         'decimal_latitude', 'decimal_longitude'])
 
     def validate_vouchers_in_catalog(self):
         invalid = []
         for index, row in self.__data.iterrows():
-            specie = Species.objects.filter(scientificNameDB=row['scientificName'].strip())
+            specie = Species.objects.filter(scientific_name_db=row['scientific_name'].strip())
             if not specie:
                 similarity_values = Species.objects.annotate(
-                    similarity=TrigramSimilarity('scientificNameDB', row['scientificName'].strip().upper()), ).filter(
+                    similarity=TrigramSimilarity('scientific_name_db', row['scientific_name'].strip().upper()), ).filter(
                     similarity__gte=0.55).order_by('-similarity')
                 if len(similarity_values) > 0:
                     if similarity_values[0].similarity < 1:
                         row['similarity'] = similarity_values[0].similarity
-                        row['scientificName_similarity'] = similarity_values[0].scientificName
+                        row['scientific_name_similarity'] = similarity_values[0].scientific_name
                         row['synonymy_similarity'] = ''
                         invalid.append(row)
                 else:
-                    similarity_values = Synonymy.objects.annotate(similarity=TrigramSimilarity('scientificNameDB', row[
-                        'scientificName'].strip().upper()), ).filter(similarity__gte=0.55).order_by('-similarity')
+                    similarity_values = Synonymy.objects.annotate(similarity=TrigramSimilarity('scientific_name_db', row[
+                        'scientific_name'].strip().upper()), ).filter(similarity__gte=0.55).order_by('-similarity')
                     if len(similarity_values) > 0:
                         row['similarity'] = similarity_values[0].similarity
-                        specie_synonymy = Species.objects.filter(synonymys=similarity_values[0].id)
-                        row['scientificName_similarity'] = specie_synonymy[0].scientificName
-                        row['synonymy_similarity'] = similarity_values[0].scientificName
+                        specie_synonymy = Species.objects.filter(synonyms=similarity_values[0].id)
+                        row['scientific_name_similarity'] = specie_synonymy[0].scientific_name
+                        row['synonymy_similarity'] = similarity_values[0].scientific_name
                     else:
                         row['similarity'] = 0
-                        row['scientificName_similarity'] = ''
+                        row['scientific_name_similarity'] = ''
                         row['synonymy_similarity'] = ''
                     invalid.append(row)
         return pandas.DataFrame(invalid,
-                                columns=['', 'otherCatalogNumbers', 'catalogNumber', 'recordedBy', 'recordNumber',
-                                         'scientificName', 'locality', 'verbatimElevation', 'georeferencedDate',
-                                         'decimalLatitude', 'decimalLongitude', 'scientificName_similarity',
+                                columns=['', 'other_catalog_numbers', 'catalog_number', 'recorded_by', 'record_number',
+                                         'scientific_name', 'locality', 'verbatim_elevation', 'georeference_date',
+                                         'decimal_latitude', 'decimal_longitude', 'scientific_name_similarity',
                                          'similarity', 'synonymy_similarity'])
 
     def restore_db(self):
         for index, row in self.__data.iterrows():
-            BiodataCode.objects.filter(catalogNumber=row['catalogNumber']).delete()
-            VoucherImported.objects.filter(catalogNumber=row['catalogNumber']).delete()
+            BiodataCode.objects.filter(catalog_number=row['catalog_number']).delete()
+            VoucherImported.objects.filter(catalog_number=row['catalog_number']).delete()
 
     def import_to_db(self):
         try:
@@ -205,12 +205,12 @@ class PriorityVouchers:
                         data = {'result': 'error', 'type': 'duplicates in database',
                                 'data': duplicates_database.to_json()}
                 except Exception as e:
-                    r = '{"":{"0":null},"otherCatalogNumbers":{"0":''},"catalogNumber":{"0":''},"recordedBy":{"0":"''"},"recordNumber":{"0":''},"scientificName":{"0":"''"},"locality":{"0":"''"},"verbatimElevation":{"0":''},"georeferencedDate":{"0":"''"},"decimalLatitude":{"0":''},"decimalLongitude":{"0":''}}'
+                    r = '{"":{"0":null},"other_catalog_numbers":{"0":''},"catalog_number":{"0":''},"recorded_by":{"0":"''"},"record_number":{"0":''},"scientific_name":{"0":"''"},"locality":{"0":"''"},"verbatim_elevation":{"0":''},"georeference_date":{"0":"''"},"decimal_latitude":{"0":''},"decimal_longitude":{"0":''}}'
                     data = {'result': 'error', 'type': 'code', 'error': str(e), 'data': r}
             else:
                 data = {'result': 'error', 'type': 'duplicates in file', 'data': duplicates_import_file.to_json()}
         except Exception as e:
-            r = '{"":{"0":null},"otherCatalogNumbers":{"0":''},"catalogNumber":{"0":''},"recordedBy":{"0":"''"},"recordNumber":{"0":''},"scientificName":{"0":"''"},"locality":{"0":"''"},"verbatimElevation":{"0":''},"georeferencedDate":{"0":"''"},"decimalLatitude":{"0":''},"decimalLongitude":{"0":''}}'
+            r = '{"":{"0":null},"other_catalog_numbers":{"0":''},"catalog_number":{"0":''},"recorded_by":{"0":"''"},"record_number":{"0":''},"scientific_name":{"0":"''"},"locality":{"0":"''"},"verbatim_elevation":{"0":''},"georeference_date":{"0":"''"},"decimal_latitude":{"0":''},"decimal_longitude":{"0":''}}'
             data = {'result': 'error', 'type': 'code', 'error': str(e), 'data': r}
             print(e)
         return (json.dumps(data))

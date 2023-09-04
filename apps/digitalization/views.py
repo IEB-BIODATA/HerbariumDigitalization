@@ -99,8 +99,8 @@ def code_generator(request):
         row = 7
         qr_per_page = col * row
         num_qrs = qr_per_page * int(quantity_pages_input)
-        vouchers = VoucherImported.objects.filter(occurrenceID__qr_generated=False, herbarium=herbarium).order_by(
-            '-priority', 'scientificName__genus__family__name', 'scientificName__scientificName', 'catalogNumber'
+        vouchers = VoucherImported.objects.filter(biodata_code__qr_generated=False, herbarium=herbarium).order_by(
+            '-priority', 'scientific_name__genus__family__name', 'scientific_name__scientific_name', 'catalog_number'
         )
         logging.debug(vouchers)
         logging.debug(vouchers[:num_qrs])
@@ -115,7 +115,7 @@ def code_generator(request):
                     created_at=datetime.now(tz=pytz.timezone('America/Santiago')))
                 generated_page.save()
                 for voucher in vouchers:
-                    biodata_code = voucher.occurrenceID
+                    biodata_code = voucher.biodata_code
                     biodata_code.qr_generated = True
                     biodata_code.page = generated_page
                     biodata_code.save()
@@ -149,21 +149,21 @@ def historical_page_download(request):
         )
         code_list = []
         print_code_list = []
-        # biodata_codes=BiodataCode.objects.filter(page=page).order_by('-catalogNumber')
-        vouchers = VoucherImported.objects.filter(occurrenceID__page=page).order_by('priority',
-                                                                                    'scientificName__genus__family__name',
-                                                                                    'scientificName__scientificName',
-                                                                                    'catalogNumber')
+        # biodata_codes=BiodataCode.objects.filter(page=page).order_by('-catalog_number')
+        vouchers = VoucherImported.objects.filter(biodata_code__page=page).order_by('priority',
+                                                                                    'scientific_name__genus__family__name',
+                                                                                    'scientific_name__scientific_name',
+                                                                                    'catalog_number')
         for voucher in vouchers:
-            code = voucher.occurrenceID.code.split(':')
+            code = voucher.biodata_code.code.split(':')
             print_code = code[1] + ' ' + litering_by_three(code[2])
-            data_code = {'code': voucher.occurrenceID.code}
+            data_code = {'code': voucher.biodata_code.code}
             qr.add_data(data_code)
             qr.make(fit=True)
             img = qr.make_image(fill_color="black", back_color="white")
-            img.save('media/qr/' + voucher.occurrenceID.code + '.jpg')
+            img.save('media/qr/' + voucher.biodata_code.code + '.jpg')
             qr.clear()
-            code_list.append(voucher.occurrenceID.code)
+            code_list.append(voucher.biodata_code.code)
             print_code_list.append(print_code)
         codes_list = zip(code_list, print_code_list)
         result = render_to_pdf('digitalization/template_qr.html',
@@ -179,10 +179,12 @@ def historical_priority_voucher_page_download(request):
     if request.method == 'GET':
         historical_page_id = request.GET['historical_page_id']
         page = GeneratedPage.objects.get(pk=historical_page_id)
-        priority_vouchers = VoucherImported.objects.filter(occurrenceID__page=page).order_by('priority',
-                                                                                             'scientificName__genus__family__name',
-                                                                                             'scientificName__scientificName',
-                                                                                             'catalogNumber')
+        priority_vouchers = VoucherImported.objects.filter(biodata_code__page=page).order_by(
+            'priority',
+            'scientific_name__genus__family__name',
+            'scientific_name__scientific_name',
+            'catalog_number'
+        )
         result = render_to_pdf('digitalization/template_list_priority_voucher.html',
                                {'pagesize': 'letter', 'page_date': page.created_at, 'page_id': page.id,
                                 'priority_vouchers': priority_vouchers})
@@ -246,18 +248,18 @@ def get_vouchers(request):
         state_voucher = int(request.GET['voucher_state'])
         if state_voucher == -1:
             biodata_codes = VoucherImported.objects.filter(
-                Q(occurrenceID__voucher_state=0) | Q(occurrenceID__voucher_state=1) | Q(occurrenceID__voucher_state=2),
-                occurrenceID__page=page).order_by('scientificName', 'catalogNumber')
+                Q(biodata_code__voucher_state=0) | Q(biodata_code__voucher_state=1) | Q(biodata_code__voucher_state=2),
+                biodata_code__page=page).order_by('scientific_name', 'catalog_number')
         else:
-            biodata_codes = VoucherImported.objects.filter(occurrenceID__page=page,
-                                                           occurrenceID__voucher_state=state_voucher).order_by(
-                'scientificName__scientificName', 'catalogNumber')
+            biodata_codes = VoucherImported.objects.filter(biodata_code__page=page,
+                                                           biodata_code__voucher_state=state_voucher).order_by(
+                'scientific_name__scientific_name', 'catalog_number')
         data = serializers.serialize('json', biodata_codes, fields=(
-            'catalogNumber', 'recordedBy', 'recordNumber', 'scientificName', 'locality',))
+            'catalog_number', 'recorded_by', 'record_number', 'scientific_name', 'locality',))
         json_data = json.loads(data)
         for index, value in enumerate(json_data):
-            value['fields']['voucherState'] = biodata_codes[index].occurrenceID.voucher_state
-            value['fields']['scientificNameStr'] = biodata_codes[index].scientificName.scientificName
+            value['fields']['voucherState'] = biodata_codes[index].biodata_code.voucher_state
+            value['fields']['scientific_name_str'] = biodata_codes[index].scientific_name.scientific_name
         return HttpResponse(json.dumps({'page': page.name, 'data': json_data}), content_type="application/json")
 
 
@@ -270,7 +272,7 @@ def set_state(request):
         pk_voucher = request.GET['pk_voucher']
         state_voucher = request.GET['state_voucher']
         voucher = VoucherImported.objects.get(pk=pk_voucher)
-        biodata_codes = BiodataCode.objects.get(pk=voucher.occurrenceID.id)
+        biodata_codes = BiodataCode.objects.get(pk=voucher.biodata_code.id)
         biodata_codes.voucher_state = state_voucher
         biodata_codes.save()
         data = {'result': 'OK'}
@@ -328,10 +330,10 @@ def csv_error_data(request):
             index = value_str[value_str.find('[') + len('['):value_str.rfind(']')]
             indexes.append(int(index))
         data_list = []
-        writer.writerow(['catalogNumber', 'recordedBy', 'recordNumber', 'scientificName', 'locality'])
+        writer.writerow(['catalog_number', 'recorded_by', 'record_number', 'scientific_name', 'locality'])
         for i in indexes:
-            writer.writerow([data_errors['catalogNumber[' + str(i) + ']'], data_errors['recordedBy[' + str(i) + ']'],
-                             data_errors['recordNumber[' + str(i) + ']'], data_errors['scientificName[' + str(i) + ']'],
+            writer.writerow([data_errors['catalog_number[' + str(i) + ']'], data_errors['recorded_by[' + str(i) + ']'],
+                             data_errors['record_number[' + str(i) + ']'], data_errors['scientific_name[' + str(i) + ']'],
                              data_errors['locality[' + str(i) + ']']])
         return response
 
@@ -354,19 +356,19 @@ def xls_error_data(request):
                 value_str = str(value)
                 index = value_str[value_str.find('[') + len('['):value_str.rfind(']')]
                 indexes.append(int(index))
-            headers = ['catalogNumber', 'recordNumber', 'recordedBy', 'otherCatalogNumbers', 'locality',
-                       'verbatimElevation', 'decimalLatitude', 'decimalLongitude', 'georeferencedDate',
-                       'scientificName', 'similarity', 'scientificName_similarity', 'synonymy_similarity']
+            headers = ['catalog_number', 'record_number', 'recorded_by', 'other_catalog_numbers', 'locality',
+                       'verbatim_elevation', 'decimal_latitude', 'decimal_longitude', 'georeference_date',
+                       'scientific_name', 'similarity', 'scientific_name_similarity', 'synonymy_similarity']
             for i in indexes:
-                data.append([data_errors['catalogNumber[' + str(i) + ']'], data_errors['recordNumber[' + str(i) + ']'],
-                             data_errors['recordedBy[' + str(i) + ']'],
-                             data_errors['otherCatalogNumbers[' + str(i) + ']'],
-                             data_errors['locality[' + str(i) + ']'], data_errors['verbatimElevation[' + str(i) + ']'],
-                             data_errors['decimalLatitude[' + str(i) + ']'],
-                             data_errors['decimalLongitude[' + str(i) + ']'],
-                             data_errors['georeferencedDate[' + str(i) + ']'],
-                             data_errors['scientificName[' + str(i) + ']'], data_errors['similarity[' + str(i) + ']'],
-                             data_errors['scientificName_similarity[' + str(i) + ']'],
+                data.append([data_errors['catalog_number[' + str(i) + ']'], data_errors['record_number[' + str(i) + ']'],
+                             data_errors['recorded_by[' + str(i) + ']'],
+                             data_errors['other_catalog_numbers[' + str(i) + ']'],
+                             data_errors['locality[' + str(i) + ']'], data_errors['verbatim_elevation[' + str(i) + ']'],
+                             data_errors['decimal_latitude[' + str(i) + ']'],
+                             data_errors['decimal_longitude[' + str(i) + ']'],
+                             data_errors['georeference_date[' + str(i) + ']'],
+                             data_errors['scientific_name[' + str(i) + ']'], data_errors['similarity[' + str(i) + ']'],
+                             data_errors['scientific_name_similarity[' + str(i) + ']'],
                              data_errors['synonymy_similarity[' + str(i) + ']']])
         except:
             colums = 11
@@ -378,18 +380,18 @@ def xls_error_data(request):
                 value_str = str(value)
                 index = value_str[value_str.find('[') + len('['):value_str.rfind(']')]
                 indexes.append(int(index))
-            headers = ['catalogNumber', 'recordNumber', 'recordedBy', 'otherCatalogNumbers', 'locality',
-                       'verbatimElevation', 'decimalLatitude', 'decimalLongitude', 'georeferencedDate',
-                       'scientificName']
+            headers = ['catalog_number', 'record_number', 'recorded_by', 'other_catalog_numbers', 'locality',
+                       'verbatim_elevation', 'decimal_latitude', 'decimal_longitude', 'georeference_date',
+                       'scientific_name']
             for i in indexes:
-                data.append([data_errors['catalogNumber[' + str(i) + ']'], data_errors['recordNumber[' + str(i) + ']'],
-                             data_errors['recordedBy[' + str(i) + ']'],
-                             data_errors['otherCatalogNumbers[' + str(i) + ']'],
-                             data_errors['locality[' + str(i) + ']'], data_errors['verbatimElevation[' + str(i) + ']'],
-                             data_errors['decimalLatitude[' + str(i) + ']'],
-                             data_errors['decimalLongitude[' + str(i) + ']'],
-                             data_errors['georeferencedDate[' + str(i) + ']'],
-                             data_errors['scientificName[' + str(i) + ']']])
+                data.append([data_errors['catalog_number[' + str(i) + ']'], data_errors['record_number[' + str(i) + ']'],
+                             data_errors['recorded_by[' + str(i) + ']'],
+                             data_errors['other_catalog_numbers[' + str(i) + ']'],
+                             data_errors['locality[' + str(i) + ']'], data_errors['verbatim_elevation[' + str(i) + ']'],
+                             data_errors['decimal_latitude[' + str(i) + ']'],
+                             data_errors['decimal_longitude[' + str(i) + ']'],
+                             data_errors['georeference_date[' + str(i) + ']'],
+                             data_errors['scientific_name[' + str(i) + ']']])
         data = tablib.Dataset(*data, headers=headers)
         response = HttpResponse(data.xlsx, content_type='application/vnd.ms-Excel')
         response['Content-Disposition'] = "attachment; filename=vouchers_error.xlsx"
@@ -413,10 +415,10 @@ def pdf_error_data(request):
             indexes.append(int(index))
         data_list = []
         for i in indexes:
-            data_list.append({'catalogNumber': data_errors['catalogNumber[' + str(i) + ']'],
-                              'recordedBy': data_errors['recordedBy[' + str(i) + ']'],
-                              'recordNumber': data_errors['recordNumber[' + str(i) + ']'],
-                              'scientificName': data_errors['scientificName[' + str(i) + ']'],
+            data_list.append({'catalog_number': data_errors['catalog_number[' + str(i) + ']'],
+                              'recorded_by': data_errors['recorded_by[' + str(i) + ']'],
+                              'record_number': data_errors['record_number[' + str(i) + ']'],
+                              'scientific_name': data_errors['scientific_name[' + str(i) + ']'],
                               'locality': data_errors['locality[' + str(i) + ']']})
         result = render_to_pdf('digitalization/template_list_priority_voucher.html',
                                {'pagesize': 'A4', 'page_date': date.today(), 'priority_vouchers': data_list})
@@ -430,27 +432,27 @@ def control_vouchers(request):
         state_voucher = int(request.GET['state_voucher'])
         if state_voucher == -1:
             biodata_codes = VoucherImported.objects.filter(herbarium__herbariummember__user__id=request.user.id,
-                                                           occurrenceID__qr_generated=True).order_by('scientificName',
-                                                                                                     'catalogNumber')
+                                                           biodata_code__qr_generated=True).order_by('scientific_name',
+                                                                                                     'catalog_number')
         else:
             biodata_codes = VoucherImported.objects.filter(herbarium__herbariummember__user__id=request.user.id,
-                                                           occurrenceID__qr_generated=True,
-                                                           occurrenceID__voucher_state=state_voucher).order_by(
-                'scientificName', 'catalogNumber')
+                                                           biodata_code__qr_generated=True,
+                                                           biodata_code__voucher_state=state_voucher).order_by(
+                'scientific_name', 'catalog_number')
         data = serializers.serialize('json', biodata_codes, fields=(
-            'occurrenceID', 'catalogNumber', 'recordedBy', 'recordNumber', 'scientificName', 'locality',))
+            'biodata_code', 'catalog_number', 'recorded_by', 'record_number', 'scientific_name', 'locality',))
         json_data = json.loads(data)
         for index, value in enumerate(json_data):
             value['fields']['id'] = biodata_codes[index].id
-            value['fields']['voucherStateID'] = biodata_codes[index].occurrenceID.voucher_state
-            value['fields']['voucherStateName'] = str(biodata_codes[index].occurrenceID.get_voucher_state_display())
-            value['fields']['Herbarium'] = biodata_codes[index].occurrenceID.herbarium.name
-            value['fields']['scientificName'] = biodata_codes[index].scientificName.scientificName
-            value['fields']['PageDate'] = biodata_codes[index].occurrenceID.page.created_at.strftime('%d-%m-%Y %H:%M')
+            value['fields']['voucherStateID'] = biodata_codes[index].biodata_code.voucher_state
+            value['fields']['voucherStateName'] = str(biodata_codes[index].biodata_code.get_voucher_state_display())
+            value['fields']['Herbarium'] = biodata_codes[index].biodata_code.herbarium.name
+            value['fields']['scientific_name'] = biodata_codes[index].scientific_name.scientific_name
+            value['fields']['PageDate'] = biodata_codes[index].biodata_code.page.created_at.strftime('%d-%m-%Y %H:%M')
         return HttpResponse(json.dumps({'data': json_data}), content_type="application/json")
     vouchers = VoucherImported.objects.filter(herbarium__herbariummember__user__id=request.user.id,
-                                              occurrenceID__qr_generated=True, occurrenceID__voucher_state=2).order_by(
-        'scientificName', 'catalogNumber')
+                                              biodata_code__qr_generated=True, biodata_code__voucher_state=2).order_by(
+        'scientific_name', 'catalog_number')
     return render(request, 'digitalization/control_vouchers.html', {'vouchers': vouchers})
 
 
@@ -461,30 +463,30 @@ def get_vouchers_to_validate(request, page_id, voucher_state):
             page = GeneratedPage.objects.get(id=int(page_id))
             filters = {
                 "herbarium__herbariummember__user__id": request.user.id,
-                "occurrenceID__qr_generated": True,
-                "occurrenceID__page": page,
+                "biodata_code__qr_generated": True,
+                "biodata_code__page": page,
             }
             if int(voucher_state) != -1:
-                filters["occurrenceID__voucher_state"] = int(voucher_state)
+                filters["biodata_code__voucher_state"] = int(voucher_state)
             biodata_codes = VoucherImported.objects.filter(
                 **filters
-            ).order_by('scientificName', 'catalogNumber')
+            ).order_by('scientific_name', 'catalog_number')
             search_value = request.GET.get("search[value]", None)
             if search_value:
                 logging.debug("Searching with {}".format(search_value))
                 biodata_codes = biodata_codes.filter(
-                    Q(catalogNumber__icontains=search_value) |
-                    Q(scientificName__scientificName__icontains=search_value) |
-                    Q(recordedBy__icontains=search_value) |
-                    Q(recordNumber__icontains=search_value) |
+                    Q(catalog_number__icontains=search_value) |
+                    Q(scientific_name__scientific_name__icontains=search_value) |
+                    Q(recorded_by__icontains=search_value) |
+                    Q(record_number__icontains=search_value) |
                     Q(locality__icontains=search_value)
                 )
 
             sort_by_func = {
-                1: "catalogNumber",
-                2: "scientificName__scientificName",
-                3: "recordedBy",
-                4: "recordNumber",
+                1: "catalog_number",
+                2: "scientific_name__scientific_name",
+                3: "recorded_by",
+                4: "record_number",
                 5: "locality",
             }
 
@@ -605,7 +607,7 @@ def upload_images(request):
         image_public_resized_10_content = ContentFile(image_public_resized_10.read())
         image_public_resized_60_content = ContentFile(image_public_resized_60.read())
         image_raw_content = ContentFile(image_raw.read())
-        voucher_imported = VoucherImported.objects.filter(occurrenceID__code=code_voucher)[0]
+        voucher_imported = VoucherImported.objects.filter(biodata_code__code=code_voucher)[0]
         voucher_imported.image.save(image.name, image_content)
         voucher_imported.image_resized_10.save(image_resized_10.name, image_resized_10_content)
         voucher_imported.image_resized_60.save(image_resized_60.name, image_resized_60_content)
@@ -654,7 +656,7 @@ def upload_gallery(request):
 
 
 def get_species(scientific_name_full: str) -> Tuple[Union[Species, None], Union[HttpResponse, None]]:
-    species = Species.objects.filter(scientificNameFull=scientific_name_full)
+    species = Species.objects.filter(scientific_name_full=scientific_name_full)
     if len(species) == 0:
         return None, HttpResponseBadRequest("Species not registered")
     if len(species) > 1:
@@ -784,27 +786,27 @@ def new_licence(request):
 def get_voucher_info(request):
     if request.method == 'GET':
         code_voucher = request.GET['code_voucher']
-        voucher_imported = VoucherImported.objects.filter(occurrenceID__code=code_voucher)[0]
+        voucher_imported = VoucherImported.objects.filter(biodata_code__code=code_voucher)[0]
         herbarium_code = voucher_imported.herbarium.collection_code
         herbarium_name = voucher_imported.herbarium.name.upper()
-        scientificNameFull = voucher_imported.scientificName.scientificNameFull
+        scientific_name_full = voucher_imported.scientificName.scientific_name_full
         family = voucher_imported.scientificName.genus.family.name.upper()
-        catalogNumber = voucher_imported.occurrenceID.catalogNumber
-        recordNumber = voucher_imported.recordNumber
-        recordedBy = voucher_imported.recordedBy
+        catalog_number = voucher_imported.biodata_code.catalog_number
+        record_number = voucher_imported.record_number
+        recorded_by = voucher_imported.recorded_by
         locality = voucher_imported.locality
-        identifiedBy = voucher_imported.identifiedBy
-        dateIdentified = voucher_imported.dateIdentified
-        if voucher_imported.georeferencedDate:
-            georeferencedDate = voucher_imported.georeferencedDate.strftime('%d-%m-%Y')
+        identified_by = voucher_imported.identified_by
+        identified_date = voucher_imported.identified_date
+        if voucher_imported.georeference_date:
+            georeference_date = voucher_imported.georeference_date.strftime('%d-%m-%Y')
         else:
-            georeferencedDate = ''
-        organismRemarks = voucher_imported.organismRemarks
+            georeference_date = ''
+        organism_remarks = voucher_imported.organism_remarks
         data = {'code_voucher': code_voucher, 'herbarium_code': herbarium_code, 'herbarium_name': herbarium_name,
-                'scientificNameFull': scientificNameFull, 'family': family, 'catalogNumber': catalogNumber,
-                'recordNumber': recordNumber, 'recordedBy': recordedBy, 'locality': locality,
-                'identifiedBy': identifiedBy, 'dateIdentified': dateIdentified, 'georeferencedDate': georeferencedDate,
-                'organismRemarks': organismRemarks}
+                'scientific_name_full': scientific_name_full, 'family': family, 'catalog_number': catalog_number,
+                'record_number': record_number, 'recorded_by': recorded_by, 'locality': locality,
+                'identified_by': identified_by, 'identified_date': identified_date, 'georeference_date': georeference_date,
+                'organism_remarks': organism_remarks}
     else:
         data = {'result': 'error'}
     return HttpResponse(json.dumps(data), content_type="application/json")
@@ -838,10 +840,10 @@ def get_pending_images(request):
         data = serializers.serialize('json', voucher_pending, fields=('image_raw',))
         json_data = json.loads(data)
         for index, value in enumerate(json_data):
-            value['fields']['code_voucher'] = voucher_pending[index].occurrenceID.code
+            value['fields']['code_voucher'] = voucher_pending[index].biodata_code.code
             value['fields']['image_raw'] = voucher_pending[index].image_raw.url
             value['fields']['herbarium_code'] = voucher_pending[index].herbarium.collection_code
-            value['fields']['date'] = voucher_pending[index].occurrenceID.created_at.strftime('%d_%m_%Y')
+            value['fields']['date'] = voucher_pending[index].biodata_code.created_at.strftime('%d_%m_%Y')
         return HttpResponse(json.dumps(json_data), content_type="application/json")
 
 
@@ -849,7 +851,7 @@ def get_pending_images(request):
 @login_required
 def get_pending_vouchers(request):
     pending_voucher = VoucherImported.objects.filter(
-        Q(occurrenceID__voucher_state=8) | ((~Q(image_raw='')) & Q(image=''))
+        Q(biodata_code__voucher_state=8) | ((~Q(image_raw='')) & Q(image=''))
     )
     return HttpResponse(json.dumps({
         "count": pending_voucher.count(),
@@ -886,19 +888,19 @@ def vouchers_download(request):
         logging.debug("Refreshing vouchers")
         VouchersView.refresh_view()
         logging.info("Generating voucher excel...")
-        headers1 = ['id', 'file', 'code', 'voucher_state', 'collection_code', 'otherCatalogNumbers', 'catalogNumber',
-                    'recordedBy',
-                    'recordNumber', 'organismRemarks', 'scientificName', 'locality', 'verbatimElevation',
-                    'decimalLatitude',
-                    'decimalLongitude', 'identifiedBy', 'dateIdentified', 'decimalLatitude_public',
-                    'decimalLongitude_public', 'priority']
+        headers1 = ['id', 'file', 'code', 'voucher_state', 'collection_code', 'other_catalog_numbers', 'catalog_number',
+                    'recorded_by',
+                    'record_number', 'organism_remarks', 'scientificName', 'locality', 'verbatim_elevation',
+                    'decimal_latitude',
+                    'decimal_longitude', 'identified_by', 'identified_date', 'decimal_latitude_public',
+                    'decimal_longitude_public', 'priority']
         species = VouchersView.objects.values_list('id', 'file', 'code', 'voucher_state', 'collection_code',
-                                                   'otherCatalogNumbers',
-                                                   'catalogNumber', 'recordedBy', 'recordNumber', 'organismRemarks',
-                                                   'scientificName', 'locality', 'verbatimElevation'
-                                                   , 'decimalLatitude', 'decimalLongitude', 'identifiedBy',
-                                                   'dateIdentified', 'decimalLatitude_public',
-                                                   'decimalLongitude_public', 'priority').order_by('id')
+                                                   'other_catalog_numbers',
+                                                   'catalog_number', 'recorded_by', 'record_number', 'organism_remarks',
+                                                   'scientificName', 'locality', 'verbatim_elevation'
+                                                   , 'decimal_latitude', 'decimal_longitude', 'identified_by',
+                                                   'identified_date', 'decimal_latitude_public',
+                                                   'decimal_longitude_public', 'priority').order_by('id')
         databook = tablib.Databook()
         data_set1 = tablib.Dataset(*species, headers=headers1, title='Vouchers')
         databook.add_sheet(data_set1)
@@ -920,8 +922,8 @@ def download_catalog(request):
         ]
         species = Species.objects.values_list(
             'id', 'id_taxa', 'genus__family__name', 'genus__name',
-            'specificEpithet', 'scientificName',
-            'scientificNameFull', 'scientificNameDB', 'determined'
+            'specific_epithet', 'scientificName',
+            'scientific_name_full', 'scientific_name_db', 'determined'
         ).order_by('id')
         databook = tablib.Databook()
         data_set = tablib.Dataset(*species, headers=headers, title='Catalog')
@@ -947,15 +949,15 @@ def update_voucher(request, id):
         form = VoucherImportedForm(request.POST, instance=voucher)
         if form.is_valid():
             voucher = form.save()
-            if not numpy.isnan(voucher.decimalLatitude) and not numpy.isnan(voucher.decimalLongitude):
+            if not numpy.isnan(voucher.decimal_latitude) and not numpy.isnan(voucher.decimal_longitude):
                 voucher.point = GEOSGeometry(
-                    'POINT(' + str(voucher.decimalLongitude) + ' ' + str(voucher.decimalLatitude) + ')', srid=4326)
-                decimalLatitude_public = public_point(voucher.decimalLatitude)
-                decimalLongitude_public = public_point(voucher.decimalLongitude)
-                voucher.decimalLatitude_public = decimalLatitude_public
-                voucher.decimalLongitude_public = decimalLongitude_public
+                    'POINT(' + str(voucher.decimal_longitude) + ' ' + str(voucher.decimal_latitude) + ')', srid=4326)
+                decimal_latitude_public = public_point(voucher.decimal_latitude)
+                decimal_longitude_public = public_point(voucher.decimal_longitude)
+                voucher.decimal_latitude_public = decimal_latitude_public
+                voucher.decimal_longitude_public = decimal_longitude_public
                 voucher.point_public = GEOSGeometry(
-                    'POINT(' + str(decimalLongitude_public) + ' ' + str(decimalLatitude_public) + ')', srid=4326)
+                    'POINT(' + str(decimal_longitude_public) + ' ' + str(decimal_latitude_public) + ')', srid=4326)
                 voucher.save()
                 if voucher.image:
                     filename = ""  # generate_etiquette(id)
