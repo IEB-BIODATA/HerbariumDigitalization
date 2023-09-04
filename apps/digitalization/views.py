@@ -29,7 +29,7 @@ from django.http import HttpResponse, HttpResponseBadRequest, HttpResponseServer
     JsonResponse
 from django.shortcuts import render, redirect
 from django.template.loader import get_template
-from django.views.decorators.csrf import csrf_exempt
+from django.views.decorators.csrf import csrf_exempt, csrf_protect
 from django.views.decorators.http import require_POST, require_GET
 from rest_framework.request import Request
 from xhtml2pdf import pisa
@@ -865,7 +865,7 @@ def upload_raw_image(request):
 
 
 @require_GET
-@csrf_exempt
+@login_required
 def get_pending_images(request):
     if request.method == 'GET':
         voucher_pending = VoucherImported.objects.filter(~Q(image_raw=''), Q(image=''))
@@ -893,6 +893,7 @@ def get_pending_vouchers(request):
 
 @require_POST
 @login_required
+@csrf_protect
 def process_pending_images(request):
     task_id = process_pending_vouchers.delay(request.POST.getlist('pendingImages[]'))
     return HttpResponse(task_id)
