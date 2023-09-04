@@ -4,7 +4,6 @@ import logging
 import os
 import shutil
 import textwrap
-import traceback
 from io import BytesIO
 from typing import List
 
@@ -15,8 +14,9 @@ from django.conf import settings
 
 from apps.digitalization.models import VoucherImported, BiodataCode
 from apps.digitalization.storage_backends import PrivateMediaStorage
-from apps.digitalization.utils import get_static_file, SessionFolder, TaskProcessLogger, cr3_to_dng, dng_to_jpeg, \
-    dng_to_jpeg_color_profile, read_qr, change_image_resolution, empty_folder, HtmlLogger, GroupLogger
+from apps.digitalization.utils import SessionFolder, TaskProcessLogger, HtmlLogger, GroupLogger
+from apps.digitalization.utils import cr3_to_dng, dng_to_jpeg, dng_to_jpeg_color_profile
+from apps.digitalization.utils import read_qr, change_image_resolution, empty_folder
 
 N_BATCH = 1
 WIDTH_CROP = 550
@@ -74,22 +74,22 @@ def etiquette_picture(voucher_id, logger: logging.Logger = None):
         voucher_image = Image.open(image_file)
         voucher_image_editable = ImageDraw.Draw(voucher_image)
         voucher_image_editable.rectangle(parameters["RECTANGLE"], fill='#d7d6e0', outline="black", width=4)
-        title_font = ImageFont.truetype(get_static_file('font/arial.ttf'), 70)
+        title_font = ImageFont.truetype('assets/font/arial.ttf', 70)
         voucher_image_editable.text(
             parameters["TITLE_POS"], voucher.herbarium.name.upper(),
             (0, 0, 0), anchor="ms", font=title_font, stroke_width=2, stroke_fill="black"
         )
-        number_font = ImageFont.truetype(get_static_file('font/arial.ttf'), 55)
+        number_font = ImageFont.truetype('assets/font/arial.ttf', 55)
         voucher_image_editable.text(
             parameters["NUMBER_POS"], voucher.herbarium.collection_code + ' ' + str(voucher.catalog_number),
             (0, 0, 0), font=number_font, stroke_width=2, stroke_fill="black"
         )
-        scientific_name_font = ImageFont.truetype(get_static_file('font/arial_italic.ttf'), 48)
+        scientific_name_font = ImageFont.truetype('assets/font/arial_italic.ttf', 48)
         voucher_image_editable.text(
             parameters["NAME_POS"], voucher.scientific_name.scientific_name_full + ' ',
             (0, 0, 0), anchor="ms", font=scientific_name_font
         )
-        normal_font = ImageFont.truetype(get_static_file('font/arial_italic.ttf'), 48)
+        normal_font = ImageFont.truetype('assets/font/arial_italic.ttf', 48)
         voucher_image_editable.text(
             parameters["FAMILY_POS"], voucher.scientific_name.genus.family.name,
             (0, 0, 0), anchor="ms", font=normal_font

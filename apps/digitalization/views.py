@@ -179,10 +179,12 @@ def historical_priority_voucher_page_download(request):
     if request.method == 'GET':
         historical_page_id = request.GET['historical_page_id']
         page = GeneratedPage.objects.get(pk=historical_page_id)
-        priority_vouchers = VoucherImported.objects.filter(biodata_code__page=page).order_by('priority',
-                                                                                             'scientific_name__genus__family__name',
-                                                                                             'scientific_name__scientific_name',
-                                                                                             'catalog_number')
+        priority_vouchers = VoucherImported.objects.filter(biodata_code__page=page).order_by(
+            'priority',
+            'scientific_name__genus__family__name',
+            'scientific_name__scientific_name',
+            'catalog_number'
+        )
         result = render_to_pdf('digitalization/template_list_priority_voucher.html',
                                {'pagesize': 'letter', 'page_date': page.created_at, 'page_id': page.id,
                                 'priority_vouchers': priority_vouchers})
@@ -257,7 +259,7 @@ def get_vouchers(request):
         json_data = json.loads(data)
         for index, value in enumerate(json_data):
             value['fields']['voucherState'] = biodata_codes[index].biodata_code.voucher_state
-            value['fields']['scientific_nameStr'] = biodata_codes[index].scientific_name.scientific_name
+            value['fields']['scientific_name_str'] = biodata_codes[index].scientific_name.scientific_name
         return HttpResponse(json.dumps({'page': page.name, 'data': json_data}), content_type="application/json")
 
 

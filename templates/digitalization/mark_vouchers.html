@@ -131,7 +131,7 @@
                                 button_class_notfound='btn-danger';
                                 break;
                         }
-                        table += '<tr><td><a class="btn '+button_class_found+'" href="#" onclick="set_state('+data[i].pk+',1); return false;" id="id_button_class_found_'+data[i].pk+'">Encontrado</a><a class="btn '+button_class_nonstate+'" href="#" onclick="set_state('+data[i].pk+',0); return false;" id="id_button_class_non_state_'+data[i].pk+'">Sin Estado</a><a class="btn '+button_class_notfound+'" href="#" onclick="set_state('+data[i].pk+',2); return false;" id="id_button_class_not_found_'+data[i].pk+'">No Encontrado</a></td><td>'+data[i].fields.catalog_number+'</td><td>'+data[i].fields.scientificNameStr+'</td><td>'+data[i].fields.recorded_by+'</td><td>'+data[i].fields.record_number+'</td><td>'+data[i].fields.locality+'</td></tr>';
+                        table += '<tr><td><a class="btn '+button_class_found+'" href="#" onclick="set_state('+data[i].pk+',1); return false;" id="id_button_class_found_'+data[i].pk+'">Encontrado</a><a class="btn '+button_class_nonstate+'" href="#" onclick="set_state('+data[i].pk+',0); return false;" id="id_button_class_non_state_'+data[i].pk+'">Sin Estado</a><a class="btn '+button_class_notfound+'" href="#" onclick="set_state('+data[i].pk+',2); return false;" id="id_button_class_not_found_'+data[i].pk+'">No Encontrado</a></td><td>'+data[i].fields.catalog_number+'</td><td>'+data[i].fields.scientific_name_str+'</td><td>'+data[i].fields.recorded_by+'</td><td>'+data[i].fields.record_number+'</td><td>'+data[i].fields.locality+'</td></tr>';
                     }
                     $("[id^=dataTable]").remove()
                     table += "</tbody>";
