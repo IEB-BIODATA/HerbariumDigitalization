@@ -3,7 +3,7 @@
 {% load roles %}
 {% block javascript %}
     <script type="text/javascript">
-        const csrfToken = document.querySelector('[name=csrfmiddlewaretoken]').value;
+        const csrfToken = "{{ csrf_token }}";
         const myModal = document.getElementById('myModal');
         const postProcessingModal = new bootstrap.Modal('#postprocessingModal');
         $(document).ready(function() {
@@ -65,7 +65,6 @@
             $.ajax({
                 url: url,
                 type: 'GET',
-                headers: {'X-CSRFToken': csrfToken},
                 success: response => {
                     $('#pageName')[0].innerText = " " + response.name;
                 },
@@ -85,7 +84,6 @@
                     url: url,
                     type: 'GET',
                     dataSrc: 'data',
-                    headers: {'X-CSRFToken': csrfToken},
                 },
                 order: [[2, 'asc'], [4, 'asc']],
                 columnDefs: [
@@ -166,7 +164,6 @@
                 data: data,
                 url: "{% url 'upload_raw_image' %}",
                 type: "POST",
-                headers: {'X-CSRFToken': csrfToken},
                 success : response => {
                     if(response.result === 'ok'){
                         url=`<a href="${response.file_url}">Download CR3</a>`;
@@ -188,7 +185,6 @@
             $.ajax({
                 url: "{% url 'get_pending_vouchers' %}",
                 type: 'GET',
-                headers: {'X-CSRFToken': csrfToken},
                 success: function(response) {
                     console.debug(response);
                     const postBody = document.getElementById('postBody');
@@ -426,7 +422,6 @@
 {% block content %}
     <h1>Digitalización de Especímenes</h1>
     <!-- DataTables Example -->
-    {% csrf_token %}
     <div class="card mb-3">
         <div class="row">
             <div class="col-3" data-toggle="tooltip" data-placement="top" title="Estamos trabajando en este botón">

@@ -18,6 +18,7 @@ RUN pip install --upgrade pip
 RUN pip install --no-cache-dir -r requirements.txt
 
 COPY ./apps /app/apps
+COPY ./assets /app/assets
 COPY ./templates /app/templates
 COPY ./web /app/web
 COPY ./manage.py /app

@@ -5,18 +5,17 @@ import hashlib
 import json
 import logging
 import os
-import subprocess
 from datetime import datetime, date
 from http import HTTPStatus
 from io import BytesIO
 from pathlib import Path
 from typing import Tuple, Union
+
 import numpy
 import pytz
 import qrcode
 import tablib
 from PIL import Image
-from celery import current_app
 from celery.result import AsyncResult
 from django.contrib.auth.decorators import login_required
 from django.contrib.gis.geos import GEOSGeometry
@@ -29,7 +28,7 @@ from django.http import HttpResponse, HttpResponseBadRequest, HttpResponseServer
     JsonResponse
 from django.shortcuts import render, redirect
 from django.template.loader import get_template
-from django.views.decorators.csrf import csrf_exempt, csrf_protect
+from django.views.decorators.csrf import csrf_exempt
 from django.views.decorators.http import require_POST, require_GET
 from rest_framework.request import Request
 from xhtml2pdf import pisa
@@ -891,9 +890,9 @@ def get_pending_vouchers(request):
     }), content_type="application/json")
 
 
+@csrf_exempt
 @require_POST
 @login_required
-@csrf_protect
 def process_pending_images(request):
     task_id = process_pending_vouchers.delay(request.POST.getlist('pendingImages[]'))
     return HttpResponse(task_id)

@@ -203,6 +203,7 @@ else:
     )
 
 CSRF_TRUSTED_ORIGINS = ['https://*.herbariodigital.cl']
+CSRF_COOKIE_SECURE = not DEBUG
 
 REST_FRAMEWORK = {
     'DEFAULT_PAGINATION_CLASS': 'rest_framework.pagination.PageNumberPagination',
