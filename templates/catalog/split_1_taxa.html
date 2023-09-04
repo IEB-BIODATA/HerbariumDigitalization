@@ -249,9 +249,9 @@
   <div class="col-sm-6">
     <form action="/catalog/split_1_taxa/{{id_taxon_1}}/" method="post" class="form-horizontal">
     {% csrf_token %}
-    {{ form_taxa_1.scientificName }}
+    {{ form_taxa_1.scientific_name }}
     {{ form_taxa_1.scientific_name_full }}
-    {{ form_taxa_2.scientificName }}
+    {{ form_taxa_2.scientific_name }}
     {{ form_taxa_2.scientific_name_full }}
         
       <div class="card mb-3">

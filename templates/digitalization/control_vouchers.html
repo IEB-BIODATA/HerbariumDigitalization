@@ -53,7 +53,7 @@
                         if (state_voucher == 2) {
                             founded='<a href="#" class="btn btn-warning" onclick="set_state('+data[i].fields.voucherStateID+',0); return false;" id="id_button_class_found_'+data[i].fields.voucherStateID+'">Encontrado</a>';
                         }
-                        table += '<tr><td><div class="p-3 mb-2 '+class_state+' ">'+data[i].fields.voucherStateName+'</div>'+founded+'</td><td>'+data[i].fields.PageDate+'</td><td>'+data[i].fields.Herbarium+'</td><td>'+data[i].fields.biodata_code+'</td><td>'+data[i].fields.catalog_number+'</td><td>'+data[i].fields.scientificName+'</td><td>'+data[i].fields.recorded_by+'</td><td>'+data[i].fields.record_number+'</td><td>'+data[i].fields.locality+'</td><td width="10%"><a href="/digitalization/update_voucher/'+data[i].fields.id+'/" id=voucher.id %}"><i class="fas fa-fw fa-edit text-primary"></i> Editar</a></td></tr>';
+                        table += '<tr><td><div class="p-3 mb-2 '+class_state+' ">'+data[i].fields.voucherStateName+'</div>'+founded+'</td><td>'+data[i].fields.PageDate+'</td><td>'+data[i].fields.Herbarium+'</td><td>'+data[i].fields.biodata_code+'</td><td>'+data[i].fields.catalog_number+'</td><td>'+data[i].fields.scientific_name+'</td><td>'+data[i].fields.recorded_by+'</td><td>'+data[i].fields.record_number+'</td><td>'+data[i].fields.locality+'</td><td width="10%"><a href="/digitalization/update_voucher/'+data[i].fields.id+'/" id=voucher.id %}"><i class="fas fa-fw fa-edit text-primary"></i> Editar</a></td></tr>';
                     }
                     $("[id^=VouchersTable]").remove()
                     table += "</tbody>";
@@ -154,7 +154,7 @@
                             <td>{{ voucher.herbarium }}</td>
                             <td>{{ voucher.biodata_code }}</td>
                             <td>{{ voucher.catalog_number }}</td>
-                            <td>{{ voucher.scientificName }}</td>
+                            <td>{{ voucher.scientific_name }}</td>
                             <td>{{ voucher.recorded_by }}</td>
                             <td>{{ voucher.record_number }}</td>
                             <td>{{ voucher.locality }}</td>

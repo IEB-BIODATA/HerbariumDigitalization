@@ -35,6 +35,7 @@ from rest_framework.request import Request
 from xhtml2pdf import pisa
 
 from apps.catalog.models import Species, CatalogView
+from web.utils import paginated_table
 from .forms import LoadPriorityVoucherForm, LoadColorProfileForm, VoucherImportedForm, GalleryImageForm, LicenceForm
 from .models import BiodataCode, Herbarium, GeneratedPage, VoucherImported, PriorityVouchersFile, VouchersView, \
     GalleryImage, BannerImage
@@ -42,7 +43,7 @@ from .storage_backends import PrivateMediaStorage
 from .tasks import process_pending_vouchers
 from .vouchers import PriorityVouchers
 from ..api.decorators import backend_authenticated
-from ..api.serializers import MinimizedVoucherSerializer
+from ..api.serializers import MinimizedVoucherSerializer, CatalogViewSerializer
 
 
 class HttpResponsePreconditionFailed(HttpResponse):
@@ -627,20 +628,20 @@ def upload_gallery(request):
     if request.method == 'POST':
         image = request.FILES['image']
         image_content = ContentFile(image.read())
-        species, response = get_species(request.POST["scientificName"])
+        species, response = get_species(request.POST["scientific_name"])
         if response is not None:
             return response
-        logging.debug("Uploading gallery image for {}".format(species.scientificName))
+        logging.debug("Uploading gallery image for {}".format(species.scientific_name))
         candid_hash = hashlib.sha256(image_content.read()).hexdigest()
         image_content.seek(0)
-        prev_gallery = GalleryImage.objects.filter(scientificName=species[0])
+        prev_gallery = GalleryImage.objects.filter(scientific_name=species[0])
         for prev_image in prev_gallery:
             prev_hash = hashlib.sha256(ContentFile(prev_image.image.read()).read()).hexdigest()
             if candid_hash == prev_hash:
                 return HttpResponsePreconditionFailed("Image already saved and associated with species")
         parameters = {
             "upload_at": datetime.now(),
-            "scientificName": species[0],
+            "scientific_name": species[0],
             "upload_by": request.user,
         }
         if "licence" in request.POST:
@@ -670,10 +671,10 @@ def upload_banner(request):
     if request.method == "POST":
         banner = request.FILES['image']
         banner_content = ContentFile(banner.read())
-        species, response = get_species(request.POST["scientificName"])
+        species, response = get_species(request.POST["scientific_name"])
         if response is not None:
             return response
-        logging.debug("Uploading banner for {}".format(species.scientificName))
+        logging.debug("Uploading banner for {}".format(species.scientific_name))
         vouchers = VoucherImported.objects.filter(id=request.POST["voucher"])
         if vouchers.count() == 0:
             return HttpResponse({'info': 'No voucher found'}, status=400)
@@ -690,14 +691,45 @@ def upload_banner(request):
 
 
 @login_required
-def upload_gallery_image(request):
-    return render(request, 'digitalization/update_gallery.html', {'species': CatalogView.objects.all()})
+def modify_gallery_image(request):
+    return render(request, 'digitalization/modify_gallery_image.html')
 
 
 @login_required
-def modify_gallery(request, catalog_id):
-    specie = Species.objects.filter(id=catalog_id).first()
-    gallery = GalleryImage.objects.filter(scientificName=specie)
+def gallery_table(request):
+    search_value = request.GET.get("search[value]", None)
+    search_query = Q()
+    if search_value:
+        search_query = (
+            Q(division__icontains=search_value) |
+            Q(class_name__icontains=search_value) |
+            Q(order__icontains=search_value) |
+            Q(family__icontains=search_value) |
+            Q(scientific_name_full__icontains=search_value) |
+            Q(updated_at__icontains=search_value)
+        )
+        logging.debug(type(search_query))
+
+    sort_by_func = {
+        0: "division",
+        1: "class_name",
+        2: "order",
+        3: "family",
+        4: "scientific_name_full",
+        5: "updated_at",
+    }
+
+    return paginated_table(
+        request, CatalogView,
+        CatalogViewSerializer, sort_by_func,
+        "Catalog", search_query
+    )
+
+
+@login_required
+def modify_gallery(request, species_id):
+    specie = Species.objects.filter(id=species_id).first()
+    gallery = GalleryImage.objects.filter(scientific_name=specie)
     return render(request, 'digitalization/modify_gallery.html', {
         'species': specie,
         'gallery': gallery,
@@ -707,7 +739,7 @@ def modify_gallery(request, catalog_id):
 @login_required
 def gallery_image(request, gallery_id):
     gallery = GalleryImage.objects.filter(id=gallery_id).first()
-    catalog_id = gallery.scientificName.id
+    catalog_id = gallery.scientific_name.id
     form = GalleryImageForm(instance=gallery)
     if request.method == "POST":
         form = GalleryImageForm(request.POST, request.FILES, instance=gallery)
@@ -719,7 +751,7 @@ def gallery_image(request, gallery_id):
             logging.warning("Form is not valid: {}".format(form.errors))
     return render(request, 'digitalization/gallery_image.html', {
         'form': form,
-        'specie': gallery.scientificName,
+        'specie': gallery.scientific_name,
         'gallery': gallery,
     })
 
@@ -728,11 +760,11 @@ def gallery_image(request, gallery_id):
 def new_gallery_image(request, catalog_id):
     specie = Species.objects.filter(id=catalog_id).first()
     form = GalleryImageForm(instance=None)
-    form.fields["scientificName"].initial = specie
+    form.fields["scientific_name"].initial = specie
     if request.method == "POST":
         form = GalleryImageForm(request.POST, request.FILES)
         if form.is_valid():
-            form.scientificName = specie
+            form.scientific_name = specie
             gallery = form.save(commit=False)
             gallery.upload_by = request.user
             gallery.save()
@@ -750,7 +782,7 @@ def new_gallery_image(request, catalog_id):
 @login_required
 def delete_gallery_image(request, gallery_id):
     image = GalleryImage.objects.filter(id=gallery_id).first()
-    catalog_id = image.scientificName.id
+    catalog_id = image.scientific_name.id
     logging.info("Deleting {} image".format(image.image.name))
     try:
         image.image.delete()
@@ -789,8 +821,8 @@ def get_voucher_info(request):
         voucher_imported = VoucherImported.objects.filter(biodata_code__code=code_voucher)[0]
         herbarium_code = voucher_imported.herbarium.collection_code
         herbarium_name = voucher_imported.herbarium.name.upper()
-        scientific_name_full = voucher_imported.scientificName.scientific_name_full
-        family = voucher_imported.scientificName.genus.family.name.upper()
+        scientific_name_full = voucher_imported.scientific_name.scientific_name_full
+        family = voucher_imported.scientific_name.genus.family.name.upper()
         catalog_number = voucher_imported.biodata_code.catalog_number
         record_number = voucher_imported.record_number
         recorded_by = voucher_imported.recorded_by
@@ -890,14 +922,14 @@ def vouchers_download(request):
         logging.info("Generating voucher excel...")
         headers1 = ['id', 'file', 'code', 'voucher_state', 'collection_code', 'other_catalog_numbers', 'catalog_number',
                     'recorded_by',
-                    'record_number', 'organism_remarks', 'scientificName', 'locality', 'verbatim_elevation',
+                    'record_number', 'organism_remarks', 'scientific_name', 'locality', 'verbatim_elevation',
                     'decimal_latitude',
                     'decimal_longitude', 'identified_by', 'identified_date', 'decimal_latitude_public',
                     'decimal_longitude_public', 'priority']
         species = VouchersView.objects.values_list('id', 'file', 'code', 'voucher_state', 'collection_code',
                                                    'other_catalog_numbers',
                                                    'catalog_number', 'recorded_by', 'record_number', 'organism_remarks',
-                                                   'scientificName', 'locality', 'verbatim_elevation'
+                                                   'scientific_name', 'locality', 'verbatim_elevation'
                                                    , 'decimal_latitude', 'decimal_longitude', 'identified_by',
                                                    'identified_date', 'decimal_latitude_public',
                                                    'decimal_longitude_public', 'priority').order_by('id')
@@ -922,7 +954,7 @@ def download_catalog(request):
         ]
         species = Species.objects.values_list(
             'id', 'id_taxa', 'genus__family__name', 'genus__name',
-            'specific_epithet', 'scientificName',
+            'specific_epithet', 'scientific_name',
             'scientific_name_full', 'scientific_name_db', 'determined'
         ).order_by('id')
         databook = tablib.Databook()

@@ -22,7 +22,8 @@ urlpatterns = [
     re_path(r'^control_vouchers$', views.control_vouchers, name='control_vouchers'),
     re_path(r'^terminate_session$', views.terminate_session, name='validate_vouchers'),
     re_path(r'^validate_vouchers$', views.validate_vouchers, name='validate_vouchers'),
-    re_path(r'^upload_gallery_image$', views.upload_gallery_image, name='upload_gallery_image'),
+    re_path(r'^modify_gallery_image$', views.modify_gallery_image, name='modify_gallery_image'),
+    re_path(r'^gallery_table$', views.gallery_table, name='gallery_table'),
     re_path(
         r'^get_vouchers_to_validate/(?P<page_id>\d+)/(?P<voucher_state>-?\d+)$',
         views.get_vouchers_to_validate,
@@ -30,7 +31,7 @@ urlpatterns = [
     ),
     re_path(r'^upload_images$', views.upload_images, name='upload_images'),
     re_path(r'^upload_gallery$', views.upload_gallery, name='upload_gallery'),
-    re_path(r'^modify_gallery/(?P<catalog_id>\d+)$', views.modify_gallery, name='modify_gallery'),
+    re_path(r'^modify_gallery/(?P<species_id>\d+)$', views.modify_gallery, name='modify_gallery'),
     re_path(r'^gallery_image/(?P<gallery_id>\d+)$', views.gallery_image, name='gallery_image'),
     re_path(r'^new_gallery_image/(?P<catalog_id>\d+)$', views.new_gallery_image, name='new_gallery_image'),
     re_path(r'^delete_gallery_image/(?P<gallery_id>\d+)$', views.delete_gallery_image, name='delete_gallery_image'),
@@ -43,7 +44,7 @@ urlpatterns = [
     re_path(r'^process_pending_images$', views.process_pending_images, name='process_pending_images'),
     re_path(r'^get_progress/(?P<task_id>[\w-]+)/$', views.get_progress, name='get_progress'),
     re_path(r'^get_task_log/(?P<task_id>[\w-]+)/$', views.get_task_log, name='get_task_log'),
-    re_path(r'^vouchers_download$', views.vouchers_download, name='vochers_download'),
+    re_path(r'^vouchers_download$', views.vouchers_download, name='vouchers_download'),
     re_path(r'^download_catalog$', views.download_catalog, name='download_catalog'),
     re_path(r'^update_voucher/(?P<id>\d+)/$', views.update_voucher, name='update_voucher'),
 ]

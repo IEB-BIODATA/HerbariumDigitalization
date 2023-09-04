@@ -11,11 +11,11 @@
     <div class="table-responsive">
       <form action="/catalog/update_synonymy/{{id}}/" method="post" class="form-horizontal">
           {% csrf_token %}
-          {{ form.scientificName }}
+          {{ form.scientific_name }}
           {{ form.scientific_name_full }}
           {{ form.scientific_name_db }}
           <div class="form-group row">
-            <label class="col-sm-2 col-form-label">Genero</label>
+            <label class="col-sm-2 col-form-label">Género</label>
             <div class="col-sm-10">
               {{ form.genus }}
             </div>

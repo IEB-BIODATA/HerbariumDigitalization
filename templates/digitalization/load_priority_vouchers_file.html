@@ -144,11 +144,11 @@
                         }
                         if (json_response.type=='no match with catalog')
                         {
-                            table += '<thead><tr><th>catalog_number</th><th>scientificName</th><th>scientificName Similarity</th><th>Synonymy Similarity</th><th>similarity</th></tr></thead><tbody>';
+                            table += '<thead><tr><th>Catalog Number</th><th>Scientific Name</th><th>Scientific Name Similarity</th><th>Synonymy Similarity</th><th>Similarity</th></tr></thead><tbody>';
                             for (var index in indexs.catalog_number)
                             {
                                 try {
-                                    table += '<tr><td>'+indexs.catalog_number[index]+'</td><td>'+indexs.scientificName[index]+'</td><td>'+indexs.scientificName_similarity[index]+'</td><td>'+indexs.synonymy_similarity[index]+'</td><td>'+indexs.similarity[index]+'<td></tr>';
+                                    table += '<tr><td>'+indexs.catalog_number[index]+'</td><td>'+indexs.scientific_name[index]+'</td><td>'+indexs.scientific_name_similarity[index]+'</td><td>'+indexs.synonymy_similarity[index]+'</td><td>'+indexs.similarity[index]+'<td></tr>';
                                 } catch (error) {
 
                                     console.error(error);
@@ -157,10 +157,10 @@
                         }
                         else
                         {
-                            table += '<thead><tr><th>catalog_number</th><th>recorded_by</th><th>record_number</th><th>scientificName</th><th>locality</th></tr></thead><tbody>'
+                            table += '<thead><tr><th>catalog_number</th><th>recorded_by</th><th>record_number</th><th>scientific_name</th><th>locality</th></tr></thead><tbody>'
                             for (var index in indexs.catalog_number)
                             {
-                                table += '<tr><td>'+indexs.catalog_number[index]+'</td><td>'+indexs.recorded_by[index]+'</td><td>'+indexs.record_number[index]+'</td><td>'+indexs.scientificName[index]+'</td><td>'+indexs.locality[index]+'<td></tr>';
+                                table += '<tr><td>'+indexs.catalog_number[index]+'</td><td>'+indexs.recorded_by[index]+'</td><td>'+indexs.record_number[index]+'</td><td>'+indexs.scientific_name[index]+'</td><td>'+indexs.locality[index]+'<td></tr>';
                             }
                         }
                         table += "</tbody></table>";

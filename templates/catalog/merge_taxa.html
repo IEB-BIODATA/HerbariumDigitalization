@@ -288,11 +288,11 @@
     <div class="row">
         <div class="col-12">
             <form class="taxon-form">
-                Seleccione Taxón que el que se unirá <b>{{ taxa_1.scientificName}}</b>:
+                Seleccione Taxón que el que se unirá <b>{{ taxa_1.scientific_name}}</b>:
                 <select id="select-taxon" class="select-taxon" onchange="get_taxa(this);">
                     <option value="0">---</option>
                     {% for specie in species %}
-                        <option value="{{ specie.id }}">{{ specie.scientificName }}</option>
+                        <option value="{{ specie.id }}">{{ specie.scientific_name }}</option>
                     {% endfor %}
                 </select>
             </form>
@@ -684,11 +684,11 @@
                     <div class="table-responsive">
                         <form action="/catalog/merge_taxa/{{id_taxon_1}}/" method="post" class="form-horizontal">
                             {% csrf_token %}
-                            {{ form.scientificName }}
+                            {{ form.scientific_name }}
                             {{ form.scientific_name_full }}
                             <input type="hidden" name="id_taxon_2" value="" id="id_taxon_2">
                             <div class="form-group row">
-                                <label class="col-sm-2 col-form-label">Genero</label>
+                                <label class="col-sm-2 col-form-label">Género</label>
                                 <div class="col-sm-10">
                                     {{ form.genus }}
                                 </div>

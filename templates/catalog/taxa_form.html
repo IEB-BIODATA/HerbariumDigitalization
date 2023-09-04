@@ -9,7 +9,7 @@
             <form action="{{ form_url }}" method="post" class="form-horizontal">
                 {% csrf_token %}
                 {{ form.id_taxa }}
-                {{ form.scientificName }}
+                {{ form.scientific_name }}
                 {{ form.scientific_name_full }}
                 {% for field in form %}
                     {% if not field.is_hidden %}

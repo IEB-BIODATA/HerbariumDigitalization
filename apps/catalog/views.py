@@ -1,16 +1,15 @@
-import re
 import tablib
+import datetime as dt
 import json
 import logging
-import pandas as pd
-import datetime as dt
 from typing import Dict, Type
+
+import tablib
+from django import forms
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth.models import User
 from django.core import serializers
-from django.core.paginator import Paginator
 from django.db.models import Q
-from django import forms
 from django.forms.utils import ErrorList
 from django.http import HttpResponse, JsonResponse, HttpRequest, HttpResponseServerError
 from django.shortcuts import render, redirect
@@ -18,14 +17,14 @@ from django.urls import reverse
 from rest_framework.serializers import SerializerMetaclass
 
 from apps.digitalization.models import VoucherImported
+from web.utils import paginated_table
 from .forms import DivisionForm, ClassForm, OrderForm, FamilyForm, GenusForm, SpeciesForm, SynonymyForm, BinnacleForm, \
     CommonNameForm
 from .models import Species, CatalogView, SynonymyView, RegionDistributionView, Division, ClassName, Order, Family, \
     Genus, Synonymy, Region, CommonName, Binnacle, PlantHabit, EnvironmentalHabit, Cycle, TaxonomicModel, \
     ConservationState
 from ..api.serializers import DivisionSerializer, ClassSerializer, OrderSerializer, \
-    FamilySerializer, GenusSerializer, SynonymysSerializer, CommonNameSerializer, SpeciesSerializer, \
-    CatalogViewSerializer
+    FamilySerializer, GenusSerializer, SynonymysSerializer, CommonNameSerializer, CatalogViewSerializer
 
 MANY_RELATIONS = [
     ("common_names", "nombres comunes", CommonName),
@@ -84,14 +83,13 @@ def __catalog_table__(
         request: HttpRequest,
         model: Type[TaxonomicModel],
         serializer: SerializerMetaclass,
-        sort_by_func: Dict[int, str],
+        sort_by_func: dict[int, str],
         model_name: str,
         add_searchable: Q = None
 ) -> JsonResponse:
-    entries = model.objects.all()
+    search_query = Q()
     search_value = request.GET.get("search[value]", None)
     if search_value:
-        logging.debug("Searching with {}".format(search_value))
         search_query = (
                 model.get_query_name(search_value) |
                 model.get_parent_query(search_value) |
@@ -99,45 +97,16 @@ def __catalog_table__(
                 Q(created_at__icontains=search_value) |
                 Q(updated_at__icontains=search_value)
         )
+        logging.debug(type(search_query))
         if add_searchable:
             search_query = search_query | add_searchable
-        entries = entries.filter(search_query)
-    sort_by = int(request.GET.get("order[0][column]", 4))
-    sort_type = request.GET.get("order[0][dir]", "desc")
+            logging.debug(type(search_query))
 
-    if sort_by in sort_by_func:
-        logging.debug("Order by {} ({}) in {} order".format(
-            sort_by,
-            sort_by_func[sort_by],
-            "ascending" if sort_type == "asc" else "descending"
-        ))
-        entries = entries.order_by(
-            ("" if sort_type == "asc" else "-") + sort_by_func[sort_by]
-        )
-
-    length = int(request.GET.get("length", 10))
-    start = int(request.GET.get("start", 0))
-    paginator = Paginator(entries, length)
-    page_number = start // length + 1
-    page_obj = paginator.get_page(page_number)
-    data = list()
-
-    logging.debug("Returning {} {}, starting at {} with {} items".format(
-        entries.count(), model_name, start + 1, length
-    ))
-
-    for item in page_obj:
-        data.append(serializer(
-            instance=item,
-            many=False,
-            context=request
-        ).data)
-    return JsonResponse({
-        "draw": int(request.GET.get("draw", 0)),
-        "recordsTotal": entries.count(),
-        "recordsFiltered": paginator.count,
-        "data": data
-    })
+    return paginated_table(
+        request, model,
+        serializer, sort_by_func,
+        model_name, search_query
+    )
 
 
 def __create_catalog__(
@@ -794,12 +763,12 @@ def merge_taxa(request, id):
                     specie_new.save()
 
                     VoucherImported.objects.filter(scientific_name=taxon_1.id).update(scientific_name=specie_new.id)
-                    VoucherImported.objects.filter(scientific_name=taxon_2.id).update(scientificName=specie_new.id)
+                    VoucherImported.objects.filter(scientific_name=taxon_2.id).update(scientific_name=specie_new.id)
 
                     binnacle = Binnacle(
                         type_update="Mezcla",
                         model="Especie",
-                        description="Se mezclan Especies " + taxon_1.scientificName + " y " + taxon_2.scientificName + " en " + specie_new.scientificName,
+                        description="Se mezclan Especies " + taxon_1.scientific_name + " y " + taxon_2.scientific_name + " en " + specie_new.scientific_name,
                         created_by=request.user
                     )
                     binnacle.save()
@@ -808,7 +777,7 @@ def merge_taxa(request, id):
                     taxon_2.delete()
 
                     vouchers = VoucherImported.objects.filter(biodata_code__voucher_state=7,
-                                                              scientificName__id=specie_new.id)
+                                                              scientific_name__id=specie_new.id)
                     for voucher in vouchers:
                         pass
                         # generate_etiquete(voucher.id)
@@ -983,7 +952,7 @@ def list_common_name(request):
 def common_name_table(request):
     sort_by_func = {
         0: "name",
-        1: "species__scientificName",
+        1: "species__scientific_name",
         2: "created_by__username",
         3: "created_at",
         4: "updated_at",
