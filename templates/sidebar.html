@@ -90,13 +90,13 @@
         </a>
     </li>
 {% endif %}
-{% if request.user|has_group:"Catalog" %}
-    <li class="nav-item dropdown">
-        <a class="nav-link dropdown-toggle" href="#" id="pagesDropdown" role="button" data-toggle="dropdown" aria-haspopup="true" data-bs-toggle="dropdown" aria-expanded="false">
-            <i class="fas fa-fw fa-leaf"></i>
-            <span>Catálogo</span>
-        </a>
-        <div class="dropdown-menu" aria-labelledby="pagesDropdown">
+<li class="nav-item dropdown">
+    <a class="nav-link dropdown-toggle" href="#" id="pagesDropdown" role="button" data-toggle="dropdown" aria-haspopup="true" data-bs-toggle="dropdown" aria-expanded="false">
+        <i class="fas fa-fw fa-leaf"></i>
+        <span>Catálogo</span>
+    </a>
+    <div class="dropdown-menu" aria-labelledby="pagesDropdown">
+        {% if request.user|has_group:"Catalog" %}
             <a class="dropdown-item" href="{% url 'list_division' %}">División</a>
             <a class="dropdown-item" href="{% url 'list_class' %}">Clase</a>
             <a class="dropdown-item" href="{% url 'list_order' %}">Orden</a>
@@ -105,9 +105,11 @@
             <a class="dropdown-item" href="{% url 'list_taxa' %}">Taxón</a>
             <a class="dropdown-item" href="{% url 'list_synonymy' %}">Sinónimo</a>
             <a class="dropdown-item" href="{% url 'list_common_name' %}">Nombre Común</a>
-            <a class="dropdown-item" href="{% url 'list_binnacle' %}">Bitácora de Cambios</a>
-        </div>
-    </li>
+        {% endif %}
+        <a class="dropdown-item" href="{% url 'list_binnacle' %}">Bitácora de Cambios</a>
+    </div>
+</li>
+{% if request.user|has_group:"Catalog" %}
     <li class="nav-item">
         <a class="nav-link" href="{% url 'modify_gallery_image' %}">
             <i class="fas fa-fw fa-images"></i>

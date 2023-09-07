@@ -272,34 +272,6 @@ def session_table(request):
     )
 
 
-@csrf_exempt
-@require_POST
-def set_digitalization_state(request):
-    data = {'result': 'Error'}
-    if request.method == 'POST':
-        code_voucher = request.POST['code_voucher']
-        state = request.POST['state']
-        biodata_codes = BiodataCode.objects.filter(code=code_voucher)[0]
-        biodata_codes.voucher_state = state
-        biodata_codes.save()
-        data = {'result': 'OK'}
-    return HttpResponse(json.dumps(data), content_type="application/json")
-
-
-@csrf_exempt
-@require_GET
-def get_digitalization_state(request):
-    data = {'result': 'Error'}
-    if request.method == 'GET':
-        code_voucher = request.GET['code_voucher']
-        biodata_codes = BiodataCode.objects.filter(code=code_voucher)[0]
-        data = {'result': 'OK', 'id_page': biodata_codes.page.id,
-                'date': biodata_codes.page.created_at.strftime('%d-%m-%Y'),
-                'color_profile': str(biodata_codes.page.color_profile.file.url),
-                'herbarium': biodata_codes.herbarium.collection_code}
-    return HttpResponse(json.dumps(data), content_type="application/json")
-
-
 @login_required
 @csrf_exempt
 @require_POST
