@@ -101,9 +101,10 @@ def __catalog_table__(
         if add_searchable:
             search_query = search_query | add_searchable
             logging.debug(type(search_query))
+    entries = model.objects.all()
 
     return paginated_table(
-        request, model,
+        request, entries,
         serializer, sort_by_func,
         model_name, search_query
     )

@@ -22,27 +22,25 @@ from django.contrib.gis.geos import GEOSGeometry
 from django.core import serializers
 from django.core.files import File
 from django.core.files.base import ContentFile
-from django.core.paginator import Paginator
-from django.db.models import Q
+from django.db.models import Q, Count
 from django.http import HttpResponse, HttpResponseBadRequest, HttpResponseServerError, HttpResponseRedirect, \
-    JsonResponse
+    HttpResponseForbidden
 from django.shortcuts import render, redirect
 from django.template.loader import get_template
 from django.views.decorators.csrf import csrf_exempt
 from django.views.decorators.http import require_POST, require_GET
-from rest_framework.request import Request
 from xhtml2pdf import pisa
 
 from apps.catalog.models import Species, CatalogView
 from web.utils import paginated_table
 from .forms import LoadPriorityVoucherForm, LoadColorProfileForm, VoucherImportedForm, GalleryImageForm, LicenceForm
 from .models import BiodataCode, Herbarium, GeneratedPage, VoucherImported, PriorityVouchersFile, VouchersView, \
-    GalleryImage, BannerImage
+    GalleryImage, BannerImage, VOUCHER_STATE
 from .storage_backends import PrivateMediaStorage
 from .tasks import process_pending_vouchers
 from .vouchers import PriorityVouchers
 from ..api.decorators import backend_authenticated
-from ..api.serializers import MinimizedVoucherSerializer, CatalogViewSerializer
+from ..api.serializers import MinimizedVoucherSerializer, CatalogViewSerializer, GeneratedPageSerializer
 
 
 class HttpResponsePreconditionFailed(HttpResponse):
@@ -239,48 +237,39 @@ def mark_vouchers(request):
 
 
 @login_required
-@csrf_exempt
 @require_GET
-def get_vouchers(request):
-    if request.method == 'GET':
-        page_id = request.GET['page_id']
-        page = GeneratedPage.objects.get(pk=page_id)
-        state_voucher = int(request.GET['voucher_state'])
-        if state_voucher == -1:
-            biodata_codes = VoucherImported.objects.filter(
-                Q(biodata_code__voucher_state=0) | Q(biodata_code__voucher_state=1) | Q(biodata_code__voucher_state=2),
-                biodata_code__page=page).order_by('scientific_name', 'catalog_number')
-        else:
-            biodata_codes = VoucherImported.objects.filter(biodata_code__page=page,
-                                                           biodata_code__voucher_state=state_voucher).order_by(
-                'scientific_name__scientific_name', 'catalog_number')
-        data = serializers.serialize('json', biodata_codes, fields=(
-            'catalog_number', 'recorded_by', 'record_number', 'scientific_name', 'locality',))
-        json_data = json.loads(data)
-        for index, value in enumerate(json_data):
-            value['fields']['voucherState'] = biodata_codes[index].biodata_code.voucher_state
-            value['fields']['scientific_name_str'] = biodata_codes[index].scientific_name.scientific_name
-        return HttpResponse(json.dumps({'page': page.name, 'data': json_data}), content_type="application/json")
-
-
-@login_required
-@csrf_exempt
-@require_GET
-def set_state(request):
-    data = {'result': 'Error'}
-    if request.method == 'GET':
-        pk_voucher = request.GET['pk_voucher']
-        state_voucher = request.GET['state_voucher']
-        voucher = VoucherImported.objects.get(pk=pk_voucher)
-        biodata_codes = BiodataCode.objects.get(pk=voucher.biodata_code.id)
-        biodata_codes.voucher_state = state_voucher
-        biodata_codes.save()
-        data = {'result': 'OK'}
-        if state_voucher == '0':
-            biodata_codes.page = None
-            biodata_codes.qr_generated = False
-            biodata_codes.save()
-    return HttpResponse(json.dumps(data), content_type="application/json")
+def session_table(request):
+    entries = GeneratedPage.objects.filter(
+        herbarium__herbariummember__user__id=request.user.id
+    ).annotate(
+        stateless_count_annotation=Count('biodatacode', filter=Q(biodatacode__voucher_state=0)),
+        found_count_annotation=Count(
+            'biodatacode',
+            filter=Q(biodatacode__voucher_state=1) | Q(biodatacode__voucher_state=8)
+        ),
+        not_found_count_annotation=Count('biodatacode', filter=Q(biodatacode__voucher_state=2)),
+        digitalized_annotation=Count('biodatacode', filter=Q(biodatacode__voucher_state=7))
+    )
+    sort_by_func = {
+        0: 'id',
+        1: 'created_by',
+        2: 'created_at',
+        3: 'stateless_count_annotation',
+        4: 'found_count_annotation',
+        5: 'not_found_count_annotation',
+        6: 'digitalized_annotation'
+    }
+    search_query = Q()
+    search_value = request.GET.get("search[value]", None)
+    if search_value:
+        search_query = (
+            Q(created_by__icontains=search_value) |
+            Q(created_at__icontains=search_value)
+        )
+    return paginated_table(
+        request, entries, GeneratedPageSerializer,
+        sort_by_func, "generated_pages", search_query
+    )
 
 
 @csrf_exempt
@@ -444,8 +433,8 @@ def control_vouchers(request):
         json_data = json.loads(data)
         for index, value in enumerate(json_data):
             value['fields']['id'] = biodata_codes[index].id
-            value['fields']['voucherStateID'] = biodata_codes[index].biodata_code.voucher_state
-            value['fields']['voucherStateName'] = str(biodata_codes[index].biodata_code.get_voucher_state_display())
+            value['fields']['voucher_state_id'] = biodata_codes[index].biodata_code.voucher_state
+            value['fields']['voucher_state_name'] = str(biodata_codes[index].biodata_code.get_voucher_state_display())
             value['fields']['Herbarium'] = biodata_codes[index].biodata_code.herbarium.name
             value['fields']['scientific_name'] = biodata_codes[index].scientific_name.scientific_name
             value['fields']['PageDate'] = biodata_codes[index].biodata_code.page.created_at.strftime('%d-%m-%Y %H:%M')
@@ -458,127 +447,115 @@ def control_vouchers(request):
 
 @login_required
 def get_vouchers_to_validate(request, page_id, voucher_state):
-    if request.method == 'GET':
-        try:
-            page = GeneratedPage.objects.get(id=int(page_id))
-            filters = {
-                "herbarium__herbariummember__user__id": request.user.id,
-                "biodata_code__qr_generated": True,
-                "biodata_code__page": page,
-            }
-            if int(voucher_state) != -1:
-                filters["biodata_code__voucher_state"] = int(voucher_state)
-            biodata_codes = VoucherImported.objects.filter(
-                **filters
-            ).order_by('scientific_name', 'catalog_number')
-            search_value = request.GET.get("search[value]", None)
-            if search_value:
-                logging.debug("Searching with {}".format(search_value))
-                biodata_codes = biodata_codes.filter(
-                    Q(catalog_number__icontains=search_value) |
-                    Q(scientific_name__scientific_name__icontains=search_value) |
-                    Q(recorded_by__icontains=search_value) |
-                    Q(record_number__icontains=search_value) |
-                    Q(locality__icontains=search_value)
-                )
+    page = GeneratedPage.objects.get(id=int(page_id))
+    filters = (
+        Q(herbarium__herbariummember__user__id=request.user.id) &
+        Q(biodata_code__page=page)
+    )
+    if int(voucher_state) != -1:
+        filters &= Q(biodata_code__voucher_state=int(voucher_state))
+    biodata_codes = VoucherImported.objects.filter(filters)
+    search_query = Q()
+    search_value = request.GET.get("search[value]", None)
+    if search_value:
+        search_query = (
+            Q(catalog_number__icontains=search_value) |
+            Q(scientific_name__scientific_name__icontains=search_value) |
+            Q(recorded_by__icontains=search_value) |
+            Q(record_number__icontains=search_value) |
+            Q(locality__icontains=search_value)
+        )
 
-            sort_by_func = {
-                1: "catalog_number",
-                2: "scientific_name__scientific_name",
-                3: "recorded_by",
-                4: "record_number",
-                5: "locality",
-            }
-
-            first_sort_by = int(request.GET.get("order[0][column]", 2))
-            first_sort_type = request.GET.get("order[0][dir]", "asc")
-            second_sort_by = int(request.GET.get("order[1][column]", 4))
-            second_sort_type = request.GET.get("order[1][dir]", "asc")
-
-            if first_sort_by:
-                logging.debug("Order by {} ({}) in {} order and {} ({}) in {} order".format(
-                    sort_by_func[first_sort_by], first_sort_by,
-                    "ascending" if first_sort_type == "asc" else "descending",
-                    sort_by_func[second_sort_by], second_sort_by,
-                    "ascending" if second_sort_type == "asc" else "descending"
-                ))
-                biodata_codes = biodata_codes.order_by(
-                    ("" if first_sort_type == "asc" else "-") + sort_by_func[first_sort_by],
-                    ("" if second_sort_type == "asc" else "-") + sort_by_func[second_sort_by]
-                )
-
-            length = int(request.GET.get("length", 10))
-            start = int(request.GET.get("start", 0))
-            paginator = Paginator(biodata_codes, length)
-            page_number = start // length + 1
-            page_obj = paginator.get_page(page_number)
-
-            data = MinimizedVoucherSerializer(
-                page_obj,
-                many=True,
-                context={"request": Request(request)}
-            ).data
-            return JsonResponse({
-                "draw": int(request.GET.get("draw", 0)),
-                'page': page.name,
-                "recordsTotal": biodata_codes.count(),
-                "recordsFiltered": paginator.count,
-                'data': data
-            })
-        except Exception as e:
-            logging.error("Error getting vouchers to validate: {}".format(e), exc_info=True)
-            return HttpResponseServerError()
-    else:
-        data = {"result": "{} HTTP Method not implemented".format(request.method)}
-        return JsonResponse({'data': data})
-
+    sort_by_func = {
+        1: "catalog_number",
+        2: "scientific_name__scientific_name",
+        3: "recorded_by",
+        4: "record_number",
+        5: "locality",
+    }
+    return paginated_table(
+        request, biodata_codes, MinimizedVoucherSerializer,
+        sort_by_func, "biodata code", search_query
+    )
 
 
 @login_required
 @require_POST
 @csrf_exempt
 def upload_color_profile_file(request):
-    if request.method == 'POST':
-        form = LoadColorProfileForm(request.POST, request.FILES)
-        if form.is_valid():
-            try:
-                form.created_by = request.user
-                form.created_at = datetime.now(tz=pytz.timezone('America/Santiago'))
-                color_profile = form.save()
-                generated_page_id = request.POST['generated_page_id']
-                page = GeneratedPage.objects.get(pk=generated_page_id)
-                if page.color_profile:
-                    page.color_profile.delete()
-                page.color_profile = color_profile
-                page.save()
-                data = {'result': 'ok', 'url': color_profile.file.url}
-            except Exception as e:
-                logging.error("Error on uploading profile color")
-                logging.error(e, exc_info=True)
-                data = {'result': 'error'}
-        else:
-            data = {'result': 'error'}
-        return HttpResponse(json.dumps(data), content_type="application/json")
+    form = LoadColorProfileForm(request.POST, request.FILES)
+    if form.is_valid():
+        try:
+            form.created_by = request.user
+            form.created_at = datetime.now(tz=pytz.timezone('America/Santiago'))
+            color_profile = form.save()
+            generated_page_id = request.POST['generated_page_id']
+            page = GeneratedPage.objects.get(pk=generated_page_id)
+            if page.color_profile:
+                page.color_profile.delete()
+            page.color_profile = color_profile
+            page.save()
+            data = {'result': 'OK', 'url': color_profile.file.url}
+        except Exception as e:
+            logging.error("Error on uploading profile color")
+            logging.error(e, exc_info=True)
+            data = {'result': 'error', 'detail': str(e)}
+    else:
+        data = {'result': 'error'}
+    return HttpResponse(json.dumps(data), content_type="application/json")
 
 
 @login_required
-@require_GET
+@csrf_exempt
+@require_POST
+def set_state(request):
+    if 'voucher_state' not in request.POST or 'biodata_code' not in request.POST:
+        return HttpResponseBadRequest()
+    voucher_state = int(request.POST['voucher_state'])
+    biodata_codes = BiodataCode.objects.get(pk=request.POST['biodata_code'])
+    display = -1
+    for state, display in VOUCHER_STATE:
+        if state == voucher_state:
+            logging.debug(f"Setting {biodata_codes.code} ({biodata_codes.id}) to {display} ({voucher_state})")
+            break
+    if voucher_state in [7, 8]:
+        logging.warning(f"'{display}' ({voucher_state}) is used just by system")
+        return HttpResponseForbidden()
+    try:
+        biodata_codes.voucher_state = voucher_state
+        data = {'result': 'OK'}
+        if voucher_state == 0:
+            biodata_codes.qr_generated = False
+        else:
+            biodata_codes.qr_generated = True
+        biodata_codes.save()
+    except Exception as e:
+        data = {'result': 'Error', 'detail': str(e)}
+        logging.error("Error setting voucher state")
+        logging.error(e, exc_info=True)
+    return HttpResponse(json.dumps(data), content_type="application/json")
+
+
+@login_required
+@require_POST
+@csrf_exempt
 def terminate_session(request):
-    if request.method == 'GET':
-        try:
-            page_id = request.GET['page_id']
-            page = GeneratedPage.objects.get(pk=page_id)
-            codes = BiodataCode.objects.filter(voucher_state=0, page=page)
-            for code in codes:
-                code.qr_generated = False
-                code.page = None
-                code.save()
-            page.terminated = True
-            page.save()
-            data = {'result': 'ok'}
-        except:
-            data = {'result': 'error'}
-        return HttpResponse(json.dumps(data), content_type="application/json")
+    try:
+        page_id = request.POST['page_id']
+        page = GeneratedPage.objects.get(pk=page_id)
+        codes = BiodataCode.objects.filter(voucher_state=0, page=page)
+        for code in codes:
+            code.qr_generated = False
+            code.page = None
+            code.save()
+        page.terminated = True
+        page.save()
+        data = {'result': 'OK'}
+    except Exception as e:
+        logging.error("Error terminating session")
+        logging.error(e, exc_info=True)
+        data = {'result': 'error', 'detail': str(e)}
+    return HttpResponse(json.dumps(data), content_type="application/json")
 
 
 @login_required
@@ -586,39 +563,6 @@ def validate_vouchers(request):
     generated_pages = GeneratedPage.objects.filter(herbarium__herbariummember__user__id=request.user.id).order_by(
         '-created_at')
     return render(request, 'digitalization/validate_vouchers.html', {'generated_pages': generated_pages})
-
-
-@require_POST
-@backend_authenticated
-def upload_images(request):
-    if request.method == 'POST':
-        code_voucher = request.POST['code_voucher']
-        image = request.FILES['image']
-        image_resized_10 = request.FILES['image_resized_10']
-        image_resized_60 = request.FILES['image_resized_60']
-        image_public = request.FILES['image_public']
-        image_public_resized_10 = request.FILES['image_public_resized_10']
-        image_public_resized_60 = request.FILES['image_public_resized_60']
-        image_raw = request.FILES['image_raw']
-        image_content = ContentFile(image.read())
-        image_resized_10_content = ContentFile(image_resized_10.read())
-        image_resized_60_content = ContentFile(image_resized_60.read())
-        image_public_content = ContentFile(image_public.read())
-        image_public_resized_10_content = ContentFile(image_public_resized_10.read())
-        image_public_resized_60_content = ContentFile(image_public_resized_60.read())
-        image_raw_content = ContentFile(image_raw.read())
-        voucher_imported = VoucherImported.objects.filter(biodata_code__code=code_voucher)[0]
-        voucher_imported.image.save(image.name, image_content)
-        voucher_imported.image_resized_10.save(image_resized_10.name, image_resized_10_content)
-        voucher_imported.image_resized_60.save(image_resized_60.name, image_resized_60_content)
-        voucher_imported.image_public.save(image_public.name, image_public_content)
-        voucher_imported.image_public_resized_10.save(image_public_resized_10.name, image_public_resized_10_content)
-        voucher_imported.image_public_resized_60.save(image_public_resized_60.name, image_public_resized_60_content)
-        voucher_imported.image_raw.save(image_raw.name, image_raw_content)
-        voucher_imported.save()
-        return HttpResponse(json.dumps({'result': 'ok'}), content_type="application/json")
-    else:
-        return HttpResponse({'result': 'error'}, status=400)
 
 
 @require_POST
@@ -717,9 +661,10 @@ def gallery_table(request):
         4: "scientific_name_full",
         5: "updated_at",
     }
+    entries = CatalogView.objects.all()
 
     return paginated_table(
-        request, CatalogView,
+        request, entries,
         CatalogViewSerializer, sort_by_func,
         "Catalog", search_query
     )
@@ -810,37 +755,6 @@ def new_licence(request):
         "prev_page": prev_page,
         "form": form,
     })
-
-
-@require_GET
-@csrf_exempt
-def get_voucher_info(request):
-    if request.method == 'GET':
-        code_voucher = request.GET['code_voucher']
-        voucher_imported = VoucherImported.objects.filter(biodata_code__code=code_voucher)[0]
-        herbarium_code = voucher_imported.herbarium.collection_code
-        herbarium_name = voucher_imported.herbarium.name.upper()
-        scientific_name_full = voucher_imported.scientific_name.scientific_name_full
-        family = voucher_imported.scientific_name.genus.family.name.upper()
-        catalog_number = voucher_imported.biodata_code.catalog_number
-        record_number = voucher_imported.record_number
-        recorded_by = voucher_imported.recorded_by
-        locality = voucher_imported.locality
-        identified_by = voucher_imported.identified_by
-        identified_date = voucher_imported.identified_date
-        if voucher_imported.georeference_date:
-            georeference_date = voucher_imported.georeference_date.strftime('%d-%m-%Y')
-        else:
-            georeference_date = ''
-        organism_remarks = voucher_imported.organism_remarks
-        data = {'code_voucher': code_voucher, 'herbarium_code': herbarium_code, 'herbarium_name': herbarium_name,
-                'scientific_name_full': scientific_name_full, 'family': family, 'catalog_number': catalog_number,
-                'record_number': record_number, 'recorded_by': recorded_by, 'locality': locality,
-                'identified_by': identified_by, 'identified_date': identified_date, 'georeference_date': georeference_date,
-                'organism_remarks': organism_remarks}
-    else:
-        data = {'result': 'error'}
-    return HttpResponse(json.dumps(data), content_type="application/json")
 
 
 @login_required

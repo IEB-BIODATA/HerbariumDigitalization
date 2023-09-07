@@ -9,6 +9,7 @@ from django.contrib.auth.models import User
 from django.contrib.gis.db import models
 from django.core.files.base import ContentFile, File
 from django.db import connection
+from django.db.models import Q
 from django.db.models.signals import post_delete, pre_save
 from django.dispatch import receiver
 from django.forms import CharField
@@ -22,9 +23,9 @@ VOUCHER_STATE = (
     (1, 'Encontrado'),
     (2, 'No Encontrado'),
     (3, 'En Préstamo'),
-    (4, 'Extraviado'),
-    (5, 'En Préstado Encontrado'),
-    (6, 'Extraviado Encontrado'),
+    (4, 'Extraviado'),  #
+    (5, 'En Préstado Encontrado'),  #
+    (6, 'En curatoria'),
     (7, 'Digitalizado'),
     (8, 'Pendiente'),
 )
@@ -49,8 +50,10 @@ class Herbarium(models.Model):
 
 
 class ColorProfileFile(models.Model):
-    file = models.FileField(upload_to='uploads/color_profile/', validators=[validate_file_size], blank=False,
-                            null=False)
+    file = models.FileField(
+        upload_to='uploads/color_profile/', validators=[validate_file_size],
+        blank=False, null=False
+    )
     created_at = models.DateTimeField(blank=True, null=True, editable=False)
     created_by = models.ForeignKey(User, on_delete=models.PROTECT, blank=True, null=True)
 
@@ -72,19 +75,26 @@ class GeneratedPage(models.Model):
     class Meta:
         verbose_name_plural = "Generated Pages"
 
-    def Total(self):
+    @property
+    def total(self):
         return BiodataCode.objects.filter(page__id=self.id).count()
 
-    def StatelessCount(self):
+    @property
+    def stateless_count(self):
         return BiodataCode.objects.filter(page__id=self.id, voucher_state=0).count()
 
-    def FoundCount(self):
-        return BiodataCode.objects.filter(page__id=self.id, voucher_state=1).count()
+    @property
+    def found_count(self):
+        return BiodataCode.objects.filter(
+            Q(page__id=self.id) & (Q(voucher_state=1) | Q(voucher_state=8))
+        ).count()
 
-    def NotFoundCount(self):
+    @property
+    def not_found_count(self):
         return BiodataCode.objects.filter(page__id=self.id, voucher_state=2).count()
 
-    def Digitalized(self):
+    @property
+    def digitalized(self):
         return BiodataCode.objects.filter(page__id=self.id, voucher_state=7).count()
 
     def __unicode__(self):

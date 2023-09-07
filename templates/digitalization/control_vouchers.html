@@ -23,7 +23,7 @@
                     var table = '<thead><tr><th>Estado</th><th>Fecha Proceso</th><th>Herbario</th><th>ID Biodata</th><th>ID Herbario</th><th>Nombre Especie</th><th>Colectado por</th><th>Numero de Colecta</th><th>Ubicación</th><th>Acción</th></tr></thead><tbody>'
                     for(var i=0; i<data.length; i++)
                     {
-                        switch(data[i].fields.voucherStateID) {
+                        switch(data[i].fields.voucher_state_id) {
                             case 0:
                                 class_state='bg-light text-dark';
                                 break;
@@ -51,9 +51,9 @@
                         }
                         founded='';
                         if (state_voucher == 2) {
-                            founded='<a href="#" class="btn btn-warning" onclick="set_state('+data[i].fields.voucherStateID+',0); return false;" id="id_button_class_found_'+data[i].fields.voucherStateID+'">Encontrado</a>';
+                            founded='<a href="#" class="btn btn-warning" onclick="set_state('+data[i].fields.voucher_state_id+',0); return false;" id="id_button_class_found_'+data[i].fields.voucherStateID+'">Encontrado</a>';
                         }
-                        table += '<tr><td><div class="p-3 mb-2 '+class_state+' ">'+data[i].fields.voucherStateName+'</div>'+founded+'</td><td>'+data[i].fields.PageDate+'</td><td>'+data[i].fields.Herbarium+'</td><td>'+data[i].fields.biodata_code+'</td><td>'+data[i].fields.catalog_number+'</td><td>'+data[i].fields.scientific_name+'</td><td>'+data[i].fields.recorded_by+'</td><td>'+data[i].fields.record_number+'</td><td>'+data[i].fields.locality+'</td><td width="10%"><a href="/digitalization/update_voucher/'+data[i].fields.id+'/" id=voucher.id %}"><i class="fas fa-fw fa-edit text-primary"></i> Editar</a></td></tr>';
+                        table += '<tr><td><div class="p-3 mb-2 '+class_state+' ">'+data[i].fields.voucher_state_name+'</div>'+founded+'</td><td>'+data[i].fields.PageDate+'</td><td>'+data[i].fields.Herbarium+'</td><td>'+data[i].fields.biodata_code+'</td><td>'+data[i].fields.catalog_number+'</td><td>'+data[i].fields.scientific_name+'</td><td>'+data[i].fields.recorded_by+'</td><td>'+data[i].fields.record_number+'</td><td>'+data[i].fields.locality+'</td><td width="10%"><a href="/digitalization/update_voucher/'+data[i].fields.id+'/" id=voucher.id %}"><i class="fas fa-fw fa-edit text-primary"></i> Editar</a></td></tr>';
                     }
                     $("[id^=VouchersTable]").remove()
                     table += "</tbody>";

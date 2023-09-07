@@ -3,11 +3,11 @@ from typing import Union, List
 from django.contrib.auth.models import User
 from rest_framework import serializers
 from rest_framework.serializers import HyperlinkedModelSerializer, ModelSerializer, CharField, ReadOnlyField, \
-    SerializerMethodField, IntegerField
+    SerializerMethodField, URLField
 
 from apps.catalog.models import Species, Family, Genus, Synonymy, Region, Division, ClassName, Order, Status, \
     CommonName, ConservationState, PlantHabit, EnvironmentalHabit, Cycle, TaxonomicModel, CatalogView
-from apps.digitalization.models import VoucherImported, GalleryImage, BiodataCode, GeneratedPage
+from apps.digitalization.models import VoucherImported, GalleryImage, BiodataCode, GeneratedPage, ColorProfileFile
 
 
 class StatusSerializer(HyperlinkedModelSerializer):
@@ -153,11 +153,51 @@ class VoucherSerializer(HyperlinkedModelSerializer):
                   'image_public_resized_60']
 
 
+class ColorProfileSerializer(HyperlinkedModelSerializer):
+    created_by = ReadOnlyField(source='created_by.username')
+    class Meta:
+        model = ColorProfileFile
+        fields = [
+            'id', 'file', 'created_at', 'created_by',
+        ]
+
+
 class GeneratedPageSerializer(HyperlinkedModelSerializer):
+    created_by = ReadOnlyField(source='created_by.username')
+    color_profile = serializers.SerializerMethodField()
+    stateless_count = serializers.SerializerMethodField()
+    found_count = serializers.SerializerMethodField()
+    not_found_count = serializers.SerializerMethodField()
+    digitalized = serializers.SerializerMethodField()
+
+    def get_total(self, obj):
+        return obj.total
+
+    def get_stateless_count(self, obj):
+        return obj.stateless_count
+
+    def get_found_count(self, obj):
+        return obj.found_count
+
+    def get_not_found_count(self, obj):
+        return obj.not_found_count
+
+    def get_digitalized(self, obj):
+        return obj.digitalized
+
+    def get_color_profile(self, obj):
+        if obj.color_profile:
+            return obj.color_profile.file.url
+        else:
+            return None
+
     class Meta:
         model = GeneratedPage
         fields = [
-            "id", "name",
+            "id", "name", "created_by", "created_at",
+            "color_profile", "terminated",
+            "total", "stateless_count", "found_count",
+            "not_found_count", "digitalized",
         ]
 
 

@@ -1,21 +1,19 @@
 import logging
-from typing import Type
 
 from django.core.paginator import Paginator
-from django.db.models import Model, Q
+from django.db.models import Q, QuerySet
 from django.http import HttpRequest, JsonResponse
 from rest_framework.serializers import SerializerMetaclass
 
 
 def paginated_table(
         request: HttpRequest,
-        model: Type[Model],
+        entries: QuerySet,
         serializer: SerializerMetaclass,
         sort_by_func: dict[int, str],
         model_name: str,
         search_query: Q
 ) -> JsonResponse:
-    entries = model.objects.all()
     search_value = request.GET.get("search[value]", None)
     if search_value:
         logging.debug(f"Searching with {search_value}")
@@ -26,10 +24,19 @@ def paginated_table(
 
     if sort_by in sort_by_func:
         sort_by_str = "ascending" if sort_type == "asc" else "descending"
-        logging.debug(f"Order by {sort_by} ({sort_by_func[sort_by]}) in {sort_by_str} order")
-        entries = entries.order_by(
-            ("" if sort_type == "asc" else "-") + sort_by_func[sort_by]
-        )
+        second_sort_by = request.GET.get("order[1][column]", None)
+        second_sort_type = request.GET.get("order[1][dir]", "asc")
+        if second_sort_by:
+            second_sort_by_str = "ascending" if second_sort_type == "asc" else "descending"
+            logging.debug(f"Order by {sort_by} ({sort_by_func[sort_by]}) in {sort_by_str} order"
+                          f" and {second_sort_by} ({sort_by_func[int(second_sort_by)]}) in {second_sort_by_str} order")
+            entries = entries.order_by(
+                ("" if sort_type == "asc" else "-") + sort_by_func[sort_by],
+                ("" if second_sort_type == "asc" else "-") + sort_by_func[int(second_sort_by)]
+            )
+        else:
+            logging.debug(f"Order by {sort_by} ({sort_by_func[sort_by]}) in {sort_by_str} order")
+            entries = entries.order_by(("" if sort_type == "asc" else "-") + sort_by_func[sort_by])
 
     length = int(request.GET.get("length", 10))
     start = int(request.GET.get("start", 0))
