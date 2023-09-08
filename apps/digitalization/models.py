@@ -23,8 +23,8 @@ VOUCHER_STATE = (
     (1, 'Encontrado'),
     (2, 'No Encontrado'),
     (3, 'En Préstamo'),
-    (4, 'Extraviado'),  #
-    (5, 'En Préstado Encontrado'),  #
+    (4, 'Extraviado'),
+    (5, 'En Préstado Encontrado'),
     (6, 'En curatoria'),
     (7, 'Digitalizado'),
     (8, 'Pendiente'),
@@ -150,9 +150,6 @@ class PriorityVouchersFile(models.Model):
 
     def __str__(self):
         return "%s " % self.file.name
-
-    def filename(self):
-        return os.path.basename(self.file.name)
 
 
 class VoucherImported(models.Model):
@@ -370,7 +367,8 @@ class VouchersView(models.Model):
     SELECT voucher.id,
            voucherfile.file,
            biodatacode.code,
-           biodatacode.voucher_state,
+
+           .,
            herbarium.collection_code,
            voucher.other_catalog_numbers,
            voucher.catalog_number,

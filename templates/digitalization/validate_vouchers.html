@@ -27,7 +27,7 @@
                         data: 'created_by',
                     },
                     {
-                        targets: [2],
+                        targets: 2,
                         data: 'created_at',
                         render: (data, type) => {
                             let date = new Date(data);
@@ -143,7 +143,7 @@
                         type: 'GET',
                         dataSrc: 'data',
                     },
-                    order: [[2, 'asc'], [4, 'asc']],
+                    order: [[2, 'asc'], [1, 'asc']],
                     columnDefs: [
                         {
                             targets: 0,

@@ -1,3 +1,4 @@
+import os
 from typing import Union, List
 
 from django.contrib.auth.models import User
@@ -7,7 +8,8 @@ from rest_framework.serializers import HyperlinkedModelSerializer, ModelSerializ
 
 from apps.catalog.models import Species, Family, Genus, Synonymy, Region, Division, ClassName, Order, Status, \
     CommonName, ConservationState, PlantHabit, EnvironmentalHabit, Cycle, TaxonomicModel, CatalogView
-from apps.digitalization.models import VoucherImported, GalleryImage, BiodataCode, GeneratedPage, ColorProfileFile
+from apps.digitalization.models import VoucherImported, GalleryImage, BiodataCode, GeneratedPage, ColorProfileFile, \
+    PriorityVouchersFile
 
 
 class StatusSerializer(HyperlinkedModelSerializer):
@@ -153,12 +155,23 @@ class VoucherSerializer(HyperlinkedModelSerializer):
                   'image_public_resized_60']
 
 
-class ColorProfileSerializer(HyperlinkedModelSerializer):
+class PriorityVouchersSerializer(HyperlinkedModelSerializer):
+    herbarium = ReadOnlyField(source='herbarium.name')
     created_by = ReadOnlyField(source='created_by.username')
+    file_url = serializers.SerializerMethodField()
+    filename = serializers.SerializerMethodField()
+
+    def get_file_url(self, obj):
+        return obj.file.url
+
+    def get_filename(self, obj):
+        return os.path.basename(obj.file.name)
+
     class Meta:
-        model = ColorProfileFile
+        model = PriorityVouchersFile
         fields = [
-            'id', 'file', 'created_at', 'created_by',
+            'herbarium', 'file_url', 'filename',
+            'created_at', 'created_by',
         ]
 
 

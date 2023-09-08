@@ -40,11 +40,40 @@ from .storage_backends import PrivateMediaStorage
 from .tasks import process_pending_vouchers
 from .vouchers import PriorityVouchers
 from ..api.decorators import backend_authenticated
-from ..api.serializers import MinimizedVoucherSerializer, CatalogViewSerializer, GeneratedPageSerializer
+from ..api.serializers import MinimizedVoucherSerializer, CatalogViewSerializer, GeneratedPageSerializer, \
+    PriorityVouchersSerializer
 
 
 class HttpResponsePreconditionFailed(HttpResponse):
     status_code = HTTPStatus.PRECONDITION_FAILED
+
+
+@login_required
+def load_priority_vouchers_file(request):
+    form = LoadPriorityVoucherForm(current_user=request.user)
+    return render(request, 'digitalization/load_priority_vouchers_file.html', {'form': form})
+
+
+@login_required
+@require_GET
+def priority_vouchers_table(request):
+    files = PriorityVouchersFile.objects.filter(herbarium__herbariummember__user__id=request.user.id)
+    sort_by_func = {0: 'herbarium__name', 1: 'created_at',
+                    2: 'created_by__username', 3: 'file', }
+    search_value = request.GET.get("search[value]", None)
+    search_query = Q()
+    if search_value:
+        search_query = (
+                Q(herbarium__name=search_value) |
+                Q(created_at=search_value) |
+                Q(created_by__username=search_value) |
+                Q(file=search_value)
+        )
+
+    return paginated_table(
+        request, files, PriorityVouchersSerializer,
+        sort_by_func, "priority vouchers", search_query
+    )
 
 
 @login_required
@@ -187,14 +216,6 @@ def historical_priority_voucher_page_download(request):
                                {'pagesize': 'letter', 'page_date': page.created_at, 'page_id': page.id,
                                 'priority_vouchers': priority_vouchers})
         return HttpResponse(result, content_type='application/pdf')
-
-
-@login_required
-def load_priority_vouchers_file(request):
-    files = PriorityVouchersFile.objects.filter(herbarium__herbariummember__user__id=request.user.id).order_by(
-        'created_at')
-    form = LoadPriorityVoucherForm(current_user=request.user)
-    return render(request, 'digitalization/load_priority_vouchers_file.html', {'form': form, 'files': files})
 
 
 def load_vouchers(file_vouchers, user):
@@ -638,7 +659,7 @@ def gallery_table(request):
     return paginated_table(
         request, entries,
         CatalogViewSerializer, sort_by_func,
-        "Catalog", search_query
+        "catalog", search_query
     )
 
 
@@ -801,27 +822,26 @@ def get_task_log(request, task_id: str):
 
 
 @login_required
+@require_GET
 def vouchers_download(request):
     if request.method == 'GET':
         logging.debug("Refreshing vouchers")
         VouchersView.refresh_view()
         logging.info("Generating voucher excel...")
-        headers1 = ['id', 'file', 'code', 'voucher_state', 'collection_code', 'other_catalog_numbers', 'catalog_number',
-                    'recorded_by',
-                    'record_number', 'organism_remarks', 'scientific_name', 'locality', 'verbatim_elevation',
-                    'decimal_latitude',
-                    'decimal_longitude', 'identified_by', 'identified_date', 'decimal_latitude_public',
-                    'decimal_longitude_public', 'priority']
-        species = VouchersView.objects.values_list('id', 'file', 'code', 'voucher_state', 'collection_code',
-                                                   'other_catalog_numbers',
-                                                   'catalog_number', 'recorded_by', 'record_number', 'organism_remarks',
-                                                   'scientific_name', 'locality', 'verbatim_elevation'
-                                                   , 'decimal_latitude', 'decimal_longitude', 'identified_by',
-                                                   'identified_date', 'decimal_latitude_public',
-                                                   'decimal_longitude_public', 'priority').order_by('id')
+        headers = [
+            'id', 'file', 'code', 'voucher_state', 'collection_code',
+            'other_catalog_numbers', 'catalog_number',
+            'recorded_by', 'record_number', 'organism_remarks',
+            'scientific_name', 'locality', 'verbatim_elevation',
+            'decimal_latitude', 'decimal_longitude',
+            'identified_by', 'identified_date',
+            'decimal_latitude_public', 'decimal_longitude_public',
+            'priority',
+        ]
+        species = VouchersView.objects.values_list(*headers).order_by('id')
         databook = tablib.Databook()
-        data_set1 = tablib.Dataset(*species, headers=headers1, title='Vouchers')
-        databook.add_sheet(data_set1)
+        data_set = tablib.Dataset(*species, headers=headers, title='Vouchers')
+        databook.add_sheet(data_set)
         response = HttpResponse(databook.xlsx, content_type='application/vnd.ms-Excel')
         response['Content-Disposition'] = "attachment; filename=vochers.xlsx"
         logging.info("Voucher excel sent")

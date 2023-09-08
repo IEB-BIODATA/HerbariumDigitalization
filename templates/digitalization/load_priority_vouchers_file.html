@@ -4,8 +4,43 @@
     <script type="text/javascript">
         $(document).ready(function() {
             $('#FilesTable').DataTable({
-                order: [],
+                serverSide: true,
+                processing: true,
                 language: languageTable.spanish,
+                ajax: {
+                    url: '{% url "priority_vouchers_table" %}',
+                },
+                order: [[1, 'desc']],
+                columnDefs: [
+                    {
+                        targets: 0,
+                        data: 'herbarium'
+                    },
+                    {
+                        targets: 1,
+                        data: 'created_at',
+                        render: (data, type) => {
+                            let date = new Date(data);
+                            if (type === 'display' || type === 'search') {
+                                return dateFormat(date)
+                            } else if (type === 'sort')
+                                return date.toISOString;
+                            else
+                                return date;
+                        }
+                    },
+                    {
+                        targets: 2,
+                        data: 'created_by',
+                    },
+                    {
+                        targets: 3,
+                        data: 'file_url',
+                        render: (data, type, row) => {
+                            return `<a href="${data}">${row.filename}</a></td>`
+                        }
+                    },
+                ],
             });
         });
 
@@ -185,27 +220,25 @@
             });
         }
 
-        function download_vouchers_xlsx(data_error) {
-            $(document).ajaxSend(function() {
-                $("#overlay").fadeIn(300);
-            });
+        function downloadVouchersXLSX() {
+            $("#overlay").fadeIn(300);
             $.ajax({
-                url: '/digitalization/vouchers_download',
+                url: '{% url "vouchers_download" %}',
                 type: 'GET',
                 xhrFields: {
                     // make sure the response knows we're expecting a binary type in return.
                     // this is important, without it the excel file is marked corrupted.
                     responseType: 'arraybuffer'
-                }
+                },
             }).done(function (data, status, xmlHeaderRequest) {
-                var downloadLink = document.createElement('a');
-                var blob = new Blob([data],
+                const downloadLink = document.createElement('a');
+                const blob = new Blob([data],
                     {
                         type: xmlHeaderRequest.getResponseHeader('Content-Type')
                     });
-                var url = window.URL || window.webkitURL;
-                var downloadUrl = url.createObjectURL(blob);
-                var fileName = 'vouchers.xlsx';
+                const url = window.URL || window.webkitURL;
+                const downloadUrl = url.createObjectURL(blob);
+                const fileName = 'vouchers.xlsx';
 
                 if (typeof window.navigator.msSaveBlob !== 'undefined') {
                     window.navigator.msSaveBlob(blob, fileName);
@@ -223,11 +256,11 @@
                         window.location = downloadUrl;
                     }
                     setTimeout(function () {
-                            url.revokeObjectURL(downloadUrl);
-                            $("#overlay").fadeOut(300);
-                        },
-                        100);
+                        url.revokeObjectURL(downloadUrl);
+                        }, 100);
                 }
+            }).always(function() {
+                $("#overlay").fadeOut(300);
             });
         }
     </script>
@@ -244,7 +277,7 @@
                     <button type="submit" class="btn btn-primary" id="boton_cargar">Cargar</button>
                 </div>
                 <div class="offset-md-6 col-3">
-                    <a class="btn btn-primary w-100" href="#" onclick="download_vouchers_xlsx()"">
+                    <a class="btn btn-primary w-100" href="#" onclick="downloadVouchersXLSX()">
                         Descargar Vouchers
                     </a>
                 </div>
@@ -271,14 +304,7 @@
                     </tr>
                     </thead>
                     <tbody>
-                    {% for file in files %}
-                        <tr>
-                            <td>{{ file.herbarium }}</td>
-                            <td>{{ file.created_at }}</td>
-                            <td>{{ file.created_by }}</td>
-                            <td><a href="{{ file.file.url }}">{{ file.filename }}</a></td>
-                        </tr>
-                    {% endfor%}
+                        <!-- To be populated -->
                     </tbody>
                 </table>
             </div>
