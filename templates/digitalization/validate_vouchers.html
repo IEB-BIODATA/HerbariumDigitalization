@@ -273,15 +273,15 @@
                     <div id="processProgress" class="progress" role="progressbar" aria-label="progress" aria-valuenow="0" aria-valuemin="0" aria-valuemax="100" style="display: none;">
                         <div class="progress-bar progress-bar-striped progress-bar-animated" style="width: 0%">0%</div>
                     </div>
-                    <div role="tab" id="show-log" class="">
+                    <div role="tab" id="showLog">
                         <h6>
-                            <a role="button" data-bs-toggle="collapse" data-bs-target="#console-log" aria-expanded="true" aria-controls="console-log">
+                            <a role="button" data-bs-toggle="collapse" data-bs-target="#consoleLog" aria-expanded="true" aria-controls="consoleLog" class="">
                                 Mostrar logs
                             </a>
                         </h6>
                     </div>
-                    <div id="console-log" class="collapse" role="tabpanel" aria-labelledby="show-log">
-                        <pre><code id="logging-content"></code></pre>
+                    <div id="consoleLog" class="collapse" role="tabpanel" aria-labelledby="showLog">
+                        <pre><code id="loggingContent"></code></pre>
                     </div>
                     <p style="display: flex; justify-content: end;">*<i>Si procede, esta ventana deberá permanecer abierta</i></p>
                     `;
@@ -324,7 +324,7 @@
                 success: function(response){
                     console.debug(response);
                     document.getElementById("processProgress").style.display = "";
-                    document.getElementById("console-log").style.display = ""
+                    document.getElementById("consoleLog").style.display = ""
                     updateProgress(response);
                 },
                 error: function (error){
@@ -341,113 +341,19 @@
             });
         }
 
-        function updateProgress(taskId){
+        function updateProgressPendingVouchers(taskId){
             const progressUrl = "{% url 'get_progress' task_id='placeholder' %}".replace(
                 'placeholder', taskId
             );
-            const progressDiv = document.getElementById("processProgress");
-            let failure = false;
-            $.ajax({
-                url: progressUrl,
-                type: 'GET',
-                headers: {'X-CSRFToken': csrfToken},
-                success: function(response){
-                    if (response.state === "PROGRESS"){
-                        let percentage = Number(response.details.step * 100 / response.details.total).toFixed(2);
-                        progressDiv.innerHTML = `<div class="progress-bar progress-bar-striped progress-bar-animated" style="width: ${percentage}%">${response.details.step}</div>`;
-                        const logDiv = document.getElementById("console-log");
-                        logDiv.children[0].innerHTML = response.details.logs;
-                        logDiv.scrollTop = logDiv.scrollHeight;
-                        setTimeout(updateProgress, 500, taskId);
-                    } else if (response.state === "STARTED") {
-                        progressDiv.innerHTML = `<div class="progress-bar progress-bar-striped progress-bar-animated" style="width: 0">0</div>`;
-                        const logDiv = document.getElementById("console-log");
-                        logDiv.children[0].innerHTML = "Procesando...";
-                        logDiv.scrollTop = logDiv.scrollHeight;
-                        setTimeout(updateProgress, 500, taskId);
-                    } else if (response.state === "SUCCESS") {
-                        progressDiv.innerHTML = '<div class="progress-bar progress-bar-striped progress-bar-animated" style="width: 100%">100%</div>';
-                        progressDiv.style.display = "none";
-                        progressDiv.innerHTML = '<div class="progress-bar progress-bar-striped progress-bar-animated" style="width: 0%">0%</div>';
-                        document.getElementById('continuePostprocessing').disabled = false;
-                        document.getElementById('continuePostprocessing').style.display = "none";
-                        let urlLog = "{% url 'get_task_log' task_id='placeholder' %}".replace(
-                            'placeholder', taskId
-                        )
-                        let logFileUrl;
-                        $.ajax({
-                            url: urlLog,
-                            type: 'GET',
-                            headers: {'X-CSRFRToken': csrfToken},
-                            success: function(response){
-                                logFileUrl = response;
-                            },
-                            error: function(error){
-                                console.error(error);
-                                logFileUrl = "{% static 'assets/processed' %}"
-                            }
-                        }).always(function() {
-                            document.getElementById('postBody').innerHTML = `
-                            <div class="alert alert-success">
-                                <h6>Proceso completado con éxito</h6>
-                            </div>
-                            <div role="tab" id="show-log" class="">
-                                <h6>
-                                    <a role="button" data-bs-toggle="collapse" data-bs-target="#console-log" aria-expanded="true" aria-controls="console-log">
-                                        Mostrar logs
-                                    </a>
-                                </h6>
-                            </div>
-                            <div id="console-log" class="collapse" role="tabpanel" aria-labelledby="show-log">
-                                <pre><code id="logging-content"></code></pre>
-                            </div>
-                            <a class="btn btn-secondary" href="${logFileUrl}" download="${getFormattedDateTime()}.log">
-                                <i class="fas fa-fw fa-download"></i>
-                                <span>Descargar logs</span>
-                            </a>
-                            `;
-                            const logDiv = document.getElementById("console-log");
-                            logDiv.children[0].innerHTML = response.details.logs;
-                            logDiv.scrollTop = logDiv.scrollHeight;
-                        });
-                    } else if (response.state === "FAILURE") {
-                        failure = true;
-                    } else {
-                        setTimeout(updateProgress, 500, taskId);
-                    }
-                },
-                error: function(error){
-                    console.warn(error);
-                    failure = true;
-                },
-            }).always(function() {
-                if (failure) {
-                    progressDiv.style.display = "none";
-                    progressDiv.innerHTML = '<div class="progress-bar progress-bar-striped progress-bar-animated" style="width: 0%">0%</div>';
-                    document.getElementById('continuePostprocessing').disabled = false;
-                    document.getElementById('continuePostprocessing').style.display = "none";
-                    let logDiv = document.getElementById("console-log");
-                    const content = logDiv.children[0].innerHTML;
-                    document.getElementById('postBody').innerHTML = `
-                    <div class="alert alert-danger">
-                        <h6>Ocurrió un error inesperado, favor contactar al administrador antes de cerrar esta ventana</h6>
-                    </div>
-                    <div role="tab" id="show-log" class="">
-                        <h6>
-                            <a role="button" data-bs-toggle="collapse" data-bs-target="#console-log" aria-expanded="true" aria-controls="console-log">
-                                Mostrar logs
-                            </a>
-                        </h6>
-                    </div>
-                    <div id="console-log" class="collapse" role="tabpanel" aria-labelledby="show-log">
-                        <pre><code id="logging-content"></code></pre>
-                    </div>
-                    `;
-                    logDiv = document.getElementById("console-log");
-                    logDiv.children[0].innerHTML = content;
-                    logDiv.scrollTop = logDiv.scrollHeight;
-                }
-            });
+            const postprocessingModal = document.getElementById("postprocessingModal");
+            const urlLog = "{% url 'get_task_log' task_id='placeholder' %}".replace(
+                'placeholder', taskId
+            );
+            const logFileDefault = "{% static 'assets/processed' %}";
+            updateProgress(
+                taskId, progressUrl, urlLog,
+                postprocessingModal, csrfToken, logFileDefault
+            );
         }
 
         function getFormattedDateTime() {
@@ -464,7 +370,7 @@
 {% endblock %}
 {% block css %}
     <style>
-        #console-log {
+        #consoleLog {
             font-family: Arial, sans-serif;
             padding: 10px;
             background-color: #f0f0f0;

@@ -2,6 +2,7 @@
 {% load static %}
 {% block javascript %}
     <script type="text/javascript">
+        const alertLoad = document.getElementById("alert");
         $(document).ready(function() {
             $('#FilesTable').DataTable({
                 serverSide: true,
@@ -135,90 +136,6 @@
                 },500);
             });
         }
-        function cargar_archivo(){
-            $(document).ajaxSend(function() {
-                $("#overlay").fadeIn(300);
-            });
-            var data = new FormData($('form').get(0));
-            $.ajax({
-                data: data,
-                url: '/digitalization/upload_priority_vouchers_file',
-                type: 'POST',
-                success : function(response) {
-                    var r;
-                    r=response;
-                    json_response=JSON.parse(r.response);
-                    if (json_response.result=='error')
-                    {
-                        $("#alert").addClass("alert-danger");
-                        if (json_response.type=='duplicates in file')
-                        {
-                            var messaje = '<p>Registros duplicados en archivo</p><a class="btn btn-primary" href="#" onclick="download_xlsx_data_error(JSON.parse(json_response.data)); return false;" style="width:200px;">Descargar</a><a class="btn btn-primary" href="#" onclick="print_data_error(JSON.parse(json_response.data)); return false;" style="width:200px;">Imprimir</a>'
-                            $('#alert').append(messaje);
-                        }
-                        else if (json_response.type=='duplicates in database')
-                        {
-                            var messaje = '<p>Registros duplicados en la base de datos</p><a class="btn btn-primary" href="#" onclick="download_xlsx_data_error(JSON.parse(json_response.data)); return false;" style="width:200px;">Descargar</a><a class="btn btn-primary" href="#" onclick="print_data_error(JSON.parse(json_response.data)); return false;" style="width:200px;">Imprimir</a>'
-                            $('#alert').append(messaje);
-                        }
-                        else if (json_response.type=='no match with catalog')
-                        {
-                            var messaje = '<p>Existen registros que el nombre de la Especie no coincide con el catálogo</p><a class="btn btn-primary" href="#" onclick="download_xlsx_data_error(JSON.parse(json_response.data)); return false;" style="width:200px;">Descargar</a><a class="btn btn-primary" href="#" onclick="print_data_error(JSON.parse(json_response.data)); return false;" style="width:200px;">Imprimir</a>'
-                            $('#alert').append(messaje);
-                        }
-                        else if (json_response.type=='code')
-                        {
-                            var messaje = '<p>Error en la importación: '+json_response.error+'</p>'
-                            $('#alert').append(messaje);
-                        }
-                        var table = '<table class="table">'
-                        try {
-                            indexs=JSON.parse(json_response.data);
-                        } catch (error) {
-                            indexs=[];
-                        }
-                        if (json_response.type=='no match with catalog')
-                        {
-                            table += '<thead><tr><th>Catalog Number</th><th>Scientific Name</th><th>Scientific Name Similarity</th><th>Synonymy Similarity</th><th>Similarity</th></tr></thead><tbody>';
-                            for (var index in indexs.catalog_number)
-                            {
-                                try {
-                                    table += '<tr><td>'+indexs.catalog_number[index]+'</td><td>'+indexs.scientific_name[index]+'</td><td>'+indexs.scientific_name_similarity[index]+'</td><td>'+indexs.synonymy_similarity[index]+'</td><td>'+indexs.similarity[index]+'<td></tr>';
-                                } catch (error) {
-
-                                    console.error(error);
-                                }
-                            }
-                        }
-                        else
-                        {
-                            table += '<thead><tr><th>catalog_number</th><th>recorded_by</th><th>record_number</th><th>scientific_name</th><th>locality</th></tr></thead><tbody>'
-                            for (var index in indexs.catalog_number)
-                            {
-                                table += '<tr><td>'+indexs.catalog_number[index]+'</td><td>'+indexs.recorded_by[index]+'</td><td>'+indexs.record_number[index]+'</td><td>'+indexs.scientific_name[index]+'</td><td>'+indexs.locality[index]+'<td></tr>';
-                            }
-                        }
-                        table += "</tbody></table>";
-
-                        $('#alert').append(table);
-                    }
-                    else if (json_response.result=='ok')
-                    {
-                        var messaje = '<p>Registros importados correctamente</p>'
-                        $('#alert').append(messaje);
-                        $("#alert").addClass("alert-success");
-                    }
-                    $("#alert").show("slow");
-                },
-                cache: false,
-                processData: false,
-                contentType: false,
-            }).done(function() {
-                setTimeout(function(){
-                    $("#overlay").fadeOut(300);
-                },500);
-            });
-        }
 
         function downloadVouchersXLSX() {
             $("#overlay").fadeIn(300);
@@ -268,13 +185,13 @@
 {% block content %}
     <h1>Cargar Excel</h1>
 
-    <form id="file_form" action="" method="post" onsubmit="cargar_archivo(); return false;" enctype="multipart/form-data">
+    <form id="fileForm" method="post" enctype="multipart/form-data">
         {% csrf_token %}
         <div class="form-group">
             {{ form }}
             <div class="row">
                 <div class="col-3">
-                    <button type="submit" class="btn btn-primary" id="boton_cargar">Cargar</button>
+                    <button type="submit" class="btn btn-primary" id="loadButton">Cargar</button>
                 </div>
                 <div class="offset-md-6 col-3">
                     <a class="btn btn-primary w-100" href="#" onclick="downloadVouchersXLSX()">
@@ -285,13 +202,31 @@
         </div>
     </form>
 
-    <div class="alert" role="alert" style="display: none;" id="alert">
+    {% if task_id %}
+    <div id="alert" class="card mb-3">
+        <div class="card-body">
+            <div id="processProgress" class="progress" role="progressbar" aria-label="progress" aria-valuenow="0" aria-valuemin="0" aria-valuemax="100" style="display: none;">
+                <div class="progress-bar progress-bar-striped progress-bar-animated" style="width: 0%">0%</div>
+            </div>
+            <div role="tab" id="showLog">
+                <h6>
+                    <a role="button" data-bs-toggle="collapse" data-bs-target="#console-log" aria-expanded="true" aria-controls="consoleLog" class="">
+                        Mostrar logs
+                    </a>
+                </h6>
+            </div>
+            <div id="consoleLog" class="collapse" role="tabpanel" aria-labelledby="showLog">
+                <pre><code id="loggingContent"></code></pre>
+            </div>
+        </div>
     </div>
+    {% endif %}
 
     <div class="card mb-3">
         <div class="card-header">
             <i class="fas fa-table"></i>
-            Tabla de Archivos</div>
+            Tabla de Archivos
+        </div>
         <div class="card-body">
             <div class="table-responsive" id="vouchers-content">
                 <table class="table table-bordered" id="FilesTable" width="100%" cellspacing="0">

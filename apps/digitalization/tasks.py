@@ -7,12 +7,13 @@ import textwrap
 from io import BytesIO
 from typing import List
 
+import pandas as pd
 import s3fs
 from PIL import Image, ImageDraw, ImageFont
 from celery import shared_task
 from django.conf import settings
 
-from apps.digitalization.models import VoucherImported, BiodataCode
+from apps.digitalization.models import VoucherImported, BiodataCode, PriorityVouchersFile
 from apps.digitalization.storage_backends import PrivateMediaStorage
 from apps.digitalization.utils import SessionFolder, TaskProcessLogger, HtmlLogger, GroupLogger
 from apps.digitalization.utils import cr3_to_dng, dng_to_jpeg, dng_to_jpeg_color_profile
@@ -323,6 +324,39 @@ def process_pending_vouchers(self, pending_vouchers: List[str]):
         meta={
             "step": total,
             "total": total,
+            "logs": logger[0].get_logs(),
+        }
+    )
+    shutil.rmtree(temp_folder)
+    return "Processed"
+
+
+@shared_task(name="upload_priority_vouchers", bind=True)
+def upload_priority_vouchers(self, priority_voucher: int):
+    html_logger = HtmlLogger("Priority Logger")
+    temp_folder = self.request.id
+    os.makedirs(temp_folder, exist_ok=True)
+    process_logger = TaskProcessLogger("Pending Logger", temp_folder)
+    logger = GroupLogger("Pending Logger", html_logger, process_logger)
+    priorities = PriorityVouchersFile.objects.get(pk=priority_voucher)
+    logger.info("Reading priorities...")
+    logger.debug(f"Reading excel file {priorities.file.name}")
+    self.update_state(
+        state='PROGRESS',
+        meta={
+            "step": 0,
+            "total": 1,
+            "logs": logger[0].get_logs()
+        }
+    )
+    data = pd.read_excel(priorities.file, header=0)
+    logger[1].close()
+    logger[1].save_file(PrivateMediaStorage(), temp_folder + ".log")
+    self.update_state(
+        state='SUCCESS',
+        meta={
+            "step": 1,
+            "total": 1,
             "logs": logger[0].get_logs(),
         }
     )

@@ -10,7 +10,6 @@ urlpatterns = [
     re_path(r'^historical_priority_voucher_page_download$', views.historical_priority_voucher_page_download, name='historical_priority_voucher_page_download'),
     re_path(r'^load_priority_vouchers_file$', views.load_priority_vouchers_file, name='load_priority_vouchers_file'),
     re_path(r'^priority_vouchers_table$', views.priority_vouchers_table, name='priority_vouchers_table'),
-    re_path(r'^upload_priority_vouchers_file$', views.upload_priority_vouchers_file, name='upload_priority_vouchers_file'),
     re_path(r'^upload_color_profile_file$', views.upload_color_profile_file, name='upload_color_profile_file'),
     re_path(r'^session_table$', views.session_table, name='session_table'),
     re_path(r'^mark_vouchers$', views.mark_vouchers, name='mark_vouchers'),

@@ -33,12 +33,11 @@ from xhtml2pdf import pisa
 
 from apps.catalog.models import Species, CatalogView
 from web.utils import paginated_table
-from .forms import LoadPriorityVoucherForm, LoadColorProfileForm, VoucherImportedForm, GalleryImageForm, LicenceForm
+from .forms import LoadColorProfileForm, VoucherImportedForm, GalleryImageForm, LicenceForm, PriorityVoucherForm
 from .models import BiodataCode, Herbarium, GeneratedPage, VoucherImported, PriorityVouchersFile, VouchersView, \
     GalleryImage, BannerImage, VOUCHER_STATE
 from .storage_backends import PrivateMediaStorage
-from .tasks import process_pending_vouchers
-from .vouchers import PriorityVouchers
+from .tasks import process_pending_vouchers, upload_priority_vouchers
 from ..api.decorators import backend_authenticated
 from ..api.serializers import MinimizedVoucherSerializer, CatalogViewSerializer, GeneratedPageSerializer, \
     PriorityVouchersSerializer
@@ -50,8 +49,20 @@ class HttpResponsePreconditionFailed(HttpResponse):
 
 @login_required
 def load_priority_vouchers_file(request):
-    form = LoadPriorityVoucherForm(current_user=request.user)
-    return render(request, 'digitalization/load_priority_vouchers_file.html', {'form': form})
+    empty_form = PriorityVoucherForm(current_user=request.user)
+    if request.method == "POST":
+        form = PriorityVoucherForm(request.user, request.POST, request.FILES)
+        if form.is_valid():
+            priority_voucher = form.save()
+            priority_voucher.created_by = request.user
+            priority_voucher.created_at = datetime.now(tz=pytz.timezone('America/Santiago'))
+            priority_voucher.save()
+            task_id = upload_priority_vouchers.delay(priority_voucher.id)
+        else:
+            task_id = None
+            logging.error("Error uploading priority voucher by {}".format(request.user))
+        return render(request, 'digitalization/load_priority_vouchers_file.html', {'form': form, 'task_id': task_id})
+    return render(request, 'digitalization/load_priority_vouchers_file.html', {'form': empty_form},)
 
 
 @login_required
@@ -218,38 +229,6 @@ def historical_priority_voucher_page_download(request):
         return HttpResponse(result, content_type='application/pdf')
 
 
-def load_vouchers(file_vouchers, user):
-    priority_vouchers = PriorityVouchers(file_vouchers, user)
-    response = priority_vouchers.import_to_db()
-    return {'response': response}
-
-
-@login_required
-@require_POST
-def upload_priority_vouchers_file(request):
-    if request.method == 'POST':
-        form = LoadPriorityVoucherForm(request.user, request.POST, request.FILES)
-        if form.is_valid():
-            logging.info("Upload priority voucher valid")
-            file_form = form.save()
-            file_form.created_by = request.user
-            file_form.created_at = datetime.now(tz=pytz.timezone('America/Santiago'))
-            logging.info("Loading vouchers...")
-            data = load_vouchers(file_form, request.user)
-            if json.loads(data['response'])['result'] == 'error':
-                logging.error("Error on load")
-                logging.error(data['response'])
-                file_form.delete()
-            else:
-                logging.info("Priority vouchers upload correctly")
-                file_form.save()
-            return HttpResponse(json.dumps(data), content_type="application/json")
-        else:
-            logging.error("Error uploading priority voucher by {}".format(request.user))
-            logging.error(form.errors)
-            return HttpResponseBadRequest(content=form.errors)
-
-
 @login_required
 def mark_vouchers(request):
     generated_pages = GeneratedPage.objects.filter(herbarium__herbariummember__user__id=request.user.id).order_by(
@@ -264,12 +243,11 @@ def session_table(request):
         herbarium__herbariummember__user__id=request.user.id
     ).annotate(
         stateless_count_annotation=Count('biodatacode', filter=Q(biodatacode__voucher_state=0)),
-        found_count_annotation=Count(
-            'biodatacode',
-            filter=Q(biodatacode__voucher_state=1) | Q(biodatacode__voucher_state=8)
-        ),
+        found_count_annotation=Count('biodatacode', filter=Q(biodatacode__voucher_state=1)),
         not_found_count_annotation=Count('biodatacode', filter=Q(biodatacode__voucher_state=2)),
-        digitalized_annotation=Count('biodatacode', filter=Q(biodatacode__voucher_state=7))
+        digitalized_annotation=Count(
+            'biodatacode', filter=Q(biodatacode__voucher_state=7) | Q(biodatacode__voucher_state=8)
+        )
     )
     sort_by_func = {
         0: 'id',
@@ -284,8 +262,8 @@ def session_table(request):
     search_value = request.GET.get("search[value]", None)
     if search_value:
         search_query = (
-            Q(created_by__icontains=search_value) |
-            Q(created_at__icontains=search_value)
+                Q(created_by__icontains=search_value) |
+                Q(created_at__icontains=search_value)
         )
     return paginated_table(
         request, entries, GeneratedPageSerializer,
@@ -315,7 +293,8 @@ def csv_error_data(request):
         writer.writerow(['catalog_number', 'recorded_by', 'record_number', 'scientific_name', 'locality'])
         for i in indexes:
             writer.writerow([data_errors['catalog_number[' + str(i) + ']'], data_errors['recorded_by[' + str(i) + ']'],
-                             data_errors['record_number[' + str(i) + ']'], data_errors['scientific_name[' + str(i) + ']'],
+                             data_errors['record_number[' + str(i) + ']'],
+                             data_errors['scientific_name[' + str(i) + ']'],
                              data_errors['locality[' + str(i) + ']']])
         return response
 
@@ -342,16 +321,17 @@ def xls_error_data(request):
                        'verbatim_elevation', 'decimal_latitude', 'decimal_longitude', 'georeference_date',
                        'scientific_name', 'similarity', 'scientific_name_similarity', 'synonymy_similarity']
             for i in indexes:
-                data.append([data_errors['catalog_number[' + str(i) + ']'], data_errors['record_number[' + str(i) + ']'],
-                             data_errors['recorded_by[' + str(i) + ']'],
-                             data_errors['other_catalog_numbers[' + str(i) + ']'],
-                             data_errors['locality[' + str(i) + ']'], data_errors['verbatim_elevation[' + str(i) + ']'],
-                             data_errors['decimal_latitude[' + str(i) + ']'],
-                             data_errors['decimal_longitude[' + str(i) + ']'],
-                             data_errors['georeference_date[' + str(i) + ']'],
-                             data_errors['scientific_name[' + str(i) + ']'], data_errors['similarity[' + str(i) + ']'],
-                             data_errors['scientific_name_similarity[' + str(i) + ']'],
-                             data_errors['synonymy_similarity[' + str(i) + ']']])
+                data.append(
+                    [data_errors['catalog_number[' + str(i) + ']'], data_errors['record_number[' + str(i) + ']'],
+                     data_errors['recorded_by[' + str(i) + ']'],
+                     data_errors['other_catalog_numbers[' + str(i) + ']'],
+                     data_errors['locality[' + str(i) + ']'], data_errors['verbatim_elevation[' + str(i) + ']'],
+                     data_errors['decimal_latitude[' + str(i) + ']'],
+                     data_errors['decimal_longitude[' + str(i) + ']'],
+                     data_errors['georeference_date[' + str(i) + ']'],
+                     data_errors['scientific_name[' + str(i) + ']'], data_errors['similarity[' + str(i) + ']'],
+                     data_errors['scientific_name_similarity[' + str(i) + ']'],
+                     data_errors['synonymy_similarity[' + str(i) + ']']])
         except:
             colums = 11
             registers = int(len(data_errors) / colums)
@@ -366,14 +346,15 @@ def xls_error_data(request):
                        'verbatim_elevation', 'decimal_latitude', 'decimal_longitude', 'georeference_date',
                        'scientific_name']
             for i in indexes:
-                data.append([data_errors['catalog_number[' + str(i) + ']'], data_errors['record_number[' + str(i) + ']'],
-                             data_errors['recorded_by[' + str(i) + ']'],
-                             data_errors['other_catalog_numbers[' + str(i) + ']'],
-                             data_errors['locality[' + str(i) + ']'], data_errors['verbatim_elevation[' + str(i) + ']'],
-                             data_errors['decimal_latitude[' + str(i) + ']'],
-                             data_errors['decimal_longitude[' + str(i) + ']'],
-                             data_errors['georeference_date[' + str(i) + ']'],
-                             data_errors['scientific_name[' + str(i) + ']']])
+                data.append(
+                    [data_errors['catalog_number[' + str(i) + ']'], data_errors['record_number[' + str(i) + ']'],
+                     data_errors['recorded_by[' + str(i) + ']'],
+                     data_errors['other_catalog_numbers[' + str(i) + ']'],
+                     data_errors['locality[' + str(i) + ']'], data_errors['verbatim_elevation[' + str(i) + ']'],
+                     data_errors['decimal_latitude[' + str(i) + ']'],
+                     data_errors['decimal_longitude[' + str(i) + ']'],
+                     data_errors['georeference_date[' + str(i) + ']'],
+                     data_errors['scientific_name[' + str(i) + ']']])
         data = tablib.Dataset(*data, headers=headers)
         response = HttpResponse(data.xlsx, content_type='application/vnd.ms-Excel')
         response['Content-Disposition'] = "attachment; filename=vouchers_error.xlsx"
@@ -442,8 +423,8 @@ def control_vouchers(request):
 def get_vouchers_to_validate(request, page_id, voucher_state):
     page = GeneratedPage.objects.get(id=int(page_id))
     filters = (
-        Q(herbarium__herbariummember__user__id=request.user.id) &
-        Q(biodata_code__page=page)
+            Q(herbarium__herbariummember__user__id=request.user.id) &
+            Q(biodata_code__page=page)
     )
     if int(voucher_state) != -1:
         filters &= Q(biodata_code__voucher_state=int(voucher_state))
@@ -452,11 +433,11 @@ def get_vouchers_to_validate(request, page_id, voucher_state):
     search_value = request.GET.get("search[value]", None)
     if search_value:
         search_query = (
-            Q(catalog_number__icontains=search_value) |
-            Q(scientific_name__scientific_name__icontains=search_value) |
-            Q(recorded_by__icontains=search_value) |
-            Q(record_number__icontains=search_value) |
-            Q(locality__icontains=search_value)
+                Q(catalog_number__icontains=search_value) |
+                Q(scientific_name__scientific_name__icontains=search_value) |
+                Q(recorded_by__icontains=search_value) |
+                Q(record_number__icontains=search_value) |
+                Q(locality__icontains=search_value)
         )
 
     sort_by_func = {
@@ -474,7 +455,6 @@ def get_vouchers_to_validate(request, page_id, voucher_state):
 
 @login_required
 @require_POST
-@csrf_exempt
 def upload_color_profile_file(request):
     form = LoadColorProfileForm(request.POST, request.FILES)
     if form.is_valid():
@@ -637,12 +617,12 @@ def gallery_table(request):
     search_query = Q()
     if search_value:
         search_query = (
-            Q(division__icontains=search_value) |
-            Q(class_name__icontains=search_value) |
-            Q(order__icontains=search_value) |
-            Q(family__icontains=search_value) |
-            Q(scientific_name_full__icontains=search_value) |
-            Q(updated_at__icontains=search_value)
+                Q(division__icontains=search_value) |
+                Q(class_name__icontains=search_value) |
+                Q(order__icontains=search_value) |
+                Q(family__icontains=search_value) |
+                Q(scientific_name_full__icontains=search_value) |
+                Q(updated_at__icontains=search_value)
         )
 
     sort_by_func = {
@@ -839,7 +819,7 @@ def vouchers_download(request):
         ]
         logging.debug("Filtering voucher according to state")
         species = VouchersView.objects.values_list(*headers).filter(
-            Q(voucher_state="1") | Q(voucher_state=7) | Q(voucher_state="8")
+            Q(voucher_state=1) | Q(voucher_state=7) | Q(voucher_state=8)
         ).order_by('id')
         databook = tablib.Databook()
         data_set = tablib.Dataset(*species, headers=headers, title='Vouchers')
