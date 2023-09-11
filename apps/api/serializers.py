@@ -7,7 +7,7 @@ from rest_framework.serializers import HyperlinkedModelSerializer, ModelSerializ
     SerializerMethodField, URLField
 
 from apps.catalog.models import Species, Family, Genus, Synonymy, Region, Division, ClassName, Order, Status, \
-    CommonName, ConservationState, PlantHabit, EnvironmentalHabit, Cycle, TaxonomicModel, CatalogView
+    CommonName, ConservationState, PlantHabit, EnvironmentalHabit, Cycle, TaxonomicModel, CatalogView, Binnacle
 from apps.digitalization.models import VoucherImported, GalleryImage, BiodataCode, GeneratedPage, ColorProfileFile, \
     PriorityVouchersFile
 
@@ -134,6 +134,14 @@ class CommonNameSerializer(TaxonomicSerializer):
     def get_species(self, obj):
         species = obj.species_set.all()
         return "\t".join([specie.scientific_name for specie in species])
+
+
+class BinnacleSerializer(TaxonomicSerializer):
+    class Meta:
+        model = Binnacle
+        fields = TaxonomicSerializer.Meta.fields + [
+            'type_update', 'model', 'description', 'note',
+        ]
 
 
 class UserSerializer(HyperlinkedModelSerializer):

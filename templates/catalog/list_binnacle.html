@@ -4,21 +4,76 @@
     <script type="text/javascript">
         $(document).ready(function() {
             $('#CatalogTable').DataTable({
-                order: [[6, 'desc']],
+                serverSide: true,
+                processing: true,
                 language: languageTable.spanish,
+                ajax: {
+                    url: "{% url 'binnacle_table' %}",
+                    type: 'GET',
+                    dataSrc: 'data',
+                },
+                order: [[6, 'desc']],
                 columnDefs: [
                     {
-                        targets: [5, 6],
-                        render: (val, type) => {
-                            if (type === 'sort')
-                                return parseDate(val);
-                            else
-                                return val;
+                        targets: 0,
+                        data: 'type_update'
+                    },
+                    {
+                        targets: 1,
+                        data: 'model'
+                    },
+                    {
+                        targets: 2,
+                        data: 'description'
+                    },
+                    {
+                        targets: 3,
+                        data: 'note'
+                    },
+                    {
+                        targets: 4,
+                        data: 'created_by'
+                    },
+                    {
+                        targets: 5,
+                        data: 'created_at',
+                        render: (data, type) => {
+                            let date = new Date(data);
+                            if (type === 'display' || type === 'search'){
+                                return dateFormat(date);
+                            } else if (type === 'sort'){
+                                return date.toISOString();
+                            } else {
+                                return date;
+                            }
                         }
                     },
                     {
-                        targets: [7],
+                        targets: 6,
+                        data: 'updated_at',
+                        render: (data, type) => {
+                            let date = new Date(data);
+                            if (type === 'display' || type === 'search'){
+                                return dateFormat(date);
+                            } else if (type === 'sort'){
+                                return date.toISOString();
+                            } else {
+                                return date;
+                            }
+                        }
+                    },
+                    {
+                        targets: 7,
+                        data: 'id',
                         orderable: false,
+                        render: (data) => {
+                            const url = "{% url 'update_binnacle' binnacle_id=0 %}".replace("0", data);
+                            return `
+                            <a href="${url}">
+                                <i class="fas fa-fw fa-edit text-primary"></i>
+                            </a>
+                            `;
+                        }
                     }
                 ]
             });
@@ -31,7 +86,8 @@
     <div class="card mb-3">
         <div class="card-header">
             <i class="fas fa-table"></i>
-            Bitácora</div>
+            Bitácora
+        </div>
         <div class="card-body">
             <div class="table-responsive">
                 <table class="table table-bordered" id="CatalogTable" width="100%" cellspacing="0">
@@ -48,20 +104,7 @@
                     </tr>
                     </thead>
                     <tbody>
-                    {% for binnacle in binnacles %}
-                        <tr>
-                            <td>{{ binnacle.type_update }}</td>
-                            <td>{{ binnacle.model }}</td>
-                            <td>{{ binnacle.description }}</td>
-                            <td>{{ binnacle.note|default_if_none:"" }}</td>
-                            <td>{{ binnacle.created_by }}</td>
-                            <td>{{ binnacle.created_at }}</td>
-                            <td>{{ binnacle.updated_at }}</td>
-                            <td>
-                                <a href="{% url 'update_binnacle' binnacle_id=binnacle.id %}"><i class="fas fa-fw fa-edit text-primary"></i></a>
-                            </td>
-                        </tr>
-                    {% endfor%}
+                        <!-- To be populated -->
                     </tbody>
                 </table>
             </div>

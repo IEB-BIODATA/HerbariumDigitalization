@@ -40,6 +40,7 @@ urlpatterns = [
     re_path(r'^update_synonymy/(?P<synonymy_id>\d+)/$', views.update_synonymy, name='update_synonymy'),
     re_path(r'^delete_synonymy/(?P<synonymy_id>\d+)/$', views.delete_synonymy, name='delete_synonymy'),
     re_path(r'^list_binnacle$', views.list_binnacle, name='list_binnacle'),
+    re_path(r'^binnacle_table$', views.binnacle_table, name='binnacle_table'),
     re_path(r'^update_binnacle/(?P<binnacle_id>\d+)/$', views.update_binnacle, name='update_binnacle'),
     re_path(r'^list_common_name$', views.list_common_name, name='list_common_name'),
     re_path(r'^common_name_table$', views.common_name_table, name='common_name_table'),

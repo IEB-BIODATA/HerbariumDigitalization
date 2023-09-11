@@ -24,7 +24,8 @@ from .models import Species, CatalogView, SynonymyView, RegionDistributionView, 
     Genus, Synonymy, Region, CommonName, Binnacle, PlantHabit, EnvironmentalHabit, Cycle, TaxonomicModel, \
     ConservationState
 from ..api.serializers import DivisionSerializer, ClassSerializer, OrderSerializer, \
-    FamilySerializer, GenusSerializer, SynonymysSerializer, CommonNameSerializer, CatalogViewSerializer
+    FamilySerializer, GenusSerializer, SynonymysSerializer, CommonNameSerializer, CatalogViewSerializer, \
+    BinnacleSerializer
 
 MANY_RELATIONS = [
     ("common_names", "nombres comunes", CommonName),
@@ -97,10 +98,8 @@ def __catalog_table__(
                 Q(created_at__icontains=search_value) |
                 Q(updated_at__icontains=search_value)
         )
-        logging.debug(type(search_query))
         if add_searchable:
             search_query = search_query | add_searchable
-            logging.debug(type(search_query))
     entries = model.objects.all()
 
     return paginated_table(
@@ -879,6 +878,7 @@ def synonymy_table(request):
     )
 
 
+@login_required
 def create_synonymy(request):
     if request.method == "POST":
         form = SynonymyForm(request.POST)
@@ -891,6 +891,7 @@ def create_synonymy(request):
     })
 
 
+@login_required
 def update_synonymy(request, synonymy_id):
     synonymy = Synonymy.objects.get(id=synonymy_id)
     if request.method == "POST":
@@ -904,6 +905,7 @@ def update_synonymy(request, synonymy_id):
     })
 
 
+@login_required
 def delete_synonymy(request, synonymy_id):
     synonymy = Synonymy.objects.get(id=synonymy_id)
     try:
@@ -916,10 +918,40 @@ def delete_synonymy(request, synonymy_id):
 
 @login_required
 def list_binnacle(request):
+    return render(request, "catalog/list_binnacle.html")
+
+
+@login_required
+def binnacle_table(request):
     binnacles = Binnacle.objects.all()
-    return render(request, "catalog/list_binnacle.html", {"binnacles": binnacles})
+    search_query = Q()
+    search_value = request.GET.get("search[value]", None)
+    if search_value:
+        search_query = (
+                Q(type_update__icontains=search_value) |
+                Q(model__icontains=search_value) |
+                Q(description__icontains=search_value) |
+                Q(note__icontains=search_value) |
+                Q(created_by__username__icontains=search_value) |
+                Q(created_at__icontains=search_value) |
+                Q(updated_at__icontains=search_value)
+        )
+    sort_by_func = {
+        0: 'type_update',
+        1: 'model',
+        2: 'description',
+        3: 'note',
+        4: 'created_by__username',
+        5: 'created_at',
+        6: 'updated_at',
+    }
+    return paginated_table(
+        request, binnacles, BinnacleSerializer,
+        sort_by_func, 'binnacle', search_query
+    )
 
 
+@login_required
 def update_binnacle(request, binnacle_id):
     binnacle = Binnacle.objects.get(id=binnacle_id)
     if request.method == "POST":
@@ -977,6 +1009,7 @@ def create_common_name(request):
     })
 
 
+@login_required
 def update_common_name(request, common_id):
     common_name = CommonName.objects.get(id=common_id)
     if request.method == "POST":
@@ -990,6 +1023,7 @@ def update_common_name(request, common_id):
     })
 
 
+@login_required
 def delete_common_name(request, common_id):
     common_name = CommonName.objects.get(id=common_id)
     try:
