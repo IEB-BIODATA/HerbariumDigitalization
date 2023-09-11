@@ -97,10 +97,8 @@ def __catalog_table__(
                 Q(created_at__icontains=search_value) |
                 Q(updated_at__icontains=search_value)
         )
-        logging.debug(type(search_query))
         if add_searchable:
             search_query = search_query | add_searchable
-            logging.debug(type(search_query))
     entries = model.objects.all()
 
     return paginated_table(

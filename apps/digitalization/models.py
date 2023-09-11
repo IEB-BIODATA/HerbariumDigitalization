@@ -85,9 +85,7 @@ class GeneratedPage(models.Model):
 
     @property
     def found_count(self):
-        return BiodataCode.objects.filter(
-            Q(page__id=self.id) & (Q(voucher_state=1) | Q(voucher_state=8))
-        ).count()
+        return BiodataCode.objects.filter(page__id=self.id, voucher_state=1).count()
 
     @property
     def not_found_count(self):
@@ -95,7 +93,9 @@ class GeneratedPage(models.Model):
 
     @property
     def digitalized(self):
-        return BiodataCode.objects.filter(page__id=self.id, voucher_state=7).count()
+        return BiodataCode.objects.filter(
+            Q(page__id=self.id) | Q(voucher_state=7) | Q(voucher_state=8)
+        ).count()
 
     def __unicode__(self):
         return self.name
@@ -367,8 +367,7 @@ class VouchersView(models.Model):
     SELECT voucher.id,
            voucherfile.file,
            biodatacode.code,
-
-           .,
+           biodatacode.voucher_state,
            herbarium.collection_code,
            voucher.other_catalog_numbers,
            voucher.catalog_number,

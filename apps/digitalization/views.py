@@ -644,7 +644,6 @@ def gallery_table(request):
             Q(scientific_name_full__icontains=search_value) |
             Q(updated_at__icontains=search_value)
         )
-        logging.debug(type(search_query))
 
     sort_by_func = {
         0: "division",
