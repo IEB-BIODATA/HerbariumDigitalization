@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 import json
+import logging
 from datetime import datetime
 
 import numpy
@@ -15,6 +16,13 @@ from .models import VoucherImported, BiodataCode, PriorityVouchersFile
 
 class PriorityVouchers:
 
+    def __init__(self, file_vouchers, user):
+        self.__data = pandas.read_excel(file_vouchers.file, header=0)
+        logging.info(self.__data.columns)
+        self.__herbarium = file_vouchers.herbarium
+        self.__file_vouchers_id = file_vouchers.id
+        self.__user = user
+
     def public_point(self, point):
         integer = int(point)
         min_grade = point - integer
@@ -25,12 +33,15 @@ class PriorityVouchers:
 
     def import_data(self):
         for index, row in self.__data.iterrows():
-            catalog_number = row['catalog_number']
+            if 'catalog_number' in row:
+                catalog_number = row['catalog_number']
+            elif 'catalogNumber' in row:
+                catalog_number = row['catalogNumber']
             new_occurrence_id = self.__herbarium.institution_code + ':' + self.__herbarium.collection_code + ':' + f'{catalog_number:07d}'
             code = BiodataCode(
                 herbarium=self.__herbarium,
                 code=new_occurrence_id,
-                catalog_number=row['catalog_number'],
+                catalog_number=catalog_number,
                 created_by=self.__user,
                 created_at=datetime.now(tz=pytz.timezone('America/Santiago')),
                 qr_generated=False
@@ -213,10 +224,4 @@ class PriorityVouchers:
             r = '{"":{"0":null},"other_catalog_numbers":{"0":''},"catalog_number":{"0":''},"recorded_by":{"0":"''"},"record_number":{"0":''},"scientific_name":{"0":"''"},"locality":{"0":"''"},"verbatim_elevation":{"0":''},"georeference_date":{"0":"''"},"decimal_latitude":{"0":''},"decimal_longitude":{"0":''}}'
             data = {'result': 'error', 'type': 'code', 'error': str(e), 'data': r}
             print(e)
-        return (json.dumps(data))
-
-    def __init__(self, file_vouchers, user):
-        self.__data = pandas.read_excel(file_vouchers.file, header=0)
-        self.__herbarium = file_vouchers.herbarium
-        self.__file_vouchers_id = file_vouchers.id
-        self.__user = user
+        return json.dumps(data)
