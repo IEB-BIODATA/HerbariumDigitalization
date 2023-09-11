@@ -1,7 +1,6 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 import json
-import logging
 from datetime import datetime
 
 import numpy
@@ -13,12 +12,26 @@ from django.contrib.postgres.search import TrigramSimilarity
 from apps.catalog.models import Species, Synonymy
 from .models import VoucherImported, BiodataCode, PriorityVouchersFile
 
+FUZZY_COLUMNS = {
+    "catalogNumber": "catalog_number",
+    "recordNumber": "record_number",
+    "recordedBy": "recorded_by",
+    "organismRemarks": "organism_remarks",
+    "otherCatalogNumbers": "other_catalog_numbers",
+    "verbatimElevation": "verbatim_elevation",
+    "decimalLatitude": "decimal_latitude",
+    "decimalLongitude": "decimal_longitude",
+    "georeferencedDate": "georeferenced_date",
+    "identifiedBy": "identified_by",
+    "dateIdentified": "date_identified",
+    "scientificName": "scientific_name",
+}
+
 
 class PriorityVouchers:
-
     def __init__(self, file_vouchers, user):
         self.__data = pandas.read_excel(file_vouchers.file, header=0)
-        logging.info(self.__data.columns)
+        self.__data.rename(columns=FUZZY_COLUMNS, inplace=True)
         self.__herbarium = file_vouchers.herbarium
         self.__file_vouchers_id = file_vouchers.id
         self.__user = user
