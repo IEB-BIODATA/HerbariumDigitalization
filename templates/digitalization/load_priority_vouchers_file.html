@@ -2,6 +2,9 @@
 {% load static %}
 {% block javascript %}
     <script type="text/javascript">
+        const csrfToken = "{{ csrf_token }}";
+        const alertLoad = document.getElementById("alert");
+        let errorData = {};
         $(document).ready(function() {
             $('#FilesTable').DataTable({
                 serverSide: true,
@@ -24,7 +27,7 @@
                             if (type === 'display' || type === 'search') {
                                 return dateFormat(date)
                             } else if (type === 'sort')
-                                return date.toISOString;
+                                return date.toISOString();
                             else
                                 return date;
                         }
@@ -42,35 +45,146 @@
                     },
                 ],
             });
+            let taskId = "{{ task_id }}";
+            if (taskId === "")
+                console.debug("Not file uploaded");
+            else {
+                const progressUrl = "{% url 'get_progress' task_id='placeholder' %}".replace(
+                    'placeholder', taskId
+                );
+                const urlLog = "{% url 'get_task_log' task_id='placeholder' %}".replace(
+                    'placeholder', taskId
+                );
+                const logFileDefault = "{% static 'assets/processed' %}";
+                const alertDOM = document.getElementById("alert");
+                updateProgress({
+                    taskId: taskId,
+                    progressUrl: progressUrl,
+                    urlLog: urlLog,
+                    progressDOM: alertDOM,
+                    csrfToken: csrfToken,
+                    logFileDefault: logFileDefault,
+                    onErrorMessage: (error) => {
+                        return getErrorMessage(error);
+                    },
+                    successCallback: () => {
+                        console.log("Success");
+                        document.getElementById("loadButton").disabled = false;
+                    },
+                    errorCallback: (error) => {
+                        document.getElementById("loadButton").disabled = false;
+                        const rows = [];
+                        const columns = [];
+                        if (error.type === "no match with catalog"){
+                            columns.push(
+                                "catalogNumber",
+                                "scientificName",
+                                "scientificNameSimilarity",
+                                "synonymySimilarity",
+                                "similarity"
+                            );
+                        } else {
+                            columns.push(
+                                "catalogNumber",
+                                "recordedBy",
+                                "recordNumber",
+                                "scientificName",
+                                "locality"
+                            );
+                        }
+                        const keys = Object.keys(errorData[columns[0]]);
+                        keys.forEach(key => {
+                            const row = {};
+                            columns.forEach(column => {
+                                row[column] = errorData[column][key];
+                            });
+                            rows.push(row);
+                        });
+                        $('#ErrorTable').DataTable({
+                            processing: true,
+                            language: languageTable.spanish,
+                            paging: rows.length > 10,
+                            searching: rows.length > 10,
+                            ordering:  false,
+                            bInfo: rows.length > 10,
+                            data: rows,
+                            columns: columns.map(column => ({ data: column, title: column })),
+                        });
+                    }
+                });
+            }
         });
 
-        function print_data_error(data_error) {
-            $(document).ajaxSend(function() {
-                $("#overlay").fadeIn(300);
-            });
+        function getErrorMessage(error) {
+            let errorDataBlock = "";
+            if (error.data !== undefined){
+                errorData = JSON.parse(error.data);
+                errorDataBlock = `
+                <a class="btn btn-primary btn-block" href="#" onclick="downloadXLSXDataError(errorData); return false;" style="width:200px;">
+                    Descargar
+                </a>
+                <a class="btn btn-primary btn-block" href="#" onclick="printDataError(errorData); return false;" style="width:200px;">
+                    Imprimir
+                </a>
+                <table class="table table-bordered no-footer" id="ErrorTable" width="100%" cellspacing="0">
+                    <thead>
+                        <!-- To be populated -->
+                    </thead>
+                    <tbody>
+                        <!-- To be populated -->
+                    </tbody>
+                </table>
+                `;
+            }
+            switch (error.type) {
+                case 'duplicates in file':
+                    return `
+                    <p>Registros duplicados en archivo</p>
+                    ${errorDataBlock}
+                    `;
+                case 'duplicates in database':
+                    return `
+                    <p>Registros duplicados en la base de datos</p>
+                    ${errorDataBlock}
+                    `;
+                case 'no match with catalog':
+                    return `
+                    <p>Existen registros en que el nombre de la especie no coincide con el catálogo</p>
+                    ${errorDataBlock}
+                    `;
+                case 'code':
+                    return `
+                    <p>Error en la importación</p>
+                    ${errorDataBlock}
+                    `;
+                default:
+                    return '<h6>Ocurrió un error inesperado, favor contactar al administrador antes de cerrar esta ventana</h6>';
+            }
+        }
+
+        function printDataError(dataError) {
+            $("#overlay").fadeIn(300);
             $.ajax({
-                data: data_error,
-                url: '/digitalization/pdf_error_data',
+                data: dataError,
+                url: '{%  url "pdf_error_data" %}',
                 type: 'POST',
                 success : function(data) {
-                    var pdfFile=new Blob([data], {type: "application/pdf"});
-                    var pdfUrl = URL.createObjectURL(pdfFile);
+                    const pdfFile = new Blob([data], {type: "application/pdf"});
+                    const pdfUrl = URL.createObjectURL(pdfFile);
                     printJS(pdfUrl);
                 }
-            }).done(function() {
-                setTimeout(function(){
-                    $("#overlay").fadeOut(300);
-                },500);
+            }).always(function() {
+                $("#overlay").fadeOut(300);
             });
         }
 
-        function download_xlsx_data_error(data_error) {
-            $(document).ajaxSend(function() {
-                $("#overlay").fadeIn(300);
-            });
+        function downloadXLSXDataError(dataError) {
+            let downloadUrl;
+            let url;
+            $("#overlay").fadeIn(300);
             $.ajax({
-                data: data_error,
-                url: '/digitalization/xls_error_data',
+                data: dataError,
+                url: '{% url "xls_error_data" %}',
                 type: 'POST',
                 xhrFields: {
                     // make sure the response knows we're expecting a binary type in return.
@@ -78,14 +192,11 @@
                     responseType: 'arraybuffer'
                 }
             }).done(function (data, status, xmlHeaderRequest) {
-                var downloadLink = document.createElement('a');
-                var blob = new Blob([data],
-                    {
-                        type: xmlHeaderRequest.getResponseHeader('Content-Type')
-                    });
-                var url = window.URL || window.webkitURL;
-                var downloadUrl = url.createObjectURL(blob);
-                var fileName = 'vouchers_error.xlsx';
+                const downloadLink = document.createElement('a');
+                const blob = new Blob([data], {type: xmlHeaderRequest.getResponseHeader('Content-Type')});
+                url = window.URL || window.webkitURL;
+                downloadUrl = url.createObjectURL(blob);
+                const fileName = 'vouchers_error.xlsx';
 
                 if (typeof window.navigator.msSaveBlob !== 'undefined') {
                     window.navigator.msSaveBlob(blob, fileName);
@@ -102,121 +213,11 @@
                     } else {
                         window.location = downloadUrl;
                     }
-                    setTimeout(function () {
-                            url.revokeObjectURL(downloadUrl);
-                            $("#overlay").fadeOut(300);
-                        },
-                        100);
                 }
-            });
-        }
-
-        function download_csv_data_error(data_error) {
-            $(document).ajaxSend(function() {
-                $("#overlay").fadeIn(300);
-            });
-            $.ajax({
-                data: data_error,
-                url: '/digitalization/csv_error_data',
-                type: 'POST',
-                success : function(data) {
-                    var uri = 'data:application/csv;charset=UTF-8,' + encodeURIComponent(data);
-                    var downloadLink = document.createElement("a");
-                    downloadLink.href = uri;
-                    downloadLink.download = "vouchers_error.csv";
-
-                    document.body.appendChild(downloadLink);
-                    downloadLink.click();
-                    document.body.removeChild(downloadLink);
-                }
-            }).done(function() {
-                setTimeout(function(){
-                    $("#overlay").fadeOut(300);
-                },500);
-            });
-        }
-        function cargar_archivo(){
-            $(document).ajaxSend(function() {
-                $("#overlay").fadeIn(300);
-            });
-            var data = new FormData($('form').get(0));
-            $.ajax({
-                data: data,
-                url: '/digitalization/upload_priority_vouchers_file',
-                type: 'POST',
-                success : function(response) {
-                    var r;
-                    r=response;
-                    json_response=JSON.parse(r.response);
-                    if (json_response.result=='error')
-                    {
-                        $("#alert").addClass("alert-danger");
-                        if (json_response.type=='duplicates in file')
-                        {
-                            var messaje = '<p>Registros duplicados en archivo</p><a class="btn btn-primary" href="#" onclick="download_xlsx_data_error(JSON.parse(json_response.data)); return false;" style="width:200px;">Descargar</a><a class="btn btn-primary" href="#" onclick="print_data_error(JSON.parse(json_response.data)); return false;" style="width:200px;">Imprimir</a>'
-                            $('#alert').append(messaje);
-                        }
-                        else if (json_response.type=='duplicates in database')
-                        {
-                            var messaje = '<p>Registros duplicados en la base de datos</p><a class="btn btn-primary" href="#" onclick="download_xlsx_data_error(JSON.parse(json_response.data)); return false;" style="width:200px;">Descargar</a><a class="btn btn-primary" href="#" onclick="print_data_error(JSON.parse(json_response.data)); return false;" style="width:200px;">Imprimir</a>'
-                            $('#alert').append(messaje);
-                        }
-                        else if (json_response.type=='no match with catalog')
-                        {
-                            var messaje = '<p>Existen registros que el nombre de la Especie no coincide con el catálogo</p><a class="btn btn-primary" href="#" onclick="download_xlsx_data_error(JSON.parse(json_response.data)); return false;" style="width:200px;">Descargar</a><a class="btn btn-primary" href="#" onclick="print_data_error(JSON.parse(json_response.data)); return false;" style="width:200px;">Imprimir</a>'
-                            $('#alert').append(messaje);
-                        }
-                        else if (json_response.type=='code')
-                        {
-                            var messaje = '<p>Error en la importación: '+json_response.error+'</p>'
-                            $('#alert').append(messaje);
-                        }
-                        var table = '<table class="table">'
-                        try {
-                            indexs=JSON.parse(json_response.data);
-                        } catch (error) {
-                            indexs=[];
-                        }
-                        if (json_response.type=='no match with catalog')
-                        {
-                            table += '<thead><tr><th>Catalog Number</th><th>Scientific Name</th><th>Scientific Name Similarity</th><th>Synonymy Similarity</th><th>Similarity</th></tr></thead><tbody>';
-                            for (var index in indexs.catalog_number)
-                            {
-                                try {
-                                    table += '<tr><td>'+indexs.catalog_number[index]+'</td><td>'+indexs.scientific_name[index]+'</td><td>'+indexs.scientific_name_similarity[index]+'</td><td>'+indexs.synonymy_similarity[index]+'</td><td>'+indexs.similarity[index]+'<td></tr>';
-                                } catch (error) {
-
-                                    console.error(error);
-                                }
-                            }
-                        }
-                        else
-                        {
-                            table += '<thead><tr><th>catalog_number</th><th>recorded_by</th><th>record_number</th><th>scientific_name</th><th>locality</th></tr></thead><tbody>'
-                            for (var index in indexs.catalog_number)
-                            {
-                                table += '<tr><td>'+indexs.catalog_number[index]+'</td><td>'+indexs.recorded_by[index]+'</td><td>'+indexs.record_number[index]+'</td><td>'+indexs.scientific_name[index]+'</td><td>'+indexs.locality[index]+'<td></tr>';
-                            }
-                        }
-                        table += "</tbody></table>";
-
-                        $('#alert').append(table);
-                    }
-                    else if (json_response.result=='ok')
-                    {
-                        var messaje = '<p>Registros importados correctamente</p>'
-                        $('#alert').append(messaje);
-                        $("#alert").addClass("alert-success");
-                    }
-                    $("#alert").show("slow");
-                },
-                cache: false,
-                processData: false,
-                contentType: false,
-            }).done(function() {
-                setTimeout(function(){
-                    $("#overlay").fadeOut(300);
-                },500);
+            }).always(function () {
+                if (url !== undefined)
+                    url.revokeObjectURL(downloadUrl);
+                $("#overlay").fadeOut(300);
             });
         }
 
@@ -268,13 +269,13 @@
 {% block content %}
     <h1>Cargar Excel</h1>
 
-    <form id="file_form" action="" method="post" onsubmit="cargar_archivo(); return false;" enctype="multipart/form-data">
+    <form id="fileForm" method="post" enctype="multipart/form-data">
         {% csrf_token %}
         <div class="form-group">
             {{ form }}
             <div class="row">
                 <div class="col-3">
-                    <button type="submit" class="btn btn-primary" id="boton_cargar">Cargar</button>
+                    <button type="submit" class="btn btn-primary" id="loadButton" {% if task_id %} disabled="disabled" {% endif %}>Cargar</button>
                 </div>
                 <div class="offset-md-6 col-3">
                     <a class="btn btn-primary w-100" href="#" onclick="downloadVouchersXLSX()">
@@ -285,13 +286,15 @@
         </div>
     </form>
 
-    <div class="alert" role="alert" style="display: none;" id="alert">
-    </div>
+    {% if task_id %}
+        <div id="alert" class="card mb-3" style="display: block;"></div>
+    {% endif %}
 
     <div class="card mb-3">
         <div class="card-header">
             <i class="fas fa-table"></i>
-            Tabla de Archivos</div>
+            Tabla de Archivos
+        </div>
         <div class="card-body">
             <div class="table-responsive" id="vouchers-content">
                 <table class="table table-bordered" id="FilesTable" width="100%" cellspacing="0">

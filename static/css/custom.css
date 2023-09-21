@@ -33,3 +33,32 @@
 .bootstrap-select>.dropdown-toggle {
   width: 500%!important;
 }
+
+.console-log {
+  font-family: Arial, sans-serif;
+  padding: 10px;
+  background-color: #f0f0f0;
+  border: 1px solid #ccc;
+  max-height: 300px;
+  overflow-y: auto;
+}
+
+.log {
+  color: black;
+}
+
+.debug {
+  color: blue;
+}
+
+.info {
+  color: green;
+}
+
+.warn {
+  color: orange;
+}
+
+.error {
+  color: red;
+}

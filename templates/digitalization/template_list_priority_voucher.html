@@ -30,7 +30,7 @@
         <link rel="stylesheet" href="{% static 'vendor/bootstrap/css/bootstrap.min.css' %}">
     </head>
     <body>
-        <h1>Lista de Vourhcer Priorizados - Sesión: {{ page_id }} - Fecha: {{ page_date }}</h1>
+        <h1>Lista de Vourhcer Priorizados - Fecha: {{ page_date }}</h1>
         <table border="1" cellspacing="0" cellpadding="4" width="100%">
             <thead>
                 <tr>
@@ -46,7 +46,7 @@
                 <tr>
                     <th style="margin-right: 80px;">{{ priority_voucher.catalog_number }}</th>
                     <td>
-                        {% if priority_voucher.scientific_mame %}
+                        {% if priority_voucher.scientific_name %}
                             {{ priority_voucher.scientific_name }}
                         {% else %}
                             {{ priority_voucher.scientific_name.scientific_name }}

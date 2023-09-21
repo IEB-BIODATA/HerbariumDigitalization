@@ -3,20 +3,24 @@ from .models import PriorityVouchersFile, Herbarium, ColorProfileFile, VoucherIm
 from ..catalog.models import Species
 
 
-class LoadPriorityVoucherForm(forms.ModelForm):
+class PriorityVoucherForm(forms.ModelForm):
 
     def __init__(self, current_user, *args, **kwargs):
-        super(LoadPriorityVoucherForm, self).__init__(*args, **kwargs)
+        super(PriorityVoucherForm, self).__init__(*args, **kwargs)
         self.fields['herbarium'].queryset = Herbarium.objects.filter(herbariummember__user=current_user)
 
     class Meta:
         model = PriorityVouchersFile
-        fields = ('herbarium', 'file',)
+        fields = ('herbarium', 'file', )
         widgets = {
             "herbarium": forms.Select(attrs={'class': 'form-control', 'required': 'true'}),
-            "file": forms.ClearableFileInput(
-                attrs={'title': 'Archivo Vouchers Priorizados', 'class': 'form-control', 'accept': '.xlsx',
-                       'required': 'true'})
+            "file": forms.FileInput(
+                attrs={
+                    'title': 'Archivo Vouchers Priorizados',
+                    'class': 'form-control',
+                    'accept': '.xlsx',
+                    'required': 'true'
+                }),
         }
 
 
@@ -26,8 +30,12 @@ class LoadColorProfileForm(forms.ModelForm):
         fields = ('file',)
         widgets = {
             "file": forms.ClearableFileInput(
-                attrs={'title': 'Archivo Vouchers Priorizados', 'class': 'form-control', 'accept': '.dcp',
-                       'required': 'true'})
+                attrs={
+                    'title': 'Archivo Vouchers Priorizados',
+                    'class': 'form-control',
+                    'accept': '.dcp',
+                    'required': 'true'}
+            )
         }
 
 
