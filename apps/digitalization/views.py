@@ -72,15 +72,18 @@ def priority_vouchers_table(request):
     files = PriorityVouchersFile.objects.filter(herbarium__herbariummember__user__id=request.user.id)
     sort_by_func = {0: 'herbarium__name', 1: 'created_at',
                     2: 'created_by__username', 3: 'file', }
-    search_value = request.GET.get("search[value]", None)
+    search_value: str = request.GET.get("search[value]", None)
     search_query = Q()
     if search_value:
         search_query = (
-                Q(herbarium__name=search_value) |
-                Q(created_at=search_value) |
-                Q(created_by__username=search_value) |
-                Q(file=search_value)
+                Q(herbarium__name__icontains=search_value) |
+                Q(created_at__icontains=search_value) |
+                Q(created_by__username__icontains=search_value) |
+                Q(file__icontains=search_value) |
+                Q(voucherimported__biodata_code__code=search_value)
         )
+        if search_value.isdigit():
+            search_query = search_query | Q(voucherimported__catalog_number=int(search_value))
 
     return paginated_table(
         request, files, PriorityVouchersSerializer,
@@ -261,13 +264,16 @@ def session_table(request):
         6: 'digitalized_annotation'
     }
     search_query = Q()
-    search_value = request.GET.get("search[value]", None)
+    search_value: str = request.GET.get("search[value]", None)
     if search_value:
         search_query = (
                 Q(id_annotation__icontains=search_value) |
                 Q(created_by__username__icontains=search_value) |
-                Q(created_at__icontains=search_value)
+                Q(created_at__icontains=search_value) |
+                Q(biodatacode__code=search_value)
         )
+        if search_value.isdigit():
+            search_query = search_query | Q(biodatacode__catalog_number=int(search_value))
     return paginated_table(
         request, entries, GeneratedPageSerializer,
         sort_by_func, "generated_pages", search_query
