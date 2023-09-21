@@ -290,10 +290,14 @@ def process_pending_vouchers(self, pending_vouchers: List[str]):
             self.update_state(state='PROGRESS', meta={
                 "step": i, "total": total, "logs": logger[0].get_logs()
             })
+            if not os.path.exists(os.path.join(temp_folder, raw_file.replace(".CR3", ".dng"))):
+                raise FileNotFoundError(f"File {raw_file} cannot be converted to .dng")
             dng_to_jpeg_color_profile(
                 temp_folder, temp_folder, voucher_imported.herbarium.collection_code,
                 voucher_imported.biodata_code.page.color_profile.file.url, logger
             )
+            if not os.path.exists(os.path.join(temp_folder, raw_file.replace(".CR3", ".jpg"))):
+                raise FileNotFoundError(f"File {raw_file} cannot be converted to .jpg")
             self.update_state(state='PROGRESS', meta={
                 "step": i, "total": total, "logs": logger[0].get_logs()
             })
@@ -308,10 +312,6 @@ def process_pending_vouchers(self, pending_vouchers: List[str]):
                     "step": i, "total": total, "logs": logger[0].get_logs()
                 })
                 etiquette_picture(int(voucher), logger=logger)
-            logger.debug("Cleaning folder")
-            for tmp_file in os.listdir(temp_folder):
-                if os.path.splitext(tmp_file)[1] in [".jpg", ".CR3", ".dng"]:
-                    os.remove(os.path.join(temp_folder, tmp_file))
         except Exception as e:
             logger.error(e, exc_info=True)
         finally:
@@ -323,6 +323,10 @@ def process_pending_vouchers(self, pending_vouchers: List[str]):
                     "logs": logger[0].get_logs()
                 }
             )
+            logger.debug("Cleaning folder")
+            for tmp_file in os.listdir(temp_folder):
+                if os.path.splitext(tmp_file)[1] in [".jpg", ".CR3", ".dng"]:
+                    os.remove(os.path.join(temp_folder, tmp_file))
     logger[1].close()
     logger[1].save_file(PrivateMediaStorage(), temp_folder + ".log")
     self.update_state(
