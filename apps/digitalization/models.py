@@ -42,7 +42,7 @@ DCW_SQL = {
     "verbatimElevation": "verbatim_elevation",
     "decimalLatitude": "decimal_latitude",
     "decimalLongitude": "decimal_longitude",
-    "georeferencedDate": "georeference_date",  # TODO: "georeferenced_date",
+    "georeferencedDate": "georeferenced_date",
     "identifiedBy": "identified_by",
     "dateIdentified": "date_identified",
     "scientificName": "scientific_name",
@@ -185,7 +185,7 @@ class VoucherImported(models.Model):
     scientific_name = models.ForeignKey(Species, on_delete=models.CASCADE, blank=True, null=True)
     locality = models.CharField(max_length=300, blank=True, null=True)
     verbatim_elevation = models.IntegerField(blank=True, null=True)
-    georeference_date = models.DateTimeField(blank=True, null=True)
+    georeferenced_date = models.DateTimeField(blank=True, null=True)
     decimal_latitude = models.FloatField(blank=True, null=True)
     decimal_longitude = models.FloatField(blank=True, null=True)
     identified_by = models.CharField(max_length=100, blank=True, null=True)
@@ -321,8 +321,8 @@ class VoucherImported(models.Model):
                 logger.warning(f"'{_column_}' not in data")
                 return None
 
-        georeference_date = pd.to_datetime(
-            row['georeference_date'],
+        georeferenced_date = pd.to_datetime(
+            row['georeferenced_date'],
             infer_datetime_format=True,
             format='%Y%m%d', utc=True
         )
@@ -357,7 +357,7 @@ class VoucherImported(models.Model):
             scientific_name=species,
             locality=row['locality'],
             verbatim_elevation=__validate_attribute__(row, "verbatim_elevation", lambda x: int(x)),
-            georeference_date=None if pd.isnull(georeference_date) else georeference_date,
+            georeferenced_date=None if pd.isnull(georeferenced_date) else georeferenced_date,
             decimal_latitude=__validate_attribute__(
                 row, "decimal_latitude",
                 lambda x: None if np.isnan(x) else float(x)
@@ -492,7 +492,7 @@ class VouchersView(models.Model):
            species.scientific_name,
            voucher.locality,
            voucher.verbatim_elevation,
-           voucher.georeference_date,
+           voucher.georeferenced_date,
            voucher.decimal_latitude,
            voucher.decimal_longitude,
            voucher.identified_by,
@@ -524,7 +524,7 @@ class VouchersView(models.Model):
     scientific_name = models.CharField(max_length=300, blank=True, null=True)
     locality = models.CharField(max_length=300, blank=True, null=True)
     verbatim_elevation = models.IntegerField(blank=True, null=True)
-    georeference_date = models.DateTimeField(blank=True, null=True)
+    georeferenced_date = models.DateTimeField(blank=True, null=True)
     decimal_latitude = models.FloatField(blank=True, null=True)
     decimal_longitude = models.FloatField(blank=True, null=True)
     identified_by = models.CharField(max_length=100, blank=True, null=True)

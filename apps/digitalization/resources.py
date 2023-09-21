@@ -19,7 +19,7 @@ class VoucherImportedAdminResource(resources.ModelResource):
             'scientific_name',
             'locality',
             'verbatim_elevation',
-            'georeference_date',
+            'georeferenced_date',
             'decimal_latitude',
             'decimal_longitude',
             'identified_by',

@@ -158,7 +158,7 @@ class VoucherSerializer(HyperlinkedModelSerializer):
     class Meta:
         model = VoucherImported
         fields = ['id', 'herbarium', 'herbarium_code', 'other_catalog_numbers', 'catalog_number', 'recorded_by',
-                  'record_number', 'organism_remarks', 'species', 'locality', 'verbatim_elevation', 'georeference_date',
+                  'record_number', 'organism_remarks', 'species', 'locality', 'verbatim_elevation', 'georeferenced_date',
                   'identified_by', 'identified_date', 'image_public', 'image_public_resized_10',
                   'image_public_resized_60']
 
@@ -471,13 +471,13 @@ class ImagesSerializer(HyperlinkedModelSerializer):
     specie_id = CharField(source='scientific_name.id')
     image_name = CharField(source='image_public.name')
     herbarium_code = CharField(source='herbarium.collection_code')
-    georeference_date = serializers.DateTimeField(format="%d-%m-%Y")
+    georeferenced_date = serializers.DateTimeField(format="%d-%m-%Y")
 
     class Meta:
         model = VoucherImported
         fields = ['id', 'name', 'specie_id', 'herbarium_code', 'image_public', 'image_public_resized_10',
                   'image_public_resized_60', 'image_name', 'catalog_number', 'recorded_by', 'record_number',
-                  'organism_remarks', 'locality', 'identified_by', 'identified_date', 'georeference_date']
+                  'organism_remarks', 'locality', 'identified_by', 'identified_date', 'georeferenced_date']
 
 
 class GalleryPhotosSerializer(HyperlinkedModelSerializer):

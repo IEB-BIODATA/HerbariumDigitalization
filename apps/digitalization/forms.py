@@ -1,6 +1,6 @@
 from django import forms
+
 from .models import PriorityVouchersFile, Herbarium, ColorProfileFile, VoucherImported, GalleryImage, Licence
-from ..catalog.models import Species
 
 
 class PriorityVoucherForm(forms.ModelForm):
@@ -51,7 +51,7 @@ class VoucherImportedForm(forms.ModelForm):
             'scientific_name',
             'locality',
             'verbatim_elevation',
-            'georeference_date',
+            'georeferenced_date',
             'decimal_latitude',
             'decimal_longitude',
             'identified_by',
@@ -72,7 +72,7 @@ class VoucherImportedForm(forms.ModelForm):
             'scientific_name': forms.Select(attrs={'class': "form-control"}),
             'locality': forms.TextInput(attrs={'class': "form-control"}),
             'verbatim_elevation': forms.TextInput(attrs={'class': "form-control", 'type': 'number'}),
-            'georeference_date': forms.DateTimeInput(attrs={'class': 'form-control datetimepicker-input'}),
+            'georeferenced_date': forms.DateTimeInput(attrs={'class': 'form-control datetimepicker-input'}),
             'decimal_latitude': forms.TextInput(attrs={'class': "form-control"}),
             'decimal_longitude': forms.TextInput(attrs={'class': "form-control"}),
             'identified_by': forms.TextInput(attrs={'class': "form-control"}),

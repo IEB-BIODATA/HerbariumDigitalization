@@ -105,8 +105,8 @@ def etiquette_picture(voucher_id, logger: logging.Logger = None):
                 parameters["LOCALITY_POS"], voucher.locality,
                 (0, 0, 0), font=normal_font
             )
-        if voucher.georeference_date:
-            georeferenced_date = voucher.georeference_date.strftime('%d-%m-%Y')
+        if voucher.georeferenced_date:
+            georeferenced_date = voucher.georeferenced_date.strftime('%d-%m-%Y')
         else:
             georeferenced_date = ""
         voucher_image_editable.text(
