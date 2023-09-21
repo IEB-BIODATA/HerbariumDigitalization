@@ -270,19 +270,7 @@
                     postBody.innerHTML = `
                     <h6>Se encontraron ${response.count} imágenes por procesar. ¿Desea continuar?</h6>
                     ${pendingInput}
-                    <div id="processProgress" class="progress" role="progressbar" aria-label="progress" aria-valuenow="0" aria-valuemin="0" aria-valuemax="100" style="display: none;">
-                        <div class="progress-bar progress-bar-striped progress-bar-animated" style="width: 0%">0%</div>
-                    </div>
-                    <div role="tab" id="showLog">
-                        <h6>
-                            <a role="button" data-bs-toggle="collapse" data-bs-target="#consoleLog" aria-expanded="true" aria-controls="consoleLog" class="">
-                                Mostrar logs
-                            </a>
-                        </h6>
-                    </div>
-                    <div id="consoleLog" class="collapse" role="tabpanel" aria-labelledby="showLog">
-                        <pre><code id="loggingContent"></code></pre>
-                    </div>
+                    <div id="progressDom"></div>
                     <p style="display: flex; justify-content: end;">*<i>Si procede, esta ventana deberá permanecer abierta</i></p>
                     `;
                     document.getElementById('continuePostprocessing').disabled = false;
@@ -323,9 +311,7 @@
                 mode: 'same-origin',
                 success: function(response){
                     console.debug(response);
-                    document.getElementById("processProgress").style.display = "";
-                    document.getElementById("consoleLog").style.display = ""
-                    updateProgress(response);
+                    updateProgressPendingVouchers(response);
                 },
                 error: function (error){
                     console.error(error);
@@ -345,62 +331,36 @@
             const progressUrl = "{% url 'get_progress' task_id='placeholder' %}".replace(
                 'placeholder', taskId
             );
-            const postprocessingModal = document.getElementById("postprocessingModal");
             const urlLog = "{% url 'get_task_log' task_id='placeholder' %}".replace(
                 'placeholder', taskId
             );
             const logFileDefault = "{% static 'assets/processed' %}";
-            updateProgress(
-                taskId, progressUrl, urlLog,
-                postprocessingModal, csrfToken, logFileDefault
-            );
-        }
-
-        function getFormattedDateTime() {
-            const now = new Date();
-            const year = now.getFullYear();
-            const month = String(now.getMonth() + 1).padStart(2, '0');
-            const day = String(now.getDate()).padStart(2, '0');
-            const hours = String(now.getHours()).padStart(2, '0');
-            const minutes = String(now.getMinutes()).padStart(2, '0');
-            const seconds = String(now.getSeconds()).padStart(2, '0');
-            return `${year}_${month}_${day}-${hours}_${minutes}_${seconds}`;
+            const progressDOM = document.getElementById("progressDom");
+            updateProgress({
+                taskId: taskId,
+                progressUrl: progressUrl,
+                urlLog: urlLog,
+                progressDOM: progressDOM,
+                csrfToken: csrfToken,
+                logFileDefault: logFileDefault,
+                onErrorMessage: () => {
+                    return `
+                    <h6>Ocurrió un error inesperado, favor contactar al administrador antes de cerrar esta ventana</h6>
+                    `;
+                },
+                successCallback: () => {
+                    document.getElementById('continuePostprocessing').disabled = false;
+                    document.getElementById('continuePostprocessing').style.display = "none";
+                },
+                errorCallback: () => {
+                    document.getElementById('continuePostprocessing').disabled = false;
+                    document.getElementById('continuePostprocessing').style.display = "none";
+                }
+            });
         }
     </script>
 {% endblock %}
-{% block css %}
-    <style>
-        #consoleLog {
-            font-family: Arial, sans-serif;
-            padding: 10px;
-            background-color: #f0f0f0;
-            border: 1px solid #ccc;
-            max-height: 300px;
-            overflow-y: auto;
-        }
-
-        .log {
-            color: black;
-        }
-
-        .debug {
-            color: blue;
-        }
-
-        .info {
-            color: green;
-        }
-
-        .warn {
-            color: orange;
-        }
-
-        .error {
-            color: red;
-        }
-    </style>
-{% endblock %}
-{% block content %}
+    {% block content %}
     <h1>Digitalización de Especímenes</h1>
     <!-- DataTables Example -->
     <div class="card mb-3">

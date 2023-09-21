@@ -5,15 +5,20 @@ import os
 import shutil
 import textwrap
 from io import BytesIO
-from typing import List
+from typing import List, Tuple
 
+import datetime as dt
 import pandas as pd
+import pytz
 import s3fs
 from PIL import Image, ImageDraw, ImageFont
 from celery import shared_task
 from django.conf import settings
+from django.contrib.postgres.search import TrigramSimilarity
+from django.db import transaction
 
-from apps.digitalization.models import VoucherImported, BiodataCode, PriorityVouchersFile
+from apps.catalog.models import Species, Synonymy
+from apps.digitalization.models import VoucherImported, BiodataCode, PriorityVouchersFile, DCW_SQL
 from apps.digitalization.storage_backends import PrivateMediaStorage
 from apps.digitalization.utils import SessionFolder, TaskProcessLogger, HtmlLogger, GroupLogger
 from apps.digitalization.utils import cr3_to_dng, dng_to_jpeg, dng_to_jpeg_color_profile
@@ -228,6 +233,7 @@ def scheduled_postprocess(input_folder: str, temp_folder: str, log_folder: str):
             session_folder.close_session(s3)
         except Exception as e:
             process_logger.error(e, exc_info=True)
+    s3.end_transaction()
     shutil.rmtree(input_folder)
     shutil.rmtree(temp_folder)
     process_logger.info(sessions)
@@ -336,8 +342,8 @@ def upload_priority_vouchers(self, priority_voucher: int):
     html_logger = HtmlLogger("Priority Logger")
     temp_folder = self.request.id
     os.makedirs(temp_folder, exist_ok=True)
-    process_logger = TaskProcessLogger("Pending Logger", temp_folder)
-    logger = GroupLogger("Pending Logger", html_logger, process_logger)
+    process_logger = TaskProcessLogger("Priority Logger", temp_folder)
+    logger = GroupLogger("Priority Logger", html_logger, process_logger)
     priorities = PriorityVouchersFile.objects.get(pk=priority_voucher)
     logger.info("Reading priorities...")
     logger.debug(f"Reading excel file {priorities.file.name}")
@@ -349,16 +355,167 @@ def upload_priority_vouchers(self, priority_voucher: int):
             "logs": logger[0].get_logs()
         }
     )
-    data = pd.read_excel(priorities.file, header=0)
+    total = 1
+    error = dict()
+    on_database = False
+    missing_species = False
+    code_error = False
+    try:
+        data = pd.read_excel(priorities.file, header=0)
+        data.rename(columns=DCW_SQL, inplace=True)
+        sql_dcw = {v: k for k, v in DCW_SQL.items()}
+        database_errors = list()
+        species_errors = list()
+        errors = list()
+        logger.info("Checking duplications in file")
+        duplicated = data[data.duplicated(["catalog_number"], keep=False)]
+        logger.debug(f"Found {len(duplicated)} row duplicated")
+        if len(duplicated) != 0:
+            error["type"] = "duplicates in file"
+            error["data"] = duplicated.rename(columns=sql_dcw).to_json()
+            raise AssertionError("Duplicated rows on file")
+        with transaction.atomic():
+            logger.info("Checking rows")
+            total = len(data)
+            for i, (index, row) in enumerate(data.iterrows()):
+                try:
+                    code = "{}:{}:{:07d}".format(
+                        priorities.herbarium.institution_code,
+                        priorities.herbarium.collection_code,
+                        row["catalog_number"]
+                    )
+                    biodata_codes = BiodataCode.objects.filter(code=code).all()
+                    if len(biodata_codes) != 0:
+                        logger.warning(f"Code {code} already on database")
+                        biodata_code = biodata_codes[0]
+                        if biodata_code.voucher_state in [0, 1, 7, 8]:
+                            logger.error(
+                                f"{code} is assigned to a '{biodata_code.get_voucher_state_display()}' voucher"
+                            )
+                            database_errors.append(row)
+                            on_database = True
+                            continue
+                        else:
+                            logger.debug(f"Overwriting code '{code}'")
+                            biodata_code.delete()
+                    biodata_code = BiodataCode(
+                        herbarium=priorities.herbarium,
+                        code=code,
+                        catalog_number=row["catalog_number"],
+                        created_by=priorities.created_by,
+                        created_at=dt.datetime.now(tz=pytz.timezone('America/Santiago')),
+                        qr_generated=False
+                    )
+                    biodata_code.save()
+                    logger.debug(f"New occurrence ({biodata_code.id}) added with code {code}")
+                    species, info = get_species(row, logger)
+                    if species is None:
+                        species_errors.append(info)
+                        missing_species = True
+                        continue
+                    voucher_imported = VoucherImported.from_pandas_row(
+                        row, priorities, species=species, biodata_code=biodata_code, logger=logger
+                    )
+                    voucher_imported.save()
+                except Exception as e:
+                    logger.error(e, exc_info=True)
+                    errors.append(row)
+                    code_error = True
+                finally:
+                    self.update_state(
+                        state='PROGRESS',
+                        meta={
+                            "step": i,
+                            "total": total,
+                            "logs": logger[0].get_logs(),
+                        }
+                    )
+            if on_database:
+                error["type"] = "duplicates in database"
+                error["data"] = pd.DataFrame(database_errors).rename(columns=sql_dcw).to_json()
+                raise AssertionError("Codes presented on database")
+            if missing_species:
+                error["type"] = "no match with catalog"
+                error["data"] = pd.DataFrame(species_errors).rename(columns=sql_dcw).to_json()
+                raise ValueError("Some species are not in database of catalog")
+            if code_error:
+                error["type"] = "code"
+                error["data"] = pd.DataFrame(errors).rename(columns=sql_dcw).to_json()
+                raise RuntimeError("Error during import data on server, check logs for details")
+    except Exception as e:
+        logger.error(e, exc_info=True)
+        logger.warning("Deleting failed priority file")
+        try:
+            priorities.file.delete(save=False)
+            priorities.delete()
+            logger.info("Priority file deleted.")
+        except Exception as e:
+            logger.error(e, exc_info=True)
+            logger.info("Error deleting file!")
+        self.update_state(
+            state='ERROR',
+            meta={
+                "step": total,
+                "total": total,
+                "logs": logger[0].get_logs(),
+                "error": error
+            }
+        )
     logger[1].close()
     logger[1].save_file(PrivateMediaStorage(), temp_folder + ".log")
     self.update_state(
         state='SUCCESS',
         meta={
-            "step": 1,
-            "total": 1,
+            "step": total,
+            "total": total,
             "logs": logger[0].get_logs(),
         }
     )
     shutil.rmtree(temp_folder)
     return "Processed"
+
+
+def get_species(data_candid: pd.Series, logger: logging.Logger) -> Tuple[Species, pd.Series]:
+    info = data_candid.copy(deep=True)
+    species = Species.objects.filter(scientific_name_db=data_candid["scientific_name"].strip()).first()
+    if species is None:
+        logger.warning("Searching using trigram similarity")
+        similarity_values = Species.objects.annotate(
+            similarity=TrigramSimilarity(
+                'scientific_name_db',
+                data_candid['scientific_name'].strip().upper()
+            ),
+        ).filter(
+            similarity__gte=0.55
+        ).order_by('-similarity')
+        if len(similarity_values) > 0:
+            logger.debug("Similarity found on accepted species")
+            if similarity_values[0].similarity < 1:
+                info['similarity'] = similarity_values[0].similarity
+                info['scientific_name_similarity'] = similarity_values[0].scientific_name
+                info['synonymy_similarity'] = ''
+            else:
+                logger.warning("Error on similarity found")
+        else:
+            similarity_values = Synonymy.objects.annotate(
+                similarity=TrigramSimilarity(
+                    'scientific_name_db',
+                    data_candid['scientific_name'].strip().upper()
+                ),
+            ).filter(
+                similarity__gte=0.55
+            ).order_by('-similarity')
+            if len(similarity_values) > 0:
+                logger.debug("Similarity found on synonym")
+                info['similarity'] = similarity_values[0].similarity
+                species_synonymy = Species.objects.filter(synonyms=similarity_values[0].id)
+                info['scientific_name_similarity'] = species_synonymy[0].scientific_name
+                info['synonymy_similarity'] = similarity_values[0].scientific_name
+            else:
+                logger.warning("No similarity found")
+                info['similarity'] = 0
+                info['scientific_name_similarity'] = ''
+                info['synonymy_similarity'] = ''
+    else:
+        logger.debug(f"Species {data_candid['scientific_name'].strip()} found")
+    return species, info

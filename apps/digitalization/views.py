@@ -22,7 +22,8 @@ from django.contrib.gis.geos import GEOSGeometry
 from django.core import serializers
 from django.core.files import File
 from django.core.files.base import ContentFile
-from django.db.models import Q, Count
+from django.db.models import Q, Count, CharField
+from django.db.models.functions import Cast
 from django.http import HttpResponse, HttpResponseBadRequest, HttpResponseServerError, HttpResponseRedirect, \
     HttpResponseForbidden
 from django.shortcuts import render, redirect
@@ -247,7 +248,8 @@ def session_table(request):
         not_found_count_annotation=Count('biodatacode', filter=Q(biodatacode__voucher_state=2)),
         digitalized_annotation=Count(
             'biodatacode', filter=Q(biodatacode__voucher_state=7) | Q(biodatacode__voucher_state=8)
-        )
+        ),
+        id_annotation=Cast('id', CharField())
     )
     sort_by_func = {
         0: 'id',
@@ -262,7 +264,8 @@ def session_table(request):
     search_value = request.GET.get("search[value]", None)
     if search_value:
         search_query = (
-                Q(created_by__icontains=search_value) |
+                Q(id_annotation__icontains=search_value) |
+                Q(created_by__username__icontains=search_value) |
                 Q(created_at__icontains=search_value)
         )
     return paginated_table(
@@ -274,118 +277,86 @@ def session_table(request):
 @login_required
 @csrf_exempt
 @require_POST
-def csv_error_data(request):
-    if request.method == 'POST':
-        response = HttpResponse(content_type='text/csv',
-                                headers={'Content-Disposition': 'attachment; filename=vouchers_error.csv'}, )
-        writer = csv.writer(response)
-        data_errors = json.loads(json.dumps(request.POST.dict()))
-        colums = 11
-        registers = int(len(data_errors) / colums)
-        indexes = []
-        for idx, value in enumerate(data_errors):
-            if idx >= registers:
-                break
-            value_str = str(value)
-            index = value_str[value_str.find('[') + len('['):value_str.rfind(']')]
-            indexes.append(int(index))
-        data_list = []
-        writer.writerow(['catalog_number', 'recorded_by', 'record_number', 'scientific_name', 'locality'])
-        for i in indexes:
-            writer.writerow([data_errors['catalog_number[' + str(i) + ']'], data_errors['recorded_by[' + str(i) + ']'],
-                             data_errors['record_number[' + str(i) + ']'],
-                             data_errors['scientific_name[' + str(i) + ']'],
-                             data_errors['locality[' + str(i) + ']']])
-        return response
-
-
-@login_required
-@csrf_exempt
-@require_POST
 def xls_error_data(request):
-    if request.method == 'POST':
-        data_errors = json.loads(json.dumps(request.POST.dict()))
-        data = []
-        try:
-            similarity = data_errors['similarity[0]']
-            colums = 14
-            registers = int(len(data_errors) / colums)
-            indexes = []
-            for idx, value in enumerate(data_errors):
-                if idx >= registers:
-                    break
-                value_str = str(value)
-                index = value_str[value_str.find('[') + len('['):value_str.rfind(']')]
-                indexes.append(int(index))
-            headers = ['catalog_number', 'record_number', 'recorded_by', 'other_catalog_numbers', 'locality',
-                       'verbatim_elevation', 'decimal_latitude', 'decimal_longitude', 'georeference_date',
-                       'scientific_name', 'similarity', 'scientific_name_similarity', 'synonymy_similarity']
-            for i in indexes:
-                data.append(
-                    [data_errors['catalog_number[' + str(i) + ']'], data_errors['record_number[' + str(i) + ']'],
-                     data_errors['recorded_by[' + str(i) + ']'],
-                     data_errors['other_catalog_numbers[' + str(i) + ']'],
-                     data_errors['locality[' + str(i) + ']'], data_errors['verbatim_elevation[' + str(i) + ']'],
-                     data_errors['decimal_latitude[' + str(i) + ']'],
-                     data_errors['decimal_longitude[' + str(i) + ']'],
-                     data_errors['georeference_date[' + str(i) + ']'],
-                     data_errors['scientific_name[' + str(i) + ']'], data_errors['similarity[' + str(i) + ']'],
-                     data_errors['scientific_name_similarity[' + str(i) + ']'],
-                     data_errors['synonymy_similarity[' + str(i) + ']']])
-        except:
-            colums = 11
-            registers = int(len(data_errors) / colums)
-            indexes = []
-            for idx, value in enumerate(data_errors):
-                if idx >= registers:
-                    break
-                value_str = str(value)
-                index = value_str[value_str.find('[') + len('['):value_str.rfind(']')]
-                indexes.append(int(index))
-            headers = ['catalog_number', 'record_number', 'recorded_by', 'other_catalog_numbers', 'locality',
-                       'verbatim_elevation', 'decimal_latitude', 'decimal_longitude', 'georeference_date',
-                       'scientific_name']
-            for i in indexes:
-                data.append(
-                    [data_errors['catalog_number[' + str(i) + ']'], data_errors['record_number[' + str(i) + ']'],
-                     data_errors['recorded_by[' + str(i) + ']'],
-                     data_errors['other_catalog_numbers[' + str(i) + ']'],
-                     data_errors['locality[' + str(i) + ']'], data_errors['verbatim_elevation[' + str(i) + ']'],
-                     data_errors['decimal_latitude[' + str(i) + ']'],
-                     data_errors['decimal_longitude[' + str(i) + ']'],
-                     data_errors['georeference_date[' + str(i) + ']'],
-                     data_errors['scientific_name[' + str(i) + ']']])
-        data = tablib.Dataset(*data, headers=headers)
-        response = HttpResponse(data.xlsx, content_type='application/vnd.ms-Excel')
-        response['Content-Disposition'] = "attachment; filename=vouchers_error.xlsx"
-        return response
+    data_errors = json.loads(json.dumps(request.POST.dict()))
+    logging.debug(f"Requesting XLS of errors: {data_errors}")
+    data = list()
+    indexes = list()
+    columns = 11
+    headers = [
+        'catalogNumber', 'recordNumber', 'recordedBy', 'otherCatalogNumbers', 'locality',
+        'verbatimElevation', 'decimalLatitude', 'decimalLongitude',
+        'georeferencedDate', 'scientificName',
+    ]
+    if "similarity[0]" in data_errors.keys():
+        columns = 14
+        headers += ['similarity', 'scientificNameSimilarity', 'synonymySimilarity', ]
+    registers = int(len(data_errors) / columns)
+    for idx, value in enumerate(data_errors):
+        if idx >= registers:
+            break
+        value_str = str(value)
+        index = value_str[value_str.find('[') + len('['):value_str.rfind(']')]
+        indexes.append(int(index))
+    for i in indexes:
+        datum = [
+            data_errors['catalogNumber[' + str(i) + ']'],
+            data_errors['recordNumber[' + str(i) + ']'],
+            data_errors['recordedBy[' + str(i) + ']'],
+            data_errors['otherCatalogNumbers[' + str(i) + ']'],
+            data_errors['locality[' + str(i) + ']'],
+            data_errors['verbatimElevation[' + str(i) + ']'],
+            data_errors['decimalLatitude[' + str(i) + ']'],
+            data_errors['decimalLongitude[' + str(i) + ']'],
+            data_errors['georeferencedDate[' + str(i) + ']'],
+            data_errors['scientificName[' + str(i) + ']'],
+        ]
+        if "similarity[0]" in data_errors.keys():
+            datum += [
+                data_errors['similarity[' + str(i) + ']'],
+                data_errors['scientificNameSimilarity[' + str(i) + ']'],
+                data_errors['synonymySimilarity[' + str(i) + ']']
+            ]
+        data.append(datum)
+    data = tablib.Dataset(*data, headers=headers)
+    response = HttpResponse(data.xlsx, content_type='application/vnd.ms-Excel')
+    response['Content-Disposition'] = "attachment; filename=vouchers_error.xlsx"
+    return response
 
 
 @login_required
 @csrf_exempt
 @require_POST
 def pdf_error_data(request):
-    if request.method == 'POST':
-        data_errors = json.loads(json.dumps(request.POST.dict()))
-        colums = 11
-        registers = int(len(data_errors) / colums)
-        indexes = []
-        for idx, value in enumerate(data_errors):
-            if idx >= registers:
-                break
-            value_str = str(value)
-            index = value_str[value_str.find('[') + len('['):value_str.rfind(']')]
-            indexes.append(int(index))
-        data_list = []
-        for i in indexes:
-            data_list.append({'catalog_number': data_errors['catalog_number[' + str(i) + ']'],
-                              'recorded_by': data_errors['recorded_by[' + str(i) + ']'],
-                              'record_number': data_errors['record_number[' + str(i) + ']'],
-                              'scientific_name': data_errors['scientific_name[' + str(i) + ']'],
-                              'locality': data_errors['locality[' + str(i) + ']']})
-        result = render_to_pdf('digitalization/template_list_priority_voucher.html',
-                               {'pagesize': 'A4', 'page_date': date.today(), 'priority_vouchers': data_list})
-        return HttpResponse(result, content_type='application/pdf')
+    data_errors = json.loads(json.dumps(request.POST.dict()))
+    logging.debug(f"Requesting PDF of errors: {data_errors}")
+    columns = 11
+    registers = int(len(data_errors) / columns)
+    indexes = list()
+    for idx, value in enumerate(data_errors):
+        if idx >= registers:
+            break
+        value_str = str(value)
+        index = value_str[value_str.find('[') + len('['):value_str.rfind(']')]
+        indexes.append(int(index))
+    data_list = list()
+    for i in indexes:
+        data_list.append({
+            'catalog_number': data_errors['catalogNumber[' + str(i) + ']'],
+            'recorded_by': data_errors['recordedBy[' + str(i) + ']'],
+            'record_number': data_errors['recordNumber[' + str(i) + ']'],
+            'scientific_name': data_errors['scientificName[' + str(i) + ']'],
+            'locality': data_errors['locality[' + str(i) + ']']
+        })
+    result = render_to_pdf(
+        'digitalization/template_list_priority_voucher.html',
+        {
+            'pagesize': 'A4',
+            'page_date': date.today(),
+            'priority_vouchers': data_list
+        }
+    )
+    return HttpResponse(result, content_type='application/pdf')
 
 
 @login_required

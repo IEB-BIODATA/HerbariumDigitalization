@@ -89,6 +89,8 @@ TEMPLATES = [
 
 WSGI_APPLICATION = 'web.wsgi.application'
 
+DATA_UPLOAD_MAX_NUMBER_FIELDS = None
+
 
 # Database
 # https://docs.djangoproject.com/en/4.1/ref/settings/#databases
@@ -149,7 +151,7 @@ if DEBUG:
     STATICFILES_DIRS = [os.path.join(BASE_DIR, 'static')]
 else:
     STATICFILES_STORAGE = 'apps.digitalization.storage_backends.StaticStorage'
-    AWS_STATIC_LOCATION = 'static'
+    AWS_STATIC_LOCATION = 'static/digitalization'
     STATIC_URL = "https://%s/%s/" % (AWS_S3_CUSTOM_DOMAIN, AWS_STATIC_LOCATION)
 
 

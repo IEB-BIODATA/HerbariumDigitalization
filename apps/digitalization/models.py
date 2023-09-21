@@ -1,12 +1,15 @@
 # -*- coding: utf-8 -*-
 # from django.db import models
+from __future__ import annotations
 import logging
-import os
-from typing import BinaryIO, Union, Any, Tuple
+from typing import BinaryIO, Union, Any, Tuple, Callable
 
 import celery
+import numpy as np
+import pandas as pd
 from django.contrib.auth.models import User
 from django.contrib.gis.db import models
+from django.contrib.gis.geos import GEOSGeometry
 from django.core.files.base import ContentFile, File
 from django.db import connection
 from django.db.models import Q
@@ -29,6 +32,24 @@ VOUCHER_STATE = (
     (7, 'Digitalizado'),
     (8, 'Pendiente'),
 )
+
+DCW_SQL = {
+    "catalogNumber": "catalog_number",
+    "recordNumber": "record_number",
+    "recordedBy": "recorded_by",
+    "organismRemarks": "organism_remarks",
+    "otherCatalogNumbers": "other_catalog_numbers",
+    "verbatimElevation": "verbatim_elevation",
+    "decimalLatitude": "decimal_latitude",
+    "decimalLongitude": "decimal_longitude",
+    "georeferencedDate": "georeference_date",  # TODO: "georeferenced_date",
+    "identifiedBy": "identified_by",
+    "dateIdentified": "date_identified",
+    "scientificName": "scientific_name",
+    "scientificNameSimilarity": "scientific_name_similarity",
+    "synonymySimilarity": "synonymy_similarity",
+    "similarity": "similarity",
+}
 
 
 class Herbarium(models.Model):
@@ -94,7 +115,7 @@ class GeneratedPage(models.Model):
     @property
     def digitalized(self):
         return BiodataCode.objects.filter(
-            Q(page__id=self.id) | Q(voucher_state=7) | Q(voucher_state=8)
+            Q(page__id=self.id) & (Q(voucher_state=7) | Q(voucher_state=8))
         ).count()
 
     def __unicode__(self):
@@ -191,7 +212,7 @@ class VoucherImported(models.Model):
             self.biodata_code.voucher_state = 8
             self.biodata_code.save()
             self.save()
-            celery.current_app.send_task('etiquette_picture', (self.id, ))
+            celery.current_app.send_task('etiquette_picture', (self.id,))
             return
         else:
             logging.debug("Voucher not digitalized, skipping ({})".format(self.id))
@@ -259,6 +280,100 @@ class VoucherImported(models.Model):
         ))
         getattr(self, image_variable).save(image_name, image_content, save=True)
         return
+
+    @staticmethod
+    def public_point(point):
+        integer = int(point)
+        min_grade = point - integer
+        minimum = min_grade * 60
+        min_round = round(minimum) - 1
+        public_point = integer + min_round / 60
+        return public_point
+
+    @staticmethod
+    def from_pandas_row(
+            row: pd.Series,
+            priority_file: PriorityVouchersFile,
+            species: Species = None,
+            biodata_code: BiodataCode = None,
+            logger: logging.Logger = None
+    ) -> VoucherImported:
+        if species is None:
+            species = Species.objects.firter(scientific_name_db=row["scientific_name"].upper().strip()).first()
+        if biodata_code is None:
+            biodata_code = BiodataCode.objects.filter(
+                code="{}:{}:{:07d}".format(
+                    priority_file.herbarium.institution_code,
+                    priority_file.herbarium.collection_code,
+                    row['catalog_number']
+                )).first()
+        if logger is None:
+            logger = logging.getLogger(__name__)
+
+        def __validate_attribute__(_row_: pd.Series, _column_: str, _validator_: Callable[[Any], Any]) -> Any:
+            if _column_ in _row_.keys():
+                try:
+                    return _validator_(_row_[_column_])
+                except Exception as e:
+                    logger.warning(f"Error ({e}) retrieving '{_column_}' from data", exc_info=True)
+                    return None
+            else:
+                logger.warning(f"'{_column_}' not in data")
+                return None
+
+        georeference_date = pd.to_datetime(
+            row['georeference_date'],
+            infer_datetime_format=True,
+            format='%Y%m%d', utc=True
+        )
+
+        point = None
+        point_public = None
+        decimal_latitude_public = None
+        decimal_longitude_public = None
+
+        if row['decimal_latitude'] and row['decimal_longitude']:
+            point = GEOSGeometry(
+                f"POINT({row['decimal_longitude']} {row['decimal_latitude']})",
+                srid=4326
+            )
+            if not np.isnan(row['decimal_latitude']) and not np.isnan(row['decimal_longitude']):
+                decimal_latitude_public = VoucherImported.public_point(row['decimal_latitude'])
+                decimal_longitude_public = VoucherImported.public_point(row['decimal_longitude'])
+                point_public = GEOSGeometry(
+                    f"POINT({decimal_longitude_public} {decimal_latitude_public})",
+                    srid=4326
+                )
+
+        return VoucherImported(
+            vouchers_file=priority_file,
+            biodata_code=biodata_code,
+            herbarium=priority_file.herbarium,
+            other_catalog_numbers=row['other_catalog_numbers'],
+            catalog_number=row['catalog_number'],
+            recorded_by=row['recorded_by'],
+            record_number=row['record_number'],
+            organism_remarks=__validate_attribute__(row, "organism_remarks", lambda x: x),
+            scientific_name=species,
+            locality=row['locality'],
+            verbatim_elevation=__validate_attribute__(row, "verbatim_elevation", lambda x: int(x)),
+            georeference_date=None if pd.isnull(georeference_date) else georeference_date,
+            decimal_latitude=__validate_attribute__(
+                row, "decimal_latitude",
+                lambda x: None if np.isnan(x) else float(x)
+            ),
+            decimal_longitude=__validate_attribute__(
+                row, "decimal_longitude",
+                lambda x: None if np.isnan(x) else float(x)
+            ),
+            identified_by=__validate_attribute__(row, "identified_by", lambda x: x),
+            identified_date=__validate_attribute__(row, "identified_date", lambda x: x),
+            point=point,
+            decimal_latitude_public=decimal_latitude_public,
+            decimal_longitude_public=decimal_longitude_public,
+            point_public=point_public,
+            priority=1 if "priority" not in row.keys() else row["priority"]
+        )
 
 
 class Licence(models.Model):

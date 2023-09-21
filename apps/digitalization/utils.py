@@ -30,7 +30,7 @@ class TaskProcessLogger(logging.Logger):
         self.__log_file__.write("{} [{}]:{}\n".format(
             dt.datetime.now().strftime("%Y-%m-%d %I:%M:%S"),
             level,
-            repr(message)
+            str(message)
         ))
         if kwargs.get("exc_info", False):
             self.__log_file__.write(traceback.format_exc() + "\n")
@@ -66,7 +66,7 @@ class HtmlLogger(logging.Logger):
         escaped_msg = html.escape("{} [{}]:{}".format(
             dt.datetime.now().strftime("%Y-%m-%d %I:%M:%S"),
             level,
-            repr(message)
+            str(message)
         ))
         self.__logs__ += f'<code class="{level.lower()}">{escaped_msg}</code><br>'
         if kwargs.get("exc_info", False):

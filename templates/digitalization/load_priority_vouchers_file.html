@@ -2,7 +2,9 @@
 {% load static %}
 {% block javascript %}
     <script type="text/javascript">
+        const csrfToken = "{{ csrf_token }}";
         const alertLoad = document.getElementById("alert");
+        let errorData = {};
         $(document).ready(function() {
             $('#FilesTable').DataTable({
                 serverSide: true,
@@ -25,7 +27,7 @@
                             if (type === 'display' || type === 'search') {
                                 return dateFormat(date)
                             } else if (type === 'sort')
-                                return date.toISOString;
+                                return date.toISOString();
                             else
                                 return date;
                         }
@@ -43,35 +45,146 @@
                     },
                 ],
             });
+            let taskId = "{{ task_id }}";
+            if (taskId === "")
+                console.debug("Not file uploaded");
+            else {
+                const progressUrl = "{% url 'get_progress' task_id='placeholder' %}".replace(
+                    'placeholder', taskId
+                );
+                const urlLog = "{% url 'get_task_log' task_id='placeholder' %}".replace(
+                    'placeholder', taskId
+                );
+                const logFileDefault = "{% static 'assets/processed' %}";
+                const alertDOM = document.getElementById("alert");
+                updateProgress({
+                    taskId: taskId,
+                    progressUrl: progressUrl,
+                    urlLog: urlLog,
+                    progressDOM: alertDOM,
+                    csrfToken: csrfToken,
+                    logFileDefault: logFileDefault,
+                    onErrorMessage: (error) => {
+                        return getErrorMessage(error);
+                    },
+                    successCallback: () => {
+                        console.log("Success");
+                        document.getElementById("loadButton").disabled = false;
+                    },
+                    errorCallback: (error) => {
+                        document.getElementById("loadButton").disabled = false;
+                        const rows = [];
+                        const columns = [];
+                        if (error.type === "no match with catalog"){
+                            columns.push(
+                                "catalogNumber",
+                                "scientificName",
+                                "scientificNameSimilarity",
+                                "synonymySimilarity",
+                                "similarity"
+                            );
+                        } else {
+                            columns.push(
+                                "catalogNumber",
+                                "recordedBy",
+                                "recordNumber",
+                                "scientificName",
+                                "locality"
+                            );
+                        }
+                        const keys = Object.keys(errorData[columns[0]]);
+                        keys.forEach(key => {
+                            const row = {};
+                            columns.forEach(column => {
+                                row[column] = errorData[column][key];
+                            });
+                            rows.push(row);
+                        });
+                        $('#ErrorTable').DataTable({
+                            processing: true,
+                            language: languageTable.spanish,
+                            paging: rows.length > 10,
+                            searching: rows.length > 10,
+                            ordering:  false,
+                            bInfo: rows.length > 10,
+                            data: rows,
+                            columns: columns.map(column => ({ data: column, title: column })),
+                        });
+                    }
+                });
+            }
         });
 
-        function print_data_error(data_error) {
-            $(document).ajaxSend(function() {
-                $("#overlay").fadeIn(300);
-            });
+        function getErrorMessage(error) {
+            let errorDataBlock = "";
+            if (error.data !== undefined){
+                errorData = JSON.parse(error.data);
+                errorDataBlock = `
+                <a class="btn btn-primary btn-block" href="#" onclick="downloadXLSXDataError(errorData); return false;" style="width:200px;">
+                    Descargar
+                </a>
+                <a class="btn btn-primary btn-block" href="#" onclick="printDataError(errorData); return false;" style="width:200px;">
+                    Imprimir
+                </a>
+                <table class="table table-bordered no-footer" id="ErrorTable" width="100%" cellspacing="0">
+                    <thead>
+                        <!-- To be populated -->
+                    </thead>
+                    <tbody>
+                        <!-- To be populated -->
+                    </tbody>
+                </table>
+                `;
+            }
+            switch (error.type) {
+                case 'duplicates in file':
+                    return `
+                    <p>Registros duplicados en archivo</p>
+                    ${errorDataBlock}
+                    `;
+                case 'duplicates in database':
+                    return `
+                    <p>Registros duplicados en la base de datos</p>
+                    ${errorDataBlock}
+                    `;
+                case 'no match with catalog':
+                    return `
+                    <p>Existen registros en que el nombre de la especie no coincide con el catálogo</p>
+                    ${errorDataBlock}
+                    `;
+                case 'code':
+                    return `
+                    <p>Error en la importación</p>
+                    ${errorDataBlock}
+                    `;
+                default:
+                    return '<h6>Ocurrió un error inesperado, favor contactar al administrador antes de cerrar esta ventana</h6>';
+            }
+        }
+
+        function printDataError(dataError) {
+            $("#overlay").fadeIn(300);
             $.ajax({
-                data: data_error,
-                url: '/digitalization/pdf_error_data',
+                data: dataError,
+                url: '{%  url "pdf_error_data" %}',
                 type: 'POST',
                 success : function(data) {
-                    var pdfFile=new Blob([data], {type: "application/pdf"});
-                    var pdfUrl = URL.createObjectURL(pdfFile);
+                    const pdfFile = new Blob([data], {type: "application/pdf"});
+                    const pdfUrl = URL.createObjectURL(pdfFile);
                     printJS(pdfUrl);
                 }
-            }).done(function() {
-                setTimeout(function(){
-                    $("#overlay").fadeOut(300);
-                },500);
+            }).always(function() {
+                $("#overlay").fadeOut(300);
             });
         }
 
-        function download_xlsx_data_error(data_error) {
-            $(document).ajaxSend(function() {
-                $("#overlay").fadeIn(300);
-            });
+        function downloadXLSXDataError(dataError) {
+            let downloadUrl;
+            let url;
+            $("#overlay").fadeIn(300);
             $.ajax({
-                data: data_error,
-                url: '/digitalization/xls_error_data',
+                data: dataError,
+                url: '{% url "xls_error_data" %}',
                 type: 'POST',
                 xhrFields: {
                     // make sure the response knows we're expecting a binary type in return.
@@ -79,14 +192,11 @@
                     responseType: 'arraybuffer'
                 }
             }).done(function (data, status, xmlHeaderRequest) {
-                var downloadLink = document.createElement('a');
-                var blob = new Blob([data],
-                    {
-                        type: xmlHeaderRequest.getResponseHeader('Content-Type')
-                    });
-                var url = window.URL || window.webkitURL;
-                var downloadUrl = url.createObjectURL(blob);
-                var fileName = 'vouchers_error.xlsx';
+                const downloadLink = document.createElement('a');
+                const blob = new Blob([data], {type: xmlHeaderRequest.getResponseHeader('Content-Type')});
+                url = window.URL || window.webkitURL;
+                downloadUrl = url.createObjectURL(blob);
+                const fileName = 'vouchers_error.xlsx';
 
                 if (typeof window.navigator.msSaveBlob !== 'undefined') {
                     window.navigator.msSaveBlob(blob, fileName);
@@ -103,37 +213,11 @@
                     } else {
                         window.location = downloadUrl;
                     }
-                    setTimeout(function () {
-                            url.revokeObjectURL(downloadUrl);
-                            $("#overlay").fadeOut(300);
-                        },
-                        100);
                 }
-            });
-        }
-
-        function download_csv_data_error(data_error) {
-            $(document).ajaxSend(function() {
-                $("#overlay").fadeIn(300);
-            });
-            $.ajax({
-                data: data_error,
-                url: '/digitalization/csv_error_data',
-                type: 'POST',
-                success : function(data) {
-                    var uri = 'data:application/csv;charset=UTF-8,' + encodeURIComponent(data);
-                    var downloadLink = document.createElement("a");
-                    downloadLink.href = uri;
-                    downloadLink.download = "vouchers_error.csv";
-
-                    document.body.appendChild(downloadLink);
-                    downloadLink.click();
-                    document.body.removeChild(downloadLink);
-                }
-            }).done(function() {
-                setTimeout(function(){
-                    $("#overlay").fadeOut(300);
-                },500);
+            }).always(function () {
+                if (url !== undefined)
+                    url.revokeObjectURL(downloadUrl);
+                $("#overlay").fadeOut(300);
             });
         }
 
@@ -191,7 +275,7 @@
             {{ form }}
             <div class="row">
                 <div class="col-3">
-                    <button type="submit" class="btn btn-primary" id="loadButton">Cargar</button>
+                    <button type="submit" class="btn btn-primary" id="loadButton" {% if task_id %} disabled="disabled" {% endif %}>Cargar</button>
                 </div>
                 <div class="offset-md-6 col-3">
                     <a class="btn btn-primary w-100" href="#" onclick="downloadVouchersXLSX()">
@@ -203,23 +287,7 @@
     </form>
 
     {% if task_id %}
-    <div id="alert" class="card mb-3">
-        <div class="card-body">
-            <div id="processProgress" class="progress" role="progressbar" aria-label="progress" aria-valuenow="0" aria-valuemin="0" aria-valuemax="100" style="display: none;">
-                <div class="progress-bar progress-bar-striped progress-bar-animated" style="width: 0%">0%</div>
-            </div>
-            <div role="tab" id="showLog">
-                <h6>
-                    <a role="button" data-bs-toggle="collapse" data-bs-target="#console-log" aria-expanded="true" aria-controls="consoleLog" class="">
-                        Mostrar logs
-                    </a>
-                </h6>
-            </div>
-            <div id="consoleLog" class="collapse" role="tabpanel" aria-labelledby="showLog">
-                <pre><code id="loggingContent"></code></pre>
-            </div>
-        </div>
-    </div>
+        <div id="alert" class="card mb-3" style="display: block;"></div>
     {% endif %}
 
     <div class="card mb-3">
