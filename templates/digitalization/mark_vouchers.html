@@ -9,6 +9,7 @@
 {% endblock %}
 {% block javascript %}
     <script type="text/javascript">
+        const csrfToken = '{% csrf_token %}';
         $(document).ready(function() {
             $('#PagesTable').DataTable({
                 serverSide: true,
@@ -66,6 +67,7 @@
                             if (data === null){
                                 return `
                                 <form id="fileForm${row.id}" action="" method="post" enctype="multipart/form-data">
+                                    ${csrfToken}
                                     <input type="file" id="file${row.id}" style="display: none;" onchange="loadFile(${row.id}); return false;" accept=".dcp"/>
                                     <input type="button" value="Subir..." onclick="document.getElementById('file${row.id}').click();" />
                                     <input id="generated_page_id" name="generated_page_id" type="hidden" value="${row.id}">
