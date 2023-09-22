@@ -47,6 +47,16 @@
                 }
             });
         }
+
+        function postprocesamiento(){
+            $("#overlay").fadeIn(300);
+            $.ajax({
+                url: '{% url 'postprocessing' %}',
+                type: 'GET',
+            }).always(function () {
+                $("#overlay").fadeOut(300);
+            });
+        }
     </script>
 {% endblock %}
 <li class="nav-item active">
@@ -130,3 +140,10 @@
             <span>Validación de Especímenes</span></a>
     </li>
 {% endif %}
+<!-- For test new task -->
+<li class="nav-item">
+    <a class="nav-link" href="#" onclick="postprocesamiento()">
+        <i class="fas fa-fw fa-check"></i>
+        <span>Postprocesamiento</span>
+    </a>
+</li>

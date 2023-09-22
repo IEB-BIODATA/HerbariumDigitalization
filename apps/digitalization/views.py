@@ -1,5 +1,4 @@
 # -*- coding: utf-8 -*-
-import csv
 import glob
 import hashlib
 import json
@@ -38,7 +37,7 @@ from .forms import LoadColorProfileForm, VoucherImportedForm, GalleryImageForm, 
 from .models import BiodataCode, Herbarium, GeneratedPage, VoucherImported, PriorityVouchersFile, VouchersView, \
     GalleryImage, BannerImage, VOUCHER_STATE
 from .storage_backends import PrivateMediaStorage
-from .tasks import process_pending_vouchers, upload_priority_vouchers
+from .tasks import process_pending_vouchers, upload_priority_vouchers, scheduled_postprocess
 from ..api.decorators import backend_authenticated
 from ..api.serializers import MinimizedVoucherSerializer, CatalogViewSerializer, GeneratedPageSerializer, \
     PriorityVouchersSerializer
@@ -885,3 +884,10 @@ def update_voucher(request, id):
         form = VoucherImportedForm(instance=voucher)
 
     return render(request, 'digitalization/update_voucher.html', {'form': form, 'id': id})
+
+
+@login_required
+@require_GET
+def postprocessing(request):
+    task_id = scheduled_postprocess.delay('input', 'temp', '/var/log/postprocessing')
+    return task_id

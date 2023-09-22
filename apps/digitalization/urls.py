@@ -42,4 +42,5 @@ urlpatterns = [
     re_path(r'^vouchers_download$', views.vouchers_download, name='vouchers_download'),
     re_path(r'^download_catalog$', views.download_catalog, name='download_catalog'),
     re_path(r'^update_voucher/(?P<id>\d+)/$', views.update_voucher, name='update_voucher'),
+    re_path(r'^postprocessing$', views.postprocessing, name='postprocessing'),
 ]
