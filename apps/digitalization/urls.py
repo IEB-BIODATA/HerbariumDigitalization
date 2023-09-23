@@ -17,6 +17,7 @@ urlpatterns = [
     re_path(r'^xls_error_data$', views.xls_error_data, name='xls_error_data'),
     re_path(r'^pdf_error_data$', views.pdf_error_data, name='pdf_error_data'),
     re_path(r'^control_vouchers$', views.control_vouchers, name='control_vouchers'),
+    re_path(r'^vouchers_table/(?P<voucher_state>-?\d+)$', views.vouchers_table, name='vouchers_table'),
     re_path(r'^terminate_session$', views.terminate_session, name='terminate_session'),
     re_path(r'^validate_vouchers$', views.validate_vouchers, name='validate_vouchers'),
     re_path(r'^modify_gallery_image$', views.modify_gallery_image, name='modify_gallery_image'),
@@ -41,6 +42,5 @@ urlpatterns = [
     re_path(r'^get_task_log/(?P<task_id>[\w-]+)/$', views.get_task_log, name='get_task_log'),
     re_path(r'^vouchers_download$', views.vouchers_download, name='vouchers_download'),
     re_path(r'^download_catalog$', views.download_catalog, name='download_catalog'),
-    re_path(r'^update_voucher/(?P<id>\d+)/$', views.update_voucher, name='update_voucher'),
-    re_path(r'^postprocessing$', views.postprocessing, name='postprocessing'),
+    re_path(r'^update_voucher/(?P<voucher_id>\d+)/$', views.update_voucher, name='update_voucher'),
 ]
