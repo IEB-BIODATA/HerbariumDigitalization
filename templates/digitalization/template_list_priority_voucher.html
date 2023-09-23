@@ -30,7 +30,7 @@
         <link rel="stylesheet" href="{% static 'vendor/bootstrap/css/bootstrap.min.css' %}">
     </head>
     <body>
-        <h1>Lista de Vourhcer Priorizados - Fecha: {{ page_date }}</h1>
+        <h1>Lista de Vourhcer Priorizados - {% if page_id %}Sesión: {{ page_id }} -{% endif %} Fecha: {{ page_date }}</h1>
         <table border="1" cellspacing="0" cellpadding="4" width="100%">
             <thead>
                 <tr>
