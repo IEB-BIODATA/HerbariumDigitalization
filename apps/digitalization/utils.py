@@ -10,9 +10,9 @@ import traceback
 from io import BytesIO
 from typing import Set, Union, Dict, Tuple, List, Any, Sequence
 
+import boto3
 import cv2
 import numpy as np
-import s3fs
 from PIL.Image import Image
 from django.core.files.base import ContentFile
 from django.core.files.storage import Storage
@@ -164,25 +164,30 @@ class S3File:
         self.__filename__ = file_path.split(remote_path + "/")[1]
         return
 
-    def download(self, s3: s3fs.core.S3FileSystem) -> None:
+    def download(self, s3: boto3.client, bucket_name: str, logger: logging.Logger = None) -> None:
         """
         Downloads image on path
 
         Parameters
         ----------
-        s3 : S3FileSystem
-            S3 FileSystem to download
-
+        s3 : boto3.client
+            S3 client to execute download
+        bucket_name : str
+            Bucket name
+        logger : Logger
+            Object to manage logs
 
         Returns
         -------
         None
         """
-        remote_path = self.__remote_path__ + "/" + self.__filename__
-        logging.debug("Downloading {}".format(remote_path))
-        s3.download(
-            rpath='s3://{}'.format(remote_path),
-            lpath=self.__input_folder__
+        if logger is None:
+            logger = logging.getLogger(__name__)
+        remote_path = f"{self.__remote_path__}/{self.__filename__}"
+        logger.debug("Downloading {}".format(remote_path))
+        s3.download_file(
+            bucket_name, remote_path,
+            os.path.join(self.__input_folder__, self.__filename__)
         )
         return
 
@@ -228,22 +233,20 @@ class SessionFolder:
         self.__session__ = session
         self.__files__: Set[S3File] = set()
         self.__input_folder__ = input_folder
-        self.__remote_prefix__ = "{}/{}/{}".format(
-            remote_folder, institution, session
-        )
+        self.__remote_prefix__ = f"{remote_folder}{institution}/{session}"
         return
 
     def get_institution(self) -> str:
         return self.__institution__
 
-    def add_files(self, files: Set[str]) -> None:
+    def add_files(self, files: List[str]) -> None:
         """
         Adds files to Session Folder to be
         processed
 
         Parameters
         ----------
-        files : Set[str]
+        files : List[str]
             List of candidate files
 
         Returns
@@ -269,48 +272,53 @@ class SessionFolder:
         """
         os.makedirs(self.__input_folder__, exist_ok=True)
 
-    def download(self, s3: s3fs.core.S3FileSystem) -> None:
+    def download(self, s3: boto3.client, bucket_name: str, logger: logging.Logger = None) -> None:
         """
         Downloads all images on path
 
         Parameters
         ----------
-        s3 : S3FileSystem
-            S3 FileSystem to download
+        s3 : boto3.client
+            S3 client to execute download
+        bucket_name : str
+            Bucket name
+        logger : Logger
+            Object to manage logs
 
         Returns
         -------
         None
         """
-        s3.download(
-            rpath="s3://{}".format(self.__remote_prefix__),
-            lpath=os.path.dirname(self.__input_folder__),
-            recursive=True
-        )
+        for file in self.__files__:
+            file.download(s3, bucket_name, logger=logger)
         return
 
-    def close_session(self, s3: s3fs.core.S3FileSystem) -> None:
+    def close_session(self, s3: boto3.client, bucket_name: str, logger: logging.Logger = None) -> None:
         """
         Uploads a `processed` file to folder
 
-        Parameters
-        ----------
-        s3 : S3FileSystem
-            S3 session to upload
+        s3 : boto3.client
+            S3 client to execute download
+        bucket_name : str
+            Bucket name
+        logger : Logger
+            Object to manage logs
 
         Returns
         -------
         None
         """
+        if logger is None:
+            logger = logging.getLogger(__name__)
         try:
-            s3.upload(
-                lpath="assets/processed",
-                rpath="s3://{}".format(self.__remote_prefix__),
-                recursive=False
+            s3.upload_file(
+                "assets/processed",
+                bucket_name,
+                f"{self.__remote_prefix__}/processed"
             )
         except Exception as e:
-            logging.error("Error uploading processed, upload it by hand")
-            logging.error(e)
+            logger.error("Error uploading processed, upload it by hand")
+            logger.error(e, exc_info=True)
         finally:
             return
 

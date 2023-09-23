@@ -1,25 +1,29 @@
+import datetime as dt
 import glob
 import json
 import logging
+import math
 import os
 import shutil
 import textwrap
 from io import BytesIO
-from typing import List, Tuple
+from typing import List, Tuple, Type
 
-import datetime as dt
+import boto3
 import pandas as pd
 import pytz
-import s3fs
 from PIL import Image, ImageDraw, ImageFont
 from celery import shared_task
 from django.conf import settings
 from django.contrib.postgres.search import TrigramSimilarity
 from django.db import transaction
+from django.db.models import Model
 
 from apps.catalog.models import Species, Synonymy
-from apps.digitalization.models import VoucherImported, BiodataCode, PriorityVouchersFile, DCW_SQL
-from apps.digitalization.storage_backends import PrivateMediaStorage
+from apps.digitalization.models import DCW_SQL
+from apps.digitalization.models import GalleryImage, BannerImage
+from apps.digitalization.models import VoucherImported, BiodataCode, ColorProfileFile, PriorityVouchersFile
+from apps.digitalization.storage_backends import PrivateMediaStorage, PublicMediaStorage
 from apps.digitalization.utils import SessionFolder, TaskProcessLogger, HtmlLogger, GroupLogger
 from apps.digitalization.utils import cr3_to_dng, dng_to_jpeg, dng_to_jpeg_color_profile
 from apps.digitalization.utils import read_qr, change_image_resolution, empty_folder
@@ -154,14 +158,12 @@ def etiquette_picture(voucher_id, logger: logging.Logger = None):
 
 @shared_task(name='scheduled_postprocessing')
 def scheduled_postprocess(input_folder: str, temp_folder: str, log_folder: str):
+    bucket_name = settings.AWS_STORAGE_BUCKET_NAME
+
     def batch_files_function(files: List, x: int) -> List[List]:
         return [files[i:i + x] for i in range(0, len(files), x)]
 
-    s3 = s3fs.S3FileSystem(
-        key=settings.AWS_ACCESS_KEY_ID,
-        secret=settings.AWS_SECRET_ACCESS_KEY,
-        client_kwargs={'region_name': settings.AWS_S3_REGION_NAME}
-    )
+    s3 = boto3.client('s3')
     os.makedirs(log_folder, exist_ok=True)
     process_logger = TaskProcessLogger("Scheduled PostProcessing", log_folder)
     sessions = get_pending_sessions(s3, input_folder, process_logger)
@@ -178,7 +180,7 @@ def scheduled_postprocess(input_folder: str, temp_folder: str, log_folder: str):
                 log_cache = set()
                 session_folder.create_folder()
                 for file in batch:
-                    file.download(s3)
+                    file.download(s3, bucket_name, process_logger)
                 logging.info("Converting file")
                 cr3_to_dng(input_folder, temp_folder, process_logger)
                 dng_to_jpeg(temp_folder, temp_folder, session_folder.get_institution(), process_logger, log_cache)
@@ -230,43 +232,151 @@ def scheduled_postprocess(input_folder: str, temp_folder: str, log_folder: str):
                         process_logger.error("QR not found for file {}".format(filename))
                 empty_folder(input_folder)
                 empty_folder(temp_folder)
-            session_folder.close_session(s3)
+            session_folder.close_session(s3, bucket_name, process_logger)
         except Exception as e:
             process_logger.error(e, exc_info=True)
-    s3.end_transaction()
+        break
+    s3.close()
     shutil.rmtree(input_folder)
     shutil.rmtree(temp_folder)
-    process_logger.info(sessions)
     process_logger.close()
     return "Processed"
 
 
-def get_pending_sessions(s3: s3fs.S3FileSystem, input_folder: str, logger: logging.Logger) -> List[SessionFolder]:
-    input_path = "{}/{}/{}".format(
-        settings.AWS_STORAGE_BUCKET_NAME,
-        "digitalization",
-        input_folder
+def get_pending_sessions(s3: boto3.client, input_folder: str, logger: logging.Logger) -> List[SessionFolder]:
+    bucket_name = settings.AWS_STORAGE_BUCKET_NAME
+    input_path = f"digitalization/{input_folder}/"
+    response = s3.list_objects_v2(
+        Bucket=bucket_name,
+        Delimiter='/',
+        Prefix=input_path,
     )
     out = list()
-    for institution_path in s3.ls('s3://{}/'.format(input_path)):
-        if institution_path.endswith("/"):
-            continue
-        if s3.isdir(institution_path):
-            institution = institution_path.replace(input_path + "/", "")
-            logger.info("Institution {} at {}".format(institution, institution_path))
-            for session_folder in s3.ls('s3://{}/'.format(institution_path)):
-                if session_folder.endswith("/"):
-                    continue
-                if s3.isdir(session_folder):
-                    session_name = session_folder.replace(institution_path + "/", "")
-                    content = s3.ls('s3://{}/'.format(session_folder))
-                    if "{}/processed".format(session_folder) in content:
-                        logger.debug("Session folder `{}` already processed".format(session_name))
-                    else:
-                        logger.debug("Session folder `{}` to be processed".format(session_name))
-                        out.append(SessionFolder(institution, session_name, input_folder, input_path))
-                        out[-1].add_files(content)
+    institutions_folder = [prefix.get("Prefix") for prefix in response.get('CommonPrefixes', [])]
+    for institution_path in institutions_folder:
+        institution = institution_path.replace(input_path, "").strip("/")
+        logger.info("Institution {} at {}".format(institution, institution_path))
+        response = s3.list_objects_v2(
+            Bucket=bucket_name,
+            Delimiter='/',
+            Prefix=institution_path,
+        )
+        sessions_candidates = [prefix.get("Prefix") for prefix in response.get('CommonPrefixes', [])]
+        for session_folder in sessions_candidates:
+            session_name = session_folder.replace(institution_path, "").strip("/")
+            response = s3.list_objects_v2(
+                Bucket=bucket_name,
+                Prefix=session_folder,
+            )
+            content = [obj['Key'] for obj in response.get('Contents', [])]
+            if f"{session_folder}processed" in content:
+                logger.debug("Session folder `{}` already processed".format(session_name))
+            else:
+                logger.debug("Session folder `{}` to be processed".format(session_name))
+                out.append(SessionFolder(institution, session_name, input_folder, input_path))
+                out[-1].add_files(content)
     return out
+
+
+@shared_task(name='clean_storage')
+def clean_storage(log_folder: str):
+    os.makedirs(log_folder, exist_ok=True)
+    process_logger = TaskProcessLogger("Clean Storage", log_folder)
+    try:
+        s3 = boto3.client('s3')
+        bucket = settings.AWS_STORAGE_BUCKET_NAME
+        process_logger.info("Cleaning Public Storage...")
+        public_location = PublicMediaStorage().location
+        response = s3.list_objects_v2(Bucket=bucket, Prefix=public_location)
+        to_delete = list()
+        public_files_to_delete = 0
+        if 'Contents' in response:
+            for obj in response['Contents']:
+                file_name = obj['Key'].replace(public_location + "/", "")
+                found = False
+                for model, field, contains, extension in [
+                    (GalleryImage, "image", "", ".jpg"),
+                    (BannerImage, "banner", "", ".png"),
+                    (ColorProfileFile, "file", "", ".dcp"),
+                    (PriorityVouchersFile, "file", "", ".xls"),
+                    (PriorityVouchersFile, "file", "", ".xlsx"),
+                    (VoucherImported, "image_public_resized_10", "_public_resized_10", ".jpg"),
+                    (VoucherImported, "image_public_resized_60", "_public_resized_60", ".jpg"),
+                    (VoucherImported, "image_public", "_public", ".jpg"),
+                ]:
+                    found = found or check_on_model(file_name, model, field, contains, extension, process_logger)
+                    if found:
+                        break
+                if not found:
+                    process_logger.error(f"{file_name} not found on database")
+                    to_delete.append((obj['Key'], obj['Size']))
+                    public_files_to_delete += 1
+        process_logger.info(f"Public files to delete {public_files_to_delete}")
+        process_logger.info("Cleaning Private Storage...")
+        private_location = PrivateMediaStorage().location
+        response = s3.list_objects_v2(Bucket=bucket, Prefix=private_location)
+        private_files_to_delete = 0
+        if 'Contents' in response:
+            for obj in response['Contents']:
+                file_name = obj['Key'].replace(private_location + "/", "")
+                found = False
+                for model, field, contains, extension in [
+                    (VoucherImported, "image_raw", "", ".CR3"),
+                    (VoucherImported, "image_resized_10", "_resized_10", ".jpg"),
+                    (VoucherImported, "image_resized_60", "_resized_60", ".jpg"),
+                    (VoucherImported, "image", "", ".jpg"),
+                ]:
+                    found = found or check_on_model(file_name, model, field, contains, extension, process_logger)
+                    if found:
+                        break
+                if not found:
+                    process_logger.error(f"{file_name} not found on database")
+                    to_delete.append((obj['Key'], obj['Size']))
+                    private_files_to_delete += 1
+        process_logger.info(f"Private files to delete {private_files_to_delete}")
+        assert len(to_delete) == public_files_to_delete + private_files_to_delete, "Error on number of files to delete"
+        process_logger.info(f"Files to delete {len(to_delete)}")
+        total_size_save = 0
+        for file_name, file_size in to_delete:
+            try:
+                process_logger.info(f"Deleting `{file_name}` ({show_storage(file_size)})")
+                s3.delete_object(Bucket=bucket, Key=file_name)
+                total_size_save += file_size
+                process_logger.debug(f"Total size saved: {show_storage(total_size_save)}")
+            except Exception as e:
+                process_logger.error(e, exc_info=True)
+        process_logger.info(f"Total size saved: {show_storage(total_size_save)}")
+        s3.close()
+    except Exception as e:
+        process_logger.error(e, exc_info=True)
+    process_logger.close()
+    return "Cleaned"
+
+
+def check_on_model(
+        file_name: str, model: Type[Model],
+        field: str, contains: str, extension: str,
+        logger: logging.Logger
+) -> bool:
+    prefix = model._meta.get_field(field).upload_to
+    prefix = prefix + "/" if prefix != "" else ""
+    if file_name.startswith(prefix) and contains in file_name and file_name.endswith(extension):
+        if model.objects.filter(**{field: file_name}).exists():
+            return True
+        else:
+            logger.warning(f"{model.__name__}.{field} does not include `{file_name}` file")
+            return False
+    else:
+        return False
+
+
+def show_storage(storage: int):
+    order = int(math.log(storage) / math.log(1024))
+    suffixes = ['B', 'KB', 'MB', 'GB', 'TB', 'PB']
+    if order >= len(suffixes):
+        order = len(suffixes) - 1
+    human_readable = storage / (1024 ** order)
+    return f"{human_readable:.2f} {suffixes[order]}"
 
 
 @shared_task(name='process_pending_vouchers', bind=True)
