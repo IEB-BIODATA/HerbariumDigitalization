@@ -189,6 +189,11 @@ CELERY_BEAT_SCHEDULE = {
         'schedule': crontab(hour="1", minute="0"),
         'args': ('input', 'temp', '/var/log/postprocessing')
     },
+    'weekly_clean_storage': {
+        'task': 'clean_storage',
+        'schedule': crontab(hour="3", minute="0", day_of_week='sunday'),
+        'args': ('/var/log/clean_storage', )
+    }
 }
 
 USE_X_FORWARDED_HOST = True
