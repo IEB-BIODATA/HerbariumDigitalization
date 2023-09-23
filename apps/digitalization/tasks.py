@@ -12,7 +12,6 @@ from typing import List, Tuple, Type
 import boto3
 import pandas as pd
 import pytz
-import s3fs
 from PIL import Image, ImageDraw, ImageFont
 from celery import shared_task
 from django.conf import settings
@@ -21,9 +20,9 @@ from django.db import transaction
 from django.db.models import Model
 
 from apps.catalog.models import Species, Synonymy
-from apps.digitalization.models import VoucherImported, BiodataCode, ColorProfileFile, PriorityVouchersFile
-from apps.digitalization.models import GalleryImage, BannerImage
 from apps.digitalization.models import DCW_SQL
+from apps.digitalization.models import GalleryImage, BannerImage
+from apps.digitalization.models import VoucherImported, BiodataCode, ColorProfileFile, PriorityVouchersFile
 from apps.digitalization.storage_backends import PrivateMediaStorage, PublicMediaStorage
 from apps.digitalization.utils import SessionFolder, TaskProcessLogger, HtmlLogger, GroupLogger
 from apps.digitalization.utils import cr3_to_dng, dng_to_jpeg, dng_to_jpeg_color_profile
@@ -159,20 +158,16 @@ def etiquette_picture(voucher_id, logger: logging.Logger = None):
 
 @shared_task(name='scheduled_postprocessing')
 def scheduled_postprocess(input_folder: str, temp_folder: str, log_folder: str):
+    bucket_name = settings.AWS_STORAGE_BUCKET_NAME
+
     def batch_files_function(files: List, x: int) -> List[List]:
         return [files[i:i + x] for i in range(0, len(files), x)]
 
-    s3 = s3fs.S3FileSystem(
-        key=settings.AWS_ACCESS_KEY_ID,
-        secret=settings.AWS_SECRET_ACCESS_KEY,
-        client_kwargs={'region_name': settings.AWS_S3_REGION_NAME}
-    )
     s3 = boto3.client('s3')
     os.makedirs(log_folder, exist_ok=True)
     process_logger = TaskProcessLogger("Scheduled PostProcessing", log_folder)
     sessions = get_pending_sessions(s3, input_folder, process_logger)
     process_logger.debug(sessions)
-    return ""
     logging.info("Enter in sessions")
     os.makedirs(input_folder, exist_ok=True)
     os.makedirs(temp_folder, exist_ok=True)
@@ -185,7 +180,7 @@ def scheduled_postprocess(input_folder: str, temp_folder: str, log_folder: str):
                 log_cache = set()
                 session_folder.create_folder()
                 for file in batch:
-                    file.download(s3)
+                    file.download(s3, bucket_name, process_logger)
                 logging.info("Converting file")
                 cr3_to_dng(input_folder, temp_folder, process_logger)
                 dng_to_jpeg(temp_folder, temp_folder, session_folder.get_institution(), process_logger, log_cache)
@@ -237,10 +232,11 @@ def scheduled_postprocess(input_folder: str, temp_folder: str, log_folder: str):
                         process_logger.error("QR not found for file {}".format(filename))
                 empty_folder(input_folder)
                 empty_folder(temp_folder)
-            session_folder.close_session(s3)
+            session_folder.close_session(s3, bucket_name, process_logger)
         except Exception as e:
             process_logger.error(e, exc_info=True)
-    s3.end_transaction()
+        break
+    s3.close()
     shutil.rmtree(input_folder)
     shutil.rmtree(temp_folder)
     process_logger.close()
@@ -248,33 +244,38 @@ def scheduled_postprocess(input_folder: str, temp_folder: str, log_folder: str):
 
 
 def get_pending_sessions(s3: boto3.client, input_folder: str, logger: logging.Logger) -> List[SessionFolder]:
+    bucket_name = settings.AWS_STORAGE_BUCKET_NAME
     input_path = f"digitalization/{input_folder}/"
     response = s3.list_objects_v2(
-        Bucket=settings.AWS_STORAGE_BUCKET_NAME,
+        Bucket=bucket_name,
         Delimiter='/',
         Prefix=input_path,
     )
     out = list()
-    folders = [prefix.get("Prefix").replace(input_path, '') for prefix in response.get('CommonPrefixes', [])]
-    for institution_path in folders:
-        institution = institution_path.replace(input_path + "/", "")
+    institutions_folder = [prefix.get("Prefix") for prefix in response.get('CommonPrefixes', [])]
+    for institution_path in institutions_folder:
+        institution = institution_path.replace(input_path, "").strip("/")
         logger.info("Institution {} at {}".format(institution, institution_path))
+        response = s3.list_objects_v2(
+            Bucket=bucket_name,
+            Delimiter='/',
+            Prefix=institution_path,
+        )
+        sessions_candidates = [prefix.get("Prefix") for prefix in response.get('CommonPrefixes', [])]
+        for session_folder in sessions_candidates:
+            session_name = session_folder.replace(institution_path, "").strip("/")
+            response = s3.list_objects_v2(
+                Bucket=bucket_name,
+                Prefix=session_folder,
+            )
+            content = [obj['Key'] for obj in response.get('Contents', [])]
+            if f"{session_folder}processed" in content:
+                logger.debug("Session folder `{}` already processed".format(session_name))
+            else:
+                logger.debug("Session folder `{}` to be processed".format(session_name))
+                out.append(SessionFolder(institution, session_name, input_folder, input_path))
+                out[-1].add_files(content)
     return out
-    """
-            for session_folder in s3.ls('s3://{}/'.format(institution_path)):
-                if session_folder.endswith("/"):
-                    continue
-                if s3.isdir(session_folder):
-                    session_name = session_folder.replace(institution_path + "/", "")
-                    content = s3.ls('s3://{}/'.format(session_folder))
-                    if "{}/processed".format(session_folder) in content:
-                        logger.debug("Session folder `{}` already processed".format(session_name))
-                    else:
-                        logger.debug("Session folder `{}` to be processed".format(session_name))
-                        out.append(SessionFolder(institution, session_name, input_folder, input_path))
-                        out[-1].add_files(content)
-    return out
-    """
 
 
 @shared_task(name='clean_storage')

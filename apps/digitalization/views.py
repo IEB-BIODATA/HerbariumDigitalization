@@ -884,10 +884,3 @@ def update_voucher(request, id):
         form = VoucherImportedForm(instance=voucher)
 
     return render(request, 'digitalization/update_voucher.html', {'form': form, 'id': id})
-
-
-@login_required
-@require_GET
-def postprocessing(request):
-    task_id = scheduled_postprocess.delay('input', 'temp', '/var/log/postprocessing')
-    return task_id
