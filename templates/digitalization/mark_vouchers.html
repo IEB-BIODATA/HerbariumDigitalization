@@ -116,23 +116,6 @@
             });
         });
 
-        function getStateClass(voucherState){
-            switch(voucherState) {
-                case 0:
-                    return 'bg-light text-dark';
-                case 1:
-                    return 'bg-success text-white';
-                case 2:
-                    return 'bg-danger text-white';
-                case 3:
-                    return 'bg-warning text-dark';
-                case 6:
-                    return 'bg-secondary text-white';
-                default:
-                    return 'bg-info text-dark';
-            }
-        }
-
         function getVouchers(pageId, voucherState){
             $("#overlay").fadeIn(300);
             const voucherCard = $('#VouchersCard')

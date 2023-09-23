@@ -60,6 +60,31 @@ function getFormattedDateTime() {
     return `${year}_${month}_${day}-${hours}_${minutes}_${seconds}`;
 }
 
+function getStateClass(voucherState){
+    switch(voucherState) {
+        case 0:
+            return 'bg-light text-dark';
+        case 1:
+            return 'bg-success text-white';
+        case 2:
+            return 'bg-danger text-white';
+        case 3:
+            return 'bg-warning text-dark';
+        case 4:
+            return 'bg-warning text-white';
+        case 5:
+            return 'bg-info text-dark';
+        case 6:
+            return 'bg-secondary text-white';
+        case 7:
+            return 'bg-primary text-white';
+        case 8:
+            return 'bg-light text-dark';
+        default:
+            return 'bg-info text-dark';
+    }
+}
+
 function updateProgress(
     {
         taskId, progressUrl, urlLog,

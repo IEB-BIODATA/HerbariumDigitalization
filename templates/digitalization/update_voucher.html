@@ -1,199 +1,200 @@
 {% extends "base.html" %}
 {% load static %}
 {% block css %}
-<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.3/dist/leaflet.css" integrity="sha256-kLaT2GOSpHechhsozzB+flnD+zUyjE2LlfWPgU04xyI=" crossorigin="" />
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.3/dist/leaflet.css" integrity="sha256-kLaT2GOSpHechhsozzB+flnD+zUyjE2LlfWPgU04xyI=" crossorigin="" />
 {% endblock %}
 {% block javascript %}
-<script src="https://unpkg.com/leaflet@1.9.3/dist/leaflet.js" integrity="sha256-WBkoXOwTeyKclOHuWtc+i2uENFpDZ9YPdf5Hf+D7ewM=" crossorigin=""></script>
-<script>
-    // Creating map options
-    var mapOptions = {
-       center: [{{form.instance.decimal_latitude|stringformat:".6f"}}, {{form.instance.decimal_longitude|stringformat:".6f"}}],
-       zoom: 15
-    }
-    
-    // Creating a map object
-    var map = new L.map('map', mapOptions);
+    <script src="https://unpkg.com/leaflet@1.9.3/dist/leaflet.js" integrity="sha256-WBkoXOwTeyKclOHuWtc+i2uENFpDZ9YPdf5Hf+D7ewM=" crossorigin=""></script>
+    <script>
+        // Creating map options
+        var mapOptions = {
+            center: [{{form.instance.decimal_latitude|stringformat:".6f"}}, {{form.instance.decimal_longitude|stringformat:".6f"}}],
+            zoom: 15
+        }
 
-    var lat, lng;
+        // Creating a map object
+        var map = new L.map('map', mapOptions);
 
-    map.addEventListener('mousemove', function(ev) {
-       lat = ev.latlng.lat;
-       lng = ev.latlng.lng;
-       $('#lat').text(lat);
-       $('#lng').text(lng);
-    });
-    
+        var lat, lng;
 
-    map.addEventListener('click', function(ev) {
-       lat = ev.latlng.lat;
-       lng = ev.latlng.lng;
-       $('#id_decimal_latitude').val(lat);
-       $('#id_decimal_longitude').val(lng);
-    });
-    // Creating a Layer object
-    var layer = new L.TileLayer('http://{s}.google.com/vt/lyrs=s,h&x={x}&y={y}&z={z}',{
-        maxZoom: 20,
-        subdomains:['mt0','mt1','mt2','mt3']
-    });
-    
-    // Adding layer to the map
-    map.addLayer(layer);
+        map.addEventListener('mousemove', function(ev) {
+            lat = ev.latlng.lat;
+            lng = ev.latlng.lng;
+            $('#lat').text(lat);
+            $('#lng').text(lng);
+        });
 
-    // Icon options
-    var iconOptions = {
-       iconUrl: "{% static 'images/dot.png' %}",
-       iconSize: [15, 15]
-    }
-    // Creating a custom icon
-    var customIcon = L.icon(iconOptions);
 
-    // Creating a Marker
-     var markerOptions = {
-        clickable: false,
-        draggable: false,
-        icon: customIcon
-     }
-    var locations = [
-      [{{form.instance.decimal_latitude|stringformat:".6f"}}, {{form.instance.decimal_longitude|stringformat:".6f"}}]
-    ];
+        map.addEventListener('click', function(ev) {
+            lat = ev.latlng.lat;
+            lng = ev.latlng.lng;
+            $('#id_decimal_latitude').val(lat);
+            $('#id_decimal_longitude').val(lng);
+        });
+        // Creating a Layer object
+        var layer = new L.TileLayer('http://{s}.google.com/vt/lyrs=s,h&x={x}&y={y}&z={z}',{
+            maxZoom: 20,
+            subdomains:['mt0','mt1','mt2','mt3']
+        });
 
-    for (var i = 0; i < locations.length; i++) {
-      marker = new L.marker([locations[i][0], locations[i][1]],markerOptions)
-        .addTo(map);
-    }
-</script>  
+        // Adding layer to the map
+        map.addLayer(layer);
+
+        // Icon options
+        var iconOptions = {
+            iconUrl: "{% static 'images/dot.png' %}",
+            iconSize: [15, 15]
+        }
+        // Creating a custom icon
+        var customIcon = L.icon(iconOptions);
+
+        // Creating a Marker
+        var markerOptions = {
+            clickable: false,
+            draggable: false,
+            icon: customIcon
+        }
+        var locations = [
+            [{{form.instance.decimal_latitude|stringformat:".6f"}}, {{form.instance.decimal_longitude|stringformat:".6f"}}]
+        ];
+
+        for (var i = 0; i < locations.length; i++) {
+            marker = new L.marker([locations[i][0], locations[i][1]],markerOptions)
+                .addTo(map);
+        }
+    </script>
 {% endblock %}
 {% block content %}
-<h1>Digitalización: Voucher</h1>
-<!-- DataTables Example -->
-<div class="card mb-3">
-  <div class="card-header">
-    <i class="fas fa-table"></i>
-    Actualizar Voucher</div>
-  <div class="card-body">
-    <div class="table-responsive">
-      <form action="/digitalization/update_voucher/{{id}}/" method="post" class="form-horizontal">
-          {% csrf_token %}
-          <div class="form-group row">
-            <label class="col-sm-2 col-form-label">Número de Catálogo</label>
-            <div class="col-sm-10">
-              {{ form.catalog_number }}
-            </div>
-          </div>
-          <div class="form-group row">
-            <label class="col-sm-2 col-form-label">ID Base Dato herbario</label>
-            <div class="col-sm-10">
-              {{ form.other_catalog_numbers }}
-            </div>
-          </div>
-          <div class="form-group row">
-            <label class="col-sm-2 col-form-label">Número de Colecta</label>
-            <div class="col-sm-10">
-              {{ form.record_number }}
-            </div>
-          </div>
-          <div class="form-group row">
-            <label class="col-sm-2 col-form-label">Colectado por</label>
-            <div class="col-sm-10">
-              {{ form.recorded_by }}
-            </div>
-          </div>
-          <div class="form-group row">
-            <label class="col-sm-2 col-form-label">Especie</label>
-            <div class="col-sm-10">
-              {{ form.scientific_name }}
-            </div>
-          </div>
-          <div class="form-group row">
-            <label class="col-sm-2 col-form-label">Ubicación</label>
-            <div class="col-sm-10">
-              {{ form.locality }}
-            </div>
-          </div>
-          <div class="form-group row">
-            <label class="col-sm-2 col-form-label">Altura</label>
-            <div class="col-sm-10">
-              {{ form.verbatim_elevation }}
-            </div>
-          </div>
-          <div class="form-group row">
-            <label class="col-sm-2 col-form-label">Fecha de Colecta</label>
-            <div class="col-sm-10">
-              {{ form.georeferenced_date }}
-            </div>
-          </div>
-          <div class="form-group row">
-            <label class="col-sm-2 col-form-label">Determinado por</label>
-            <div class="col-sm-10">
-              {{ form.identified_by }}
-            </div>
-          </div>
-          <div class="form-group row">
-            <label class="col-sm-2 col-form-label">Fecha de Determinación</label>
-            <div class="col-sm-10">
-              {{ form.identified_date }}
-            </div>
-          </div>
-          <div class="form-group row">
-            <label class="col-sm-2 col-form-label">Observaciones</label>
-            <div class="col-sm-10">
-              {{ form.organism_remarks }}
-            </div>
-          </div>
-          <div class="form-group row">
-            <label class="col-sm-2 col-form-label">Prioridad</label>
-            <div class="col-sm-10">
-              {{ form.priority }}
-            </div>
-          </div>
-          {% if form.instance.image %}
-          <div class="form-group row">
-            <label class="col-sm-2 form-check-label">Imagen</label>
-            <div class="col-sm-10">
-              <a href="{{ form.instance.image.url }}" target="_blank"><img src="{{ form.instance.image_resized_60.url }}" width="400px"/></a>
-            </div>
-          </div>
-          {% endif %}
-          <div class="form-group row">
-            <label class="col-sm-2 col-form-label">Latitud</label>
-            <div class="col-sm-10">
-              {{ form.decimal_latitude }}
-            </div>
-          </div>
-          <div class="form-group row">
-            <label class="col-sm-2 col-form-label">Logitud</label>
-            <div class="col-sm-10">
-              {{ form.decimal_longitude }}
-            </div>
-          </div>
-          <div class="form-group row">
-            <label class="col-sm-2 col-form-label">Ubicación</label>
-            <div class="col-sm-8">
-              <div id = "map" style = "width: auto; height: 400px"></div>
-            </div>
-            <div class="col-sm-2">
-              <span>Latitud: <p id="lat"></p></span>
-              <span>Longitud: <p id="lng"></p></span>
-            </div>      
-          </div>
-          {% if form.errors %}
-             {% for field in form %}
-                 {% for error in field.errors %} 
-                    <div class="alert alert-danger">
-                         <strong>{{ error|escape }}</strong>
+    <h1>Digitalización: Voucher</h1>
+    <!-- DataTables Example -->
+    <div class="card mb-3">
+        <div class="card-header">
+            <i class="fas fa-table"></i>
+            Actualizar Voucher
+        </div>
+        <div class="card-body">
+            <div class="table-responsive">
+                <form action="/digitalization/update_voucher/{{id}}/" method="post" class="form-horizontal">
+                    {% csrf_token %}
+                    <div class="form-group row">
+                        <label class="col-sm-2 col-form-label">Número de Catálogo</label>
+                        <div class="col-sm-10">
+                            {{ form.catalog_number }}
+                        </div>
                     </div>
-                 {% endfor %}
-             {% endfor %}
-          {% endif %}
-          <div class="form-group row">
-            <div class="col-sm-10">
-              <input type="submit" class="btn btn-primary" value="Guardar"><a href="{% url 'list_taxa' %}" class="btn btn-danger">Cancelar</a>
+                    <div class="form-group row">
+                        <label class="col-sm-2 col-form-label">ID Base Dato herbario</label>
+                        <div class="col-sm-10">
+                            {{ form.other_catalog_numbers }}
+                        </div>
+                    </div>
+                    <div class="form-group row">
+                        <label class="col-sm-2 col-form-label">Número de Colecta</label>
+                        <div class="col-sm-10">
+                            {{ form.record_number }}
+                        </div>
+                    </div>
+                    <div class="form-group row">
+                        <label class="col-sm-2 col-form-label">Colectado por</label>
+                        <div class="col-sm-10">
+                            {{ form.recorded_by }}
+                        </div>
+                    </div>
+                    <div class="form-group row">
+                        <label class="col-sm-2 col-form-label">Especie</label>
+                        <div class="col-sm-10">
+                            {{ form.scientific_name }}
+                        </div>
+                    </div>
+                    <div class="form-group row">
+                        <label class="col-sm-2 col-form-label">Ubicación</label>
+                        <div class="col-sm-10">
+                            {{ form.locality }}
+                        </div>
+                    </div>
+                    <div class="form-group row">
+                        <label class="col-sm-2 col-form-label">Altura</label>
+                        <div class="col-sm-10">
+                            {{ form.verbatim_elevation }}
+                        </div>
+                    </div>
+                    <div class="form-group row">
+                        <label class="col-sm-2 col-form-label">Fecha de Colecta</label>
+                        <div class="col-sm-10">
+                            {{ form.georeferenced_date }}
+                        </div>
+                    </div>
+                    <div class="form-group row">
+                        <label class="col-sm-2 col-form-label">Determinado por</label>
+                        <div class="col-sm-10">
+                            {{ form.identified_by }}
+                        </div>
+                    </div>
+                    <div class="form-group row">
+                        <label class="col-sm-2 col-form-label">Fecha de Determinación</label>
+                        <div class="col-sm-10">
+                            {{ form.identified_date }}
+                        </div>
+                    </div>
+                    <div class="form-group row">
+                        <label class="col-sm-2 col-form-label">Observaciones</label>
+                        <div class="col-sm-10">
+                            {{ form.organism_remarks }}
+                        </div>
+                    </div>
+                    <div class="form-group row">
+                        <label class="col-sm-2 col-form-label">Prioridad</label>
+                        <div class="col-sm-10">
+                            {{ form.priority }}
+                        </div>
+                    </div>
+                    {% if form.instance.image %}
+                        <div class="form-group row">
+                            <label class="col-sm-2 form-check-label">Imagen</label>
+                            <div class="col-sm-10">
+                                <a href="{{ form.instance.image.url }}" target="_blank"><img src="{{ form.instance.image_resized_60.url }}" width="400px"/></a>
+                            </div>
+                        </div>
+                    {% endif %}
+                    <div class="form-group row">
+                        <label class="col-sm-2 col-form-label">Latitud</label>
+                        <div class="col-sm-10">
+                            {{ form.decimal_latitude }}
+                        </div>
+                    </div>
+                    <div class="form-group row">
+                        <label class="col-sm-2 col-form-label">Logitud</label>
+                        <div class="col-sm-10">
+                            {{ form.decimal_longitude }}
+                        </div>
+                    </div>
+                    <div class="form-group row">
+                        <label class="col-sm-2 col-form-label">Ubicación</label>
+                        <div class="col-sm-8">
+                            <div id = "map" style = "width: auto; height: 400px"></div>
+                        </div>
+                        <div class="col-sm-2">
+                            <span>Latitud: <p id="lat"></p></span>
+                            <span>Longitud: <p id="lng"></p></span>
+                        </div>
+                    </div>
+                    {% if form.errors %}
+                        {% for field in form %}
+                            {% for error in field.errors %}
+                                <div class="alert alert-danger">
+                                    <strong>{{ error|escape }}</strong>
+                                </div>
+                            {% endfor %}
+                        {% endfor %}
+                    {% endif %}
+                    <div class="form-group row">
+                        <div class="col-sm-10">
+                            <input type="submit" class="btn btn-primary" value="Guardar">
+                            <a href="{% url 'control_vouchers' %}" class="btn btn-danger">Cancelar</a>
+                        </div>
+                    </div>
+                </form>
             </div>
-            
-          </div>
-      </form>
+        </div>
     </div>
-  </div>
-</div>
 {% endblock %}

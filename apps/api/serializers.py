@@ -228,7 +228,7 @@ class BiodataCodeSerializer(HyperlinkedModelSerializer):
     class Meta:
         model = BiodataCode
         fields = [
-            "id", "voucher_state", "voucher_state_name",
+            "id", "voucher_state", "voucher_state_name", "code",
         ]
 
     def get_voucher_state_name(self, obj):
@@ -238,6 +238,7 @@ class BiodataCodeSerializer(HyperlinkedModelSerializer):
 class MinimizedVoucherSerializer(HyperlinkedModelSerializer):
     species = CharField(source='scientific_name')
     occurrence_id = SerializerMethodField()
+    priority_voucher = SerializerMethodField()
     image_voucher_url = SerializerMethodField()
     image_voucher_thumb_url = SerializerMethodField()
     image_voucher_cr3_raw_url = SerializerMethodField()
@@ -250,6 +251,7 @@ class MinimizedVoucherSerializer(HyperlinkedModelSerializer):
             'id', 'occurrence_id', 'catalog_number',
             'recorded_by', 'record_number',
             'species', 'locality',
+            'priority_voucher',
             'image_voucher_url',
             'image_voucher_thumb_url',
             'image_voucher_cr3_raw_url',
@@ -260,6 +262,12 @@ class MinimizedVoucherSerializer(HyperlinkedModelSerializer):
     def get_occurrence_id(self, obj):
         return BiodataCodeSerializer(
             instance=obj.biodata_code,
+            many=False,
+        ).data
+
+    def get_priority_voucher(self, obj):
+        return PriorityVouchersSerializer(
+            instance=obj.vouchers_file,
             many=False,
         ).data
 

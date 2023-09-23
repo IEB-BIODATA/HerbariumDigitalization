@@ -191,11 +191,12 @@ def historical_page_download(request):
         )
         code_list = []
         print_code_list = []
-        # biodata_codes=BiodataCode.objects.filter(page=page).order_by('-catalog_number')
-        vouchers = VoucherImported.objects.filter(biodata_code__page=page).order_by('priority',
-                                                                                    'scientific_name__genus__family__name',
-                                                                                    'scientific_name__scientific_name',
-                                                                                    'catalog_number')
+        vouchers = VoucherImported.objects.filter(biodata_code__page=page).order_by(
+            'priority',
+            'scientific_name__genus__family__name',
+            'scientific_name__scientific_name',
+            'catalog_number'
+        )
         for voucher in vouchers:
             code = voucher.biodata_code.code.split(':')
             print_code = code[1] + ' ' + litering_by_three(code[2])
@@ -276,7 +277,7 @@ def session_table(request):
             search_query = search_query | Q(biodatacode__catalog_number=int(search_value))
     return paginated_table(
         request, entries, GeneratedPageSerializer,
-        sort_by_func, "generated_pages", search_query
+        sort_by_func, "generated pages", search_query
     )
 
 
@@ -366,34 +367,53 @@ def pdf_error_data(request):
 
 
 @login_required
-@csrf_exempt
+@require_GET
 def control_vouchers(request):
-    if request.method == 'GET' and 'state_voucher' in request.GET:
-        state_voucher = int(request.GET['state_voucher'])
-        if state_voucher == -1:
-            biodata_codes = VoucherImported.objects.filter(herbarium__herbariummember__user__id=request.user.id,
-                                                           biodata_code__qr_generated=True).order_by('scientific_name',
-                                                                                                     'catalog_number')
-        else:
-            biodata_codes = VoucherImported.objects.filter(herbarium__herbariummember__user__id=request.user.id,
-                                                           biodata_code__qr_generated=True,
-                                                           biodata_code__voucher_state=state_voucher).order_by(
-                'scientific_name', 'catalog_number')
-        data = serializers.serialize('json', biodata_codes, fields=(
-            'biodata_code', 'catalog_number', 'recorded_by', 'record_number', 'scientific_name', 'locality',))
-        json_data = json.loads(data)
-        for index, value in enumerate(json_data):
-            value['fields']['id'] = biodata_codes[index].id
-            value['fields']['voucher_state_id'] = biodata_codes[index].biodata_code.voucher_state
-            value['fields']['voucher_state_name'] = str(biodata_codes[index].biodata_code.get_voucher_state_display())
-            value['fields']['Herbarium'] = biodata_codes[index].biodata_code.herbarium.name
-            value['fields']['scientific_name'] = biodata_codes[index].scientific_name.scientific_name
-            value['fields']['PageDate'] = biodata_codes[index].biodata_code.page.created_at.strftime('%d-%m-%Y %H:%M')
-        return HttpResponse(json.dumps({'data': json_data}), content_type="application/json")
-    vouchers = VoucherImported.objects.filter(herbarium__herbariummember__user__id=request.user.id,
-                                              biodata_code__qr_generated=True, biodata_code__voucher_state=2).order_by(
-        'scientific_name', 'catalog_number')
-    return render(request, 'digitalization/control_vouchers.html', {'vouchers': vouchers})
+    return render(request, 'digitalization/control_vouchers.html', {
+        'voucher_state': int(request.GET.get('voucher_state', 2))
+    })
+
+
+@login_required
+@require_GET
+def vouchers_table(request, voucher_state: str):
+    voucher_state = int(voucher_state)
+    voucher_filter = (
+            Q(herbarium__herbariummember__user=request.user) &
+            Q(biodata_code__qr_generated=True)
+    )
+    if voucher_state != -1:
+        voucher_filter = voucher_filter & Q(biodata_code__voucher_state=voucher_state)
+    entries = VoucherImported.objects.filter(voucher_filter).order_by(
+        'scientific_name__scientific_name', 'catalog_number',
+    )
+    sort_by_func = {
+        1: 'biodata_code__page__created_at',
+        2: 'herbarium__name',
+        3: 'biodata_code__code',
+        4: 'catalog_number',
+        5: 'scientific_name__scientific_name',
+        6: 'recorded_by',
+        7: 'record_number',
+        8: 'locality',
+    }
+    search_query = Q()
+    search_value: str = request.GET.get("search[value]", None)
+    if search_value:
+        search_query = (
+            Q(biodata_code__page__created_at__icontains=search_value) |
+            Q(herbarium__name__icontains=search_value) |
+            Q(biodata_code__code__icontains=search_value) |
+            Q(catalog_number__icontains=search_value) |
+            Q(scientific_name__scientific_name__icontains=search_value) |
+            Q(recorded_by__icontains=search_value) |
+            Q(record_number__icontains=search_value) |
+            Q(locality__icontains=search_value)
+        )
+    return paginated_table(
+        request, entries, MinimizedVoucherSerializer,
+        sort_by_func, "voucher imported", search_query
+    )
 
 
 @login_required
@@ -831,17 +851,9 @@ def download_catalog(request):
         return response
 
 
-def public_point(point):
-    integer = int(point)
-    min_grade = point - integer
-    min = min_grade * 60
-    min_round = round(min) - 1
-    public_point = integer + min_round / 60
-    return (public_point)
-
-
-def update_voucher(request, id):
-    voucher = VoucherImported.objects.get(id=id)
+@login_required
+def update_voucher(request, voucher_id):
+    voucher = VoucherImported.objects.get(id=voucher_id)
     if request.method == 'POST':
         form = VoucherImportedForm(request.POST, instance=voucher)
         if form.is_valid():
@@ -849,8 +861,8 @@ def update_voucher(request, id):
             if not numpy.isnan(voucher.decimal_latitude) and not numpy.isnan(voucher.decimal_longitude):
                 voucher.point = GEOSGeometry(
                     'POINT(' + str(voucher.decimal_longitude) + ' ' + str(voucher.decimal_latitude) + ')', srid=4326)
-                decimal_latitude_public = public_point(voucher.decimal_latitude)
-                decimal_longitude_public = public_point(voucher.decimal_longitude)
+                decimal_latitude_public = VoucherImported.public_point(voucher.decimal_latitude)
+                decimal_longitude_public = VoucherImported.public_point(voucher.decimal_longitude)
                 voucher.decimal_latitude_public = decimal_latitude_public
                 voucher.decimal_longitude_public = decimal_longitude_public
                 voucher.point_public = GEOSGeometry(
@@ -884,4 +896,4 @@ def update_voucher(request, id):
     else:
         form = VoucherImportedForm(instance=voucher)
 
-    return render(request, 'digitalization/update_voucher.html', {'form': form, 'id': id})
+    return render(request, 'digitalization/update_voucher.html', {'form': form, 'id': voucher_id})
