@@ -1,6 +1,8 @@
 from django import forms
 
-from .models import PriorityVouchersFile, Herbarium, ColorProfileFile, VoucherImported, GalleryImage, Licence
+from .models import Herbarium
+from .models import PriorityVouchersFile, ColorProfileFile, GeneratedPage
+from .models import VoucherImported, GalleryImage, Licence
 
 
 class PriorityVoucherForm(forms.ModelForm):
@@ -21,6 +23,20 @@ class PriorityVoucherForm(forms.ModelForm):
                     'accept': '.xlsx',
                     'required': 'true'
                 }),
+        }
+
+
+class GeneratedPageForm(forms.ModelForm):
+
+    def __init__(self, current_user, *args, **kwargs):
+        super(GeneratedPageForm, self).__init__(*args, **kwargs)
+        self.fields['herbarium'].queryset = Herbarium.objects.filter(herbariummember__user=current_user)
+
+    class Meta:
+        model = GeneratedPage
+        fields = ('herbarium', )
+        widgets = {
+            "herbarium": forms.Select(attrs={'class': 'form-control', 'required': 'true'}),
         }
 
 

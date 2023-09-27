@@ -4,11 +4,11 @@ import hashlib
 import json
 import logging
 import os
+import shutil
 from datetime import datetime, date
 from http import HTTPStatus
-from io import BytesIO
 from pathlib import Path
-from typing import Tuple, Union
+from typing import Tuple, Union, Dict
 
 import numpy
 import pytz
@@ -21,23 +21,24 @@ from django.contrib.gis.geos import GEOSGeometry
 from django.core import serializers
 from django.core.files import File
 from django.core.files.base import ContentFile
-from django.db.models import Q, Count, CharField
+from django.db import transaction
+from django.db.models import Q, Count, CharField, Case, When, Value
 from django.db.models.functions import Cast
 from django.http import HttpResponse, HttpResponseBadRequest, HttpResponseServerError, HttpResponseRedirect, \
-    HttpResponseForbidden
+    HttpResponseForbidden, HttpRequest
 from django.shortcuts import render, redirect
-from django.template.loader import get_template
 from django.views.decorators.csrf import csrf_exempt
 from django.views.decorators.http import require_POST, require_GET
-from xhtml2pdf import pisa
 
 from apps.catalog.models import Species, CatalogView
 from web.utils import paginated_table
-from .forms import LoadColorProfileForm, VoucherImportedForm, GalleryImageForm, LicenceForm, PriorityVoucherForm
+from .forms import LoadColorProfileForm, VoucherImportedForm, GalleryImageForm, LicenceForm, PriorityVoucherForm, \
+    GeneratedPageForm
 from .models import BiodataCode, Herbarium, GeneratedPage, VoucherImported, PriorityVouchersFile, VouchersView, \
     GalleryImage, BannerImage, VOUCHER_STATE
 from .storage_backends import PrivateMediaStorage
-from .tasks import process_pending_vouchers, upload_priority_vouchers, scheduled_postprocess
+from .tasks import process_pending_vouchers, upload_priority_vouchers
+from .utils import render_to_pdf
 from ..api.decorators import backend_authenticated
 from ..api.serializers import MinimizedVoucherSerializer, CatalogViewSerializer, GeneratedPageSerializer, \
     PriorityVouchersSerializer
@@ -62,7 +63,7 @@ def load_priority_vouchers_file(request):
             task_id = None
             logging.error("Error uploading priority voucher by {}".format(request.user))
         return render(request, 'digitalization/load_priority_vouchers_file.html', {'form': form, 'task_id': task_id})
-    return render(request, 'digitalization/load_priority_vouchers_file.html', {'form': empty_form},)
+    return render(request, 'digitalization/load_priority_vouchers_file.html', {'form': empty_form})
 
 
 @login_required
@@ -91,193 +92,38 @@ def priority_vouchers_table(request):
 
 
 @login_required
-def qr_generator(request):
-    herbariums = Herbarium.objects.filter(herbariummember__user__id=request.user.id)
-    generated_pages = GeneratedPage.objects.filter(herbarium__herbariummember__user__id=request.user.id).order_by('-id')
-    return render(request, 'digitalization/qr_generator.html',
-                  {'herbariums': herbariums, 'generated_pages': generated_pages})
-
-
-def render_to_pdf(template_src, context_dict):
-    template = get_template(template_src)
-    html = template.render(context_dict)
-    result = BytesIO()
-    pdf = pisa.pisaDocument(
-        src=BytesIO(html.encode('UTF-8')),
-        dest=result,
-        encoding='UTF-8'
-    )
-    if pdf.err:
-        return 'We had some errors <pre>' + html + '</pre>'
-    return result.getvalue()
-
-
-def delete_tmp_qr():
-    files = glob.glob('media/qr/*.jpg', recursive=True)
-    for f in files:
-        try:
-            os.remove(f)
-        except OSError as e:
-            print("Error: %s : %s" % (f, e.strerror))
-
-
-def litering_by_three(a):
-    return a[0] + ' ' + a[1:4] + ' ' + a[4:7]
-
-
-#  replace (↑) with you character like ","
-
-@login_required
+@csrf_exempt
 @require_POST
-def code_generator(request):
-    if request.method == 'POST':
-        herbarium_input = request.POST['herbarium_input']
-        logging.debug(herbarium_input)
-        herbarium = Herbarium.objects.get(id=herbarium_input)
-        quantity_pages_input = request.POST['quantity_pages_input']
-        logging.debug("Pages required {}".format(quantity_pages_input))
-        col = 5
-        row = 7
-        qr_per_page = col * row
-        num_qrs = qr_per_page * int(quantity_pages_input)
-        vouchers = VoucherImported.objects.filter(biodata_code__qr_generated=False, herbarium=herbarium).order_by(
-            '-priority', 'scientific_name__genus__family__name', 'scientific_name__scientific_name', 'catalog_number'
-        )
-        logging.debug(vouchers)
-        logging.debug(vouchers[:num_qrs])
-        vouchers = vouchers[:num_qrs]
-        if vouchers.count() > 0:
-            generated_pages_count = GeneratedPage.objects.filter(herbarium=herbarium, terminated=False).count()
-            if generated_pages_count == 0:
-                generated_page = GeneratedPage(
-                    name=str(quantity_pages_input) + ' páginas - ' + str(vouchers.count()) + ' códigos - Fecha:' + str(
-                        datetime.now(tz=pytz.timezone('America/Santiago')).strftime('%d-%m-%Y %H:%M')),
-                    herbarium=herbarium, created_by=request.user,
-                    created_at=datetime.now(tz=pytz.timezone('America/Santiago')))
-                generated_page.save()
-                for voucher in vouchers:
-                    biodata_code = voucher.biodata_code
-                    biodata_code.qr_generated = True
-                    biodata_code.page = generated_page
-                    biodata_code.save()
-                count_pages = GeneratedPage.objects.all().count()
-                data = {'result': 'OK', 'pages': count_pages,
-                        'generated_page': {'id': generated_page.id, 'herbarium': generated_page.herbarium.name,
-                                           'Total': num_qrs, 'created_by': str(generated_page.created_by),
-                                           'created_at': generated_page.created_at.strftime(
-                                               '%d de %B de %Y a las %H:%M')}}
-            else:
-                data = {'result': 'error', 'type': 'no terminated'}
-        else:
-            data = {'result': 'error', 'type': 'no data'}
-        return HttpResponse(json.dumps(data), content_type="application/json")
-
-
-@login_required
-@require_GET
-def historical_page_download(request):
-    if request.method == 'GET':
-        historical_page_id = request.GET['historical_page_id']
-        page = GeneratedPage.objects.get(pk=historical_page_id)
-        col = 5
-        row = 7
-        qr_per_page = col * row
-        qr = qrcode.QRCode(
-            version=1,
-            error_correction=qrcode.constants.ERROR_CORRECT_L,
-            box_size=10,
-            border=0,
-        )
-        code_list = []
-        print_code_list = []
-        vouchers = VoucherImported.objects.filter(biodata_code__page=page).order_by(
-            'priority',
-            'scientific_name__genus__family__name',
-            'scientific_name__scientific_name',
-            'catalog_number'
-        )
-        for voucher in vouchers:
-            code = voucher.biodata_code.code.split(':')
-            print_code = code[1] + ' ' + litering_by_three(code[2])
-            data_code = {'code': voucher.biodata_code.code}
-            qr.add_data(data_code)
-            qr.make(fit=True)
-            img = qr.make_image(fill_color="black", back_color="white")
-            img.save('media/qr/' + voucher.biodata_code.code + '.jpg')
-            qr.clear()
-            code_list.append(voucher.biodata_code.code)
-            print_code_list.append(print_code)
-        codes_list = zip(code_list, print_code_list)
-        result = render_to_pdf('digitalization/template_qr.html',
-                               {'pagesize': 'A5', 'codes_list': codes_list, 'col': col, 'page_date': page.created_at,
-                                'page_id': page.id})
-        delete_tmp_qr()
-        return HttpResponse(result, content_type='application/pdf')
-
-
-@login_required
-@require_GET
-def historical_priority_voucher_page_download(request):
-    if request.method == 'GET':
-        historical_page_id = request.GET['historical_page_id']
-        page = GeneratedPage.objects.get(pk=historical_page_id)
-        priority_vouchers = VoucherImported.objects.filter(biodata_code__page=page).order_by(
-            'priority',
-            'scientific_name__genus__family__name',
-            'scientific_name__scientific_name',
-            'catalog_number'
-        )
-        result = render_to_pdf('digitalization/template_list_priority_voucher.html',
-                               {'pagesize': 'letter', 'page_date': page.created_at, 'page_id': page.id,
-                                'priority_vouchers': priority_vouchers})
-        return HttpResponse(result, content_type='application/pdf')
-
-
-@login_required
-def mark_vouchers(request):
-    generated_pages = GeneratedPage.objects.filter(herbarium__herbariummember__user__id=request.user.id).order_by(
-        'created_at')
-    return render(request, 'digitalization/mark_vouchers.html', {'generated_pages': generated_pages})
-
-
-@login_required
-@require_GET
-def session_table(request):
-    entries = GeneratedPage.objects.filter(
-        herbarium__herbariummember__user__id=request.user.id
-    ).annotate(
-        stateless_count_annotation=Count('biodatacode', filter=Q(biodatacode__voucher_state=0)),
-        found_count_annotation=Count('biodatacode', filter=Q(biodatacode__voucher_state=1)),
-        not_found_count_annotation=Count('biodatacode', filter=Q(biodatacode__voucher_state=2)),
-        digitalized_annotation=Count(
-            'biodatacode', filter=Q(biodatacode__voucher_state=7) | Q(biodatacode__voucher_state=8)
-        ),
-        id_annotation=Cast('id', CharField())
+def pdf_error_data(request):
+    data_errors = json.loads(json.dumps(request.POST.dict()))
+    logging.debug(f"Requesting PDF of errors: {data_errors}")
+    columns = 11
+    registers = int(len(data_errors) / columns)
+    indexes = list()
+    for idx, value in enumerate(data_errors):
+        if idx >= registers:
+            break
+        value_str = str(value)
+        index = value_str[value_str.find('[') + len('['):value_str.rfind(']')]
+        indexes.append(int(index))
+    data_list = list()
+    for i in indexes:
+        data_list.append({
+            'catalog_number': data_errors['catalogNumber[' + str(i) + ']'],
+            'recorded_by': data_errors['recordedBy[' + str(i) + ']'],
+            'record_number': data_errors['recordNumber[' + str(i) + ']'],
+            'scientific_name': data_errors['scientificName[' + str(i) + ']'],
+            'locality': data_errors['locality[' + str(i) + ']']
+        })
+    result = render_to_pdf(
+        'digitalization/template_list_priority_voucher.html',
+        {
+            'pagesize': 'A4',
+            'page_date': date.today(),
+            'priority_vouchers': data_list
+        }
     )
-    sort_by_func = {
-        0: 'id',
-        1: 'created_by',
-        2: 'created_at',
-        3: 'stateless_count_annotation',
-        4: 'found_count_annotation',
-        5: 'not_found_count_annotation',
-        6: 'digitalized_annotation'
-    }
-    search_query = Q()
-    search_value: str = request.GET.get("search[value]", None)
-    if search_value:
-        search_query = (
-                Q(id_annotation__icontains=search_value) |
-                Q(created_by__username__icontains=search_value) |
-                Q(created_at__icontains=search_value) |
-                Q(biodatacode__code=search_value)
-        )
-        if search_value.isdigit():
-            search_query = search_query | Q(biodatacode__catalog_number=int(search_value))
-    return paginated_table(
-        request, entries, GeneratedPageSerializer,
-        sort_by_func, "generated pages", search_query
-    )
+    return HttpResponse(result, content_type='application/pdf')
 
 
 @login_required
@@ -331,38 +177,230 @@ def xls_error_data(request):
 
 
 @login_required
-@csrf_exempt
-@require_POST
-def pdf_error_data(request):
-    data_errors = json.loads(json.dumps(request.POST.dict()))
-    logging.debug(f"Requesting PDF of errors: {data_errors}")
-    columns = 11
-    registers = int(len(data_errors) / columns)
-    indexes = list()
-    for idx, value in enumerate(data_errors):
-        if idx >= registers:
-            break
-        value_str = str(value)
-        index = value_str[value_str.find('[') + len('['):value_str.rfind(']')]
-        indexes.append(int(index))
-    data_list = list()
-    for i in indexes:
-        data_list.append({
-            'catalog_number': data_errors['catalogNumber[' + str(i) + ']'],
-            'recorded_by': data_errors['recordedBy[' + str(i) + ']'],
-            'record_number': data_errors['recordNumber[' + str(i) + ']'],
-            'scientific_name': data_errors['scientificName[' + str(i) + ']'],
-            'locality': data_errors['locality[' + str(i) + ']']
-        })
+def qr_generator(request):
+    form = GeneratedPageForm(request.user)
+    if request.method == "POST":
+        info = {"state": "ok", "type": "undetermined"}
+        page_form = GeneratedPageForm(request.user, request.POST)
+        if page_form.is_valid():
+            with transaction.atomic():
+                try:
+                    generated_page = page_form.save(commit=False)
+                    logging.debug(f"Generating QR for {generated_page.herbarium.name}")
+                    quantity_pages = request.POST['quantity_pages']
+                    col = 5
+                    row = 7
+                    qr_per_page = col * row
+                    num_qrs = qr_per_page * int(quantity_pages)
+                    logging.debug(f"Pages required {quantity_pages} with {num_qrs} qr codes")
+                    vouchers = VoucherImported.objects.filter(
+                        biodata_code__qr_generated=False,
+                        herbarium=generated_page.herbarium
+                    ).order_by(
+                        '-priority', 'scientific_name__genus__family__name', 'scientific_name__scientific_name',
+                        'catalog_number'
+                    )[:num_qrs]
+                    if vouchers.count() == 0:
+                        info["type"] = "no data"
+                        raise ValueError("There are not vouchers left")
+                    if GeneratedPage.objects.filter(
+                            herbarium=generated_page.herbarium,
+                            terminated=False
+                    ).count() != 0:
+                        info["type"] = "not terminated"
+                        raise RuntimeError("There are sessions not terminated")
+                    generated_page.created_by = request.user
+                    generated_page.save(quantity_pages)
+                    for voucher in vouchers:
+                        biodata_code = voucher.biodata_code
+                        biodata_code.qr_generated = True
+                        biodata_code.page = generated_page
+                        biodata_code.save()
+                    generated_page.save(quantity_pages)
+                    logging.info(f"Created session '{generated_page.name}' ({generated_page.id}) "
+                                 f"with {generated_page.qr_count} QR codes")
+                except Exception as e:
+                    logging.error(e, exc_info=True)
+                    info["state"] = "error"
+            request.session["form_data"] = info
+            return redirect("qr_generator")
+        else:
+            form = page_form
+    info = request.session.pop("form_data", None)
+    return render(request, 'digitalization/qr_generator.html', {
+        'form': form, "info": info
+    })
+
+
+@login_required
+@require_GET
+def session_table_qr(request):
+    sort_by_func = {
+        0: 'id',
+        1: 'herbarium.name',
+        2: 'created_by',
+        3: 'created_at',
+        4: 'qr_count_annotation',
+        5: 'terminated_annotation',
+    }
+    search_query = Q()
+    search_value: str = request.GET.get("search[value]", None)
+    if search_value:
+        search_query = (
+                Q(id_annotation__icontains=search_value) |
+                Q(herbaium__name__icontains=search_value) |
+                Q(created_at__icontains=search_value) |
+                Q(created_by__username__icontains=search_value) |
+                Q(terminated_annotation__icontains=search_value) |
+                Q(biodatacode__code=search_value)
+        )
+        if search_value.isdigit():
+            search_query = (
+                    search_query |
+                    Q(qr_count_annotation=int(search_value)) |
+                    Q(biodatacode__catalog_number=int(search_value))
+            )
+    return render_session_table(request, sort_by_func, search_query)
+
+
+@login_required
+@require_GET
+def session_table(request):
+    sort_by_func = {
+        0: 'id',
+        1: 'created_by',
+        2: 'created_at',
+        3: 'stateless_count_annotation',
+        4: 'found_count_annotation',
+        5: 'not_found_count_annotation',
+        6: 'digitalized_annotation'
+    }
+    search_query = Q()
+    search_value: str = request.GET.get("search[value]", None)
+    if search_value:
+        search_query = (
+                Q(id_annotation__icontains=search_value) |
+                Q(created_by__username__icontains=search_value) |
+                Q(created_at__icontains=search_value) |
+                Q(biodatacode__code=search_value)
+        )
+        if search_value.isdigit():
+            search_query = search_query | Q(biodatacode__catalog_number=int(search_value))
+    return render_session_table(request, sort_by_func, search_query)
+
+
+def render_session_table(request: HttpRequest, sort_by_func: Dict[int, str], search_query: Q) -> HttpResponse:
+    entries = GeneratedPage.objects.filter(
+        herbarium__herbariummember__user__id=request.user.id
+    ).annotate(
+        stateless_count_annotation=Count('biodatacode', filter=Q(biodatacode__voucher_state=0)),
+        found_count_annotation=Count('biodatacode', filter=Q(biodatacode__voucher_state=1)),
+        not_found_count_annotation=Count('biodatacode', filter=Q(biodatacode__voucher_state=2)),
+        digitalized_annotation=Count(
+            'biodatacode', filter=Q(biodatacode__voucher_state=7) | Q(biodatacode__voucher_state=8)
+        ),
+        qr_count_annotation=Count('biodatacode', filter=Q(biodatacode__qr_generated=True)),
+        terminated_annotation=Case(
+            When(terminated=True, then=Value("Sí")),
+            default=Value("No"),
+            output_field=CharField(),
+        ),
+        id_annotation=Cast('id', CharField())
+    )
+    return paginated_table(
+        request, entries, GeneratedPageSerializer,
+        sort_by_func, "generated pages", search_query
+    )
+
+
+@login_required
+@require_GET
+def priority_vouchers_page_download(request: HttpRequest, page_id: int):
+    page = GeneratedPage.objects.get(pk=page_id)
+    priority_vouchers = VoucherImported.objects.filter(
+        biodata_code__page=page
+    ).order_by(
+        'priority',
+        'scientific_name__genus__family__name',
+        'scientific_name__scientific_name',
+        'catalog_number'
+    )
     result = render_to_pdf(
-        'digitalization/template_list_priority_voucher.html',
-        {
-            'pagesize': 'A4',
-            'page_date': date.today(),
-            'priority_vouchers': data_list
+        'digitalization/template_list_priority_voucher.html', {
+            'pagesize': 'letter',
+            'page_date': page.created_at,
+            'page_id': page.id,
+            'priority_vouchers': priority_vouchers
         }
     )
     return HttpResponse(result, content_type='application/pdf')
+
+
+@login_required
+@require_GET
+def qr_page_download(request: HttpRequest, page_id: int):
+    os.makedirs(os.path.join("tmp", "qr"), exist_ok=True)
+
+    def delete_tmp_qr():
+        try:
+            shutil.rmtree(os.path.join("tmp", "qr"))
+        except OSError as e:
+            logging.error(f"Error deleting qr temp folder: {e}", exc_info=True)
+
+    page = GeneratedPage.objects.get(pk=page_id)
+    col = 5
+    row = 7
+    qr = qrcode.QRCode(
+        version=1,
+        error_correction=qrcode.constants.ERROR_CORRECT_L,
+        box_size=10,
+        border=0,
+    )
+    code_list = []
+    print_code_list = []
+    vouchers = VoucherImported.objects.filter(
+        biodata_code__page=page
+    ).order_by(
+        'priority',
+        'scientific_name__genus__family__name',
+        'scientific_name__scientific_name',
+        'catalog_number'
+    )
+
+    for voucher in vouchers:
+        code = voucher.biodata_code.code.split(':')
+        listing_by_three = (lambda a: f"{a[0]} {a[1:4]} {a[4:7]}")(code[2])
+        print_code = f"{code[1]} {listing_by_three}"
+        data_code = voucher.biodata_code.code.replace(":", "_")
+        qr.add_data({'code': voucher.biodata_code.code})
+        qr.make(fit=True)
+        img = qr.make_image(fill_color="black", back_color="white")
+        temp_file = os.path.join("tmp", "qr", f"{data_code}.jpg")
+        logging.debug(f"Writing temporal file `{temp_file}`")
+        img.save(temp_file)
+        qr.clear()
+        code_list.append(data_code)
+        print_code_list.append(print_code)
+    codes_list = zip(code_list, print_code_list)
+    result = render_to_pdf(
+        'digitalization/template_qr.html', {
+            'pagesize': 'A5',
+            'codes_list': codes_list,
+            'col': col,
+            'row': row,
+            'page_date': page.created_at,
+            'page_id': page.id
+        }
+    )
+    delete_tmp_qr()
+    return HttpResponse(result, content_type='application/pdf')
+
+
+@login_required
+def mark_vouchers(request):
+    generated_pages = GeneratedPage.objects.filter(herbarium__herbariummember__user__id=request.user.id).order_by(
+        'created_at')
+    return render(request, 'digitalization/mark_vouchers.html', {'generated_pages': generated_pages})
 
 
 @login_required
@@ -400,14 +438,14 @@ def vouchers_table(request, voucher_state: str):
     search_value: str = request.GET.get("search[value]", None)
     if search_value:
         search_query = (
-            Q(biodata_code__page__created_at__icontains=search_value) |
-            Q(herbarium__name__icontains=search_value) |
-            Q(biodata_code__code__icontains=search_value) |
-            Q(catalog_number__icontains=search_value) |
-            Q(scientific_name__scientific_name__icontains=search_value) |
-            Q(recorded_by__icontains=search_value) |
-            Q(record_number__icontains=search_value) |
-            Q(locality__icontains=search_value)
+                Q(biodata_code__page__created_at__icontains=search_value) |
+                Q(herbarium__name__icontains=search_value) |
+                Q(biodata_code__code__icontains=search_value) |
+                Q(catalog_number__icontains=search_value) |
+                Q(scientific_name__scientific_name__icontains=search_value) |
+                Q(recorded_by__icontains=search_value) |
+                Q(record_number__icontains=search_value) |
+                Q(locality__icontains=search_value)
         )
     return paginated_table(
         request, entries, MinimizedVoucherSerializer,

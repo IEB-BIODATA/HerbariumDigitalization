@@ -185,11 +185,13 @@ class PriorityVouchersSerializer(HyperlinkedModelSerializer):
 
 class GeneratedPageSerializer(HyperlinkedModelSerializer):
     created_by = ReadOnlyField(source='created_by.username')
+    herbarium = CharField(source='herbarium.name')
     color_profile = serializers.SerializerMethodField()
     stateless_count = serializers.SerializerMethodField()
     found_count = serializers.SerializerMethodField()
     not_found_count = serializers.SerializerMethodField()
     digitalized = serializers.SerializerMethodField()
+    qr_count = serializers.SerializerMethodField()
 
     def get_total(self, obj):
         return obj.total
@@ -212,13 +214,17 @@ class GeneratedPageSerializer(HyperlinkedModelSerializer):
         else:
             return None
 
+    def get_qr_count(self, obj):
+        return obj.qr_count
+
     class Meta:
         model = GeneratedPage
         fields = [
-            "id", "name", "created_by", "created_at",
+            "id", "name", "herbarium",
+            "created_by", "created_at",
             "color_profile", "terminated",
             "total", "stateless_count", "found_count",
-            "not_found_count", "digitalized",
+            "not_found_count", "digitalized", "qr_count"
         ]
 
 
