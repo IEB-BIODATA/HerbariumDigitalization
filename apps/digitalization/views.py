@@ -803,9 +803,7 @@ def get_pending_images(request):
 @require_GET
 @login_required
 def get_pending_vouchers(request):
-    pending_voucher = VoucherImported.objects.filter(
-        Q(biodata_code__voucher_state=8) | ((~Q(image_raw='')) & Q(image=''))
-    )
+    pending_voucher = VoucherImported.objects.filter(biodata_code__voucher_state=8)
     return HttpResponse(json.dumps({
         "count": pending_voucher.count(),
         "vouchers": [voucher.id for voucher in pending_voucher],
