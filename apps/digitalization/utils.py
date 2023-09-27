@@ -16,6 +16,8 @@ import numpy as np
 from PIL.Image import Image
 from django.core.files.base import ContentFile
 from django.core.files.storage import Storage
+from django.template.loader import get_template
+from xhtml2pdf import pisa
 
 
 class TaskProcessLogger(logging.Logger):
@@ -994,3 +996,17 @@ def empty_folder(folder_path: str) -> None:
                 shutil.rmtree(content_path)
         except Exception as e:
             logging.error(f"Failed to delete {content_path}. Exception: {e}", exc_info=True)
+
+
+def render_to_pdf(template_src, context_dict):
+    template = get_template(template_src)
+    html_template = template.render(context_dict)
+    result = BytesIO()
+    pdf = pisa.pisaDocument(
+        src=BytesIO(html_template.encode('UTF-8')),
+        dest=result,
+        encoding='UTF-8'
+    )
+    if pdf.err:
+        return 'We had some errors <pre>' + html_template + '</pre>'
+    return result.getvalue()

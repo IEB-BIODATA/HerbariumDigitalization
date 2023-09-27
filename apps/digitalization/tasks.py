@@ -235,7 +235,6 @@ def scheduled_postprocess(input_folder: str, temp_folder: str, log_folder: str):
             session_folder.close_session(s3, bucket_name, process_logger)
         except Exception as e:
             process_logger.error(e, exc_info=True)
-        break
     s3.close()
     shutil.rmtree(input_folder)
     shutil.rmtree(temp_folder)

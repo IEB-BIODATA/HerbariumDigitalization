@@ -2,11 +2,15 @@
 # from django.db import models
 from __future__ import annotations
 import logging
+import math
+import datetime as dt
 from typing import BinaryIO, Union, Any, Tuple, Callable
 
 import celery
 import numpy as np
 import pandas as pd
+import pytz
+from django.conf import settings
 from django.contrib.auth.models import User
 from django.contrib.gis.db import models
 from django.contrib.gis.geos import GEOSGeometry
@@ -90,7 +94,7 @@ class GeneratedPage(models.Model):
     herbarium = models.ForeignKey(Herbarium, on_delete=models.CASCADE)
     terminated = models.BooleanField(default=False)
     color_profile = models.ForeignKey(ColorProfileFile, on_delete=models.SET_NULL, blank=True, null=True)
-    created_at = models.DateTimeField(blank=True, null=True, editable=False)
+    created_at = models.DateTimeField(auto_now_add=True, blank=True, null=True, editable=False)
     created_by = models.ForeignKey(User, on_delete=models.PROTECT)
 
     class Meta:
@@ -117,6 +121,33 @@ class GeneratedPage(models.Model):
         return BiodataCode.objects.filter(
             Q(page__id=self.id) & (Q(voucher_state=7) | Q(voucher_state=8))
         ).count()
+
+    @property
+    def qr_count(self):
+        return BiodataCode.objects.filter(
+            Q(page__id=self.id) & Q(qr_generated=True)
+        ).count()
+
+    def save(
+        self, quantity_pages: int = None, force_insert=False, force_update=False, using=None, update_fields=None
+    ):
+        if quantity_pages is None:
+            quantity_pages = math.ceil(self.qr_count / 35)
+        try:
+            self.name = "{} páginas - {} códigos - Fecha:{}".format(
+                quantity_pages, self.qr_count,
+                self.created_at.astimezone(
+                    pytz.timezone(settings.TIME_ZONE)
+                ).strftime('%d-%m-%Y %H:%M')
+            )
+        except AttributeError:
+            logging.debug(f"Cannot define name for session ({self.id})")
+        return super().save(
+            force_insert=force_insert,
+            force_update=force_update,
+            using=using,
+            update_fields=update_fields
+        )
 
     def __unicode__(self):
         return self.name

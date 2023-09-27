@@ -4,18 +4,22 @@ from django.urls import re_path
 from . import views
 
 urlpatterns = [
-    re_path(r'^qr_generator$', views.qr_generator, name='qr_generator'),
-    re_path(r'^code_generator$', views.code_generator, name='code_generator'),
-    re_path(r'^historical_page_download$', views.historical_page_download, name='historical_page_download'),
-    re_path(r'^historical_priority_voucher_page_download$', views.historical_priority_voucher_page_download, name='historical_priority_voucher_page_download'),
     re_path(r'^load_priority_vouchers_file$', views.load_priority_vouchers_file, name='load_priority_vouchers_file'),
     re_path(r'^priority_vouchers_table$', views.priority_vouchers_table, name='priority_vouchers_table'),
-    re_path(r'^upload_color_profile_file$', views.upload_color_profile_file, name='upload_color_profile_file'),
+    re_path(r'^pdf_error_data$', views.pdf_error_data, name='pdf_error_data'),
+    re_path(r'^xls_error_data$', views.xls_error_data, name='xls_error_data'),
+    re_path(r'^qr_generator$', views.qr_generator, name='qr_generator'),
+    re_path(r'^session_table/qr$', views.session_table_qr, name='session_table_qr'),
     re_path(r'^session_table$', views.session_table, name='session_table'),
+    re_path(
+        r'^priority_vouchers_page_download/(?P<page_id>\d+)/$',
+        views.priority_vouchers_page_download,
+        name='priority_vouchers_page_download'
+    ),
+    re_path(r'^qr_page_download/(?P<page_id>\d+)/$', views.qr_page_download, name='qr_page_download'),
+    re_path(r'^upload_color_profile_file$', views.upload_color_profile_file, name='upload_color_profile_file'),
     re_path(r'^mark_vouchers$', views.mark_vouchers, name='mark_vouchers'),
     re_path(r'^set_state$', views.set_state, name='set_state'),
-    re_path(r'^xls_error_data$', views.xls_error_data, name='xls_error_data'),
-    re_path(r'^pdf_error_data$', views.pdf_error_data, name='pdf_error_data'),
     re_path(r'^control_vouchers$', views.control_vouchers, name='control_vouchers'),
     re_path(r'^vouchers_table/(?P<voucher_state>-?\d+)$', views.vouchers_table, name='vouchers_table'),
     re_path(r'^terminate_session$', views.terminate_session, name='terminate_session'),
