@@ -187,7 +187,7 @@ CELERY_BEAT_SCHEDULE = {
     'daily_postprocessing': {
         'task': 'scheduled_postprocessing',
         'schedule': crontab(hour="1", minute="0"),
-        'args': ('input', 'temp', '/var/log/postprocessing')
+        'args': ('input', 'tmp', '/var/log/postprocessing')
     },
     'weekly_clean_storage': {
         'task': 'clean_storage',
