@@ -787,7 +787,9 @@ def upload_raw_image(request):
 @login_required
 def get_pending_images(request):
     if request.method == 'GET':
-        voucher_pending = VoucherImported.objects.filter(~Q(image_raw=''), Q(image=''))
+        voucher_pending = VoucherImported.objects.filter(
+            (~Q(image_raw='') & Q(image='')) | Q(biodata_code__voucher_state=8)
+        )
         data = serializers.serialize('json', voucher_pending, fields=('image_raw',))
         json_data = json.loads(data)
         for index, value in enumerate(json_data):
