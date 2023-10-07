@@ -13,17 +13,16 @@ Including another URLconf
     1. Import the include() function: from django.urls import include, path
     2. Add a URL to urlpatterns:  path('blog/', include('blog.urls'))
 """
-from django.conf.urls import include
-from django.contrib import admin
 from django.conf import settings
-from django.urls import re_path
+from django.conf.urls import include
 from django.conf.urls.static import static
+from django.contrib import admin
 from django.contrib.auth import views as auth_views
 from django.contrib.auth.views import LogoutView
-from rest_framework import permissions
-from drf_yasg.views import get_schema_view
+from django.urls import re_path
 from drf_yasg import openapi
-from . import views
+from drf_yasg.views import get_schema_view
+from rest_framework import permissions
 
 schema_view = get_schema_view(
    openapi.Info(
@@ -41,7 +40,6 @@ urlpatterns = [
     re_path(r'^', include('apps.home.urls'), name='index'),
     re_path(r'^digitalization/', include('apps.digitalization.urls'), name='index'),
     re_path(r'^catalog/', include('apps.catalog.urls'), name='index'),
-    re_path(r'^api/', include('apps.api.urls')),
     re_path(r'^accounts/login/', auth_views.LoginView.as_view(), name='login'),
     re_path(r'^logout/', LogoutView.as_view(next_page=settings.LOGOUT_REDIRECT_URL), name='logout'),
     re_path(r'^swagger(?P<format>\.json|\.yaml)$', schema_view.without_ui(cache_timeout=0), name='schema-json'),

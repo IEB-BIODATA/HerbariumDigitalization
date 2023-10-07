@@ -54,9 +54,11 @@ INSTALLED_APPS = [
     'django.contrib.gis',
     'corsheaders',
     'widget_tweaks',
+    'django_hosts'
 ]
 
 MIDDLEWARE = [
+    'django_hosts.middleware.HostsRequestMiddleware',
     'django.middleware.security.SecurityMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
@@ -65,9 +67,12 @@ MIDDLEWARE = [
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
     'corsheaders.middleware.CorsMiddleware',
+    'django_hosts.middleware.HostsResponseMiddleware',
 ]
 
-ROOT_URLCONF = 'web.urls'
+ROOT_URLCONF = 'web.main_urls'
+ROOT_HOSTCONF = 'web.hosts'
+DEFAULT_HOST = 'digitalization'
 
 TEMPLATES = [
     {
@@ -90,7 +95,6 @@ TEMPLATES = [
 WSGI_APPLICATION = 'web.wsgi.application'
 
 DATA_UPLOAD_MAX_NUMBER_FIELDS = None
-
 
 # Database
 # https://docs.djangoproject.com/en/4.1/ref/settings/#databases
