@@ -1,4 +1,4 @@
-FROM herbarium-api
+FROM herbarium-digitalization
 
 RUN apt-get install -y \
     wget \
