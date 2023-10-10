@@ -54,7 +54,7 @@ INSTALLED_APPS = [
     'django.contrib.gis',
     'corsheaders',
     'widget_tweaks',
-    'django_hosts'
+    'django_hosts',
 ]
 
 MIDDLEWARE = [

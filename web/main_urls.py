@@ -38,8 +38,7 @@ schema_view = get_schema_view(
 urlpatterns = [
     re_path(r'^admin/', admin.site.urls),
     re_path(r'^', include('apps.home.urls'), name='index'),
-    re_path(r'^api/', include('apps.api.urls'),),
-    re_path(r'^digitalization/', include('apps.digitalization.urls'), name='index'),
+    re_path(r'^', include('apps.digitalization.urls')),
     re_path(r'^catalog/', include('apps.catalog.urls'), name='index'),
     re_path(r'^accounts/login/', auth_views.LoginView.as_view(), name='login'),
     re_path(r'^logout/', LogoutView.as_view(next_page=settings.LOGOUT_REDIRECT_URL), name='logout'),
