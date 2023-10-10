@@ -97,7 +97,7 @@
                                     digitalize_class = `class="btn btn-secondary"  style="pointer-events: none;cursor: default;"`
                                     terminate_class = digitalize_class;
                                 } else {
-                                    digitalize_class = `class="btn btn-primary" onclick="getVouchers(${row.id},-1); return false;"`;
+                                    digitalize_class = `class="btn btn-primary" onclick="getVouchers(${row.id}, -1, '${row.name}'); return false;"`;
                                     terminate_class = `class="btn btn-danger" onclick="terminateSession(${row.id}); return false;"`;
                                 }
                                 color_profile = `
@@ -109,113 +109,102 @@
                             <div id="td_link_${ row.id }" class="d-grid gap-2">
                                 ${color_profile}
                             </div>
-                            `
+                            `;
                         }
                     },
                 ]
             });
         });
 
-        function getVouchers(pageId, voucherState){
+        function getVouchers(pageId, voucherState, pageName){
             $("#overlay").fadeIn(300);
             const voucherCard = $('#VouchersCard')
             voucherCard.hide();
-            let url = "{% url 'generated_page' pk=0 %}".replace("0", pageId);
-            $.ajax({
-               url: url,
-               type: 'GET',
-               success: response => {
-                    $('#pageName')[0].innerHTML = ` <b>Sesión ${response.id}:</b> <i>${response.name}</i>`;
+            $('#pageName')[0].innerHTML = ` <b>Sesión ${pageId}:</b> <i>${pageName}</i>`;
+            url = "{% url 'get_vouchers_to_validate' page_id=0 voucher_state=-1 %}"
+                .replace("0", pageId)
+                .replace("-1", voucherState);
+            console.debug(`Table from ${url}`);
+            voucherCard.show();
+            const vouchersTable = $('#VouchersTable');
+            vouchersTable.DataTable().destroy();
+            vouchersTable.DataTable({
+                serverSide: true,
+                processing: true,
+                language: languageTable.spanish,
+                ajax: {
+                    url: url,
+                    type: 'GET',
+                    dataSrc: 'data',
                 },
-                error: error => {
-                    console.error(error);
-                },
-            }).always(function() {
-                url = "{% url 'get_vouchers_to_validate' page_id=0 voucher_state=-1 %}"
-                    .replace("0", pageId)
-                    .replace("-1", voucherState);
-                console.debug(`Table from ${url}`);
-                voucherCard.show();
-                const vouchersTable = $('#VouchersTable');
-                vouchersTable.DataTable().destroy();
-                vouchersTable.DataTable({
-                    serverSide: true,
-                    processing: true,
-                    language: languageTable.spanish,
-                    ajax: {
-                        url: url,
-                        type: 'GET',
-                        dataSrc: 'data',
-                    },
-                    order: [[2, 'asc'], [1, 'asc']],
-                    columnDefs: [
-                        {
-                            targets: 0,
-                            data: 'occurrence_id',
-                            orderable: false,
-                            render: (data) => {
-                                let values = [];
-                                for (let i=0; i < 7; i++){
-                                    let selected = '';
-                                    if (i === data.voucher_state)
-                                        selected = 'selected="selected"';
-                                    values.push(`value="${i}" ${selected}`);
-                                }
-                                return `
-                                <select id="voucherClassFound${data.id}" class="${getStateClass(data.voucher_state)} custom-select custom-select-sm form-control form-control-sm" onchange="setState(${data.id}, this.value);">
-                                    <option ${values[0]}>&nbsp;Sin Estado&nbsp;&nbsp;&nbsp;&nbsp;</option>
-                                    <option ${values[1]}>&nbsp;Encontrado&nbsp;&nbsp;&nbsp;&nbsp;</option>
-                                    <option ${values[2]}>&nbsp;No Encontrado&nbsp;</option>
-                                    <option ${values[3]}>&nbsp;En Préstamo&nbsp;&nbsp;&nbsp;</option>
-                                    <option ${values[6]}>&nbsp;En curatoria&nbsp;&nbsp;</option>
-                                </select>
-                                `;
-                            },
-                        },
-                        {
-                            targets: 1,
-                            data: 'catalog_number',
-                        },
-                        {
-                            targets: 2,
-                            data: 'species',
-                        },
-                        {
-                            targets: 3,
-                            data: 'recorded_by',
-                        },
-                        {
-                            targets: 4,
-                            data: 'record_number',
-                            render: (data) => {
-                                if (isNaN(data)) return ""; else return data;
+                order: [[2, 'asc'], [1, 'asc']],
+                columnDefs: [
+                    {
+                        targets: 0,
+                        data: 'occurrence_id',
+                        orderable: false,
+                        render: (data) => {
+                            let values = [];
+                            for (let i=0; i < 7; i++){
+                                let selected = '';
+                                if (i === data.voucher_state)
+                                    selected = 'selected="selected"';
+                                values.push(`value="${i}" ${selected}`);
                             }
+                            return `
+                            <select id="voucherClassFound${data.id}" class="${getStateClass(data.voucher_state)} custom-select custom-select-sm form-control form-control-sm" onchange="setState(${data.id}, this.value);">
+                                <option ${values[0]}>&nbsp;Sin Estado&nbsp;&nbsp;&nbsp;&nbsp;</option>
+                                <option ${values[1]}>&nbsp;Encontrado&nbsp;&nbsp;&nbsp;&nbsp;</option>
+                                <option ${values[2]}>&nbsp;No Encontrado&nbsp;</option>
+                                <option ${values[3]}>&nbsp;En Préstamo&nbsp;&nbsp;&nbsp;</option>
+                                <option ${values[6]}>&nbsp;En curatoria&nbsp;&nbsp;</option>
+                            </select>
+                            `;
                         },
-                        {
-                            targets: 5,
-                            data: 'locality',
-                        },
-                    ],
-                });
-                $('#VouchersTable_length').append(`
-                <label class="p-3">Filtrar Estado
-                    <select id="voucherState" name="VouchersTable_length" aria-controls="VouchersTable" class="custom-select custom-select-sm form-control form-control-sm" onchange="getVouchers(${pageId}, this.value);">
-                        <option value="-1">Todos</option>
-                        <option value="1">Encontrado</option>
-                        <option value="0">Sin Estado</option>
-                        <option value="2">No Encontrado</option>
-                        <option value="3">En Préstamo</option>
-                        <option value="4">Extraviado</option>
-                        <option value="5">En Préstado Encontrado</option>
-                        <option value="6">En curatoria</option>
-                        <option value="7">Digitalizado</option>
-                        <option value="8">Pendiente</option>
-                    </select>
-                </label>
-                `);
-                $(`#voucherState option[value=${voucherState}]`).attr('selected', 'selected');
-                $("#overlay").fadeOut(300);
+                    },
+                    {
+                        targets: 1,
+                        data: 'catalog_number',
+                    },
+                    {
+                        targets: 2,
+                        data: 'species',
+                    },
+                    {
+                        targets: 3,
+                        data: 'recorded_by',
+                    },
+                    {
+                        targets: 4,
+                        data: 'record_number',
+                        render: (data) => {
+                            if (isNaN(data)) return ""; else return data;
+                        }
+                    },
+                    {
+                        targets: 5,
+                        data: 'locality',
+                    },
+                ],
             });
+            $('#VouchersTable_length').append(`
+            <label class="p-3">Filtrar Estado
+                <select id="voucherState" name="VouchersTable_length" aria-controls="VouchersTable" class="custom-select custom-select-sm form-control form-control-sm" onchange="getVouchers(${pageId}, this.value);">
+                    <option value="-1">Todos</option>
+                    <option value="1">Encontrado</option>
+                    <option value="0">Sin Estado</option>
+                    <option value="2">No Encontrado</option>
+                    <option value="3">En Préstamo</option>
+                    <option value="4">Extraviado</option>
+                    <option value="5">En Préstado Encontrado</option>
+                    <option value="6">En curatoria</option>
+                    <option value="7">Digitalizado</option>
+                    <option value="8">Pendiente</option>
+                </select>
+            </label>
+            `);
+            $(`#voucherState option[value=${voucherState}]`).attr('selected', 'selected');
+            $("#overlay").fadeOut(300);
         }
 
         function setState(biotadaCode, voucherState) {

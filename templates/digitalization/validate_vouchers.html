@@ -66,7 +66,7 @@
                                 if (data === null)
                                     complement = `class="btn btn-secondary" style="pointer-events: none;cursor: default;"`;
                                 else
-                                    complement = `class="btn btn-primary" onclick="getVouchers(${row.id},-1); return false;"`;
+                                    complement = `class="btn btn-primary" onclick="getVouchers(${row.id},-1,'${row.name}'); return false;"`;
                                 content = `<a id="digitalized_link_${row.id}" href="#" ${complement}>Revisar</a>`;
                             } else {
                                 content = `<p>Esta sesión aún no termina.</p>`;
@@ -86,117 +86,106 @@
             event.target.getElementsByTagName("img")[0].src = event.relatedTarget.getAttribute('data-bs-src');
         })
 
-        function getVouchers(pageId, voucherState){
+        function getVouchers(pageId, voucherState, pageName){
             $("#overlay").fadeIn(300);
             const voucherCard = $('#VouchersCard');
             voucherCard.hide();
-            let url = "{% url 'generated_page' pk=0 %}".replace("0", pageId);
-            $.ajax({
-                url: url,
-                type: 'GET',
-                success: response => {
-                    $('#pageName')[0].innerHTML = ` <b>Sesión ${response.id}:</b> <i>${response.name}</i>`;
+            $('#pageName')[0].innerHTML = ` <b>Sesión ${pageId}:</b> <i>${pageName}</i>`;
+            url = "{% url 'get_vouchers_to_validate' page_id=0 voucher_state=-1 %}"
+                .replace("0", pageId)
+                .replace("-1", voucherState);
+            console.debug(`Table from ${url}`);
+            voucherCard.show();
+            const vouchersTable = $('#VouchersTable');
+            vouchersTable.DataTable().destroy();
+            vouchersTable.DataTable({
+                serverSide: true,
+                processing: true,
+                language: languageTable.spanish,
+                ajax: {
+                    url: url,
+                    type: 'GET',
+                    dataSrc: 'data',
                 },
-                error: error => {
-                    console.error(error);
-                },
-            }).always(function() {
-                url = "{% url 'get_vouchers_to_validate' page_id=0 voucher_state=-1 %}"
-                    .replace("0", pageId)
-                    .replace("-1", voucherState);
-                console.debug(`Table from ${url}`);
-                voucherCard.show();
-                const vouchersTable = $('#VouchersTable');
-                vouchersTable.DataTable().destroy();
-                vouchersTable.DataTable({
-                    serverSide: true,
-                    processing: true,
-                    language: languageTable.spanish,
-                    ajax: {
-                        url: url,
-                        type: 'GET',
-                        dataSrc: 'data',
+                order: [[2, 'asc'], [1, 'asc']],
+                columnDefs: [
+                    {
+                        targets: 0,
+                        data: 'occurrence_id',
+                        orderable: false,
+                        render: (data) => {
+                            return `<div class="p-3 mb-2 ${getStateClass(data.voucher_state)}">${data.voucher_state_name}</div>`;
+                        },
                     },
-                    order: [[2, 'asc'], [1, 'asc']],
-                    columnDefs: [
-                        {
-                            targets: 0,
-                            data: 'occurrence_id',
-                            orderable: false,
-                            render: (data) => {
-                                return `<div class="p-3 mb-2 ${getStateClass(data.voucher_state)}">${data.voucher_state_name}</div>`;
-                            },
-                        },
-                        {
-                            targets: 1,
-                            data: 'catalog_number',
-                        },
-                        {
-                            targets: 2,
-                            data: 'species',
-                        },
-                        {
-                            targets: 3,
-                            data: 'recorded_by',
-                        },
-                        {
-                            targets: 4,
-                            data: 'record_number',
-                            render: (data) => {
-                                if (isNaN(data)) return ""; else return data;
-                            }
-                        },
-                        {
-                            targets: 5,
-                            data: 'locality',
-                        },
-                        {
-                            targets: 6,
-                            data: 'id',
-                            orderable: false,
-                            render: (data, type, row) => {
-                                let j = 0;
-                                let image;
-                                let download;
-                                if (row.image_voucher_thumb_url === "#"){
-                                    image = "(Sin Imagen)";
-                                    download = `<form id="fileForm${data}" action="" method="post" enctype="multipart/form-data">` +
-                                        `<input type="file" id="file${data}" style="display: none;" onchange="loadFile(${data}, {pageId: ${pageId}, voucherState: ${voucherState}}); return false;" accept=".CR3"/>` +
-                                        `<input type="button" value="Subir imagen..." onclick="document.getElementById('file${data}').click();" />` +
-                                        `<input id="generatedPageId" name="generatedPageId" type="hidden" value="${data}">` +
-                                        `</form>`;
-                                    if (row.image_voucher_cr3_raw_url === "#")
-                                        download += `<div id='fileLink${data}'>Download CR3</div>`;
-                                    else
-                                        download += `<a href="${row.image_voucher_cr3_raw_url}" target=_"blank">Download CR3</a>`;
-                                } else {
-                                    image = `<div class="gallery-box wow fadeInDown"><div data-bs-toggle="modal" data-bs-target="#myModal" data-bs-src="${row.image_voucher_url}"><img width="200px" src="${row.image_voucher_thumb_url}" data-bs-target="#myCarousel"></div>`;
-                                    download = `<a href="${row.image_voucher_jpg_raw_url}" target=_"blank">Download JPG Original</a><br/><a href="${row.image_voucher_jpg_raw_url_public}" target=_"blank">Download JPG Público</a><br/><a href="${row.image_voucher_cr3_raw_url}" target=_"blank">Download CR3</a>`;
-                                }
-                                return image + download;
-                            }
+                    {
+                        targets: 1,
+                        data: 'catalog_number',
+                    },
+                    {
+                        targets: 2,
+                        data: 'species',
+                    },
+                    {
+                        targets: 3,
+                        data: 'recorded_by',
+                    },
+                    {
+                        targets: 4,
+                        data: 'record_number',
+                        render: (data) => {
+                            if (isNaN(data)) return ""; else return data;
                         }
-                    ],
-                });
-                $('#VouchersTable_length').append(`
-                <label class="p-3">Filtrar Estado
-                    <select id="voucherState" name="VouchersTable_length" aria-controls="VouchersTable" class="custom-select custom-select-sm form-control form-control-sm" onchange="getVouchers(${pageId}, this.value);">
-                        <option value="-1">Todos</option>
-                        <option value="1">Encontrado</option>
-                        <option value="0">Sin Estado</option>
-                        <option value="2">No Encontrado</option>
-                        <option value="3">En Préstamo</option>
-                        <option value="4">Extraviado</option>
-                        <option value="5">En Préstado Encontrado</option>
-                        <option value="6">Extraviado Encontrado</option>
-                        <option value="7">Digitalizado</option>
-                        <option value="8">Pendiente</option>
-                    </select>
-                </label>
-                `);
-                $(`#voucherState option[value=${voucherState}]`).attr('selected', 'selected');
-                $("#overlay").fadeOut(300);
+                    },
+                    {
+                        targets: 5,
+                        data: 'locality',
+                    },
+                    {
+                        targets: 6,
+                        data: 'id',
+                        orderable: false,
+                        render: (data, type, row) => {
+                            let j = 0;
+                            let image;
+                            let download;
+                            if (row.image_voucher_thumb_url === "#"){
+                                image = "(Sin Imagen)";
+                                download = `<form id="fileForm${data}" action="" method="post" enctype="multipart/form-data">` +
+                                    `<input type="file" id="file${data}" style="display: none;" onchange="loadFile(${data}, {pageId: ${pageId}, voucherState: ${voucherState}}); return false;" accept=".CR3"/>` +
+                                    `<input type="button" value="Subir imagen..." onclick="document.getElementById('file${data}').click();" />` +
+                                    `<input id="generatedPageId" name="generatedPageId" type="hidden" value="${data}">` +
+                                    `</form>`;
+                                if (row.image_voucher_cr3_raw_url === "#")
+                                    download += `<div id='fileLink${data}'>Download CR3</div>`;
+                                else
+                                    download += `<a href="${row.image_voucher_cr3_raw_url}" target=_"blank">Download CR3</a>`;
+                            } else {
+                                image = `<div class="gallery-box wow fadeInDown"><div data-bs-toggle="modal" data-bs-target="#myModal" data-bs-src="${row.image_voucher_url}"><img width="200px" src="${row.image_voucher_thumb_url}" data-bs-target="#myCarousel"></div>`;
+                                download = `<a href="${row.image_voucher_jpg_raw_url}" target=_"blank">Download JPG Original</a><br/><a href="${row.image_voucher_jpg_raw_url_public}" target=_"blank">Download JPG Público</a><br/><a href="${row.image_voucher_cr3_raw_url}" target=_"blank">Download CR3</a>`;
+                            }
+                            return image + download;
+                        }
+                    }
+                ],
             });
+            $('#VouchersTable_length').append(`
+            <label class="p-3">Filtrar Estado
+                <select id="voucherState" name="VouchersTable_length" aria-controls="VouchersTable" class="custom-select custom-select-sm form-control form-control-sm" onchange="getVouchers(${pageId}, this.value);">
+                    <option value="-1">Todos</option>
+                    <option value="1">Encontrado</option>
+                    <option value="0">Sin Estado</option>
+                    <option value="2">No Encontrado</option>
+                    <option value="3">En Préstamo</option>
+                    <option value="4">Extraviado</option>
+                    <option value="5">En Préstado Encontrado</option>
+                    <option value="6">Extraviado Encontrado</option>
+                    <option value="7">Digitalizado</option>
+                    <option value="8">Pendiente</option>
+                </select>
+            </label>
+            `);
+            $(`#voucherState option[value=${voucherState}]`).attr('selected', 'selected');
+            $("#overlay").fadeOut(300);
         }
 
         function loadFile(voucherId, context = {

@@ -4,26 +4,26 @@ import logging
 import os
 
 import jwt
+from apps.catalog.models import Species, Synonymy, Family, Division, ClassName, Order, Status, Genus, \
+    CommonName, Region, ConservationState, PlantHabit, EnvironmentalHabit, Cycle
 from django.contrib.auth import authenticate
 from django.db.models import Q
 from django.http import HttpResponseBadRequest, JsonResponse, HttpResponse
 from drf_multiple_model.pagination import MultipleModelLimitOffsetPagination
 from drf_multiple_model.views import FlatMultipleModelAPIView, ObjectMultipleModelAPIView
 from rest_framework import status
-from rest_framework.generics import ListAPIView, RetrieveAPIView
+from rest_framework.generics import ListAPIView
 from rest_framework.renderers import JSONRenderer
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
-from apps.catalog.models import Species, Synonymy, Family, Division, ClassName, Order, Status, Genus, \
-    CommonName, Region, ConservationState, PlantHabit, EnvironmentalHabit, Cycle
-from apps.digitalization.models import VoucherImported, GalleryImage, BannerImage, GeneratedPage
+from apps.digitalization.models import VoucherImported, GalleryImage, BannerImage
 from web import settings
 from .serializers import SpecieSerializer, SynonymySerializer, SpeciesSerializer, SpeciesFinderSerializer, \
     SynonymysFinderSerializer, FamilysFinderSerializer, DivisionSerializer, ClassSerializer, OrderSerializer, \
     FamilySerializer, StatusSerializer, GenusFinderSerializer, \
-    DistributionSerializer, ImagesSerializer, CommonNameFinderSerializer, RegionSerializer, ConservationStateSerializer, \
-    GalleryPhotosSerializer, PlantHabitSerializer, EnvHabitSerializer, CycleSerializer, GeneratedPageSerializer
+    ConservationStateSerializer, DistributionSerializer, CommonNameFinderSerializer, RegionSerializer, \
+    ImagesSerializer, GalleryPhotosSerializer, PlantHabitSerializer, EnvHabitSerializer, CycleSerializer
 
 
 class LimitPagination(MultipleModelLimitOffsetPagination):
@@ -537,12 +537,6 @@ class ImageDetails(ListAPIView):
         items = VoucherImported.objects.get(pk=voucher_id)
         voucher = ImagesSerializer(items, many=False, context={'request': request})
         return Response(status=status.HTTP_200_OK, data=voucher.data)
-
-
-class GeneratedPageView(RetrieveAPIView):
-    queryset = GeneratedPage.objects.all()
-    renderer_classes = (JSONRenderer,)
-    serializer_class = GeneratedPageSerializer
 
 
 class TotalImages(APIView):
