@@ -666,59 +666,6 @@ def merge_taxa(request, taxa_1: int, taxa_2: int) -> HttpResponse:
 
 
 @login_required
-def get_taxa(request, id):
-    taxa = Species.objects.get(id=id)
-    data = serializers.serialize("json", [taxa, ])
-    json_data = json.loads(data)
-    json_data[0]["fields"]["id"] = id
-    json_data[0]["fields"]["genus_name"] = taxa.genus.name
-    json_data[0]["fields"]["status_name"] = taxa.status.name
-    common_names = ""
-    common_names_id = []
-    for common_name in taxa.common_names.all():
-        common_names += str(common_name) + ", "
-        common_names_id.append(common_name.id)
-    json_data[0]["fields"]["common_names"] = common_names
-    json_data[0]["fields"]["common_names_2"] = common_names_id
-    synonyms = ""
-    synonyms_id = []
-    for synonymy in taxa.synonyms.all():
-        synonyms += str(synonymy) + ", "
-        synonyms_id.append(synonymy.id)
-    json_data[0]["fields"]["synonyms"] = synonyms
-    json_data[0]["fields"]["synonyms_2"] = synonyms_id
-    plant_habit = ""
-    plant_habit_id = []
-    for habit in taxa.plant_habit.all():
-        plant_habit += str(habit) + ", "
-        plant_habit_id.append(habit.id)
-    json_data[0]["fields"]["plant_habit"] = plant_habit
-    json_data[0]["fields"]["plant_habit_2"] = plant_habit_id
-    env_habit = ""
-    env_habit_id = []
-    for habit in taxa.env_habit.all():
-        env_habit += str(habit) + ", "
-        env_habit_id.append(habit.id)
-    json_data[0]["fields"]["env_habit"] = env_habit
-    json_data[0]["fields"]["env_habit_2"] = env_habit_id
-    cycles = ""
-    cycle_id = []
-    for cycle in taxa.cycle.all():
-        cycles += str(cycle) + ", "
-        cycle_id.append(cycle.id)
-    json_data[0]["fields"]["cycle"] = cycles
-    json_data[0]["fields"]["cycle_2"] = cycle_id
-    regions = ""
-    region_id = []
-    for region in taxa.region.all():
-        regions += str(region) + ", "
-        region_id.append(region.id)
-    json_data[0]["fields"]["region"] = regions
-    json_data[0]["fields"]["region_2"] = region_id
-    return HttpResponse(json.dumps(json_data), content_type="application/json")
-
-
-@login_required
 def list_synonymy(request):
     return render(request, "catalog/list_catalog.html", {
         "table_url": reverse("synonymy_table"),
