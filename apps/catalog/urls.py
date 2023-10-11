@@ -30,11 +30,8 @@ urlpatterns = [
     re_path(r'^create_taxa$', views.create_taxa, name='create_taxa'),
     re_path(r'^update_taxa/(?P<species_id>\d+)/$', views.update_taxa, name='update_taxa'),
     re_path(r'^delete_taxa/(?P<species_id>\d+)/$', views.delete_taxa, name='delete_taxa'),
-    # TODO: Refactor this:
     re_path(r'^merge_taxa/(?P<species_id>\d+)/$', views.select_taxa, name='select_taxa'),
     re_path(r'^merge_taxa/(?P<taxa_1>\d+)/(?P<taxa_2>\d+)/$', views.merge_taxa, name='merge_taxa'),
-    re_path(r'^get_taxa/(?P<species_id>\d+)/$', views.get_taxa, name='get_taxa'),
-    # ===>
     re_path(r'^list_synonymy$', views.list_synonymy, name='list_synonymy'),
     re_path(r'^synonymy_table$', views.synonymy_table, name='synonymy_table'),
     re_path(r'^create_synonymy$', views.create_synonymy, name='create_synonymy'),

@@ -23,7 +23,8 @@ from .serializers import SpeciesDetailSerializer, SynonymySerializer, SpeciesSer
     SynonymysFinderSerializer, FamilysFinderSerializer, DivisionSerializer, ClassSerializer, OrderSerializer, \
     FamilySerializer, StatusSerializer, GenusFinderSerializer, \
     ConservationStateSerializer, DistributionSerializer, CommonNameFinderSerializer, RegionSerializer, \
-    ImagesSerializer, GalleryPhotosSerializer, PlantHabitSerializer, EnvHabitSerializer, CycleSerializer
+    ImagesSerializer, GalleryPhotosSerializer, PlantHabitSerializer, EnvHabitSerializer, CycleSerializer, \
+    SpeciesImagesSerializer
 
 
 class LimitPagination(MultipleModelLimitOffsetPagination):
@@ -125,14 +126,14 @@ class ConservationStateList(ListAPIView):
         return Response(status=status.HTTP_200_OK, data=conservation_state.data)
 
 
-class SpecieDetails(ListAPIView):
-    serializer_class = SpeciesDetailSerializer
+class SpeciesDetails(ListAPIView):
+    serializer_class = SpeciesImagesSerializer
     queryset = Species.objects.all()
 
     def get(self, request, specie_id=None, **kwargs):
         items = Species.objects.get(pk=specie_id)
-        specie = SpeciesDetailSerializer(items, many=False, context={'request': request})
-        return Response(status=status.HTTP_200_OK, data=specie.data)
+        species = SpeciesImagesSerializer(items, many=False, context={'request': request})
+        return Response(status=status.HTTP_200_OK, data=species.data)
 
 
 class SynonymyDetails(ListAPIView):
