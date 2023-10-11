@@ -646,6 +646,7 @@ class ConservationState(models.Model):
 
 
 class Species(ScientificName):
+    objects = None
     __attributes__ = {
         "id_taxa": "id del taxa",
         "in_argentina": "en Argentina",
@@ -1073,7 +1074,7 @@ class RegionDistributionView(models.Model):
            region.name              AS region_name,
            region.key               AS region_key
     FROM catalog_species_region species_region
-         JOIN catalog_species species ON species_region.species_id = species.id_taxa
+         JOIN catalog_species species ON species_region.species_id = species.id
          JOIN catalog_region region ON species_region.region_id = region.id
     ORDER BY species_region.id;
 

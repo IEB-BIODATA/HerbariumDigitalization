@@ -124,7 +124,7 @@ class SpeciesForm(forms.ModelForm):
             'env_habit': 'Forma de vida',
             'cycle': 'Ciclo de vida',
             'status': 'Origen',
-            'in_argentina': 'En Argentica',
+            'in_argentina': 'En Argentina',
             'in_bolivia': 'En Bolivia',
             'in_peru': 'En Perú',
             'maximum_height': 'Altura Máxima',
@@ -172,7 +172,7 @@ class SpeciesForm(forms.ModelForm):
             'minimum_height': forms.TextInput(attrs={'class': "form-control", 'type': 'number'}),
             'maximum_height': forms.TextInput(attrs={'class': "form-control", 'type': 'number'}),
             'synonyms': forms.SelectMultiple(attrs={'class': "selectpicker", 'multiple data-live-search': 'true',
-                                                     'multiple data-multiple-separator': ','}),
+                                                    'multiple data-multiple-separator': ','}),
             'common_names': forms.SelectMultiple(attrs={'class': "selectpicker", 'multiple data-live-search': 'true',
                                                         'multiple data-multiple-separator': ','}),
             'region': forms.SelectMultiple(

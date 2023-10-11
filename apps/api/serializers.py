@@ -109,7 +109,8 @@ class SynonymysSerializer(TaxonomicSerializer):
     class Meta:
         model = Synonymy
         fields = TaxonomicSerializer.Meta.fields + [
-            'scientific_name', 'scientific_name_full',
+            'scientific_name',
+            'scientific_name_full',
             'species'
         ]
 
@@ -307,7 +308,7 @@ class ConservationStateSerializer(HyperlinkedModelSerializer):
         fields = ['id', 'name', 'key', 'order', ]
 
 
-class SpecieSerializer(HyperlinkedModelSerializer):
+class SpeciesDetailSerializer(HyperlinkedModelSerializer):
     genus = ReadOnlyField(source='genus.name')
     genus_id = ReadOnlyField(source='genus.id')
     habit = SerializerMethodField()
@@ -327,8 +328,6 @@ class SpecieSerializer(HyperlinkedModelSerializer):
     kingdom = ReadOnlyField(source='genus.family.order.class_name.division.kingdom.name')
     common_names = CommonNameSerializer(required=False, many=True)
     conservation_state = ConservationStateSerializer(required=False, many=True)
-    vouchers = SerializerMethodField()
-    gallery_images = SerializerMethodField()
 
     class Meta:
         model = Species
@@ -338,28 +337,7 @@ class SpecieSerializer(HyperlinkedModelSerializer):
                   'variety', 'variety_authorship', 'form', 'form_authorship', 'common_names', 'in_argentina', 'in_bolivia',
                   'in_peru', 'habit', 'cycle', 'status', 'minimum_height', 'maximum_height', 'notes', 'type_id',
                   'publication', 'volume', 'pages', 'year', 'synonyms', 'region', 'created_at',
-                  'updated_at', 'created_by', 'determined', 'id_taxa_origin', 'conservation_state', 'id_mma',
-                  'vouchers', 'gallery_images']
-
-    def get_vouchers(self, obj):
-        vouchers = obj.voucherimported_set.all().exclude(image_public_resized_10__exact='')
-        count = len(vouchers)
-        vouchers = vouchers[:5]
-        response = {
-            "count": count,
-            "images": VoucherSerializer(vouchers, many=True, context=self.context).data
-        }
-        return response
-
-    def get_gallery_images(self, obj):
-        galleries_entries = obj.galleryimage_set.all()
-        count = len(galleries_entries)
-        galleries_entries = galleries_entries[:4]
-        response = {
-            "count": count,
-            "gallery": GallerySerializer(galleries_entries, many=True, context=self.context).data
-        }
-        return response
+                  'updated_at', 'created_by', 'determined', 'id_taxa_origin', 'conservation_state', 'id_mma',]
 
     def get_habit(self, obj):
         plant_habit = obj.plant_habit.all()
@@ -389,6 +367,35 @@ class SpecieSerializer(HyperlinkedModelSerializer):
             ])
 
 
+class SpeciesImagesSerializer(SpeciesDetailSerializer):
+    vouchers = SerializerMethodField()
+    gallery_images = SerializerMethodField()
+
+    class Meta:
+        model = Species
+        fields = SpeciesDetailSerializer.Meta.fields + ['vouchers', 'gallery_images',]
+
+    def get_vouchers(self, obj):
+        vouchers = obj.voucherimported_set.all().exclude(image_public_resized_10__exact='')
+        count = len(vouchers)
+        vouchers = vouchers[:5]
+        response = {
+            "count": count,
+            "images": VoucherSerializer(vouchers, many=True, context=self.context).data
+        }
+        return response
+
+    def get_gallery_images(self, obj):
+        galleries_entries = obj.galleryimage_set.all()
+        count = len(galleries_entries)
+        galleries_entries = galleries_entries[:4]
+        response = {
+            "count": count,
+            "gallery": GallerySerializer(galleries_entries, many=True, context=self.context).data
+        }
+        return response
+
+
 class SynonymySerializer(HyperlinkedModelSerializer):
     created_by = UserSerializer(required=False)
     species = SerializerMethodField()
@@ -401,7 +408,7 @@ class SynonymySerializer(HyperlinkedModelSerializer):
 
     def get_species(self, obj):
         species = obj.species_set.all()
-        response = SpecieSerializer(species, many=True).data
+        response = SpeciesDetailSerializer(species, many=True).data
         return response
 
 

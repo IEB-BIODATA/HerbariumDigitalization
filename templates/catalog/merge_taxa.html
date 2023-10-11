@@ -2,281 +2,20 @@
 {% load static %}
 {% block javascript %}
     <script type="text/javascript">
-        let common_names_1=[{% for common_name in taxa_1.common_names.all %} {{common_name.id}}, {% endfor %}];
-        let synonyms_1=[{% for synonymy in taxa_1.synonyms.all %} {{synonymy.id}}, {% endfor %}];
-        let plant_habit_1=[{% for habit in taxa_1.plant_habit.all %} {{plant_habit.id}}, {% endfor %}];
-        let env_habit_1=[{% for habit in taxa_1.env_habit.all %} {{env_habit.id}}, {% endfor %}];
-        let cycle_1=[{% for cycle in taxa_1.cycle.all %} {{cycle.id}}, {% endfor %}];
-        let region_1=[{% for region in taxa_1.region.all %} {{region.id}}, {% endfor %}];
-        function get_taxa(id){
-            $(document).ajaxSend(function() {
-                $("#overlay").fadeIn(300);
+        $.fn.selectpicker.Constructor.DEFAULTS.noneSelectedText = "Nada seleccionado";
+        document.addEventListener("DOMContentLoaded", function() {
+            const selectField = document.getElementById("select-taxon");
+            const form = document.getElementById("taxon-form");
+
+            selectField.addEventListener("change", function() {
+                const originalUrl = "{% url 'merge_taxa' taxa_1=taxa_1.id taxa_2=0 %}";
+                const selectedValue = selectField.value;
+                const updatedUrl = originalUrl.replace(/0(?!.*0)/, selectedValue);
+                console.debug(`Merge with ${selectedValue}, redirecting to ${updatedUrl}`);
+                form.action = updatedUrl;
+                // Submit the form
+                form.submit();
             });
-            $.ajax({
-                url: '/catalog/get_taxa/'+id.value+'/',
-                type: 'GET',
-                success : function(response) {
-                    data=response[0].fields;
-                    $("#taxon_genus").empty();
-                    $("#taxon_genus").append(data.genus_name);
-                    $("#taxon_specific_epithet").empty();
-                    $("#taxon_specific_epithet").append(data.specific_epithet);
-                    $("#taxon_scientific_name_authorship").empty();
-                    $("#taxon_scientific_name_authorship").append(data.scientific_name_authorship);
-                    $("#taxon_subspecies").empty();
-                    $("#taxon_subspecies").append(data.subspecies);
-                    $("#taxon_ssp_authorship").empty();
-                    $("#taxon_ssp_authorship").append(data.ssp_authorship);
-                    $("#taxon_variety").empty();
-                    $("#taxon_variety").append(data.variety);
-                    $("#taxon_variety_authorship").empty();
-                    $("#taxon_variety_authorship").append(data.variety_authorship);
-                    $("#taxon_form").empty();
-                    $("#taxon_form").append(data.form);
-                    $("#taxon_form_authorship").empty();
-                    $("#taxon_form_authorship").append(data.form_authorship);
-                    $("#taxon_status").empty();
-                    $("#taxon_status").append(data.status_name);
-                    $("#taxon_in_argentina").empty();
-                    $("#taxon_in_argentina").append(data.in_argentina.toString());
-                    $("#taxon_in_peru").empty();
-                    $("#taxon_in_peru").append(data.in_peru.toString());
-                    $("#taxon_in_bolivia").empty();
-                    $("#taxon_in_bolivia").append(data.in_bolivia.toString());
-                    $("#taxon_maximum_height").empty();
-                    $("#taxon_maximum_height").append(data.maximum_height);
-                    $("#taxon_minimum_height").empty();
-                    $("#taxon_minimum_height").append(data.minimum_height);
-                    $("#taxon_notes").empty();
-                    $("#taxon_notes").append(data.notes);
-                    $("#taxon_publication").empty();
-                    $("#taxon_publication").append(data.publication);
-                    $("#taxon_volume").empty();
-                    $("#taxon_volume").append(data.volume);
-                    $("#taxon_pages").empty();
-                    $("#taxon_pages").append(data.pages);
-                    $("#taxon_year").empty();
-                    $("#taxon_year").append(data.year);
-                    $("#taxon_type_id").empty();
-                    $("#taxon_type_id").append(data.type_id);
-                    $("#taxon_common_names").empty();
-                    $("#taxon_common_names").append(data.common_names);
-                    $("#taxon_synonyms").empty();
-                    $("#taxon_synonyms").append(data.synonyms);
-                    $("#taxon_plant_habit").empty();
-                    $("#taxon_plant_habit").append(data.plant_habit);
-                    $("#taxon_env_habit").empty();
-                    $("#taxon_env_habit").append(data.env_habit);
-                    $("#taxon_cycle").empty();
-                    $("#taxon_cycle").append(data.cycle);
-                    $("#taxon_region").empty();
-                    $("#taxon_region").append(data.region);
-                    $("#id_taxon_2").val(data.id);
-                    $(".selectpicker#id_common_names").val([]);
-                    common_names_1.forEach(function(common_name){
-                        var id_common_names = $(".selectpicker#id_common_names").val();
-                        if(id_common_names.indexOf(common_name)==-1)
-                        {
-                            id_common_names.push(common_name);
-                            $(".selectpicker#id_common_names").val(id_common_names);
-                            $("#id_common_names option[value="+common_name+"]").attr('selected', 'selected');
-                        }
-                        $(".selectpicker#id_common_names").selectpicker('refresh');
-                    });
-                    data.common_names_2.forEach(function(common_name){
-                        var id_common_names = $(".selectpicker#id_common_names").val();
-                        if(id_common_names.indexOf(common_name)==-1)
-                        {
-                            id_common_names.push(common_name);
-                            $(".selectpicker#id_common_names").val(id_common_names);
-                            $("#id_common_names option[value="+common_name+"]").attr('selected', 'selected');
-                        }
-                        $(".selectpicker#id_common_names").selectpicker('refresh');
-                    });
-                    $(".selectpicker#id_synonyms").val([]);
-                    synonyms_1.forEach(function(synonymy){
-                        var id_synonyms = $(".selectpicker#id_synonyms").val();
-                        if(id_synonyms.indexOf(synonymy)==-1)
-                        {
-                            id_synonyms.push(synonymy);
-                            $(".selectpicker#id_synonyms").val(id_synonyms);
-                            $("#id_synonyms option[value="+synonymy+"]").attr('selected', 'selected');
-                        }
-                        $(".selectpicker#id_synonyms").selectpicker('refresh');
-                    });
-                    data.synonyms_2.forEach(function(synonymy){
-                        var id_synonyms = $(".selectpicker#id_synonyms").val();
-                        if(id_synonyms.indexOf(synonymy)==-1)
-                        {
-                            id_synonyms.push(synonymy);
-                            $(".selectpicker#id_synonyms").val(id_synonyms);
-                            $("#id_synonyms option[value="+synonymy+"]").attr('selected', 'selected');
-                        }
-                        $(".selectpicker#id_synonyms").selectpicker('refresh');
-                    });
-                    $(".selectpicker#id_plant_habit").val([]);
-                    plant_habit_1.forEach(function(habit){
-                        let id_habit = $(".selectpicker#id_plant_habit").val();
-                        if(id_habit.indexOf(habit)==-1)
-                        {
-                            id_habit.push(habit);
-                            $(".selectpicker#id_plant_habit").val(id_habit);
-                            $("#id_plant_habit option[value="+habit+"]").attr('selected', 'selected');
-                        }
-                        $(".selectpicker#id_plant_habit").selectpicker('refresh');
-                    });
-                    data.plant_habit_2.forEach(function(habit){
-                        var id_habit = $(".selectpicker#id_plant_habit").val();
-                        if(id_habit.indexOf(habit)==-1)
-                        {
-                            id_habit.push(habit);
-                            $(".selectpicker#id_plant_habit").val(id_habit);
-                            $("#id_plant_habit option[value="+habit+"]").attr('selected', 'selected');
-                        }
-                        $(".selectpicker#id_plant_habit").selectpicker('refresh');
-                    });
-                    $(".selectpicker#id_env_habit").val([]);
-                    env_habit_1.forEach(function(habit){
-                        let id_habit = $(".selectpicker#id_env_habit").val();
-                        if(id_habit.indexOf(habit)==-1)
-                        {
-                            id_habit.push(habit);
-                            $(".selectpicker#id_env_habit").val(id_habit);
-                            $("#id_env_habit option[value="+habit+"]").attr('selected', 'selected');
-                        }
-                        $(".selectpicker#id_env_habit").selectpicker('refresh');
-                    });
-                    data.env_habit_2.forEach(function(habit){
-                        var id_habit = $(".selectpicker#id_env_habit").val();
-                        if(id_habit.indexOf(habit)==-1)
-                        {
-                            id_habit.push(habit);
-                            $(".selectpicker#id_env_habit").val(id_habit);
-                            $("#id_env_habit option[value="+habit+"]").attr('selected', 'selected');
-                        }
-                        $(".selectpicker#id_env_habit").selectpicker('refresh');
-                    });
-                    $(".selectpicker#id_cycle").val([]);
-                    cycle_1.forEach(function(cycle){
-                        let id_cycle = $(".selectpicker#id_cycle").val();
-                        if(id_cycle.indexOf(cycle)==-1)
-                        {
-                            id_cycle.push(cycle);
-                            $(".selectpicker#id_cycle").val(id_cycle);
-                            $("#id_cycle option[value="+cycle+"]").attr('selected', 'selected');
-                        }
-                        $(".selectpicker#id_cycle").selectpicker('refresh');
-                    });
-                    data.cycle_2.forEach(function(cycle){
-                        var id_cycle = $(".selectpicker#id_cycle").val();
-                        if(id_cycle.indexOf(cycle)==-1)
-                        {
-                            id_cycle.push(cycle);
-                            $(".selectpicker#id_cycle").val(id_cycle);
-                            $("#id_cycle option[value="+cycle+"]").attr('selected', 'selected');
-                        }
-                        $(".selectpicker#id_cycle").selectpicker('refresh');
-                    });
-                    $(".selectpicker#id_region").val([]);
-                    region_1.forEach(function(region){
-                        var id_region = $(".selectpicker#id_region").val();
-                        if(id_region.indexOf(region)==-1)
-                        {
-                            id_region.push(region);
-                            $(".selectpicker#id_region").val(id_region);
-                            $("#id_region option[value="+region+"]").attr('selected', 'selected');
-                        }
-                        $(".selectpicker#id_region").selectpicker('refresh');
-                    });
-                    data.region_2.forEach(function(region){
-                        var id_region = $(".selectpicker#id_region").val();
-                        if(id_region.indexOf(region)==-1)
-                        {
-                            id_region.push(region);
-                            $(".selectpicker#id_region").val(id_region);
-                            $("#id_region option[value="+region+"]").attr('selected', 'selected');
-                        }
-                        $(".selectpicker#id_region").selectpicker('refresh');
-                    });
-
-                    $('#id_maximum_height').val(Math.max(data.maximum_height,{{taxa_1.maximum_height|default_if_none:""}}));
-                    $('#id_minimum_height').val(Math.min(data.minimum_height,{{taxa_1.minimum_height|default_if_none:""}}));
-
-                },
-                cache: false,
-                processData: false,
-                contentType: false,
-            }).done(function() {
-                setTimeout(function(){
-                    $("#overlay").fadeOut(300);
-                },500);
-            });
-        }
-
-        $('.selectpicker#id_common_names').on('rendered.bs.select', function() {
-            $('.filter-option-inner-inner').eq(0).html($('.filter-option-inner-inner').eq(0).text().replace(/,/g, "<br>"));
-        });
-
-        $('.selectpicker#id_synonyms').on('rendered.bs.select', function() {
-            $('.filter-option-inner-inner').eq(1).html($('.filter-option-inner-inner').eq(1).text().replace(/,/g, "<br>"));
-        });
-
-        $('.selectpicker#id_plant_habit').on('rendered.bs.select', function() {
-            $('.filter-option-inner-inner').eq(2).html($('.filter-option-inner-inner').eq(2).text().replace(/,/g, "<br>"));
-        });
-
-        $('.selectpicker#id_env_habit').on('rendered.bs.select', function() {
-            $('.filter-option-inner-inner').eq(2).html($('.filter-option-inner-inner').eq(2).text().replace(/,/g, "<br>"));
-        });
-
-        $('.selectpicker#id_cycle').on('rendered.bs.select', function() {
-            $('.filter-option-inner-inner').eq(2).html($('.filter-option-inner-inner').eq(2).text().replace(/,/g, "<br>"));
-        });
-
-        $('.selectpicker#id_region').on('rendered.bs.select', function() {
-            $('.filter-option-inner-inner').eq(2).html($('.filter-option-inner-inner').eq(2).text().replace(/,/g, "<br>"));
-        });
-
-        $('.selectpicker#id_common_names').on('change', function(){
-            var values = $('.selectpicker#id_common_names option:selected').map(function (idx, ele) {
-                return $(ele).val();
-            }).get();
-            values.forEach(element => $("#id_common_names option[value="+element+"]").attr('selected', 'selected'));
-        });
-
-        $('.selectpicker#id_synonyms').on('change', function(){
-            var values = $('.selectpicker#id_synonymys option:selected').map(function (idx, ele) {
-                return $(ele).val();
-            }).get();
-            values.forEach(element => $("#id_synonymys option[value="+element+"]").attr('selected', 'selected'));
-        });
-
-        $('.selectpicker#id_plant_habit').on('change', function(){
-            var values = $('.selectpicker#id_plant_habit option:selected').map(function (idx, ele) {
-                return $(ele).val();
-            }).get();
-            values.forEach(element => $("#id_plant_habit option[value="+element+"]").attr('selected', 'selected'));
-        });
-
-        $('.selectpicker#id_env_habit').on('change', function(){
-            var values = $('.selectpicker#id_env_habit option:selected').map(function (idx, ele) {
-                return $(ele).val();
-            }).get();
-            values.forEach(element => $("#id_env_habit option[value="+element+"]").attr('selected', 'selected'));
-        });
-
-        $('.selectpicker#id_cycle').on('change', function(){
-            var values = $('.selectpicker#id_cycle option:selected').map(function (idx, ele) {
-                return $(ele).val();
-            }).get();
-            values.forEach(element => $("#id_cycle option[value="+element+"]").attr('selected', 'selected'));
-        });
-
-        $('.selectpicker#id_region').on('change', function(){
-            var values = $('.selectpicker#id_region option:selected').map(function (idx, ele) {
-                return $(ele).val();
-            }).get();
-            values.forEach(element => $("#id_region option[value="+element+"]").attr('selected', 'selected'));
         });
     </script>
 {% endblock %}
@@ -286,26 +25,17 @@
         Todos los vouchers asociados de ambos taxones son unificados en este nuevo taxa.</p>
     <!-- DataTables Example -->
     <div class="row">
-        <div class="col-12">
-            <form class="taxon-form">
-                Seleccione Taxón que el que se unirá <b>{{ taxa_1.scientific_name}}</b>:
-                <select id="select-taxon" class="select-taxon" onchange="get_taxa(this);">
-                    <option value="0">---</option>
-                    {% for specie in species %}
-                        <option value="{{ specie.id }}">{{ specie.scientific_name }}</option>
-                    {% endfor %}
-                </select>
-            </form>
-        </div>
-        <div class="col-12">
-            {% if form.errors %}
-                {% for field in form %}
-                    {% for error in field.errors %}
-                        <div class="alert alert-danger">
-                            <strong>{{ error|escape }}</strong>
-                        </div>
-                    {% endfor %}
-                {% endfor %}
+        <div class="col-12" style="margin-bottom: 30px">
+            {% if taxa_2 %}
+                <form id="taxon-form" action="{% url 'merge_taxa' taxa_1=taxa_1.id taxa_2=0 %}" method="get" class="form-horizontal">
+                    Seleccione Taxón que el que se unirá <b>{{ taxa_1.scientific_name}}</b>:<br>
+                    <select id="select-taxon" class="selectpicker">
+                        <option value="0"></option>
+                        {% for taxa in species %}
+                            <option value="{{ taxa.id }}">{{ taxa.scientific_name }}</option>
+                        {% endfor %}
+                    </select>
+                </form>
             {% endif %}
         </div>
     </div>
@@ -320,7 +50,7 @@
                     <div class="table-responsive">
                         <table class="table">
                             <tr>
-                                <td><strong>Genero</strong></td>
+                                <td><strong>Género</strong></td>
                                 <td>
                                     {{ taxa_1.genus }}
                                 </td>
@@ -376,25 +106,13 @@
                             <tr>
                                 <td><strong>Hábito</strong></td>
                                 <td>
-                                    {% for habit in taxa_1.plant_habit.all %}
-                                        {{ habit }},
-                                    {% endfor %}
-                                </td>
-                            </tr>
-                            <tr>
-                                <td><strong>Forma de vida</strong></td>
-                                <td>
-                                    {% for habit in taxa_1.env_habit.all %}
-                                        {{ habit }},
-                                    {% endfor %}
+                                    {{ taxa_1.habit }}
                                 </td>
                             </tr>
                             <tr>
                                 <td><strong>Ciclo de vida</strong></td>
                                 <td>
-                                    {% for cycle in taxa_1.cycle.all %}
-                                        {{ cycle }},
-                                    {% endfor %}
+                                    {{ taxa_1.cycle }}
                                 </td>
                             </tr>
                             <tr>
@@ -406,19 +124,19 @@
                             <tr>
                                 <td><strong>En Argentina</strong></td>
                                 <td>
-                                    {{ taxa_1.in_argentina|default_if_none:"" }}
+                                    <input type="checkbox" {% if taxa_1.in_argentina %} checked {% endif %} disabled>
                                 </td>
                             </tr>
                             <tr>
                                 <td><strong>En Bolivia</strong></td>
                                 <td>
-                                    {{ taxa_1.in_bolivia|default_if_none:"" }}
+                                    <input type="checkbox" {% if taxa_1.in_bolivia %} checked {% endif %} disabled>
                                 </td>
                             </tr>
                             <tr>
                                 <td><strong>En Peru</strong></td>
                                 <td>
-                                    {{ taxa_1.in_peru|default_if_none:"" }}
+                                    <input type="checkbox" {% if taxa_1.in_peru %} checked {% endif %} disabled>
                                 </td>
                             </tr>
                             <tr>
@@ -466,25 +184,31 @@
                             <tr>
                                 <td><strong>Nombres Comunes</strong></td>
                                 <td>
-                                    {% for nombre_comun in taxa_1.common_names.all %}
-                                        {{ nombre_comun }}
-                                    {% endfor %}
+                                    <ul>
+                                        {% for common_name in taxa_1.common_names %}
+                                            <li>{{ common_name.name }}</li>
+                                        {% endfor %}
+                                    </ul>
                                 </td>
                             </tr>
                             <tr>
                                 <td><strong>Sinónimos</strong></td>
                                 <td>
-                                    {% for synonymy in taxa_1.synonymys.all %}
-                                        {{ synonymy }},
-                                    {% endfor %}
+                                    <ul>
+                                        {% for synonymy in taxa_1.synonyms %}
+                                            <li>{{ synonymy.scientific_name }}</li>
+                                        {% endfor %}
+                                    </ul>
                                 </td>
                             </tr>
                             <tr>
                                 <td><strong>Distribución Regional</strong></td>
                                 <td>
-                                    {% for region in taxa_1.region.all %}
-                                        {{ region }},
-                                    {% endfor %}
+                                    <ul>
+                                        {% for region in taxa_1.region %}
+                                            <li>{{ region.name }}</li>
+                                        {% endfor %}
+                                    </ul>
                                 </td>
                             </tr>
                         </table>
@@ -496,363 +220,194 @@
             <div class="card mb-3">
                 <div class="card-header">
                     <i class="fas fa-table"></i>
-                    Taxón 2</div>
+                    Taxón 2
+                </div>
                 <div class="card-body">
-                    <div class="table-responsive">
-                        <table class="table">
-                            <tr>
-                                <td><strong>Genero</strong></td>
-                                <td id="taxon_genus">
-                                    {{ taxa_2.genus }}
-                                </td>
-                            </tr>
-                            <tr>
-                                <td><strong>Epiteto Específico</strong></td>
-                                <td id="taxon_specific_epithet">
-                                    {{ taxa_2.specific_epithet }}
-                                </td>
-                            </tr>
-                            <tr>
-                                <td><strong>Autor(es)</strong></td>
-                                <td id="taxon_scientific_name_authorship">
-                                    {{ taxa_2.scientific_name_authorship }}
-                                </td>
-                            </tr>
-                            <tr>
-                                <td><strong>Subespecie</strong></td>
-                                <td id="taxon_subspecies">
-                                    {{ taxa_2.subspecies|default_if_none:"" }}
-                                </td>
-                            </tr>
-                            <tr>
-                                <td><strong>Autor(es) Subespecie</strong></td>
-                                <td id="taxon_ssp_authorship">
-                                    {{ taxa_2.ssp_authorship|default_if_none:"" }}
-                                </td>
-                            </tr>
-                            <tr>
-                                <td><strong>Variedad</strong></td>
-                                <td id="taxon_variety">
-                                    {{ taxa_2.variety|default_if_none:"" }}
-                                </td>
-                            </tr>
-                            <tr>
-                                <td><strong>Autor(es) Variedad</strong></td>
-                                <td id="taxon_variety_authorship">
-                                    {{ taxa_2.variety_authorship|default_if_none:"" }}
-                                </td>
-                            </tr>
-                            <tr>
-                                <td><strong>Forma</strong></td>
-                                <td id="taxon_form">
-                                    {{ taxa_2.form|default_if_none:"" }}
-                                </td>
-                            </tr>
-                            <tr>
-                                <td><strong>Autor(es) Forma</strong></td>
-                                <td id="taxon_form_authorship">
-                                    {{ taxa_2.form_authorship|default_if_none:"" }}
-                                </td>
-                            </tr>
-                            <tr>
-                                <td><strong>Hábito</strong></td>
-                                <td id="taxon_plant_habit">
-                                    {% for habit in taxa_2.plant_habit.all %}
-                                        {{ habit }},
-                                    {% endfor %}
-                                </td>
-                            </tr>
-                            <tr>
-                                <td><strong>Forma de vida</strong></td>
-                                <td id="taxon_env_habit">
-                                    {% for habit in taxa_2.env_habit.all %}
-                                        {{ habit }},
-                                    {% endfor %}
-                                </td>
-                            </tr>
-                            <tr>
-                                <td><strong>Ciclo de vida</strong></td>
-                                <td id="taxon_cycle">
-                                    {% for cycle in taxa_2.cycle.all %}
-                                        {{ cycle }},
-                                    {% endfor %}
-                                </td>
-                            </tr>
-                            <tr>
-                                <td><strong>Estado</strong></td>
-                                <td id="taxon_status">
-                                    {{ taxa_2.status|default_if_none:"" }}
-                                </td>
-                            </tr>
-                            <tr>
-                                <td><strong>En Argentina</strong></td>
-                                <td id="taxon_in_argentina">
-                                    {{ taxa_2.in_argentina|default_if_none:"" }}
-                                </td>
-                            </tr>
-                            <tr>
-                                <td><strong>En Bolivia</strong></td>
-                                <td id="taxon_in_bolivia">
-                                    {{ taxa_2.in_bolivia|default_if_none:"" }}
-                                </td>
-                            </tr>
-                            <tr>
-                                <td><strong>En Peru</strong></td>
-                                <td id="taxon_in_peru">
-                                    {{ taxa_2.in_peru|default_if_none:"" }}
-                                </td>
-                            </tr>
-                            <tr>
-                                <td><strong>Altura Máxima</strong></td>
-                                <td id="taxon_maximum_height">
-                                    {{ taxa_2.maximum_height|default_if_none:"" }}
-                                </td>
-                            </tr>
-                            <tr>
-                                <td><strong>Altura Mínima</strong></td>
-                                <td id="taxon_minimum_height">
-                                    {{ taxa_2.minimum_height|default_if_none:"" }}
-                                </td>
-                            </tr>
-                            <tr>
-                                <td><strong>Notas</strong></td>
-                                <td id="taxon_notes">
-                                    {{ taxa_2.notes|default_if_none:"" }}
-                                </td>
-                            </tr>
-                            <tr>
-                                <td><strong>Publicacion</strong></td>
-                                <td id="taxon_publication">
-                                    {{ taxa_2.publication|default_if_none:"" }}
-                                </td>
-                            </tr>
-                            <tr>
-                                <td><strong>Volumen</strong></td>
-                                <td id="taxon_volume">
-                                    {{ taxa_2.volume|default_if_none:"" }}
-                                </td>
-                            </tr>
-                            <tr>
-                                <td><strong>Páginas</strong></td>
-                                <td id="taxon_pages">
-                                    {{ taxa_2.pages|default_if_none:"" }}
-                                </td>
-                            </tr>
-                            <tr>
-                                <td><strong>ID Tipo</strong></td>
-                                <td id="taxon_type_id">
-                                    {{ taxa_2.type_id|default_if_none:"" }}
-                                </td>
-                            </tr>
-                            <tr>
-                                <td><strong>Nombres Comunes</strong></td>
-                                <td id="taxon_common_names">
-                                    {% for nombre_comun in taxa_2.common_names.all %}
-                                        {{ nombre_comun }}
-                                    {% endfor %}
-                                </td>
-                            </tr>
-                            <tr>
-                                <td><strong>Sinónimos</strong></td>
-                                <td id="taxon_synonymys">
-                                    {% for synonymy in taxa_2.synonymys.all %}
-                                        {{ synonymy }},
-                                    {% endfor %}
-                                </td>
-                            </tr>
-                            <tr>
-                                <td><strong>Distribución Regional</strong></td>
-                                <td id="taxon_region">
-                                    {% for region in taxa_2.region.all %}
-                                        {{ region }},
-                                    {% endfor %}
-                                </td>
-                            </tr>
-                        </table>
-                    </div>
+                    {% if taxa_2 %}
+                        <div class="table-responsive">
+                            <table class="table">
+                                <tr>
+                                    <td><strong>Género</strong></td>
+                                    <td>
+                                        {{ taxa_2.genus }}
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td><strong>Epiteto Específico</strong></td>
+                                    <td>
+                                        {{ taxa_2.specific_epithet }}
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td><strong>Autor(es)</strong></td>
+                                    <td>
+                                        {{ taxa_2.scientific_name_authorship }}
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td><strong>Subespecie</strong></td>
+                                    <td>
+                                        {{ taxa_2.subspecies|default_if_none:"" }}
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td><strong>Autor(es) Subespecie</strong></td>
+                                    <td>
+                                        {{ taxa_2.ssp_authorship|default_if_none:"" }}
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td><strong>Variedad</strong></td>
+                                    <td>
+                                        {{ taxa_2.variety|default_if_none:"" }}
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td><strong>Autor(es) Variedad</strong></td>
+                                    <td>
+                                        {{ taxa_2.variety_authorship|default_if_none:"" }}
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td><strong>Forma</strong></td>
+                                    <td>
+                                        {{ taxa_2.form|default_if_none:"" }}
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td><strong>Autor(es) Forma</strong></td>
+                                    <td>
+                                        {{ taxa_2.form_authorship|default_if_none:"" }}
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td><strong>Hábito</strong></td>
+                                    <td>
+                                        {{ taxa_2.habit }}
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td><strong>Ciclo de vida</strong></td>
+                                    <td>
+                                        {{ taxa_2.cycle }}
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td><strong>Estado</strong></td>
+                                    <td>
+                                        {{ taxa_2.status|default_if_none:"" }}
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td><strong>En Argentina</strong></td>
+                                    <td>
+                                        <input type="checkbox" {% if taxa_2.in_argentina %} checked {% endif %} disabled>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td><strong>En Bolivia</strong></td>
+                                    <td>
+                                        <input type="checkbox" {% if taxa_2.in_bolivia %} checked {% endif %} disabled>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td><strong>En Peru</strong></td>
+                                    <td>
+                                        <input type="checkbox" {% if taxa_2.in_peru %} checked {% endif %} disabled>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td><strong>Altura Máxima</strong></td>
+                                    <td>
+                                        {{ taxa_2.maximum_height|default_if_none:"" }}
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td><strong>Altura Mínima</strong></td>
+                                    <td>
+                                        {{ taxa_2.minimum_height|default_if_none:"" }}
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td><strong>Notas</strong></td>
+                                    <td>
+                                        {{ taxa_2.notes|default_if_none:"" }}
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td><strong>Publicacion</strong></td>
+                                    <td>
+                                        {{ taxa_2.publication|default_if_none:"" }}
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td><strong>Volumen</strong></td>
+                                    <td>
+                                        {{ taxa_2.volume|default_if_none:"" }}
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td><strong>Páginas</strong></td>
+                                    <td>
+                                        {{ taxa_2.pages|default_if_none:"" }}
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td><strong>ID Tipo</strong></td>
+                                    <td>
+                                        {{ taxa_2.type_id|default_if_none:"" }}
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td><strong>Nombres Comunes</strong></td>
+                                    <td>
+                                        <ul>
+                                            {% for common_name in taxa_2.common_names %}
+                                                <li>{{ common_name.name }}</li>
+                                            {% endfor %}
+                                        </ul>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td><strong>Sinónimos</strong></td>
+                                    <td>
+                                        <ul>
+                                            {% for synonymy in taxa_2.synonyms %}
+                                                <li>{{ synonymy.scientific_name }}</li>
+                                            {% endfor %}
+                                        </ul>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td><strong>Distribución Regional</strong></td>
+                                    <td>
+                                        <ul>
+                                            {% for region in taxa_2.region %}
+                                                <li>{{ region.name }}</li>
+                                            {% endfor %}
+                                        </ul>
+                                    </td>
+                                </tr>
+                            </table>
+                        </div>
+                    {% else %}
+                        <form id="taxon-form" action="{% url 'merge_taxa' taxa_1=taxa_1.id taxa_2=0 %}" method="get" class="form-horizontal">
+                            Seleccione Taxón que el que se unirá <b>{{ taxa_1.scientific_name}}</b>:<br>
+                            <select id="select-taxon" class="selectpicker">
+                                <option value="0"></option>
+                                {% for taxa in species %}
+                                    <option value="{{ taxa.id }}">{{ taxa.scientific_name }}</option>
+                                {% endfor %}
+                            </select>
+                        </form>
+                    {% endif %}
                 </div>
             </div>
         </div>
     </div>
     <div class="row">
         <div class="col-sm-12">
-            <div class="card mb-3">
-                <div class="card-header">
-                    <i class="fas fa-table"></i>
-                    Nuevo Taxón</div>
-                <div class="card-body">
-                    <div class="table-responsive">
-                        <form action="/catalog/merge_taxa/{{id_taxon_1}}/" method="post" class="form-horizontal">
-                            {% csrf_token %}
-                            {{ form.scientific_name }}
-                            {{ form.scientific_name_full }}
-                            <input type="hidden" name="id_taxon_2" value="" id="id_taxon_2">
-                            <div class="form-group row">
-                                <label class="col-sm-2 col-form-label">Género</label>
-                                <div class="col-sm-10">
-                                    {{ form.genus }}
-                                </div>
-                            </div>
-                            <div class="form-group row">
-                                <label class="col-sm-2 col-form-label">Epiteto Específico</label>
-                                <div class="col-sm-10">
-                                    {{ form.specific_epithet }}
-                                </div>
-                            </div>
-                            <div class="form-group row">
-                                <label class="col-sm-2 col-form-label">Autor(es)</label>
-                                <div class="col-sm-10">
-                                    {{ form.scientific_name_authorship }}
-                                </div>
-                            </div>
-                            <div class="form-group row">
-                                <label class="col-sm-2 col-form-label">Subespecie</label>
-                                <div class="col-sm-10">
-                                    {{ form.subspecies }}
-                                </div>
-                            </div>
-                            <div class="form-group row">
-                                <label class="col-sm-2 col-form-label">Autor(es) Subespecie</label>
-                                <div class="col-sm-10">
-                                    {{ form.ssp_authorship }}
-                                </div>
-                            </div>
-                            <div class="form-group row">
-                                <label class="col-sm-2 col-form-label">Variedad</label>
-                                <div class="col-sm-10">
-                                    {{ form.variety }}
-                                </div>
-                            </div>
-                            <div class="form-group row">
-                                <label class="col-sm-2 col-form-label">Autor(es) Variedad</label>
-                                <div class="col-sm-10">
-                                    {{ form.variety_authorship }}
-                                </div>
-                            </div>
-                            <div class="form-group row">
-                                <label class="col-sm-2 col-form-label">Forma</label>
-                                <div class="col-sm-10">
-                                    {{ form.form }}
-                                </div>
-                            </div>
-                            <div class="form-group row">
-                                <label class="col-sm-2 col-form-label">Autor(es) Forma</label>
-                                <div class="col-sm-10">
-                                    {{ form.form_authorship }}
-                                </div>
-                            </div>
-                            <div class="form-group row">
-                                <label class="col-sm-2 col-form-label">Hábito</label>
-                                <div class="col-sm-10">
-                                    {{ form.plant_habit }}
-                                </div>
-                            </div>
-                            <div class="form-group row">
-                                <label class="col-sm-2 col-form-label">Forma de vida</label>
-                                <div class="col-sm-10">
-                                    {{ form.env_habit }}
-                                </div>
-                            </div>
-                            <div class="form-group row">
-                                <label class="col-sm-2 col-form-label">Ciclo de vida</label>
-                                <div class="col-sm-10">
-                                    {{ form.cycle }}
-                                </div>
-                            </div>
-                            <div class="form-group row">
-                                <label class="col-sm-2 col-form-label">Estado</label>
-                                <div class="col-sm-10">
-                                    {{ form.status }}
-                                </div>
-                            </div>
-                            <div class="form-group row">
-                                <label class="col-sm-2 form-check-label">En Argentina</label>
-                                <div class="col-sm-10">
-                                    {{ form.in_argentina }}
-                                </div>
-                            </div>
-                            <div class="form-group row">
-                                <label class="col-sm-2 form-check-label">En Bolivia</label>
-                                <div class="col-sm-10">
-                                    {{ form.in_bolivia }}
-                                </div>
-                            </div>
-                            <div class="form-group row">
-                                <label class="col-sm-2 form-check-label">En Peru</label>
-                                <div class="col-sm-10">
-                                    {{ form.in_peru }}
-                                </div>
-                            </div>
-                            <div class="form-group row">
-                                <label class="col-sm-2 col-form-label">Altura Máxima</label>
-                                <div class="col-sm-10">
-                                    {{ form.maximum_height }}
-                                </div>
-                            </div>
-                            <div class="form-group row">
-                                <label class="col-sm-2 col-form-label">Altura Mínima</label>
-                                <div class="col-sm-10">
-                                    {{ form.minimum_height }}
-                                </div>
-                            </div>
-                            <div class="form-group row">
-                                <label class="col-sm-2 col-form-label">Notas</label>
-                                <div class="col-sm-10">
-                                    {{ form.notes }}
-                                </div>
-                            </div>
-                            <div class="form-group row">
-                                <label class="col-sm-2 col-form-label">Publicacion</label>
-                                <div class="col-sm-10">
-                                    {{ form.publication }}
-                                </div>
-                            </div>
-                            <div class="form-group row">
-                                <label class="col-sm-2 col-form-label">Volumen</label>
-                                <div class="col-sm-10">
-                                    {{ form.volume }}
-                                </div>
-                            </div>
-                            <div class="form-group row">
-                                <label class="col-sm-2 col-form-label">Páginas</label>
-                                <div class="col-sm-10">
-                                    {{ form.pages }}
-                                </div>
-                            </div>
-                            <div class="form-group row">
-                                <label class="col-sm-2 col-form-label">ID Tipo</label>
-                                <div class="col-sm-10">
-                                    {{ form.type_id }}
-                                </div>
-                            </div>
-                            <div class="form-group row">
-                                <label class="col-sm-2 col-form-label">Nombres Comunes</label>
-                                <div class="col-sm-10">
-                                    {{ form.common_names }}
-                                </div>
-                            </div>
-                            <div class="form-group row">
-                                <label class="col-sm-2 col-form-label">Sinónimos</label>
-                                <div class="col-sm-10">
-                                    {{ form.synonymys }}
-                                </div>
-                            </div>
-                            <div class="form-group row">
-                                <label class="col-sm-2 col-form-label">Distribución Regional</label>
-                                <div class="col-sm-10">
-                                    {{ form.region }}
-                                </div>
-                            </div>
-                            <div class="form-group row">
-                                <div class="col-sm-10">
-                                    <input type="submit" class="btn btn-primary" value="Guardar"><a href="{% url 'list_taxa' %}" class="btn btn-danger">Cancelar</a>
-                                </div>
-
-                            </div>
-                        </form>
-                    </div>
-                </div>
-            </div>
+            {% include 'catalog/taxa_form.html' with form=form form_title='Nuevo Taxón' form_url=form_url delete_button=False %}
         </div>
     </div>
 {% endblock %}

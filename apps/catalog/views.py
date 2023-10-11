@@ -1,8 +1,8 @@
-import tablib
 import datetime as dt
 import json
 import logging
-from typing import Dict, Type
+from copy import deepcopy
+from typing import Type
 
 import tablib
 from django import forms
@@ -10,13 +10,11 @@ from django.contrib.auth.decorators import login_required
 from django.contrib.auth.models import User
 from django.core import serializers
 from django.db.models import Q
-from django.forms.utils import ErrorList
 from django.http import HttpResponse, JsonResponse, HttpRequest, HttpResponseServerError
 from django.shortcuts import render, redirect
 from django.urls import reverse
 from rest_framework.serializers import SerializerMetaclass
 
-from apps.digitalization.models import VoucherImported
 from web.utils import paginated_table
 from .forms import DivisionForm, ClassForm, OrderForm, FamilyForm, GenusForm, SpeciesForm, SynonymyForm, BinnacleForm, \
     CommonNameForm
@@ -25,7 +23,7 @@ from .models import Species, CatalogView, SynonymyView, RegionDistributionView, 
     ConservationState
 from ..api.serializers import DivisionSerializer, ClassSerializer, OrderSerializer, \
     FamilySerializer, GenusSerializer, SynonymysSerializer, CommonNameSerializer, CatalogViewSerializer, \
-    BinnacleSerializer
+    BinnacleSerializer, SpeciesDetailSerializer
 
 MANY_RELATIONS = [
     ("common_names", "nombres comunes", CommonName),
@@ -113,7 +111,7 @@ def __create_catalog__(
         form: forms.ModelForm,
         user: User,
         request: HttpRequest = None
-) -> bool:
+) -> int:
     if form.is_valid():
         try:
             new_model = form.save(commit=False)
@@ -126,12 +124,12 @@ def __create_catalog__(
             CatalogView.refresh_view()
             SynonymyView.refresh_view()
             RegionDistributionView.refresh_view()
-            return True
+            return new_model.id
         except Exception as e:
             logging.error(e, exc_info=True)
-            return False
+            return -1
     else:
-        return False
+        return -1
 
 
 def __update_catalog__(
@@ -193,7 +191,7 @@ def __create_catalog_route__(
 ) -> HttpResponse:
     if request.method == "POST":
         form = form_class(request.POST)
-        if __create_catalog__(form, request.user):
+        if __create_catalog__(form, request.user) != -1:
             return redirect("list_{}".format(model_name))
     else:
         form = form_class()
@@ -534,7 +532,7 @@ def taxa_table(request):
 def create_taxa(request):
     if request.method == "POST":
         form = SpeciesForm(request.POST)
-        if __create_catalog__(form, request.user, request):
+        if __create_catalog__(form, request.user, request=request) != -1:
             return redirect("list_taxa")
     else:
         form = SpeciesForm()
@@ -601,198 +599,70 @@ def delete_taxa(request, species_id):
 
 
 @login_required
-def merge_taxa(request, id):
-    taxa_1 = Species.objects.get(id=id)
+def select_taxa(request, species_id: int) -> HttpResponse:
+    taxa_1 = Species.objects.get(id=species_id)
     species = Species.objects.all()
     form = SpeciesForm(instance=taxa_1)
+    return render(request, "catalog/merge_taxa.html", {
+        "form": form, "species": species,
+        "taxa_1": SpeciesDetailSerializer(
+            instance=taxa_1,
+            many=False,
+            context=request
+        ).data,
+        "form_url": reverse("update_taxa", kwargs={"species_id": species_id}),
+    })
+
+
+@login_required
+def merge_taxa(request, taxa_1: int, taxa_2: int) -> HttpResponse:
+    species_1 = Species.objects.get(id=taxa_1)
+    species_2 = Species.objects.get(id=taxa_2)
+    species = Species.objects.all()
     if request.method == "POST":
         form = SpeciesForm(request.POST)
-        if form.is_valid():
-            try:
-                if request.POST["id_taxon_2"] == "":
-                    errors = form._errors.setdefault("id_taxa", ErrorList())
-                    errors.append(u"Debe seleccionar taxón para unir")
-                    return render(request, "catalog/merge_taxa.html",
-                                  {"form": form, "taxa_1": taxa_1, "id_taxon_1": id, "species": species})
-                else:
-                    taxon_1 = Species.objects.get(id=id)
-                    taxon_1_genus_preview = taxon_1.genus
-                    taxon_1_specific_epithet_preview = taxon_1.specific_epithet
-                    taxon_1_scientific_name_authorship_preview = taxon_1.scientific_name_authorship
-                    taxon_1_subspecies_preview = taxon_1.subspecies
-                    taxon_1_ssp_authorship_preview = taxon_1.ssp_authorship
-                    taxon_1_variety_preview = taxon_1.variety
-                    taxon_1_variety_authorship_preview = taxon_1.variety_authorship
-                    taxon_1_form_preview = taxon_1.form
-                    taxon_1_form_authorship_preview = taxon_1.form_authorship
-                    taxon_1_scientific_name_preview = taxon_1.scientific_name
-                    taxon_1_scientific_name_db_preview = taxon_1.scientific_name_db
-                    taxon_1_scientific_name_full_preview = taxon_1.scientific_name_full
-
-                    taxon_2_id = request.POST["id_taxon_2"]
-                    taxon_2 = Species.objects.get(id=taxon_2_id)
-                    taxon_2_genus_preview = taxon_2.genus
-                    taxon_2_specific_epithet_preview = taxon_2.specific_epithet
-                    taxon_2_scientific_name_authorship_preview = taxon_2.scientific_name_authorship
-                    taxon_2_subspecies_preview = taxon_2.subspecies
-                    taxon_2_ssp_authorship_preview = taxon_2.ssp_authorship
-                    taxon_2_variety_preview = taxon_2.variety
-                    taxon_2_variety_authorship_preview = taxon_2.variety_authorship
-                    taxon_2_form_preview = taxon_2.form
-                    taxon_2_form_authorship_preview = taxon_2.form_authorship
-                    taxon_2_scientific_name_preview = taxon_2.scientific_name
-                    taxon_2_scientific_name_db_preview = taxon_2.scientific_name_db
-                    taxon_2_scientific_name_full_preview = taxon_2.scientific_name_full
-
-                    specie = form.save(commit=False)
-                    genus = str(specie.genus).capitalize()
-                    specific_epithet = str(specie.specific_epithet)
-                    scientific_name = genus + specific_epithet
-                    scientific_name_full = genus + specific_epithet
-                    scientific_name_authorship = str(specie.scientific_name_authorship)
-                    subspecies = str(specie.subspecies)
-                    ssp_authorship = str(specie.ssp_authorship)
-                    variety = str(specie.variety)
-                    variety_authorship = str(specie.variety_authorship)
-                    form = str(specie.form)
-                    form_authorship = str(specie.form_authorship)
-                    if specie.scientific_name_authorship != None:
-                        scientific_name_full += " " + scientific_name_authorship
-                    if specie.subspecies != None:
-                        scientific_name += " subsp. " + subspecies
-                    if specie.ssp_authorship != None:
-                        scientific_name_full += " subsp. " + subspecies + " " + ssp_authorship
-                    if specie.variety != None:
-                        scientific_name += " var. " + variety
-                    if specie.variety_authorship != None:
-                        scientific_name_full += " var. " + variety + " " + variety_authorship
-                    if specie.form != None:
-                        scientific_name += " fma. " + form
-                    if specie.form_authorship != None:
-                        scientific_name_full += " fma. " + form + " " + form_authorship
-
-                    specie_new = Species(
-                        id_taxa=specie.id_taxa,
-                        genus=specie.genus,
-                        scientific_name=scientific_name,
-                        scientific_name_db=scientific_name.upper(),
-                        scientific_name_full=scientific_name_full,
-                        specific_epithet=specie.specific_epithet,
-                        scientific_name_authorship=specie.scientific_name_authorship,
-                        subspecies=specie.subspecies,
-                        ssp_authorship=specie.ssp_authorship,
-                        variety=specie.variety,
-                        variety_authorship=specie.variety_authorship,
-                        form=specie.form,
-                        form_authorship=specie.form_authorship,
-                        in_argentina=specie.in_argentina,
-                        in_bolivia=specie.in_bolivia,
-                        in_peru=specie.in_peru,
-                        status=specie.status,
-                        minimum_height=specie.minimum_height,
-                        maximum_height=specie.maximum_height,
-                        notes=specie.notes,
-                        type_id=specie.type_id,
-                        publication=specie.publication,
-                        volume=specie.volume,
-                        pages=specie.pages,
-                        year=specie.year,
-                        determined=True
-                    )
-
-                    specie_new.save()
-
-                    common_names = request.POST.getlist("common_names")
-                    for common_name in common_names:
-                        specie_new.common_names.add(CommonName.objects.get(id=common_name))
-
-                    synonyms = request.POST.getlist("synonyms")
-                    for synonymy in synonyms:
-                        specie_new.synonyms.add(Synonymy.objects.get(id=synonymy))
-
-                    region = request.POST.getlist("region")
-                    for region in region:
-                        specie_new.region.add(Region.objects.get(id=region))
-
-                    plant_habit = request.POST.getlist("plant_habit")
-                    for habit in plant_habit:
-                        specie_new.plant_habit.add(PlantHabit.objects.get(id=habit))
-
-                    env_habit = request.POST.getlist("env_habit")
-                    for habit in env_habit:
-                        specie_new.env_habit.add(EnvironmentalHabit.objects.get(id=habit))
-
-                    cycles = request.POST.getlist("cycle")
-                    for cycle in cycles:
-                        specie_new.cycle.add(Cycle.objects.get(id=cycle))
-
-                    new_synonymy = Synonymy(
-                        scientific_name=taxon_1_scientific_name_preview,
-                        scientific_name_db=taxon_1_scientific_name_db_preview,
-                        scientific_name_full=taxon_1_scientific_name_full_preview,
-                        genus=taxon_1_genus_preview,
-                        specific_epithet=taxon_1_specific_epithet_preview,
-                        scientific_name_authorship=taxon_1_scientific_name_authorship_preview,
-                        subspecies=taxon_1_subspecies_preview,
-                        ssp_authorship=taxon_1_ssp_authorship_preview,
-                        variety=taxon_1_variety_preview,
-                        variety_authorship=taxon_1_variety_authorship_preview,
-                        form=taxon_1_form_preview,
-                        form_authorship=taxon_1_form_authorship_preview
-                    )
-                    new_synonymy.save()
-                    specie_new.synonyms.add(new_synonymy)
-
-                    new_synonymy = Synonymy(
-                        scientific_name=taxon_2_scientific_name_preview,
-                        scientific_name_db=taxon_2_scientific_name_db_preview,
-                        scientific_name_full=taxon_2_scientific_name_full_preview,
-                        genus=taxon_2_genus_preview,
-                        specific_epithet=taxon_2_specific_epithet_preview,
-                        scientific_name_authorship=taxon_2_scientific_name_authorship_preview,
-                        subspecies=taxon_2_subspecies_preview,
-                        ssp_authorship=taxon_2_ssp_authorship_preview,
-                        variety=taxon_2_variety_preview,
-                        variety_authorship=taxon_2_variety_authorship_preview,
-                        form=taxon_2_form_preview,
-                        form_authorship=taxon_2_form_authorship_preview
-                    )
-                    new_synonymy.save()
-                    specie_new.synonyms.add(new_synonymy)
-
-                    specie_new.save()
-
-                    VoucherImported.objects.filter(scientific_name=taxon_1.id).update(scientific_name=specie_new.id)
-                    VoucherImported.objects.filter(scientific_name=taxon_2.id).update(scientific_name=specie_new.id)
-
-                    binnacle = Binnacle(
-                        type_update="Mezcla",
-                        model="Especie",
-                        description="Se mezclan Especies " + taxon_1.scientific_name + " y " + taxon_2.scientific_name + " en " + specie_new.scientific_name,
-                        created_by=request.user
-                    )
-                    binnacle.save()
-
-                    taxon_1.delete()
-                    taxon_2.delete()
-
-                    vouchers = VoucherImported.objects.filter(biodata_code__voucher_state=7,
-                                                              scientific_name__id=specie_new.id)
-                    for voucher in vouchers:
-                        pass
-                        # generate_etiquete(voucher.id)
-
-                    CatalogView.refresh_view()
-                    SynonymyView.refresh_view()
-                    RegionDistributionView.refresh_view()
-                    return redirect("list_taxa")
-
-            except Exception as e:
-                print(e)
-                pass
-
-    return render(request, "catalog/merge_taxa.html",
-                  {"form": form, "taxa_1": taxa_1, "id_taxon_1": id, "species": species})
+        new_entry = __create_catalog__(form, request.user, request=request)
+        if new_entry != -1:
+            new_taxa = Species.objects.get(pk=new_entry)
+            for prev_species in [species_1, species_2]:
+                new_synonymy = Synonymy(species=prev_species)
+                new_synonymy.save(user=request.user)
+                new_taxa.synonyms.add(new_synonymy)
+                logging.info(f"Assigning voucher for {prev_species}")
+                for voucher in prev_species.voucherimported_set.all():
+                    logging.debug(f"Assigning voucher for {prev_species}")
+                    voucher.scientific_name = new_taxa
+                    voucher.save()
+                    logging.info(f"Re-generating etiquette for {voucher.biodata_code.code}")
+                    voucher.generate_etiquette()
+                Binnacle.delete_entry(prev_species, request.user)
+            CatalogView.refresh_view()
+            SynonymyView.refresh_view()
+            RegionDistributionView.refresh_view()
+            return redirect("list_taxa")
+    else:
+        form = SpeciesForm(instance=species_1)
+        for relation_name, _, many_relation in MANY_RELATIONS:
+            new_relations = many_relation.objects.filter(
+                Q(species=species_1) | Q(species=species_2)
+            ).distinct()
+            logging.debug(f"Relation {relation_name} set to {new_relations}")
+            form.initial[relation_name] = [new_relation.id for new_relation in new_relations]
+    return render(request, "catalog/merge_taxa.html", {
+        "form": form,
+        "taxa_1": SpeciesDetailSerializer(
+            instance=species_1,
+            many=False,
+            context=request
+        ).data,
+        "taxa_2": SpeciesDetailSerializer(
+            instance=species_2,
+            many=False,
+            context=request
+        ).data,
+        "species": species,
+        "form_url": reverse("merge_taxa", kwargs={"taxa_1": taxa_1, "taxa_2": taxa_2}),
+    })
 
 
 @login_required

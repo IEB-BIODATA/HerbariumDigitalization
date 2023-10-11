@@ -30,8 +30,12 @@
   display:none;
 }
 
-.bootstrap-select>.dropdown-toggle {
-  width: 500%!important;
+.bootstrap-select {
+  width: 100% !important;
+}
+
+.bootstrap-select .dropdown-menu.inner {
+  min-width: auto !important;
 }
 
 .console-log {

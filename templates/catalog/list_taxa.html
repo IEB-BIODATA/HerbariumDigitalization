@@ -93,7 +93,7 @@
                         data: 'id',
                         render: (data) => {
                             const linkUpdate = "{% url 'update_taxa' species_id=0 %}";
-                            const linkMerge = "{% url 'merge_taxa' species_id=0 %}";
+                            const linkMerge = "{% url 'select_taxa' species_id=0 %}";
                             let actions = `<a href="${linkUpdate}" style="white-space: nowrap"><i class="fas fa-fw fa-edit text-primary"></i> Editar</a><br/>` +
                             `<a href="${linkMerge}" style="white-space: nowrap"><i class="fas fa-sharp fa-solid fa-compress text-primary"></i> Unir</a>`;
                             return actions.replaceAll("0", data);
