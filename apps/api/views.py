@@ -19,7 +19,7 @@ from rest_framework.views import APIView
 
 from apps.digitalization.models import VoucherImported, GalleryImage, BannerImage
 from web import settings
-from .serializers import SpecieSerializer, SynonymySerializer, SpeciesSerializer, SpeciesFinderSerializer, \
+from .serializers import SpeciesDetailSerializer, SynonymySerializer, SpeciesSerializer, SpeciesFinderSerializer, \
     SynonymysFinderSerializer, FamilysFinderSerializer, DivisionSerializer, ClassSerializer, OrderSerializer, \
     FamilySerializer, StatusSerializer, GenusFinderSerializer, \
     ConservationStateSerializer, DistributionSerializer, CommonNameFinderSerializer, RegionSerializer, \
@@ -126,12 +126,12 @@ class ConservationStateList(ListAPIView):
 
 
 class SpecieDetails(ListAPIView):
-    serializer_class = SpecieSerializer
+    serializer_class = SpeciesDetailSerializer
     queryset = Species.objects.all()
 
     def get(self, request, specie_id=None, **kwargs):
         items = Species.objects.get(pk=specie_id)
-        specie = SpecieSerializer(items, many=False, context={'request': request})
+        specie = SpeciesDetailSerializer(items, many=False, context={'request': request})
         return Response(status=status.HTTP_200_OK, data=specie.data)
 
 
