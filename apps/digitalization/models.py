@@ -354,7 +354,6 @@ class VoucherImported(models.Model):
 
         georeferenced_date = pd.to_datetime(
             row['georeferenced_date'],
-            infer_datetime_format=True,
             format='%Y%m%d', utc=True
         )
 

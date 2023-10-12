@@ -7,19 +7,21 @@ import os
 import shutil
 import textwrap
 from io import BytesIO
-from typing import List, Tuple, Type
+from typing import List, Tuple, Type, Dict
 
 import boto3
 import pandas as pd
 import pytz
 from PIL import Image, ImageDraw, ImageFont
+from apps.catalog.models import Species, Synonymy
 from celery import shared_task
+from celery.app.task import Task
+from celery.exceptions import Ignore
 from django.conf import settings
 from django.contrib.postgres.search import TrigramSimilarity
 from django.db import transaction
 from django.db.models import Model
 
-from apps.catalog.models import Species, Synonymy
 from apps.digitalization.models import DCW_SQL
 from apps.digitalization.models import GalleryImage, BannerImage
 from apps.digitalization.models import VoucherImported, BiodataCode, ColorProfileFile, PriorityVouchersFile
@@ -436,16 +438,7 @@ def process_pending_vouchers(self, pending_vouchers: List[str]):
             for tmp_file in os.listdir(temp_folder):
                 if os.path.splitext(tmp_file)[1] in [".jpg", ".CR3", ".dng"]:
                     os.remove(os.path.join(temp_folder, tmp_file))
-    logger[1].close()
-    logger[1].save_file(PrivateMediaStorage(), temp_folder + ".log")
-    self.update_state(
-        state='SUCCESS',
-        meta={
-            "step": total,
-            "total": total,
-            "logs": logger[0].get_logs(),
-        }
-    )
+    close_process(logger, temp_folder + ".log", self, {"step": total, "total": total, })
     shutil.rmtree(temp_folder)
     return "Processed"
 
@@ -555,6 +548,9 @@ def upload_priority_vouchers(self, priority_voucher: int):
                 error["type"] = "code"
                 error["data"] = pd.DataFrame(errors).rename(columns=sql_dcw).to_json()
                 raise RuntimeError("Error during import data on server, check logs for details")
+        close_process(logger, temp_folder + ".log", self, {"step": total, "total": total, })
+        shutil.rmtree(temp_folder)
+        return "Processed"
     except Exception as e:
         logger.error(e, exc_info=True)
         logger.warning("Deleting failed priority file")
@@ -565,27 +561,9 @@ def upload_priority_vouchers(self, priority_voucher: int):
         except Exception as e:
             logger.error(e, exc_info=True)
             logger.info("Error deleting file!")
-        self.update_state(
-            state='ERROR',
-            meta={
-                "step": total,
-                "total": total,
-                "logs": logger[0].get_logs(),
-                "error": error
-            }
-        )
-    logger[1].close()
-    logger[1].save_file(PrivateMediaStorage(), temp_folder + ".log")
-    self.update_state(
-        state='SUCCESS',
-        meta={
-            "step": total,
-            "total": total,
-            "logs": logger[0].get_logs(),
-        }
-    )
-    shutil.rmtree(temp_folder)
-    return "Processed"
+        close_process(logger, temp_folder + ".log", self, {"step": total, "total": total, }, error=error)
+        shutil.rmtree(temp_folder)
+        raise Ignore()
 
 
 def get_species(data_candid: pd.Series, logger: logging.Logger) -> Tuple[Species, pd.Series]:
@@ -632,3 +610,22 @@ def get_species(data_candid: pd.Series, logger: logging.Logger) -> Tuple[Species
     else:
         logger.debug(f"Species {data_candid['scientific_name'].strip()} found")
     return species, info
+
+
+def close_process(logger: GroupLogger, log_filename: str, task: Task, meta: Dict, error: Dict = None) -> None:
+    logger[1].close()
+    logger[1].save_file(PrivateMediaStorage(), log_filename)
+    meta["logs"] = logger[0].get_logs()
+    if error is None:
+        task.update_state(
+            state='SUCCESS',
+            meta=meta,
+        )
+        return
+    else:
+        meta["error"] = error
+        task.update_state(
+            state='ERROR',
+            meta=meta
+        )
+        return
