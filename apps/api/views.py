@@ -7,7 +7,8 @@ import jwt
 from apps.catalog.models import Species, Synonymy, Family, Division, ClassName, Order, Status, Genus, \
     CommonName, Region, ConservationState, PlantHabit, EnvironmentalHabit, Cycle
 from django.contrib.auth import authenticate
-from django.db.models import Q
+from django.db.models import Q, ExpressionWrapper, F, FloatField, Value
+from django.db.models.functions import Length
 from django.http import HttpResponseBadRequest, JsonResponse, HttpResponse
 from drf_multiple_model.pagination import MultipleModelLimitOffsetPagination
 from drf_multiple_model.views import FlatMultipleModelAPIView, ObjectMultipleModelAPIView
@@ -24,7 +25,7 @@ from .serializers import SpeciesDetailSerializer, SynonymySerializer, SpeciesSer
     FamilySerializer, StatusSerializer, GenusFinderSerializer, \
     ConservationStateSerializer, DistributionSerializer, CommonNameFinderSerializer, RegionSerializer, \
     ImagesSerializer, GalleryPhotosSerializer, PlantHabitSerializer, EnvHabitSerializer, CycleSerializer, \
-    SpeciesImagesSerializer
+    SpeciesImagesSerializer, SpecimenSerializer
 
 
 class LimitPagination(MultipleModelLimitOffsetPagination):
@@ -146,6 +147,33 @@ class SynonymyDetails(ListAPIView):
         return Response(status=status.HTTP_200_OK, data=synonymy.data)
 
 
+class SpecimensList(ListAPIView):
+    serializer_class = SpecimenSerializer
+    queryset = VoucherImported.objects.all()
+
+    def get_queryset(self):
+        queryset = super().get_queryset()
+        query = Q(biodata_code__voucher_state=7)
+        code = self.request.GET.get("code", None)
+        herbarium = self.request.GET.get("herbarium", None)
+        if herbarium is not None and herbarium != "all":
+            query = query & Q(herbarium__collection_code=herbarium)
+        if code is not None and code != "":
+            similarity_score = ExpressionWrapper(
+                F("catalog_number") / Length(Value(code)),
+                output_field=FloatField()
+            )
+            query = query & Q(biodata_code__code__icontains=code)
+            return queryset.filter(query).annotate(similarity=similarity_score).order_by(
+                "similarity"
+            )
+        return queryset.filter(query).order_by(
+            "scientific_name__genus__family__name",
+            "scientific_name__genus__name",
+            "scientific_name__scientific_name",
+        )
+
+
 class FinderApiView(FlatMultipleModelAPIView):
     sorting_fields = ['name']
     pagination_class = None
@@ -263,7 +291,7 @@ class SpeciesFilterApiView(FlatMultipleModelAPIView):
         synonyms_results = Synonymy.objects.none()
         if images_filter:
             species_results = Species.objects.filter(query_species).exclude(voucherimported__isnull=True).exclude(
-                    voucherimported__image_public_resized_10__exact='')
+                voucherimported__image_public_resized_10__exact='')
         else:
             if species:
                 species_results = Species.objects.filter(query_species)

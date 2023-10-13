@@ -17,7 +17,7 @@ from django.urls import re_path
 
 from . import views
 from .views import SpeciesList, FinderApiView, MenuApiView, SpeciesDetails, GalleryList, BannerSpecie
-from .views import SynonymyDetails, DivisionList, ClassList, OrderList
+from .views import SynonymyDetails, DivisionList, ClassList, OrderList, SpecimensList
 from .views import FamilyList, SpeciesFilterApiView, MenuFilterApiView
 from .views import DistributionList, ImagesList, ImagesFilterApiView
 from .views import ImagesCountApiView, ImageDetails, TotalImages, TotalSpecies, RegionList
@@ -31,6 +31,7 @@ urlpatterns = [
     re_path(r'^species/(?P<specie_name>[\w ]+)/$', SpeciesList.as_view()),
     re_path(r'^specie/(?P<specie_id>\d+)/$', SpeciesDetails.as_view()),
     re_path(r'^synonymy/(?P<synonymy_id>\d+)/$', SynonymyDetails.as_view()),
+    re_path(r'^specimens/$', SpecimensList.as_view()),
     re_path(r'^finder/(?P<category>[\w ]+)/(?P<word>[\w ]+)/$', FinderApiView.as_view()),
     re_path(r'^menu/$', MenuApiView.as_view()),
     re_path(r'^species_filter/$', SpeciesFilterApiView.as_view()),

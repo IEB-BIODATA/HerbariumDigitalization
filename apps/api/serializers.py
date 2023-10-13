@@ -87,10 +87,24 @@ class EnvHabitSerializer(HyperlinkedModelSerializer):
 
 class SpeciesSerializer(TaxonomicSerializer):
     genus = ReadOnlyField(source='genus.name')
+    family = ReadOnlyField(source='genus.family.name')
+    order = ReadOnlyField(source='genus.family.order.name')
+    class_name = ReadOnlyField(source='genus.family.order.class_name.name')
+    division = ReadOnlyField(source='genus.family.order.class_name.division.name')
+    kingdom = ReadOnlyField(source='genus.family.order.class_name.division.kingdom.name')
+    habit = SerializerMethodField()
 
     class Meta:
         model = Species
-        fields = TaxonomicSerializer.Meta.fields + ['scientific_name', 'genus']
+        fields = TaxonomicSerializer.Meta.fields + [
+            'scientific_name', 'scientific_name_full',
+            'genus', 'family', 'order',
+            'class_name', 'division', 'kingdom',
+            'habit', "determined"
+        ]
+
+    def get_habit(self, obj):
+        return get_habit(obj.plant_habit.all(), obj.env_habit.all())
 
 
 class CatalogViewSerializer(HyperlinkedModelSerializer):
@@ -242,6 +256,25 @@ class BiodataCodeSerializer(HyperlinkedModelSerializer):
         return obj.get_voucher_state_display()
 
 
+class SpecimenSerializer(HyperlinkedModelSerializer):
+    code = ReadOnlyField(source="biodata_code.code")
+    herbarium_code = ReadOnlyField(source="herbarium.collection_code")
+    species = SerializerMethodField()
+
+    class Meta:
+        model = VoucherImported
+        fields = [
+            "id", "code", "herbarium_code", "catalog_number",
+            "image_public_resized_10", "species",
+        ]
+
+    def get_species(self, obj):
+        return SpeciesSerializer(
+            instance=obj.scientific_name,
+            many=False
+        ).data
+
+
 class MinimizedVoucherSerializer(HyperlinkedModelSerializer):
     species = CharField(source='scientific_name')
     occurrence_id = SerializerMethodField()
@@ -340,19 +373,7 @@ class SpeciesDetailSerializer(HyperlinkedModelSerializer):
                   'updated_at', 'created_by', 'determined', 'id_taxa_origin', 'conservation_state', 'id_mma',]
 
     def get_habit(self, obj):
-        plant_habit = obj.plant_habit.all()
-        if len(list(plant_habit)) > 0:
-            env_habit = get_habit_name(
-                obj.env_habit.all(),
-                env=True,
-                plant_habit=list(plant_habit)[-1]
-            )
-            if env_habit != "":
-                return "{} {}".format(get_habit_name(plant_habit), env_habit)
-            else:
-                return get_habit_name(plant_habit)
-        else:
-            return ""
+        return get_habit(obj.plant_habit.all(), obj.env_habit.all())
 
     def get_cycle(self, obj):
         cycles = list(obj.cycle.all())
@@ -436,19 +457,7 @@ class SpeciesFinderSerializer(ModelSerializer):
         return response
 
     def get_habit(self, obj):
-        plant_habit = obj.plant_habit.all()
-        if len(list(plant_habit)) > 0:
-            env_habit = get_habit_name(
-                obj.env_habit.all(),
-                env=True,
-                plant_habit=list(plant_habit)[-1]
-            )
-            if env_habit != "":
-                return "{} {}".format(get_habit_name(plant_habit), env_habit)
-            else:
-                return get_habit_name(plant_habit)
-        else:
-            return ""
+        return get_habit(obj.plant_habit.all(), obj.env_habit.all())
 
 
 class SynonymysFinderSerializer(ModelSerializer):
@@ -513,6 +522,24 @@ class CommonNameFinderSerializer(ModelSerializer):
     class Meta:
         model = CommonName
         fields = ['id', 'name', ]
+
+
+def get_habit(
+        plant_habit: List[PlantHabit],
+        environmental_habit: List[EnvironmentalHabit]
+) -> str:
+    if len(list(plant_habit)) > 0:
+        env_habit = get_habit_name(
+            environmental_habit,
+            env=True,
+            plant_habit=list(plant_habit)[-1]
+        )
+        if env_habit != "":
+            return "{} {}".format(get_habit_name(plant_habit), env_habit)
+        else:
+            return get_habit_name(plant_habit)
+    else:
+        return ""
 
 
 def get_habit_name(
