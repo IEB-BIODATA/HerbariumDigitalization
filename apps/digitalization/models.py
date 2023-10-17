@@ -1,18 +1,20 @@
 # -*- coding: utf-8 -*-
 # from django.db import models
 from __future__ import annotations
+
 import logging
 import math
-import datetime as dt
 from typing import BinaryIO, Union, Any, Tuple, Callable
 
 import celery
 import numpy as np
 import pandas as pd
 import pytz
+from apps.catalog.models import Species
 from django.conf import settings
 from django.contrib.auth.models import User
 from django.contrib.gis.db import models
+from django.contrib.gis.db.models import GeometryField
 from django.contrib.gis.geos import GEOSGeometry
 from django.core.files.base import ContentFile, File
 from django.db import connection
@@ -21,7 +23,6 @@ from django.db.models.signals import post_delete, pre_save
 from django.dispatch import receiver
 from django.forms import CharField
 
-from apps.catalog.models import Species
 from .storage_backends import PublicMediaStorage, PrivateMediaStorage
 from .validators import validate_file_size
 
@@ -438,7 +439,17 @@ class BannerImage(models.Model):
     specie = models.OneToOneField(Species, on_delete=models.CASCADE)
     banner = models.ImageField(upload_to="banners", storage=PublicMediaStorage())
     image = models.ForeignKey(VoucherImported, on_delete=models.CASCADE)
-    updated = models.DateTimeField(auto_now=True)
+    updated_at= models.DateTimeField(auto_now=True)
+
+
+class Areas(models.Model):
+    name = models.CharField(max_length=300, null=True)
+    temporal = models.BooleanField(default=False)
+    protected_area = models.BooleanField(default=False)
+    geometry = GeometryField(dim=3)
+    created_at = models.DateTimeField(auto_now=True, blank=True, null=True, editable=False)
+    created_by = models.ForeignKey(User, on_delete=models.PROTECT, blank=True, null=True)
+    updated_at = models.DateTimeField(auto_now=True)
 
 
 @receiver(post_delete, sender=PriorityVouchersFile)
