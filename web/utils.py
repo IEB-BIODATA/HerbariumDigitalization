@@ -1,5 +1,9 @@
 import logging
+import os
+import tempfile
 
+from django.contrib.gis.gdal import DataSource
+from django.contrib.gis.geos import GEOSGeometry
 from django.core.paginator import Paginator
 from django.db.models import Q, QuerySet
 from django.http import HttpRequest, JsonResponse
@@ -60,3 +64,16 @@ def paginated_table(
         "recordsFiltered": paginator.count,
         "data": data
     })
+
+
+def get_geometry(request: HttpRequest) -> GEOSGeometry:
+    kml_file = request.data.get("file")
+    file_extension = os.path.splitext(kml_file.name)[1]
+    with tempfile.NamedTemporaryFile(delete=True, suffix=file_extension) as temp_file:
+        kml_data = kml_file.read()
+        temp_file.write(kml_data)
+        temp_file.seek(0)
+        data_source = DataSource(temp_file.name)
+        layer = data_source[0]
+        kml_geometry = layer.get_geoms(True)
+    return kml_geometry

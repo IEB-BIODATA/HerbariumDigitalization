@@ -7,6 +7,7 @@ import re
 import shutil
 import subprocess
 import traceback
+import uuid
 from io import BytesIO
 from typing import Set, Union, Dict, Tuple, List, Any, Sequence
 
@@ -14,10 +15,14 @@ import boto3
 import cv2
 import numpy as np
 from PIL.Image import Image
+from django.contrib.auth.models import User
+from django.contrib.gis.geos import GEOSGeometry
 from django.core.files.base import ContentFile
 from django.core.files.storage import Storage
 from django.template.loader import get_template
 from xhtml2pdf import pisa
+
+from apps.digitalization.models import Areas
 
 
 class TaskProcessLogger(logging.Logger):
@@ -1010,3 +1015,19 @@ def render_to_pdf(template_src, context_dict):
     if pdf.err:
         return 'We had some errors <pre>' + html_template + '</pre>'
     return result.getvalue()
+
+
+def register_temporal_geometry(geometry: GEOSGeometry) -> int:
+    areas = Areas(
+        name=f"temp_{uuid.uuid4().hex}",
+        temporal=True,
+        geometry=geometry,
+        created_by=User.objects.get(pk=1)
+    )
+    try:
+        areas.save()
+        logging.debug(f"Registered new area with id `{areas.pk}`")
+        return areas.pk
+    except Exception as e:
+        logging.error(f"Cannot save area: {e}", exc_info=True)
+        return -1

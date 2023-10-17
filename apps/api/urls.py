@@ -16,7 +16,8 @@ Including another URLconf
 from django.urls import re_path
 
 from . import views
-from .views import SpeciesList, FinderApiView, MenuApiView, SpeciesDetails, GalleryList, BannerSpecie
+from .views import SpeciesList, FinderApiView, MenuApiView, SpeciesDetails, GalleryList, BannerSpecie, \
+    GeoSpeciesListApiView, GeoSpecimensListApiView
 from .views import SynonymyDetails, DivisionList, ClassList, OrderList, SpecimensList
 from .views import FamilyList, SpeciesFilterApiView, MenuFilterApiView
 from .views import DistributionList, ImagesList, ImagesFilterApiView
@@ -33,6 +34,8 @@ urlpatterns = [
     re_path(r'^synonymy/(?P<synonymy_id>\d+)/$', SynonymyDetails.as_view()),
     re_path(r'^specimens/$', SpecimensList.as_view()),
     re_path(r'^finder/(?P<category>[\w ]+)/(?P<word>[\w ]+)/$', FinderApiView.as_view()),
+    re_path(r'^geo_species/$', GeoSpeciesListApiView.as_view()),
+    re_path(r'^geo_specimens/$', GeoSpecimensListApiView.as_view()),
     re_path(r'^menu/$', MenuApiView.as_view()),
     re_path(r'^species_filter/$', SpeciesFilterApiView.as_view()),
     re_path(r'^menu_filter/(?P<limit>\d+)/$', MenuFilterApiView.as_view()),
@@ -46,5 +49,4 @@ urlpatterns = [
     re_path(r'^total_species/$', TotalSpecies.as_view()),
     re_path(r'^banner/(?P<specie_id>\d+)/$', BannerSpecie.as_view()),
     re_path(r'^names/$', views.get_names, name='get_names'),
-    re_path(r'^login$', views.login, name='login'),
 ]

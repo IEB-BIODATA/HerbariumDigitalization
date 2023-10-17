@@ -1,15 +1,13 @@
-import base64
-import datetime as dt
 import logging
 import os
 
-import jwt
 from apps.catalog.models import Species, Synonymy, Family, Division, ClassName, Order, Status, Genus, \
     CommonName, Region, ConservationState, PlantHabit, EnvironmentalHabit, Cycle
-from django.contrib.auth import authenticate
+from apps.digitalization.models import VoucherImported, GalleryImage, BannerImage, Areas
 from django.db.models import Q, ExpressionWrapper, F, FloatField, Value
 from django.db.models.functions import Length
-from django.http import HttpResponseBadRequest, JsonResponse, HttpResponse
+from django.http import JsonResponse
+from django.shortcuts import redirect
 from drf_multiple_model.pagination import MultipleModelLimitOffsetPagination
 from drf_multiple_model.views import FlatMultipleModelAPIView, ObjectMultipleModelAPIView
 from rest_framework import status
@@ -18,14 +16,14 @@ from rest_framework.renderers import JSONRenderer
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
-from apps.digitalization.models import VoucherImported, GalleryImage, BannerImage
-from web import settings
-from .serializers import SpeciesDetailSerializer, SynonymySerializer, SpeciesSerializer, SpeciesFinderSerializer, \
+from web.utils import get_geometry
+from .serializers import SynonymySerializer, SpeciesSerializer, SpeciesFinderSerializer, \
     SynonymysFinderSerializer, FamilysFinderSerializer, DivisionSerializer, ClassSerializer, OrderSerializer, \
     FamilySerializer, StatusSerializer, GenusFinderSerializer, \
     ConservationStateSerializer, DistributionSerializer, CommonNameFinderSerializer, RegionSerializer, \
     ImagesSerializer, GalleryPhotosSerializer, PlantHabitSerializer, EnvHabitSerializer, CycleSerializer, \
     SpeciesImagesSerializer, SpecimenSerializer
+from ..digitalization.utils import register_temporal_geometry
 
 
 class LimitPagination(MultipleModelLimitOffsetPagination):
@@ -217,6 +215,50 @@ class FinderApiView(FlatMultipleModelAPIView):
                  'serializer_class': CommonNameFinderSerializer},
             ]
         return querylist
+
+
+class GeoSpeciesListApiView(ListAPIView):
+    serializer_class = SpeciesSerializer
+    queryset = Species.objects.all()
+
+    def get_queryset(self):
+        query = Q()
+        areas = self.request.GET.getlist("area", None)
+        for area in areas:
+            areas_model = Areas.objects.get(pk=area)
+            query = query | Q(voucherimported__point__within=areas_model.geometry)
+        return super().get_queryset().filter(query).distinct().order_by(
+            "genus__family__name",
+            "genus__name",
+            "scientific_name",
+        )
+
+    def post(self, request, *args, **kwargs):
+        geometry = get_geometry(request)[0]
+        area = register_temporal_geometry(geometry)
+        return redirect(f"/geo_species/?area={area}")
+
+
+class GeoSpecimensListApiView(ListAPIView):
+    serializer_class = SpecimenSerializer
+    queryset = VoucherImported.objects.all()
+
+    def get_queryset(self):
+        query = Q()
+        areas = self.request.GET.getlist("area", None)
+        for area in areas:
+            areas_model = Areas.objects.get(pk=area)
+            query = query | Q(point__within=areas_model.geometry)
+        return super().get_queryset().filter(query).order_by(
+            "scientific_name__genus__family__name",
+            "scientific_name__genus__name",
+            "scientific_name__scientific_name",
+        )
+
+    def post(self, request, *args, **kwargs):
+        geometry = get_geometry(request)[0]
+        area = register_temporal_geometry(geometry)
+        return redirect(f"/geo_specimens/?area={area}")
 
 
 class SpeciesFilterApiView(FlatMultipleModelAPIView):
@@ -641,35 +683,3 @@ def get_names(request):
                     info[name][m] = None
                 logging.debug(info)
     return JsonResponse(info)
-
-
-def login(request):
-    if request.method == 'POST':
-        logging.debug("Authorizing backend")
-        authorization_header = request.META['HTTP_AUTHORIZATION']
-        if not authorization_header:
-            logging.warning("Authorization header missing")
-            return HttpResponseBadRequest('Authorization header missing')
-
-        auth_type, encoded_credentials = authorization_header.split(' ', 1)
-        if auth_type.lower() != 'basic':
-            logging.warning("Invalid authentication type: {}".format(auth_type))
-            return HttpResponseBadRequest('Invalid authentication type')
-
-        decoded_credentials = base64.b64decode(encoded_credentials).decode('utf-8')
-        username, password = decoded_credentials.split(':', 1)
-
-        # Authenticate user
-        user = authenticate(request, username=username, password=password)
-
-        # Generate JWT token
-        if user is not None:
-            payload = {
-                'user_id': user.id,
-                'username': user.username,
-                'exp': dt.datetime.utcnow() + dt.timedelta(days=1)
-            }
-            jwt_token = jwt.encode(payload, settings.SECRET_KEY, algorithm='HS256')
-            return JsonResponse({'token': jwt_token})
-        else:
-            return HttpResponse(status=401)
