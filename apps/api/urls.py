@@ -16,10 +16,11 @@ Including another URLconf
 from django.urls import re_path
 
 from . import views
-from .views import SpeciesList, FinderApiView, MenuApiView, SpecieDetails, GalleryList, BannerSpecie
-from .views import SynonymyDetails, DivisionList, ClassList, OrderList
+from .views import SpeciesList, FinderApiView, MenuApiView, SpeciesDetails, GalleryList, BannerSpecie, \
+    GeoSpeciesListApiView, GeoSpecimensListApiView
+from .views import SynonymyDetails, DivisionList, ClassList, OrderList, SpecimensList
 from .views import FamilyList, SpeciesFilterApiView, MenuFilterApiView
-from .views import DistributionList, ImagesList, ImagesFilterApiView, SpeciesCountView
+from .views import DistributionList, ImagesList, ImagesFilterApiView
 from .views import ImagesCountApiView, ImageDetails, TotalImages, TotalSpecies, RegionList
 
 urlpatterns = [
@@ -29,9 +30,12 @@ urlpatterns = [
     re_path(r'^families/(?P<limit>\d+)/$', FamilyList.as_view()),
     re_path(r'^regions/(?P<limit>\d+)/$', RegionList.as_view()),
     re_path(r'^species/(?P<specie_name>[\w ]+)/$', SpeciesList.as_view()),
-    re_path(r'^specie/(?P<specie_id>\d+)/$', SpecieDetails.as_view()),
+    re_path(r'^specie/(?P<specie_id>\d+)/$', SpeciesDetails.as_view()),
     re_path(r'^synonymy/(?P<synonymy_id>\d+)/$', SynonymyDetails.as_view()),
+    re_path(r'^specimens/$', SpecimensList.as_view()),
     re_path(r'^finder/(?P<category>[\w ]+)/(?P<word>[\w ]+)/$', FinderApiView.as_view()),
+    re_path(r'^geo_species/$', GeoSpeciesListApiView.as_view()),
+    re_path(r'^geo_specimens/$', GeoSpecimensListApiView.as_view()),
     re_path(r'^menu/$', MenuApiView.as_view()),
     re_path(r'^species_filter/$', SpeciesFilterApiView.as_view()),
     re_path(r'^menu_filter/(?P<limit>\d+)/$', MenuFilterApiView.as_view()),
@@ -39,11 +43,10 @@ urlpatterns = [
     re_path(r'^images/(?P<specie_id>\d+)/$', ImagesList.as_view()),
     re_path(r'^gallery/(?P<specie_id>\d+)/$', GalleryList.as_view()),
     re_path(r'^images_filter/$', ImagesFilterApiView.as_view()),
-    re_path(r'^species_count/$', SpeciesCountView.as_view()),
     re_path(r'^images_count/$', ImagesCountApiView.as_view()),
     re_path(r'^image/(?P<voucher_id>\d+)/$', ImageDetails.as_view()),
     re_path(r'^total_images/$', TotalImages.as_view()),
     re_path(r'^total_species/$', TotalSpecies.as_view()),
     re_path(r'^banner/(?P<specie_id>\d+)/$', BannerSpecie.as_view()),
-    re_path(r'^login$', views.login, name='login'),
+    re_path(r'^names/$', views.get_names, name='get_names'),
 ]

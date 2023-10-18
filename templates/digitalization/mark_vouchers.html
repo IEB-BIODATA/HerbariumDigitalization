@@ -1,242 +1,349 @@
 {% extends "base.html" %}
 {% load static %}
+{% block css %}
+    <style>
+        select {
+            width: 150px !important;
+        }
+    </style>
+{% endblock %}
 {% block javascript %}
-<script src="{% static 'vendor/datatables/jquery.dataTables.js' %}"></script>
-<script src="{% static 'vendor/datatables/dataTables.bootstrap4.js' %}"></script>
-  <script type="text/javascript">
-  $(document).ready(function() {
-    $('#PagesTable').DataTable({order: [[0, 'desc']],});
-  });
-
-  function load_file(form_id){
-    $(document).ajaxSend(function() {
-        $("#overlay").fadeIn(300);　
-    });
-    var file_data = $("#file_"+form_id).prop("files")[0]; 
-    var data = new FormData($('#file_form_'+form_id).get(0));
-    data.append("file", file_data)
-    $.ajax({
-      data: data,
-      url: '/digitalization/upload_color_profile_file',
-      type: 'POST',
-      success : function(response) {
-        if(response.result == 'ok'){
-          url='<a href="'+response.url+'">Descargar</a>'
-          $("#file_link_"+form_id).empty();
-          $("#file_link_"+form_id).append(url)
-          $("#digitalized_link_"+form_id).removeClass();
-          $("#digitalized_link_"+form_id).removeAttr("style");
-          $("#digitalized_link_"+form_id).addClass("btn btn-primary btn-block");
-          $("#digitalized_link_"+form_id).attr('onclick', 'get_vouchers('+form_id+',-1); return false;');
-          $("#terminated_link_"+form_id).removeClass();
-          $("#terminated_link_"+form_id).removeAttr("style");
-          $("#terminated_link_"+form_id).addClass("btn btn-danger btn-block");
-          $("#terminated_link_"+form_id).attr('onclick', 'terminate_session('+form_id+'); return false;');
-        }
-      },
-    cache: false,
-    processData: false,
-    contentType: false,
-    }).done(function() {
-          setTimeout(function(){
-            $("#overlay").fadeOut(300);
-          },500);
-    })
-  }
-
-  function set_state(pk,state_voucher){
-    $(document).ajaxSend(function() {
-        $("#overlay").fadeIn(300);　
-    });
-    $.ajax({
-     url: '/digitalization/set_state?pk_voucher='+pk+'&state_voucher='+state_voucher,
-     type: 'GET',
-     success : function(response) {
-      if (response.result=='OK')
-      {
-        switch(state_voucher) {
-            case 0:
-              $('#id_button_class_found_'+pk).removeClass();
-              $('#id_button_class_found_'+pk).addClass('btn btn-light btn-block');
-              $('#id_button_class_not_found_'+pk).removeClass();
-              $('#id_button_class_not_found_'+pk).addClass('btn btn-light btn-block');
-              $('#id_button_class_non_state_'+pk).removeClass();
-              $('#id_button_class_non_state_'+pk).addClass('btn btn-warning btn-block');
-            break;
-            case 1:
-              $('#id_button_class_found_'+pk).removeClass();
-              $('#id_button_class_found_'+pk).addClass('btn btn-success btn-block');
-              $('#id_button_class_not_found_'+pk).removeClass();
-              $('#id_button_class_not_found_'+pk).addClass('btn btn-light btn-block');
-              $('#id_button_class_non_state_'+pk).removeClass();
-              $('#id_button_class_non_state_'+pk).addClass('btn btn-light btn-block');
-              break;
-            case 2:
-              $('#id_button_class_found_'+pk).removeClass();
-              $('#id_button_class_found_'+pk).addClass('btn btn-light btn-block');
-              $('#id_button_class_not_found_'+pk).removeClass();
-              $('#id_button_class_not_found_'+pk).addClass('btn btn-danger btn-block');
-              $('#id_button_class_non_state_'+pk).removeClass();
-              $('#id_button_class_non_state_'+pk).addClass('btn btn-light btn-block');
-              break;
-        }
-      } 
-     }
-    }).done(function() {
-          setTimeout(function(){
-            $("#overlay").fadeOut(300);
-          },500);
+    <script type="text/javascript">
+        const csrfToken = '{% csrf_token %}';
+        $(document).ready(function() {
+            $('#PagesTable').DataTable({
+                serverSide: true,
+                processing: true,
+                language: languageTable.spanish,
+                ajax: {
+                    url: '{% url "session_table" %}',
+                    type: 'GET',
+                    dataSrc: 'data',
+                },
+                order: [[0, 'desc']],
+                columnDefs: [
+                    {
+                        targets: 0,
+                        data: 'id',
+                    },
+                    {
+                        targets: 1,
+                        data: 'created_by',
+                    },
+                    {
+                        targets: 2,
+                        data: 'created_at',
+                        render: (data, type) => {
+                            let date = new Date(data);
+                            if (type === 'display' || type === 'search'){
+                                return dateFormat(date)
+                            } else if (type === 'sort')
+                                return date.toISOString();
+                            else
+                                return date;
+                        }
+                    },
+                    {
+                        targets: 3,
+                        data: 'stateless_count',
+                    },
+                    {
+                        targets: 4,
+                        data: 'found_count',
+                    },
+                    {
+                        targets: 5,
+                        data: 'not_found_count',
+                    },
+                    {
+                        targets: 6,
+                        data: 'digitalized',
+                    },
+                    {
+                        targets: 7,
+                        data: 'color_profile',
+                        orderable: false,
+                        render: (data, type, row) => {
+                            if (data === null){
+                                return `
+                                <form id="fileForm${row.id}" action="" method="post" enctype="multipart/form-data">
+                                    ${csrfToken}
+                                    <input type="file" id="file${row.id}" style="display: none;" onchange="loadFile(${row.id}); return false;" accept=".dcp"/>
+                                    <input type="button" value="Subir..." onclick="document.getElementById('file${row.id}').click();" />
+                                    <input id="generated_page_id" name="generated_page_id" type="hidden" value="${row.id}">
+                                </form>
+                                `;
+                            } else {
+                                return `
+                                <div id='file_link_${row.id}'>
+                                    <a href="${data}">Descargar</a>
+                                </div>
+                                `;
+                            }
+                        }
+                    },
+                    {
+                        targets: 8,
+                        data: 'color_profile',
+                        orderable: false,
+                        render: (data, type, row) => {
+                            let color_profile;
+                            if (row.terminated){
+                                color_profile = "<b>Terminada</b>";
+                            } else {
+                                let digitalize_class;
+                                let terminate_class;
+                                if (data === null){
+                                    digitalize_class = `class="btn btn-secondary"  style="pointer-events: none;cursor: default;"`
+                                    terminate_class = digitalize_class;
+                                } else {
+                                    digitalize_class = `class="btn btn-primary" onclick="getVouchers(${row.id}, -1, '${row.name}'); return false;"`;
+                                    terminate_class = `class="btn btn-danger" onclick="terminateSession(${row.id}); return false;"`;
+                                }
+                                color_profile = `
+                                <a id="digitalized_link_${row.id}" href="#" ${digitalize_class}>Digitalizar</a>
+                                <a id="terminated_link_${row.id}" href="#" ${terminate_class}>Terminar</a>
+                                `;
+                            }
+                            return `
+                            <div id="td_link_${ row.id }" class="d-grid gap-2">
+                                ${color_profile}
+                            </div>
+                            `;
+                        }
+                    },
+                ]
+            });
         });
-  }
-  function get_vouchers(page_id,voucher_state){
-    $(document).ajaxSend(function() {
-        $("#overlay").fadeIn(300);
-    });
-    $.ajax({
-     url: '/digitalization/get_vouchers?page_id='+page_id+'&voucher_state='+voucher_state,
-     type: 'GET',
-     success : function(response) {
-      $('#page_name').text(response.page);
-      data=response.data
-      var table = '<thead><tr><th>Estado</th><th>ID Herbario</th><th>Nombre Especie</th><th>Colectado por</th><th>Numero de Colecta</th><th>Ubicación</th></tr></thead><tbody>'
-      for(var i=0; i<data.length; i++)
-      {
-          button_class_nonstate='btn-light';
-          button_class_found='btn-light';
-          button_class_notfound='btn-light';
-          switch(data[i].fields.voucherState) {
-            case 0:
-              button_class_nonstate='btn-warning';
-              break;
-            case 1:
-              button_class_found='btn-success';
-              break;
-            case 2:
-              button_class_notfound='btn-danger';
-              break;
-          }
-          table += '<tr><td><a class="btn '+button_class_found+' btn-block" href="#" onclick="set_state('+data[i].pk+',1); return false;" id="id_button_class_found_'+data[i].pk+'">Encontrado</a><a class="btn '+button_class_nonstate+' btn-block" href="#" onclick="set_state('+data[i].pk+',0); return false;" id="id_button_class_non_state_'+data[i].pk+'">Sin Estado</a><a class="btn '+button_class_notfound+' btn-block" href="#" onclick="set_state('+data[i].pk+',2); return false;" id="id_button_class_not_found_'+data[i].pk+'">No Encontrado</a></td><td>'+data[i].fields.catalogNumber+'</td><td>'+data[i].fields.scientificNameStr+'</td><td>'+data[i].fields.recordedBy+'</td><td>'+data[i].fields.recordNumber+'</td><td>'+data[i].fields.locality+'</td></tr>';
-      }
-      $("[id^=dataTable]").remove()
-      table += "</tbody>";
-      $('#vouchers-content').append('<table class="table table-bordered" id="dataTable'+page_id+'" width="100%" cellspacing="0"></table>');
-      $('#dataTable'+page_id).append(table); 
-      $("#vouchers-table").show("slow");     
-     },
-      cache: false,
-      processData: false,
-      contentType: false,
-    }).done(function() {
-          $('#dataTable'+page_id).DataTable();
-          $('#dataTable1_length').append('<label class="p-3">Filtrar Estado <select id="voucher_state" name="dataTable1_length" aria-controls="dataTable1" class="custom-select custom-select-sm form-control form-control-sm" onchange="get_vouchers('+page_id+',this.value);"><option value="-1">Todos</option><option value="1">Encontrado</option><option value="0">Sin Estado</option><option value="2">No Encontrado</option></select></label>');
-          $('#voucher_state option[value='+voucher_state+']').attr('selected','selected');
-          setTimeout(function(){
-            $("#overlay").fadeOut(300);
-          },500);
-    });
-  }
 
-  function terminate_session(page_id){
-    $(document).ajaxSend(function() {
-        $("#overlay").fadeIn(300);
-    });
-    var confirmation = confirm("¿Está seguro que desea terminar la sesión? (no podrá continuar marcando estos registros).");
-    if (confirmation) {
-      $.ajax({
-       url: '/digitalization/terminate_session?page_id='+page_id,
-       type: 'GET',
-       success : function(response) {
-         if(response.result == 'ok'){
-            $("#file_form_"+page_id).remove();
-            $("#digitalized_link_"+page_id).remove();
-            $("#terminated_link_"+page_id).remove();
-            $("#td_link_"+page_id).append('<b>Terminada</b>')
-          }  
-       },
-        cache: false,
-        processData: false,
-        contentType: false,
-      }).done(function() {
-        setTimeout(function(){
-          $("#overlay").fadeOut(300);
-        },500);
-      });
-    }
-  }
-  </script>
+        function getVouchers(pageId, voucherState, pageName){
+            $("#overlay").fadeIn(300);
+            const voucherCard = $('#VouchersCard')
+            voucherCard.hide();
+            $('#pageName')[0].innerHTML = ` <b>Sesión ${pageId}:</b> <i>${pageName}</i>`;
+            url = "{% url 'get_vouchers_to_validate' page_id=0 voucher_state=-1 %}"
+                .replace("0", pageId)
+                .replace("-1", voucherState);
+            console.debug(`Table from ${url}`);
+            voucherCard.show();
+            const vouchersTable = $('#VouchersTable');
+            vouchersTable.DataTable().destroy();
+            vouchersTable.DataTable({
+                serverSide: true,
+                processing: true,
+                language: languageTable.spanish,
+                ajax: {
+                    url: url,
+                    type: 'GET',
+                    dataSrc: 'data',
+                },
+                order: [[2, 'asc'], [1, 'asc']],
+                columnDefs: [
+                    {
+                        targets: 0,
+                        data: 'occurrence_id',
+                        orderable: false,
+                        render: (data) => {
+                            let values = [];
+                            for (let i=0; i < 7; i++){
+                                let selected = '';
+                                if (i === data.voucher_state)
+                                    selected = 'selected="selected"';
+                                values.push(`value="${i}" ${selected}`);
+                            }
+                            return `
+                            <select id="voucherClassFound${data.id}" class="${getStateClass(data.voucher_state)} custom-select custom-select-sm form-control form-control-sm" onchange="setState(${data.id}, this.value);">
+                                <option ${values[0]}>&nbsp;Sin Estado&nbsp;&nbsp;&nbsp;&nbsp;</option>
+                                <option ${values[1]}>&nbsp;Encontrado&nbsp;&nbsp;&nbsp;&nbsp;</option>
+                                <option ${values[2]}>&nbsp;No Encontrado&nbsp;</option>
+                                <option ${values[3]}>&nbsp;En Préstamo&nbsp;&nbsp;&nbsp;</option>
+                                <option ${values[6]}>&nbsp;En curatoria&nbsp;&nbsp;</option>
+                            </select>
+                            `;
+                        },
+                    },
+                    {
+                        targets: 1,
+                        data: 'catalog_number',
+                    },
+                    {
+                        targets: 2,
+                        data: 'species',
+                    },
+                    {
+                        targets: 3,
+                        data: 'recorded_by',
+                    },
+                    {
+                        targets: 4,
+                        data: 'record_number',
+                        render: (data) => {
+                            if (isNaN(data)) return ""; else return data;
+                        }
+                    },
+                    {
+                        targets: 5,
+                        data: 'locality',
+                    },
+                ],
+            });
+            $('#VouchersTable_length').append(`
+            <label class="p-3">Filtrar Estado
+                <select id="voucherState" name="VouchersTable_length" aria-controls="VouchersTable" class="custom-select custom-select-sm form-control form-control-sm" onchange="getVouchers(${pageId}, this.value);">
+                    <option value="-1">Todos</option>
+                    <option value="1">Encontrado</option>
+                    <option value="0">Sin Estado</option>
+                    <option value="2">No Encontrado</option>
+                    <option value="3">En Préstamo</option>
+                    <option value="4">Extraviado</option>
+                    <option value="5">En Préstado Encontrado</option>
+                    <option value="6">En curatoria</option>
+                    <option value="7">Digitalizado</option>
+                    <option value="8">Pendiente</option>
+                </select>
+            </label>
+            `);
+            $(`#voucherState option[value=${voucherState}]`).attr('selected', 'selected');
+            $("#overlay").fadeOut(300);
+        }
+
+        function setState(biotadaCode, voucherState) {
+            console.debug(biotadaCode, voucherState);
+            $("#overlay").fadeIn(300);
+            $.ajax({
+                url: '{% url "set_state" %}',
+                type: 'POST',
+                data: {
+                    biodata_code: biotadaCode,
+                    voucher_state: voucherState,
+                },
+                success: function (response) {
+                    if (response.result === 'OK'){
+                        document.getElementById(
+                            `voucherClassFound${biotadaCode}`
+                        ).className = `${getStateClass(parseInt(voucherState))} custom-select custom-select-sm form-control form-control-sm`;
+                    } else {
+                        console.error(response.result);
+                    }
+                },
+                error: function (error) {
+                    console.error(error);
+                }
+            }).always(function(){
+                $("#overlay").fadeOut(300);
+            });
+        }
+
+        function loadFile(formId){
+            $("#overlay").fadeIn(300);
+            let fileData = $(`#file${formId}`).prop("files")[0];
+            let data = new FormData($(`#fileForm${formId}`).get(0));
+            data.append("file", fileData)
+            $.ajax({
+                data: data,
+                url: "{% url 'upload_color_profile_file' %}",
+                type: 'POST',
+                success: function(response) {
+                    if(response.result === 'OK'){
+                        window.location.reload();
+                    }
+                    else {
+                        console.error(response);
+                    }
+                },
+                error: function(error) {
+                    console.error(error);
+                },
+                cache: false,
+                processData: false,
+                contentType: false,
+            }).always(function() {
+                $("#overlay").fadeOut(300);
+            })
+        }
+
+        function terminateSession(pageId){
+            $("#overlay").fadeIn(300);
+            let confirmation = confirm("¿Está seguro que desea terminar la sesión? (no podrá continuar marcando estos registros).");
+            if (confirmation) {
+                $.ajax({
+                    url: '{% url "terminate_session" %}',
+                    type: 'POST',
+                    data: {
+                        page_id: pageId,
+                    },
+                    success: function(response) {
+                        if(response.result === 'OK'){
+                            window.location.reload()
+                        } else {
+                            console.error(response);
+                        }
+                    },
+                    error: function(error) {
+                        console.error(error);
+                    },
+                }).always(function() {
+                    $("#overlay").fadeOut(300);
+                });
+            } else {
+                $("#overlay").fadeOut(300);
+            }
+        }
+    </script>
 {% endblock %}
 {% block content %}
-<h1>Digitalización de Especímenes</h1>
-<!-- DataTables Example -->
-<div class="card mb-3">
-  <div class="card-header">
-    <i class="fas fa-table"></i>
-    Tabla de Páginas</div>
-  <div class="card-body">
-    <div class="table-responsive">
-      <table class="table table-bordered" id="PagesTable" width="100%" cellspacing="0">
-        <thead>
-          <tr>
-            <th>Sesión</th>
-            <th>Creado por</th>
-            <th>Fecha creación</th>
-            <th>Sin Estado</th>
-            <th>Encontrados</th>
-            <th>No Encontrados</th>
-            <th>Digitalizados</th>
-            <th>Perfil de Color</th>
-            <th>Link</th>
-          </tr>
-        </thead>
-        <tbody>
-          {% for generated_page in generated_pages%}
-            <tr>
-              <td>{{ generated_page.id }}</td>
-              <td>{{ generated_page.created_by }}</td>
-              <td>{{ generated_page.created_at }}</td>
-              <td>{{ generated_page.StatelessCount }}</td>
-              <td>{{ generated_page.FoundCount }}</td>
-              <td>{{ generated_page.NotFoundCount }}</td>
-              <td>{{ generated_page.Digitalized }}</td>
-              <td>
-                <div id='file_link_{{generated_page.id}}'>
-                {% if generated_page.color_profile %}
-                  <a href="{{generated_page.color_profile.file.url}}">Descargar</a>
-                {% endif %}
-                </div>
-                {% if not generated_page.terminated %}
-                <form id="file_form_{{generated_page.id}}" action="" method="post" enctype="multipart/form-data">
-                  <input type="file" id="file_{{generated_page.id}}" style="display: none;" onchange="load_file({{generated_page.id}}); return false;" accept=".dcp"/>
-                  <input type="button" value="Subir..." onclick="document.getElementById('file_{{generated_page.id}}').click();" />
-                  <input id="generated_page_id" name="generated_page_id" type="hidden" value="{{ generated_page.id }}">
-                </form>
-                {% endif %}
-              </td>
-              <td id="td_link_{{generated_page.id}}">
-                {% if not generated_page.terminated %}
-                  <a id="digitalized_link_{{generated_page.id}}" href="#" {% if generated_page.color_profile %} class="btn btn-primary btn-block" onclick="get_vouchers({{generated_page.id}},-1); return false;" {% else %} class="btn btn-secondary btn-block"  style="pointer-events: none;cursor: default;" {% endif %}>Digitalizar</a>
-                  <a id="terminated_link_{{generated_page.id}}" href="#" {% if generated_page.color_profile %} class="btn btn-danger btn-block" onclick="terminate_session({{generated_page.id}}); return false;" {% else %} class="btn btn-secondary btn-block"  style="pointer-events: none;cursor: default;" {% endif %}>Terminar</a>
-                {% else %}
-                  <b>Terminada</b>  
-                {% endif %}
-              </td>
-            </tr>
-          {% endfor%}
-        </tbody>
-      </table>
+    <h1>Digitalización de Especímenes</h1>
+    <!-- DataTables Example -->
+    <div class="card mb-3">
+        <div class="card-header">
+            <i class="fas fa-table"></i>
+            Tabla de Páginas</div>
+        <div class="card-body">
+            <div class="table-responsive">
+                <table class="table table-bordered" id="PagesTable" width="100%" cellspacing="0">
+                    <thead>
+                    <tr>
+                        <th>Sesión</th>
+                        <th>Creado por</th>
+                        <th>Fecha creación</th>
+                        <th>Sin Estado</th>
+                        <th>Encontrados</th>
+                        <th>No Encontrados</th>
+                        <th>Digitalizados</th>
+                        <th>Perfil de Color</th>
+                        <th>Link</th>
+                    </tr>
+                    </thead>
+                    <tbody>
+                    <!-- To be populated -->
+                    </tbody>
+                </table>
+            </div>
+        </div>
     </div>
-  </div>
-</div>
-<div class="card mb-3" id="vouchers-table" style="display: none;">
-  <div class="card-header">
-    <i class="fas fa-table"></i><div id="page_name" style="display: contents;"></div>
-  </div>
-  <div class="card-body">
-    <div class="table-responsive" id="vouchers-content">
-      <table class="table table-bordered" id="dataTable2" width="100%" cellspacing="0">
-      </table>
+    <div class="card mb-3" id="VouchersCard" style="display: none;">
+        <div class="card-header">
+            <i class="fas fa-table"></i><div id="pageName" style="display: contents;"></div>
+        </div>
+        <div class="card-body">
+            <div class="table-responsive" id="VouchersContent">
+                <table class="table table-bordered" id="VouchersTable" width="100%" cellspacing="0">
+                    <thead>
+                    <tr>
+                        <th>Estado</th>
+                        <th>ID Herbario</th>
+                        <th>Nombre Especie</th>
+                        <th>Colectado por</th>
+                        <th>Número de Colecta</th>
+                        <th>Ubicación</th>
+                    </tr>
+                    </thead>
+                    <tbody>
+                        <!-- To be populated -->
+                    </tbody>
+                </table>
+            </div>
+        </div>
+        <div class="card-footer small text-muted">Updated yesterday at 11:59 PM</div>
     </div>
-  </div>
-  <div class="card-footer small text-muted">Updated yesterday at 11:59 PM</div>
-</div>
 {% endblock %}

@@ -1,13 +1,5 @@
 {% extends "base.html" %}
 {% load static %}
-{% block javascript %}
-<script src="{% static 'js/bootstrap-select.js' %}"></script>
-<script type="text/javascript">
-  $(function () {
-    $('#id_synonymys').selectpicker();
-  });
-</script>
-{% endblock %}
 {% block content %}
 <h1>Sinónimo</h1>
 <!-- DataTables Example -->
@@ -19,11 +11,11 @@
     <div class="table-responsive">
       <form action="/catalog/update_synonymy/{{id}}/" method="post" class="form-horizontal">
           {% csrf_token %}
-          {{ form.scientificName }}
-          {{ form.scientificNameFull }}
-          {{ form.scientificNameDB }}
+          {{ form.scientific_name }}
+          {{ form.scientific_name_full }}
+          {{ form.scientific_name_db }}
           <div class="form-group row">
-            <label class="col-sm-2 col-form-label">Genero</label>
+            <label class="col-sm-2 col-form-label">Género</label>
             <div class="col-sm-10">
               {{ form.genus }}
             </div>
@@ -31,49 +23,49 @@
           <div class="form-group row">
             <label class="col-sm-2 col-form-label">Epiteto Específico</label>
             <div class="col-sm-10">
-              {{ form.specificEpithet }}
+              {{ form.specific_epithet }}
             </div>
           </div>
           <div class="form-group row">
             <label class="col-sm-2 col-form-label">Autor(es)</label>
             <div class="col-sm-10">
-              {{ form.scientificNameAuthorship }}
+              {{ form.scientific_name_authorship }}
             </div>
           </div>
           <div class="form-group row">
             <label class="col-sm-2 col-form-label">Subespecie</label>
             <div class="col-sm-10">
-              {{ form.subespecie }}
+              {{ form.subspecies }}
             </div>
           </div>
           <div class="form-group row">
             <label class="col-sm-2 col-form-label">Autor(es) Subespecie</label>
             <div class="col-sm-10">
-              {{ form.autoresSsp }}
+              {{ form.ssp_authorship }}
             </div>
           </div>
           <div class="form-group row">
             <label class="col-sm-2 col-form-label">Variedad</label>
             <div class="col-sm-10">
-              {{ form.variedad }}
+              {{ form.variety }}
             </div>
           </div>
           <div class="form-group row">
             <label class="col-sm-2 col-form-label">Autor(es) Variedad</label>
             <div class="col-sm-10">
-              {{ form.autoresVariedad }}
+              {{ form.variety_authorship }}
             </div>
           </div>
           <div class="form-group row">
             <label class="col-sm-2 col-form-label">Forma</label>
             <div class="col-sm-10">
-              {{ form.forma }}
+              {{ form.form }}
             </div>
           </div>
           <div class="form-group row">
             <label class="col-sm-2 col-form-label">Autor(es) Forma</label>
             <div class="col-sm-10">
-              {{ form.autoresForma }}
+              {{ form.form_authorship }}
             </div>
           </div>
           {% if form.errors %}

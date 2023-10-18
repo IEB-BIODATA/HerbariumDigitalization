@@ -2,8 +2,6 @@
 {% load static %}
 {% block javascript %}
 <!-- Page level plugin JavaScript-->
-<script src="{% static 'vendor/datatables/jquery.dataTables.js' %}"></script>
-<script src="{% static 'vendor/datatables/dataTables.bootstrap4.js' %}"></script>
 <script src="{% static 'js/demo/datatables-demo.js' %}"></script>
 <script type="text/javascript">
   function code_generator(historical_page_id) {
@@ -54,8 +52,8 @@
               <td>{{ generated_page.name }}</td>
               <td>{{ generated_page.created_by }}</td>
               <td>{{ generated_page.created_at }}</td>
-              <td><a class="btn btn-primary btn-block" href="#" onclick="code_generator({{generated_page.id}}); return false;">Imprimir Lista</a></td>
-              <td><a class="btn btn-primary btn-block" href="#" onclick="code_generator({{generated_page.id}}); return false;">Imprimir QRS</a></td>
+              <td><a class="btn btn-primary" href="#" onclick="code_generator({{generated_page.id}}); return false;">Imprimir Lista</a></td>
+              <td><a class="btn btn-primary" href="#" onclick="code_generator({{generated_page.id}}); return false;">Imprimir QRS</a></td>
             </tr>
           {% endfor%}
         </tbody>

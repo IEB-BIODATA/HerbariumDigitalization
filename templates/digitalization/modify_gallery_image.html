@@ -1,0 +1,122 @@
+{% extends "base.html" %}
+{% load static %}
+{% load roles %}
+{% block javascript %}
+    <script type="text/javascript">
+        const tempSearchBar = document.getElementById('temp-search-bar');
+
+        tempSearchBar.addEventListener('input', function () {
+            if (tempSearchBar.value.length > 3) {
+                document.getElementById("TemporalSearch").setAttribute("style", "display: none;");
+                loadTable();
+                const searchBar = document.getElementById("CatalogTable_filter").children[0].children[0];
+                searchBar.value = tempSearchBar.value;
+                searchBar.focus();
+            }
+        })
+
+        function loadTable(){
+            document.getElementById("TemporalSearch").setAttribute("style", "display: none;");
+            $('#CatalogTable').DataTable({
+                serverSide: true,
+                processing: true,
+                language: languageTable.spanish,
+                ajax: {
+                    url: "{% url 'gallery_table' %}",
+                    type: 'GET',
+                    dataSrc: 'data',
+                },
+                order: [[5, 'desc']],
+                columnDefs: [
+                    {
+                        targets: 0,
+                        data: 'division',
+                    },
+                    {
+                        targets: 1,
+                        data: 'class_name'
+                    },
+                    {
+                        targets: 2,
+                        data: 'order'
+                    },
+                    {
+                        targets: 3,
+                        data: 'family'
+                    },
+                    {
+                        targets: 4,
+                        data: 'scientific_name_full',
+                        render: (data, type, row) => {
+                            if (type === 'search'){
+                                return data;
+                            } else {
+                                const to_modify_gallery = "{% url 'modify_gallery' species_id=0 %}".replace(
+                                    "0", row["id"]
+                                );
+                                console.log(to_modify_gallery);
+                                return `<a href="${to_modify_gallery}">${data}</a>`;
+                            }
+                        }
+                    },
+                    {
+                        targets: 5,
+                        data: 'updated_at',
+                        render: (data, type) => {
+                            let date = new Date(data);
+                            if (type === 'display' || type === 'search'){
+                                return dateFormat(date);
+                            } else if (type === 'sort'){
+                                return date.toISOString();
+                            } else {
+                                return date;
+                            }
+                        }
+                    },
+                ],
+            });
+        }
+    </script>
+{% endblock %}
+{% block content %}
+    <h1>Galería de Fotografías</h1>
+    <div class="card mb-3">
+        <div class="card-body">
+            <div class="row" id="TemporalSearch">
+                <div class="col-sm-12 col-md-6"></div>
+                <div class="col-sm-12 col-md-6" style="text-align: right;">
+                    <label>Buscar:
+                        <input id="temp-search-bar" type="search" class="form-control form-control-sm" style="display: inline-block;box-sizing: border-box;width: auto;">
+                    </label>
+                </div>
+            </div>
+            <div class="table-responsive">
+                <table class="table table-bordered" id="CatalogTable" style="width: 100%" cellspacing="0">
+                    <thead>
+                    <tr>
+                        <th>División</th>
+                        <th>Clase</th>
+                        <th>order</th>
+                        <th>Familia</th>
+                        <th>Nombre Científico Completo</th>
+                        <th>Última Actualización</th>
+                    </tr>
+                    </thead>
+                    <tbody>
+                    <!-- To be populated -->
+                        <tr>
+                            <td colspan="11" >
+                                <div class="d-flex justify-content-center">
+                                    <button type="button" class="btn btn-info" onclick="loadTable()">
+                                        <i class="fas fa-fw fa-sync"></i>
+                                        Cargar tabla
+                                    </button>
+                                </div>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+{% endblock %}

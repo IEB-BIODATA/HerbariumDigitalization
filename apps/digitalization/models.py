@@ -1,14 +1,30 @@
 # -*- coding: utf-8 -*-
 # from django.db import models
-from django.contrib.auth.models import User
-from .validators import validate_file_size
-from django.dispatch import receiver
-from django.db.models.signals import post_delete, pre_save
+from __future__ import annotations
+
+import logging
+import math
+from typing import BinaryIO, Union, Any, Tuple, Callable
+
+import celery
+import numpy as np
+import pandas as pd
+import pytz
 from apps.catalog.models import Species
-from .storage_backends import PublicMediaStorage, PrivateMediaStorage
+from django.conf import settings
+from django.contrib.auth.models import User
 from django.contrib.gis.db import models
+from django.contrib.gis.db.models import GeometryField
+from django.contrib.gis.geos import GEOSGeometry
+from django.core.files.base import ContentFile, File
 from django.db import connection
-import os
+from django.db.models import Q
+from django.db.models.signals import post_delete, pre_save
+from django.dispatch import receiver
+from django.forms import CharField
+
+from .storage_backends import PublicMediaStorage, PrivateMediaStorage
+from .validators import validate_file_size
 
 VOUCHER_STATE = (
     (0, 'Sin Estado'),
@@ -17,10 +33,28 @@ VOUCHER_STATE = (
     (3, 'En Préstamo'),
     (4, 'Extraviado'),
     (5, 'En Préstado Encontrado'),
-    (6, 'Extraviado Encontrado'),
+    (6, 'En curatoria'),
     (7, 'Digitalizado'),
     (8, 'Pendiente'),
 )
+
+DCW_SQL = {
+    "catalogNumber": "catalog_number",
+    "recordNumber": "record_number",
+    "recordedBy": "recorded_by",
+    "organismRemarks": "organism_remarks",
+    "otherCatalogNumbers": "other_catalog_numbers",
+    "verbatimElevation": "verbatim_elevation",
+    "decimalLatitude": "decimal_latitude",
+    "decimalLongitude": "decimal_longitude",
+    "georeferencedDate": "georeferenced_date",
+    "identifiedBy": "identified_by",
+    "dateIdentified": "date_identified",
+    "scientificName": "scientific_name",
+    "scientificNameSimilarity": "scientific_name_similarity",
+    "synonymySimilarity": "synonymy_similarity",
+    "similarity": "similarity",
+}
 
 
 class Herbarium(models.Model):
@@ -37,13 +71,15 @@ class Herbarium(models.Model):
     def __str__(self):
         return "%s " % self.name
 
-    def natural_key(self):
-        return (self.id, self.name)
+    def natural_key(self) -> Tuple[Any, CharField]:
+        return self.id, self.name
 
 
 class ColorProfileFile(models.Model):
-    file = models.FileField(upload_to='uploads/color_profile/', validators=[validate_file_size], blank=False,
-                            null=False)
+    file = models.FileField(
+        upload_to='uploads/color_profile/', validators=[validate_file_size],
+        blank=False, null=False
+    )
     created_at = models.DateTimeField(blank=True, null=True, editable=False)
     created_by = models.ForeignKey(User, on_delete=models.PROTECT, blank=True, null=True)
 
@@ -59,26 +95,60 @@ class GeneratedPage(models.Model):
     herbarium = models.ForeignKey(Herbarium, on_delete=models.CASCADE)
     terminated = models.BooleanField(default=False)
     color_profile = models.ForeignKey(ColorProfileFile, on_delete=models.SET_NULL, blank=True, null=True)
-    created_at = models.DateTimeField(blank=True, null=True, editable=False)
+    created_at = models.DateTimeField(auto_now_add=True, blank=True, null=True, editable=False)
     created_by = models.ForeignKey(User, on_delete=models.PROTECT)
 
     class Meta:
         verbose_name_plural = "Generated Pages"
 
-    def Total(self):
+    @property
+    def total(self):
         return BiodataCode.objects.filter(page__id=self.id).count()
 
-    def StatelessCount(self):
+    @property
+    def stateless_count(self):
         return BiodataCode.objects.filter(page__id=self.id, voucher_state=0).count()
 
-    def FoundCount(self):
+    @property
+    def found_count(self):
         return BiodataCode.objects.filter(page__id=self.id, voucher_state=1).count()
 
-    def NotFoundCount(self):
+    @property
+    def not_found_count(self):
         return BiodataCode.objects.filter(page__id=self.id, voucher_state=2).count()
 
-    def Digitalized(self):
-        return BiodataCode.objects.filter(page__id=self.id, voucher_state=7).count()
+    @property
+    def digitalized(self):
+        return BiodataCode.objects.filter(
+            Q(page__id=self.id) & (Q(voucher_state=7) | Q(voucher_state=8))
+        ).count()
+
+    @property
+    def qr_count(self):
+        return BiodataCode.objects.filter(
+            Q(page__id=self.id) & Q(qr_generated=True)
+        ).count()
+
+    def save(
+        self, quantity_pages: int = None, force_insert=False, force_update=False, using=None, update_fields=None
+    ):
+        if quantity_pages is None:
+            quantity_pages = math.ceil(self.qr_count / 35)
+        try:
+            self.name = "{} páginas - {} códigos - Fecha:{}".format(
+                quantity_pages, self.qr_count,
+                self.created_at.astimezone(
+                    pytz.timezone(settings.TIME_ZONE)
+                ).strftime('%d-%m-%Y %H:%M')
+            )
+        except AttributeError:
+            logging.debug(f"Cannot define name for session ({self.id})")
+        return super().save(
+            force_insert=force_insert,
+            force_update=force_update,
+            using=using,
+            update_fields=update_fields
+        )
 
     def __unicode__(self):
         return self.name
@@ -86,14 +156,14 @@ class GeneratedPage(models.Model):
     def __str__(self):
         return "%s " % self.name
 
-    def natural_key(self):
-        return (self.id, self.name)
+    def natural_key(self) -> Tuple[Any, CharField]:
+        return self.id, self.name
 
 
 class BiodataCode(models.Model):
     herbarium = models.ForeignKey(Herbarium, on_delete=models.CASCADE)
     code = models.CharField(max_length=30, blank=False, null=False, unique=True)
-    catalogNumber = models.IntegerField(blank=True, null=True)
+    catalog_number = models.IntegerField(blank=True, null=True)
     created_at = models.DateTimeField(blank=True, null=True, editable=False)
     created_by = models.ForeignKey(User, on_delete=models.PROTECT)
     qr_generated = models.BooleanField(default=False)
@@ -109,8 +179,8 @@ class BiodataCode(models.Model):
     def __str__(self):
         return "%s " % self.code
 
-    def natural_key(self):
-        return (self.id, self.code)
+    def natural_key(self) -> Tuple[Any, CharField]:
+        return self.id, self.code
 
 
 class HerbariumMember(models.Model):
@@ -134,27 +204,24 @@ class PriorityVouchersFile(models.Model):
     def __str__(self):
         return "%s " % self.file.name
 
-    def filename(self):
-        return os.path.basename(self.file.name)
-
 
 class VoucherImported(models.Model):
     vouchers_file = models.ForeignKey(PriorityVouchersFile, on_delete=models.CASCADE, blank=True, null=True)
-    occurrenceID = models.ForeignKey(BiodataCode, on_delete=models.CASCADE, blank=True, null=True)
+    biodata_code = models.ForeignKey(BiodataCode, on_delete=models.CASCADE, blank=True, null=True)
     herbarium = models.ForeignKey(Herbarium, on_delete=models.CASCADE, blank=True, null=True)
-    otherCatalogNumbers = models.CharField(max_length=13, blank=True, null=True)
-    catalogNumber = models.IntegerField(blank=True, null=True)
-    recordedBy = models.CharField(max_length=300, blank=True, null=True)
-    recordNumber = models.CharField(max_length=13, blank=True, null=True)
-    organismRemarks = models.CharField(max_length=300, blank=True, null=True)
-    scientificName = models.ForeignKey(Species, on_delete=models.CASCADE, blank=True, null=True)
+    other_catalog_numbers = models.CharField(max_length=13, blank=True, null=True)
+    catalog_number = models.IntegerField(blank=True, null=True)
+    recorded_by = models.CharField(max_length=300, blank=True, null=True)
+    record_number = models.CharField(max_length=13, blank=True, null=True)
+    organism_remarks = models.CharField(max_length=300, blank=True, null=True)
+    scientific_name = models.ForeignKey(Species, on_delete=models.CASCADE, blank=True, null=True)
     locality = models.CharField(max_length=300, blank=True, null=True)
-    verbatimElevation = models.IntegerField(blank=True, null=True)
-    georeferencedDate = models.DateTimeField(blank=True, null=True)
-    decimalLatitude = models.FloatField(blank=True, null=True)
-    decimalLongitude = models.FloatField(blank=True, null=True)
-    identifiedBy = models.CharField(max_length=100, blank=True, null=True)
-    dateIdentified = models.CharField(max_length=100, blank=True, null=True)
+    verbatim_elevation = models.IntegerField(blank=True, null=True)
+    georeferenced_date = models.DateTimeField(blank=True, null=True)
+    decimal_latitude = models.FloatField(blank=True, null=True)
+    decimal_longitude = models.FloatField(blank=True, null=True)
+    identified_by = models.CharField(max_length=100, blank=True, null=True)
+    identified_date = models.CharField(max_length=100, blank=True, null=True)
     image = models.ImageField(storage=PrivateMediaStorage(), blank=True, null=True)
     image_resized_10 = models.ImageField(storage=PrivateMediaStorage(), blank=True, null=True)
     image_resized_60 = models.ImageField(storage=PrivateMediaStorage(), blank=True, null=True)
@@ -163,66 +230,181 @@ class VoucherImported(models.Model):
     image_public_resized_60 = models.ImageField(storage=PublicMediaStorage(), blank=True, null=True)
     image_raw = models.ImageField(storage=PrivateMediaStorage(), blank=True, null=True)
     point = models.PointField(null=True, blank=True, )
-    decimalLatitude_public = models.FloatField(blank=True, null=True)
-    decimalLongitude_public = models.FloatField(blank=True, null=True)
+    decimal_latitude_public = models.FloatField(blank=True, null=True)
+    decimal_longitude_public = models.FloatField(blank=True, null=True)
     point_public = models.PointField(null=True, blank=True, )
     priority = models.IntegerField(blank=True, null=True, default=3)
 
     class Meta:
         verbose_name_plural = "Vouchers"
 
-    def image_voucher_thumb(self):
-        if self.image_resized_10:
-            image_resized_10 = self.image_resized_10.url
-            return u'<img width="200px" height="auto" src="%s" data-target="#myCarousel" data-slide-to="%s"/>' % (
-            image_resized_10, self.id)
+    def generate_etiquette(self):
+        if self.biodata_code.voucher_state == 7:
+            logging.debug("Regenerating public image ({})".format(self.id))
+            self.biodata_code.voucher_state = 8
+            self.biodata_code.save()
+            self.save()
+            celery.current_app.send_task('etiquette_picture', (self.id,))
+            return
         else:
-            return '(Sin imagen)'
+            logging.debug("Voucher not digitalized, skipping ({})".format(self.id))
+            return
 
     def image_voucher_thumb_url(self):
         if self.image_resized_10:
-            image_resized_10 = self.image_resized_10.url
-            return image_resized_10
+            return self.image_resized_10.url
         else:
             return '#'
 
     def image_voucher_url(self):
         if self.image_resized_60:
-            image_resized_60 = self.image_resized_60.url
-            return image_resized_60
+            return self.image_resized_60.url
         else:
             return '#'
 
     def image_voucher_jpg_raw_url(self):
         if self.image:
-            image = self.image.url
-            return image
+            return self.image.url
         else:
             return '#'
 
     def image_voucher_cr3_raw_url(self):
         if self.image_raw:
-            image_raw = self.image_raw.url
-            return image_raw
+            return self.image_raw.url
         else:
             return '#'
 
     def image_voucher_jpg_raw_url_public(self):
         if self.image_public:
-            image = self.image_public.url
-            return image
+            return self.image_public.url
         else:
             return '#'
 
-    def image_voucher(self):
-        if self.image_resized_60:
-            image_resized_60 = self.image_resized_60.url
-            return u'<img width="200px" height="auto" src="%s" />' % image_resized_60
-        else:
-            return '(Sin imagen)'
+    def upload_raw_image(self, image: Union[File, BinaryIO]):
+        self.__upload_image__(image, ".CR3", "image_raw")
+        self.biodata_code.voucher_state = 8
+        self.biodata_code.save()
+        self.save()
+        return
 
-    image_voucher.short_description = 'Image Voucher'
-    image_voucher.allow_tags = True
+    def upload_image(self, image: Union[File, BinaryIO], public: bool = False):
+        add_public = "_public" if public else ""
+        self.__upload_image__(image, f"{add_public}.jpg", f"image{add_public}")
+        self.save()
+        return
+
+    def upload_scaled_image(self, image: Union[File, BinaryIO], scale: int, public: bool = False):
+        add_public = "_public" if public else ""
+        self.__upload_image__(image, f"{add_public}_resized_{scale}.jpg", f"image{add_public}_resized_{scale}")
+        self.save()
+        return
+
+    def __upload_image__(self, image: Union[File, BinaryIO], file_info: str, image_variable: str):
+        image_content = ContentFile(image.read())
+        image_name = "{}_{}_{:07}{}".format(
+            self.herbarium.institution_code,
+            self.herbarium.collection_code,
+            self.catalog_number,
+            file_info
+        )
+        logging.info("Voucher {}: Saving {} with name {}".format(
+            self.id, image_variable, image_name
+        ))
+        getattr(self, image_variable).save(image_name, image_content, save=True)
+        return
+
+    @staticmethod
+    def public_point(point):
+        integer = int(point)
+        min_grade = point - integer
+        minimum = min_grade * 60
+        min_round = round(minimum) - 1
+        public_point = integer + min_round / 60
+        return public_point
+
+    @staticmethod
+    def from_pandas_row(
+            row: pd.Series,
+            priority_file: PriorityVouchersFile,
+            species: Species = None,
+            biodata_code: BiodataCode = None,
+            logger: logging.Logger = None
+    ) -> VoucherImported:
+        if species is None:
+            species = Species.objects.firter(scientific_name_db=row["scientific_name"].upper().strip()).first()
+        if biodata_code is None:
+            biodata_code = BiodataCode.objects.filter(
+                code="{}:{}:{:07d}".format(
+                    priority_file.herbarium.institution_code,
+                    priority_file.herbarium.collection_code,
+                    row['catalog_number']
+                )).first()
+        if logger is None:
+            logger = logging.getLogger(__name__)
+
+        def __validate_attribute__(_row_: pd.Series, _column_: str, _validator_: Callable[[Any], Any]) -> Any:
+            if _column_ in _row_.keys():
+                try:
+                    return _validator_(_row_[_column_])
+                except Exception as e:
+                    logger.warning(f"Error ({e}) retrieving '{_column_}' from data", exc_info=True)
+                    return None
+            else:
+                logger.warning(f"'{_column_}' not in data")
+                return None
+
+        georeferenced_date = pd.to_datetime(
+            row['georeferenced_date'],
+            format='%Y%m%d', utc=True
+        )
+
+        point = None
+        point_public = None
+        decimal_latitude_public = None
+        decimal_longitude_public = None
+
+        if row['decimal_latitude'] and row['decimal_longitude']:
+            point = GEOSGeometry(
+                f"POINT({row['decimal_longitude']} {row['decimal_latitude']})",
+                srid=4326
+            )
+            if not np.isnan(row['decimal_latitude']) and not np.isnan(row['decimal_longitude']):
+                decimal_latitude_public = VoucherImported.public_point(row['decimal_latitude'])
+                decimal_longitude_public = VoucherImported.public_point(row['decimal_longitude'])
+                point_public = GEOSGeometry(
+                    f"POINT({decimal_longitude_public} {decimal_latitude_public})",
+                    srid=4326
+                )
+
+        return VoucherImported(
+            vouchers_file=priority_file,
+            biodata_code=biodata_code,
+            herbarium=priority_file.herbarium,
+            other_catalog_numbers=row['other_catalog_numbers'],
+            catalog_number=row['catalog_number'],
+            recorded_by=row['recorded_by'],
+            record_number=row['record_number'],
+            organism_remarks=__validate_attribute__(row, "organism_remarks", lambda x: x),
+            scientific_name=species,
+            locality=row['locality'],
+            verbatim_elevation=__validate_attribute__(row, "verbatim_elevation", lambda x: int(x)),
+            georeferenced_date=None if pd.isnull(georeferenced_date) else georeferenced_date,
+            decimal_latitude=__validate_attribute__(
+                row, "decimal_latitude",
+                lambda x: None if np.isnan(x) else float(x)
+            ),
+            decimal_longitude=__validate_attribute__(
+                row, "decimal_longitude",
+                lambda x: None if np.isnan(x) else float(x)
+            ),
+            identified_by=__validate_attribute__(row, "identified_by", lambda x: x),
+            identified_date=__validate_attribute__(row, "identified_date", lambda x: x),
+            point=point,
+            decimal_latitude_public=decimal_latitude_public,
+            decimal_longitude_public=decimal_longitude_public,
+            point_public=point_public,
+            priority=1 if "priority" not in row.keys() else row["priority"]
+        )
 
 
 class Licence(models.Model):
@@ -239,7 +421,7 @@ class Licence(models.Model):
 
 
 class GalleryImage(models.Model):
-    scientificName = models.ForeignKey(Species, on_delete=models.CASCADE)
+    scientific_name = models.ForeignKey(Species, on_delete=models.CASCADE)
     image = models.ImageField(upload_to="gallery", storage=PublicMediaStorage())
     specimen = models.ForeignKey(BiodataCode, on_delete=models.SET_NULL, blank=True, null=True)
     taken_by = models.CharField(max_length=300, blank=True, null=True)
@@ -254,10 +436,20 @@ class GalleryImage(models.Model):
 
 
 class BannerImage(models.Model):
-    specie_id = models.OneToOneField(Species, on_delete=models.CASCADE)
+    specie = models.OneToOneField(Species, on_delete=models.CASCADE)
     banner = models.ImageField(upload_to="banners", storage=PublicMediaStorage())
     image = models.ForeignKey(VoucherImported, on_delete=models.CASCADE)
-    updated = models.DateTimeField(auto_now=True)
+    updated_at= models.DateTimeField(auto_now=True)
+
+
+class Areas(models.Model):
+    name = models.CharField(max_length=300, null=True)
+    temporal = models.BooleanField(default=False)
+    protected_area = models.BooleanField(default=False)
+    geometry = GeometryField(dim=3)
+    created_at = models.DateTimeField(auto_now=True, blank=True, null=True, editable=False)
+    created_by = models.ForeignKey(User, on_delete=models.PROTECT, blank=True, null=True)
+    updated_at = models.DateTimeField(auto_now=True)
 
 
 @receiver(post_delete, sender=PriorityVouchersFile)
@@ -326,26 +518,60 @@ def pre_save_image(sender, instance, *args, **kwargs):
 
 
 class VouchersView(models.Model):
+    """
+    CREATE MATERIALIZED VIEW vouchers_view AS
+    SELECT voucher.id,
+           voucherfile.file,
+           biodatacode.code,
+           biodatacode.voucher_state,
+           herbarium.collection_code,
+           voucher.other_catalog_numbers,
+           voucher.catalog_number,
+           voucher.recorded_by,
+           voucher.record_number,
+           voucher.organism_remarks,
+           species.scientific_name,
+           voucher.locality,
+           voucher.verbatim_elevation,
+           voucher.georeferenced_date,
+           voucher.decimal_latitude,
+           voucher.decimal_longitude,
+           voucher.identified_by,
+           voucher.identified_date,
+           voucher.decimal_latitude_public,
+           voucher.decimal_longitude_public,
+           voucher.priority
+    FROM digitalization_voucherimported voucher
+         JOIN digitalization_herbarium herbarium ON voucher.herbarium_id = herbarium.id
+         JOIN digitalization_priorityvouchersfile voucherfile ON voucher.vouchers_file_id = voucherfile.id
+         JOIN digitalization_biodatacode biodatacode ON voucher.biodata_code_id = biodatacode.id
+         JOIN catalog_species species ON voucher.scientific_name_id = species.id;
+
+    ALTER MATERIALIZED VIEW vouchers_view OWNER TO <POSTGRES_USER>;
+
+    CREATE UNIQUE INDEX vouchers_view_id_idx
+        ON vouchers_view (id);
+    """
     id = models.IntegerField(primary_key=True, blank=False, null=False, help_text="")
     file = models.CharField(max_length=300, blank=True, null=True)
     code = models.CharField(max_length=300, blank=True, null=True)
     voucher_state = models.CharField(max_length=300, blank=True, null=True)
     collection_code = models.CharField(max_length=300, blank=True, null=True)
-    otherCatalogNumbers = models.CharField(max_length=13, blank=True, null=True)
-    catalogNumber = models.IntegerField(blank=True, null=True)
-    recordedBy = models.CharField(max_length=300, blank=True, null=True)
-    recordNumber = models.CharField(max_length=13, blank=True, null=True)
-    organismRemarks = models.CharField(max_length=300, blank=True, null=True)
-    scientificName = models.CharField(max_length=300, blank=True, null=True)
+    other_catalog_numbers = models.CharField(max_length=13, blank=True, null=True)
+    catalog_number = models.IntegerField(blank=True, null=True)
+    recorded_by = models.CharField(max_length=300, blank=True, null=True)
+    record_number = models.CharField(max_length=13, blank=True, null=True)
+    organism_remarks = models.CharField(max_length=300, blank=True, null=True)
+    scientific_name = models.CharField(max_length=300, blank=True, null=True)
     locality = models.CharField(max_length=300, blank=True, null=True)
-    verbatimElevation = models.IntegerField(blank=True, null=True)
-    georeferencedDate = models.DateTimeField(blank=True, null=True)
-    decimalLatitude = models.FloatField(blank=True, null=True)
-    decimalLongitude = models.FloatField(blank=True, null=True)
-    identifiedBy = models.CharField(max_length=100, blank=True, null=True)
-    dateIdentified = models.CharField(max_length=100, blank=True, null=True)
-    decimalLatitude_public = models.FloatField(blank=True, null=True)
-    decimalLongitude_public = models.FloatField(blank=True, null=True)
+    verbatim_elevation = models.IntegerField(blank=True, null=True)
+    georeferenced_date = models.DateTimeField(blank=True, null=True)
+    decimal_latitude = models.FloatField(blank=True, null=True)
+    decimal_longitude = models.FloatField(blank=True, null=True)
+    identified_by = models.CharField(max_length=100, blank=True, null=True)
+    identified_date = models.CharField(max_length=100, blank=True, null=True)
+    decimal_latitude_public = models.FloatField(blank=True, null=True)
+    decimal_longitude_public = models.FloatField(blank=True, null=True)
     priority = models.IntegerField(blank=True, null=True, default=3)
 
     @classmethod

@@ -1,22 +1,42 @@
 from django import forms
-from .models import PriorityVouchersFile, Herbarium, ColorProfileFile, VoucherImported, GalleryImage, Licence
-from ..catalog.models import Species
+
+from .models import Herbarium
+from .models import PriorityVouchersFile, ColorProfileFile, GeneratedPage
+from .models import VoucherImported, GalleryImage, Licence
 
 
-class LoadPriorityVoucherForm(forms.ModelForm):
+class PriorityVoucherForm(forms.ModelForm):
 
     def __init__(self, current_user, *args, **kwargs):
-        super(LoadPriorityVoucherForm, self).__init__(*args, **kwargs)
+        super(PriorityVoucherForm, self).__init__(*args, **kwargs)
         self.fields['herbarium'].queryset = Herbarium.objects.filter(herbariummember__user=current_user)
 
     class Meta:
         model = PriorityVouchersFile
-        fields = ('herbarium', 'file',)
+        fields = ('herbarium', 'file', )
         widgets = {
             "herbarium": forms.Select(attrs={'class': 'form-control', 'required': 'true'}),
-            "file": forms.ClearableFileInput(
-                attrs={'title': 'Archivo Vouchers Priorizados', 'class': 'form-control', 'accept': '.xlsx',
-                       'required': 'true'})
+            "file": forms.FileInput(
+                attrs={
+                    'title': 'Archivo Vouchers Priorizados',
+                    'class': 'form-control',
+                    'accept': '.xlsx',
+                    'required': 'true'
+                }),
+        }
+
+
+class GeneratedPageForm(forms.ModelForm):
+
+    def __init__(self, current_user, *args, **kwargs):
+        super(GeneratedPageForm, self).__init__(*args, **kwargs)
+        self.fields['herbarium'].queryset = Herbarium.objects.filter(herbariummember__user=current_user)
+
+    class Meta:
+        model = GeneratedPage
+        fields = ('herbarium', )
+        widgets = {
+            "herbarium": forms.Select(attrs={'class': 'form-control', 'required': 'true'}),
         }
 
 
@@ -26,8 +46,12 @@ class LoadColorProfileForm(forms.ModelForm):
         fields = ('file',)
         widgets = {
             "file": forms.ClearableFileInput(
-                attrs={'title': 'Archivo Vouchers Priorizados', 'class': 'form-control', 'accept': '.dcp',
-                       'required': 'true'})
+                attrs={
+                    'title': 'Archivo Vouchers Priorizados',
+                    'class': 'form-control',
+                    'accept': '.dcp',
+                    'required': 'true'}
+            )
         }
 
 
@@ -35,19 +59,19 @@ class VoucherImportedForm(forms.ModelForm):
     class Meta:
         model = VoucherImported
         fields = (
-            'otherCatalogNumbers',
-            'catalogNumber',
-            'recordedBy',
-            'recordNumber',
-            'organismRemarks',
-            'scientificName',
+            'other_catalog_numbers',
+            'catalog_number',
+            'recorded_by',
+            'record_number',
+            'organism_remarks',
+            'scientific_name',
             'locality',
-            'verbatimElevation',
-            'georeferencedDate',
-            'decimalLatitude',
-            'decimalLongitude',
-            'identifiedBy',
-            'dateIdentified',
+            'verbatim_elevation',
+            'georeferenced_date',
+            'decimal_latitude',
+            'decimal_longitude',
+            'identified_by',
+            'identified_date',
             'image',
             'image_resized_10',
             'image_resized_60',
@@ -56,19 +80,19 @@ class VoucherImportedForm(forms.ModelForm):
             'priority'
         )
         widgets = {
-            'otherCatalogNumbers': forms.TextInput(attrs={'class': "form-control", 'readonly': 'true'}),
-            'catalogNumber': forms.TextInput(attrs={'class': "form-control", 'readonly': 'true'}),
-            'recordedBy': forms.TextInput(attrs={'class': "form-control"}),
-            'recordNumber': forms.TextInput(attrs={'class': "form-control"}),
-            'organismRemarks': forms.Textarea(attrs={'class': "form-control", 'rows': "5"}),
-            'scientificName': forms.Select(attrs={'class': "form-control"}),
+            'other_catalog_numbers': forms.TextInput(attrs={'class': "form-control", 'readonly': 'true'}),
+            'catalog_number': forms.TextInput(attrs={'class': "form-control", 'readonly': 'true'}),
+            'recorded_by': forms.TextInput(attrs={'class': "form-control"}),
+            'record_number': forms.TextInput(attrs={'class': "form-control"}),
+            'organism_remarks': forms.Textarea(attrs={'class': "form-control", 'rows': "5"}),
+            'scientific_name': forms.Select(attrs={'class': "form-control"}),
             'locality': forms.TextInput(attrs={'class': "form-control"}),
-            'verbatimElevation': forms.TextInput(attrs={'class': "form-control", 'type': 'number'}),
-            'georeferencedDate': forms.DateTimeInput(attrs={'class': 'form-control datetimepicker-input'}),
-            'decimalLatitude': forms.TextInput(attrs={'class': "form-control"}),
-            'decimalLongitude': forms.TextInput(attrs={'class': "form-control"}),
-            'identifiedBy': forms.TextInput(attrs={'class': "form-control"}),
-            'dateIdentified': forms.DateTimeInput(attrs={'class': 'form-control datetimepicker-input'}),
+            'verbatim_elevation': forms.TextInput(attrs={'class': "form-control", 'type': 'number'}),
+            'georeferenced_date': forms.DateTimeInput(attrs={'class': 'form-control datetimepicker-input'}),
+            'decimal_latitude': forms.TextInput(attrs={'class': "form-control"}),
+            'decimal_longitude': forms.TextInput(attrs={'class': "form-control"}),
+            'identified_by': forms.TextInput(attrs={'class': "form-control"}),
+            'identified_date': forms.DateTimeInput(attrs={'class': 'form-control datetimepicker-input'}),
             'image': forms.TextInput(attrs={'class': "form-control", 'readonly': 'true'}),
             'image_resized_60': forms.TextInput(attrs={'class': "form-control", 'readonly': 'true'}),
             'priority': forms.TextInput(attrs={'class': "form-control", 'type': 'number'}),
@@ -85,14 +109,14 @@ class GalleryImageForm(forms.ModelForm):
     class Meta:
         model = GalleryImage
         fields = (
-            'scientificName',
+            'scientific_name',
             'image',
             'taken_by',
             'licence',
             'specimen',
         )
         widgets = {
-            'scientificName': forms.TextInput(attrs={'class': "form-control", 'readonly': 'true'}),
+            'scientific_name': forms.TextInput(attrs={'class': "form-control", 'readonly': 'true'}),
             'image': forms.FileInput(attrs={'class': "form-control"}),
             'taken_by': forms.TextInput(attrs={'class': "form-control"}),
             'licence': forms.Select(attrs={'class': "form-control"}),
