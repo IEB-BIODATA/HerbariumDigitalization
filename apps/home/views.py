@@ -11,7 +11,6 @@ from apps.digitalization.models import BiodataCode
 
 @login_required
 def index(request):
-    return ñe
     count_total_codes = BiodataCode.objects.filter(
         qr_generated=True
     ).order_by('page__created_at__date').annotate(
