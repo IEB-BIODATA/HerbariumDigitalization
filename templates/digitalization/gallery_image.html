@@ -23,8 +23,8 @@
     <div class="card mb-3">
         <div class="card-header">
             <i class="{% if gallery is None %}far {% else %}fas {% endif %}fa-image"></i>
-            {{ specie.scientificName }} &nbsp;
-            <i style="color: #808080">{{ specie.scientificNameFull }}</i>
+            {{ specie.scientific_name }} &nbsp;
+            <i style="color: #808080">{{ specie.scientific_name_full }}</i>
         </div>
         <div class="card-body">
             <div class="table-responsive">
@@ -34,7 +34,7 @@
                     {% endif %}
                 " method="post" enctype=multipart/form-data>
                     {% csrf_token %}
-                    <input type="hidden" name="scientificName" value="{{ specie.id }}">
+                    <input type="hidden" name="scientific_name" value="{{ specie.id }}">
                     <div class="form-group row">
                         <label class="col-sm-2 col-form-label">Imagen</label>
                         <div class="col-sm-10">
@@ -92,7 +92,7 @@
                             {% endif %}
                             Fotografía
                         </button>
-                        <a href="{% url 'modify_gallery' catalog_id=specie.id %}" class="nav-link btn btn-danger" id="cancel_button">Cancelar</a>
+                        <a href="{% url 'modify_gallery' species_id=specie.id %}" class="nav-link btn btn-danger" id="cancel_button">Cancelar</a>
                     </div>
                 </form>
             </div>

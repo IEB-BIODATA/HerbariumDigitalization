@@ -1,14 +1,15 @@
 {% extends "base.html" %}
 {% load static %}
+{% load join_list %}
 {% block javascript %}
-<script src="{% static 'js/bootstrap-select.js' %}"></script>
+
 <script type="text/javascript">
 
   $('.selectpicker#id_common_names').on('rendered.bs.select', function() {
       $('.filter-option-inner-inner').eq(0).html($('.filter-option-inner-inner').eq(0).text().replace(/,/g, "<br>"));
   });
 
-  $('.selectpicker#id_synonymys').on('rendered.bs.select', function() {
+  $('.selectpicker#id_synonyms').on('rendered.bs.select', function() {
       $('.filter-option-inner-inner').eq(1).html($('.filter-option-inner-inner').eq(1).text().replace(/,/g, "<br>"));
   });
 
@@ -23,11 +24,11 @@
     values.forEach(element => $("#id_common_names option[value="+element+"]").attr('selected', 'selected'));
   });
 
-  $('.selectpicker#id_synonymys').on('change', function(){
-    var values = $('.selectpicker#id_synonymys option:selected').map(function (idx, ele) {
+  $('.selectpicker#id_synonyms').on('change', function(){
+    var values = $('.selectpicker#id_synonyms option:selected').map(function (idx, ele) {
         return $(ele).val();
     }).get();
-    values.forEach(element => $("#id_synonymys option[value="+element+"]").attr('selected', 'selected'));
+    values.forEach(element => $("#id_synonyms option[value="+element+"]").attr('selected', 'selected'));
   });
 
   $('.selectpicker#id_region').on('change', function(){
@@ -61,17 +62,11 @@
     <div class="card mb-3">
       <div class="card-header">
         <i class="fas fa-table"></i>
-        {{ taxa_1.scientificNameFull }}
+        {{ taxa_1.scientific_name_full }}
       </div>
       <div class="card-body">
         <div class="table-responsive">
           <table class="table">
-              <tr>
-                <td><strong>habit</strong></td>
-                <td>
-                  {{ taxa_1.habit }}
-                </td>
-              </tr>
               <tr>
                 <td><strong>Genero</strong></td>
                 <td>
@@ -81,59 +76,71 @@
               <tr>
                 <td><strong>Epiteto Específico</strong></td>
                 <td>
-                  {{ taxa_1.specificEpithet }}
+                  {{ taxa_1.specific_epithet }}
                 </td>
               </tr>
               <tr>
                 <td><strong>Autor(es)</strong></td>
                 <td>
-                  {{ taxa_1.scientificNameAuthorship }}
+                  {{ taxa_1.scientific_name_authorship }}
                 </td>
               </tr>
               <tr>
                 <td><strong>Subespecie</strong></td>
                 <td>
-                  {{ taxa_1.subespecie|default_if_none:"" }}
+                  {{ taxa_1.subspecies|default_if_none:"" }}
                 </td>
               </tr>
               <tr>
                 <td><strong>Autor(es) Subespecie</strong></td>
                 <td>
-                  {{ taxa_1.autoresSsp|default_if_none:"" }}
+                  {{ taxa_1.ssp_authorship|default_if_none:"" }}
                 </td>
               </tr>
               <tr>
                 <td><strong>Variedad</strong></td>
                 <td>
-                  {{ taxa_1.variedad|default_if_none:"" }}
+                  {{ taxa_1.variety|default_if_none:"" }}
                 </td>
               </tr>
               <tr>
                 <td><strong>Autor(es) Variedad</strong></td>
                 <td>
-                  {{ taxa_1.autoresVariedad|default_if_none:"" }}
+                  {{ taxa_1.variety_authorship|default_if_none:"" }}
                 </td>
               </tr>
               <tr>
                 <td><strong>Forma</strong></td>
                 <td>
-                  {{ taxa_1.forma|default_if_none:"" }}
+                  {{ taxa_1.form|default_if_none:"" }}
                 </td>
               </tr>
               <tr>
                 <td><strong>Autor(es) Forma</strong></td>
                 <td>
-                  {{ taxa_1.autoresForma|default_if_none:"" }}
+                  {{ taxa_1.form_authorship|default_if_none:"" }}
                 </td>
               </tr>
               <tr>
-                <td><strong>Ciclo</strong></td>
+                <td><strong>Hábito</strong></td>
                 <td>
-                  {{ taxa_1.ciclo|default_if_none:"" }}
+                    {{ taxa_1.plant_habit.all|join_with_or }}
                 </td>
               </tr>
               <tr>
-                <td><strong>Estado</strong></td>
+                <td><strong>Forma de vida</strong></td>
+                <td>
+                    {{ taxa_1.env_habit.all|join_with_or }}
+                </td>
+              </tr>
+              <tr>
+                <td><strong>Ciclo de vida</strong></td>
+                <td>
+                  {{ taxa_1.cycle.all|join_with_or }}
+                </td>
+              </tr>
+              <tr>
+                <td><strong>Origen</strong></td>
                 <td>
                   {{ taxa_1.status|default_if_none:"" }}
                 </td>
@@ -141,61 +148,61 @@
               <tr>
                 <td><strong>En Argentina</strong></td>
                 <td>
-                  {{ taxa_1.enArgentina|default_if_none:"" }}
+                  {{ taxa_1.in_argentina|default_if_none:"" }}
                 </td>
               </tr>
               <tr>
                 <td><strong>En Bolivia</strong></td>
                 <td>
-                  {{ taxa_1.enBolivia|default_if_none:"" }}
+                  {{ taxa_1.in_bolivia|default_if_none:"" }}
                 </td>
               </tr>
               <tr>
                 <td><strong>En Peru</strong></td>
                 <td>
-                  {{ taxa_1.enPeru|default_if_none:"" }}
+                  {{ taxa_1.in_peru|default_if_none:"" }}
                 </td>
               </tr>
               <tr>
                 <td><strong>Altura Máxima</strong></td>
                 <td>
-                  {{ taxa_1.alturaMaxima|default_if_none:"" }}
+                  {{ taxa_1.maximum_height|default_if_none:"" }}
                 </td>
               </tr>
               <tr>
                 <td><strong>Altura Mínima</strong></td>
                 <td>
-                  {{ taxa_1.alturaMinima|default_if_none:"" }}
+                  {{ taxa_1.minimum_height|default_if_none:"" }}
                 </td>
               </tr>
               <tr>
                 <td><strong>Notas</strong></td>
                 <td>
-                  {{ taxa_1.notas|default_if_none:"" }}
+                  {{ taxa_1.notes|default_if_none:"" }}
                 </td>
               </tr>
               <tr>
                 <td><strong>Publicacion</strong></td>
                 <td>
-                  {{ taxa_1.publicacion|default_if_none:"" }}
+                  {{ taxa_1.publication|default_if_none:"" }}
                 </td>
               </tr>
               <tr>
                 <td><strong>Volumen</strong></td>
                 <td>
-                  {{ taxa_1.volumen|default_if_none:"" }}
+                  {{ taxa_1.volume|default_if_none:"" }}
                 </td>
               </tr>
               <tr>
                 <td><strong>Páginas</strong></td>
                 <td>
-                  {{ taxa_1.paginas|default_if_none:"" }}
+                  {{ taxa_1.pages|default_if_none:"" }}
                 </td>
               </tr>
               <tr>
                 <td><strong>ID Tipo</strong></td>
                 <td>
-                  {{ taxa_1.id_tipo|default_if_none:"" }}
+                  {{ taxa_1.type_id|default_if_none:"" }}
                 </td>
               </tr>
               <tr>
@@ -212,7 +219,7 @@
                 <td><strong>Sinónimos</strong></td>
                 <td>
                   <ul>
-                    {% for synonymy in taxa_1.synonymys.all %}
+                    {% for synonymy in taxa_1.synonyms.all %}
                       <li>{{ synonymy }}</li>
                     {% endfor %}
                   </ul>
@@ -228,6 +235,12 @@
                   </ul>
                 </td>
               </tr>
+              <tr>
+                <td><strong>¿Terminal?</strong></td>
+                <td>
+                  {{ taxa_1.determined|default_if_none:"" }}
+                </td>
+              </tr>
             </table>
         </div>
       </div>
@@ -236,10 +249,10 @@
   <div class="col-sm-6">
     <form action="/catalog/split_1_taxa/{{id_taxon_1}}/" method="post" class="form-horizontal">
     {% csrf_token %}
-    {{ form_taxa_1.scientificName }}
-    {{ form_taxa_1.scientificNameFull }}
-    {{ form_taxa_2.scientificName }}
-    {{ form_taxa_2.scientificNameFull }}
+    {{ form_taxa_1.scientific_name }}
+    {{ form_taxa_1.scientific_name_full }}
+    {{ form_taxa_2.scientific_name }}
+    {{ form_taxa_2.scientific_name_full }}
         
       <div class="card mb-3">
         <div class="card-header">
@@ -248,12 +261,7 @@
         <div class="card-body">
           <div class="table-responsive">
               <input type="hidden" name="id_taxon_2" value="" id="id_taxon_2">
-              <div class="form-group row">
-                <label class="col-sm-2 col-form-label">habit</label>
-                <div class="col-sm-10">
-                  {{ form_taxa_1.habit }}
-                </div>
-              </div>
+              {{ form_taxa_1.id_taxa }}
               <div class="form-group row">
                 <label class="col-sm-2 col-form-label">Genero</label>
                 <div class="col-sm-10">
@@ -263,59 +271,71 @@
               <div class="form-group row">
                 <label class="col-sm-2 col-form-label">Epiteto Específico</label>
                 <div class="col-sm-10">
-                  {{ form_taxa_1.specificEpithet }}
+                  {{ form_taxa_1.specific_epithet }}
                 </div>
               </div>
               <div class="form-group row">
                 <label class="col-sm-2 col-form-label">Autor(es)</label>
                 <div class="col-sm-10">
-                  {{ form_taxa_1.scientificNameAuthorship }}
+                  {{ form_taxa_1.scientific_name_authorship }}
                 </div>
               </div>
               <div class="form-group row">
                 <label class="col-sm-2 col-form-label">Subespecie</label>
                 <div class="col-sm-10">
-                  {{ form_taxa_1.subespecie }}
+                  {{ form_taxa_1.subspecies }}
                 </div>
               </div>
               <div class="form-group row">
                 <label class="col-sm-2 col-form-label">Autor(es) Subespecie</label>
                 <div class="col-sm-10">
-                  {{ form_taxa_1.autoresSsp }}
+                  {{ form_taxa_1.ssp_authorship }}
                 </div>
               </div>
               <div class="form-group row">
                 <label class="col-sm-2 col-form-label">Variedad</label>
                 <div class="col-sm-10">
-                  {{ form_taxa_1.variedad }}
+                  {{ form_taxa_1.variety }}
                 </div>
               </div>
               <div class="form-group row">
                 <label class="col-sm-2 col-form-label">Autor(es) Variedad</label>
                 <div class="col-sm-10">
-                  {{ form_taxa_1.autoresVariedad }}
+                  {{ form_taxa_1.variety_authorship }}
                 </div>
               </div>
               <div class="form-group row">
                 <label class="col-sm-2 col-form-label">Forma</label>
                 <div class="col-sm-10">
-                  {{ form_taxa_1.forma }}
+                  {{ form_taxa_1.form }}
                 </div>
               </div>
               <div class="form-group row">
                 <label class="col-sm-2 col-form-label">Autor(es) Forma</label>
                 <div class="col-sm-10">
-                  {{ form_taxa_1.autoresForma }}
+                  {{ form_taxa_1.form_authorship }}
                 </div>
               </div>
               <div class="form-group row">
-                <label class="col-sm-2 col-form-label">Ciclo</label>
+                <label class="col-sm-2 col-form-label">Hábito</label>
                 <div class="col-sm-10">
-                  {{ form_taxa_1.ciclo }}
+                  {{ form_taxa_1.plant_habit }}
                 </div>
               </div>
               <div class="form-group row">
-                <label class="col-sm-2 col-form-label">Estado</label>
+                <label class="col-sm-2 col-form-label">Forma de vida</label>
+                <div class="col-sm-10">
+                  {{ form_taxa_1.env_habit }}
+                </div>
+              </div>
+              <div class="form-group row">
+                <label class="col-sm-2 col-form-label">Ciclo de vida</label>
+                <div class="col-sm-10">
+                  {{ form_taxa_1.cycle }}
+                </div>
+              </div>
+              <div class="form-group row">
+                <label class="col-sm-2 col-form-label">Origen</label>
                 <div class="col-sm-10">
                   {{ form_taxa_1.status }}
                 </div>
@@ -323,61 +343,61 @@
               <div class="form-group row">
                 <label class="col-sm-2 form-check-label">En Argentina</label>
                 <div class="col-sm-10">
-                  {{ form_taxa_1.enArgentina }}
+                  {{ form_taxa_1.in_argentina }}
                 </div>
               </div>
               <div class="form-group row">
                 <label class="col-sm-2 form-check-label">En Bolivia</label>
                 <div class="col-sm-10">
-                  {{ form_taxa_1.enBolivia }}
+                  {{ form_taxa_1.in_bolivia }}
                 </div>
               </div>
               <div class="form-group row">
                 <label class="col-sm-2 form-check-label">En Peru</label>
                 <div class="col-sm-10">
-                  {{ form_taxa_1.enPeru }}
+                  {{ form_taxa_1.in_peru }}
                 </div>
               </div>
               <div class="form-group row">
                 <label class="col-sm-2 col-form-label">Altura Máxima</label>
                 <div class="col-sm-10">
-                  {{ form_taxa_1.alturaMaxima }}
+                  {{ form_taxa_1.maximum_height }}
                 </div>
               </div>
               <div class="form-group row">
                 <label class="col-sm-2 col-form-label">Altura Mínima</label>
                 <div class="col-sm-10">
-                  {{ form_taxa_1.alturaMinima }}
+                  {{ form_taxa_1.minimum_height }}
                 </div>
               </div>
               <div class="form-group row">
                 <label class="col-sm-2 col-form-label">Notas</label>
                 <div class="col-sm-10">
-                  {{ form_taxa_1.notas }}
+                  {{ form_taxa_1.notes }}
                 </div>
               </div>
               <div class="form-group row">
                 <label class="col-sm-2 col-form-label">Publicacion</label>
                 <div class="col-sm-10">
-                  {{ form_taxa_1.publicacion }}
+                  {{ form_taxa_1.publication }}
                 </div>
               </div>
               <div class="form-group row">
                 <label class="col-sm-2 col-form-label">Volumen</label>
                 <div class="col-sm-10">
-                  {{ form_taxa_1.volumen }}
+                  {{ form_taxa_1.volume }}
                 </div>
               </div>
               <div class="form-group row">
                 <label class="col-sm-2 col-form-label">Páginas</label>
                 <div class="col-sm-10">
-                  {{ form_taxa_1.paginas }}
+                  {{ form_taxa_1.pages }}
                 </div>
               </div>
               <div class="form-group row">
                 <label class="col-sm-2 col-form-label">ID Tipo</label>
                 <div class="col-sm-10">
-                  {{ form_taxa_1.id_tipo }}
+                  {{ form_taxa_1.type_id }}
                 </div>
               </div>
               <div class="form-group row">
@@ -389,13 +409,19 @@
               <div class="form-group row">
                 <label class="col-sm-2 col-form-label">Sinónimos</label>
                 <div class="col-sm-10">
-                  {{ form_taxa_1.synonymys }}
+                  {{ form_taxa_1.synonyms }}
                 </div>
               </div>
               <div class="form-group row">
                 <label class="col-sm-2 col-form-label">Distribución Regional</label>
                 <div class="col-sm-10">
                   {{ form_taxa_1.region }}
+                </div>
+              </div>
+              <div class="form-group row">
+                <label class="col-sm-2 col-form-label">¿Terminal?</label>
+                <div class="col-sm-10">
+                  {{ form_taxa_1.determined }}
                 </div>
               </div>
               <div class="form-group row">

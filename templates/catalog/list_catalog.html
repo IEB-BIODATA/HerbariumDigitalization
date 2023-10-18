@@ -1,0 +1,173 @@
+{% extends "base.html" %}
+{% load static %}
+{% block javascript %}
+    <script type="text/javascript">
+        const tempSearchBar = document.getElementById('temp-search-bar');
+        const warningModelDelete = document.getElementById('warningModalDelete')
+
+        tempSearchBar.addEventListener('input', function () {
+            if (tempSearchBar.value.length > 3) {
+                document.getElementById("TemporalSearch").setAttribute("style", "display: none;");
+                loadTable();
+                const searchBar = document.getElementById("CatalogTable_filter").children[0].children[0];
+                searchBar.value = tempSearchBar.value;
+                searchBar.focus();
+            }
+        })
+
+        warningModelDelete.addEventListener('show.bs.modal', event => {
+            const button = event.relatedTarget;
+            const rank_name = button.getAttribute('data-bs-name');
+            const url = button.getAttribute('data-bs-url');
+            const modalBody = warningModelDelete.querySelector('.modal-body');
+            modalBody.innerHTML = modalBody.innerHTML.replace("rank_name", rank_name);
+            const deleteButton = document.getElementById('delete_url');
+            deleteButton.href = url;
+        })
+
+        function loadTable(){
+            document.getElementById("TemporalSearch").setAttribute("style", "display: none;");
+            $('#CatalogTable').DataTable({
+                serverSide: true,
+                processing: true,
+                language: languageTable.spanish,
+                ajax: {
+                    url: '{{ table_url }}',
+                    type: 'GET',
+                    dataSrc: 'data',
+                },
+                order: [[4, 'desc']],
+                columnDefs: [
+                    {
+                        targets: 0,
+                        data: '{{ rank_name }}',
+                    },
+                    {
+                        targets: 1,
+                        data: '{{ parent_rank }}',
+                        render: data => {
+                            if (data === null)
+                                return ""
+                            else
+                                return data.replaceAll("\t", "<br>");
+                        },
+                    },
+                    {
+                        targets: 2,
+                        data: 'created_by',
+                    },
+                    {
+                        targets: 3,
+                        data: 'created_at',
+                        render: (data, type) => {
+                            let date = new Date(data);
+                            if (type === 'display' || type === 'search'){
+                                return dateFormat(date);
+                            } else if (type === 'sort'){
+                                return date.toISOString();
+                            } else {
+                                return date;
+                            }
+                        }
+                    },
+                    {
+                        targets: 4,
+                        data: 'updated_at',
+                        render: (data, type) => {
+                            let date = new Date(data);
+                            if (type === 'display' || type === 'search'){
+                                return dateFormat(date);
+                            } else if (type === 'sort'){
+                                return date.toISOString();
+                            } else {
+                                return date;
+                            }
+                        }
+                    },
+                    {
+                        targets: 5,
+                        date: '{{ rank_name }}',
+                        orderable: false,
+                        render: (data, type, row) => {
+                            let update_rank_url = "{{ update_rank_url }}".replace("0", row.id);
+                            let delete_rank_url = update_rank_url.replace("update", "delete");
+                            let deletable = {{ deletable }};
+                            let buttonActions = `<a href="${update_rank_url}"><i class="fas fa-fw fa-edit text-primary"></i></a>`;
+                            if (deletable === 1)
+                                buttonActions += `<a href="#" data-bs-toggle="modal" data-bs-target="#warningModalDelete" data-bs-name="${data}" data-bs-url="${delete_rank_url}"><i class="fas fa-fw fa-trash text-danger"></i></a>`
+                            return buttonActions;
+                        }
+                    }
+                ],
+            });
+        }
+    </script>
+{% endblock %}
+{% block content %}
+    <h1>{{ rank_title }}</h1>
+    <!-- DataTables Example -->
+    <div class="card mb-3">
+        <div class="row">
+            <div class="col-3">
+                <a class="btn btn-primary" href="{{ create_rank_url }}">Nuevo</a>
+            </div>
+        </div>
+        <div class="card-header">
+            <i class="fas fa-table"></i>
+            {{ rank_title }}
+        </div>
+        <div class="card-body">
+            <div class="row" id="TemporalSearch">
+                <div class="col-sm-12 col-md-6"></div>
+                <div class="col-sm-12 col-md-6" style="text-align: right;">
+                    <label>Buscar:
+                        <input id="temp-search-bar" type="search" class="form-control form-control-sm" style="display: inline-block;box-sizing: border-box;width: auto;">
+                    </label>
+                </div>
+            </div>
+            <div class="table-responsive">
+                <table class="table table-bordered" id="CatalogTable" width="100%" cellspacing="0">
+                    <thead>
+                    <tr>
+                        <th>{{ rank_name_title }}</th>
+                        <th>{{ parent_rank_title }}</th>
+                        <th>Creado por</th>
+                        <th>Fecha Creación</th>
+                        <th>Fecha Actualización</th>
+                        <th>Acción</th>
+                    </tr>
+                    </thead>
+                    <tbody>
+                    <!-- To be populated -->
+                        <tr>
+                            <td colspan="6" >
+                                <div class="d-flex justify-content-center">
+                                    <button type="button" class="btn btn-info" onclick="loadTable()">
+                                        <i class="fas fa-fw fa-sync"></i>
+                                        Cargar tabla
+                                    </button>
+                                </div>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+    <div class="modal fade" id="warningModalDelete" tabindex="-1" aria-labelledby="warningModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="warningModalLabel">¡Cuidado!</h5>
+                </div>
+                <div class="modal-body">
+                    ¿Estás seguro que deseas borrar {{ rank_title }} rank_name?
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                    <a id="delete_url" href="#" class="btn btn-danger">Borrar</a>
+                </div>
+            </div>
+        </div>
+    </div>
+{% endblock %}

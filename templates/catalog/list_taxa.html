@@ -1,12 +1,107 @@
 {% extends "base.html" %}
 {% load static %}
 {% block javascript %}
-    <script src="{% static 'vendor/datatables/jquery.dataTables.js' %}"></script>
-    <script src="{% static 'vendor/datatables/dataTables.bootstrap4.js' %}"></script>
     <script type="text/javascript">
-        $(document).ready(function() {
-            $('#CatalogTable').DataTable();
-        });
+        const tempSearchBar = document.getElementById('temp-search-bar');
+
+        tempSearchBar.addEventListener('input', function () {
+            if (tempSearchBar.value.length > 3) {
+                document.getElementById("TemporalSearch").setAttribute("style", "display: none;");
+                loadTable();
+                const searchBar = document.getElementById("CatalogTable_filter").children[0].children[0];
+                searchBar.value = tempSearchBar.value;
+                searchBar.focus();
+            }
+        })
+
+        function loadTable(){
+            document.getElementById("TemporalSearch").setAttribute("style", "display: none;");
+            $('#CatalogTable').DataTable({
+                serverSide: true,
+                processing: true,
+                language: languageTable.spanish,
+                ajax: {
+                    url: "{% url 'taxa_table' %}",
+                    type: 'GET',
+                    dataSrc: 'data',
+                },
+                order: [[7, 'desc']],
+                columnDefs: [
+                    {
+                        targets: 0,
+                        data: 'division',
+                    },
+                    {
+                        targets: 1,
+                        data: 'class_name'
+                    },
+                    {
+                        targets: 2,
+                        data: 'order'
+                    },
+                    {
+                        targets: 3,
+                        data: 'family'
+                    },
+                    {
+                        targets: 4,
+                        data: 'scientific_name_full'
+                    },
+                    {
+                        targets: 5,
+                        data: 'created_by'
+                    },
+                    {
+                        targets: 6,
+                        data: 'created_at',
+                        render: (data, type) => {
+                            let date = new Date(data);
+                            if (type === 'display' || type === 'search'){
+                                return dateFormat(date);
+                            } else if (type === 'sort'){
+                                return date.toISOString();
+                            } else {
+                                return date;
+                            }
+                        }
+                    },
+                    {
+                        targets: 7,
+                        data: 'updated_at',
+                        render: (data, type) => {
+                            let date = new Date(data);
+                            if (type === 'display' || type === 'search'){
+                                return dateFormat(date);
+                            } else if (type === 'sort'){
+                                return date.toISOString();
+                            } else {
+                                return date;
+                            }
+                        }
+                    },
+                    {
+                        targets: 8,
+                        data: 'status'
+                    },
+                    {
+                        targets: 9,
+                        data: 'determined'
+                    },
+                    {
+                        targets: 10,
+                        orderable: false,
+                        data: 'id',
+                        render: (data) => {
+                            const linkUpdate = "{% url 'update_taxa' species_id=0 %}";
+                            const linkMerge = "{% url 'select_taxa' species_id=0 %}";
+                            let actions = `<a href="${linkUpdate}" style="white-space: nowrap"><i class="fas fa-fw fa-edit text-primary"></i> Editar</a><br/>` +
+                            `<a href="${linkMerge}" style="white-space: nowrap"><i class="fas fa-sharp fa-solid fa-compress text-primary"></i> Unir</a>`;
+                            return actions.replaceAll("0", data);
+                        }
+                    },
+                ],
+            });
+        }
 
         function download_xlsx(data_error) {
             $(document).ajaxSend(function() {
@@ -60,25 +155,35 @@
     <div class="card mb-3">
         <div class="row">
             <div class="col-3">
-                <a class="btn btn-primary btn-block" href="{% url 'create_taxa' %}">Nuevo</a>
+                <a class="btn btn-primary" href="{% url 'create_taxa' %}">Nuevo</a>
             </div>
             <div class="col-3 offset-md-6">
-                <a class="btn btn-primary btn-block" href="#" onclick="download_xlsx()">Descargar</a>
+                <a class="btn btn-primary" href="#" onclick="download_xlsx()">Descargar</a>
             </div>
         </div>
         <div class="card-header">
             <i class="fas fa-table"></i>
             Catálogo</div>
         <div class="card-body">
+            <div class="row" id="TemporalSearch">
+                <div class="col-sm-12 col-md-6"></div>
+                <div class="col-sm-12 col-md-6" style="text-align: right;">
+                    <label>Buscar:
+                        <input id="temp-search-bar" type="search" class="form-control form-control-sm" style="display: inline-block;box-sizing: border-box;width: auto;">
+                    </label>
+                </div>
+            </div>
             <div class="table-responsive">
                 <table class="table table-bordered" id="CatalogTable" width="100%" cellspacing="0">
                     <thead>
                     <tr>
                         <th>División</th>
                         <th>Clase</th>
-                        <th>order</th>
+                        <th>Orden</th>
                         <th>Familia</th>
                         <th>Nombre Científico Completo</th>
+                        <th>Creado Por</th>
+                        <th>Fecha de Creación</th>
                         <th>Última Actualización</th>
                         <th>Status</th>
                         <th>¿Terminal?</th>
@@ -86,25 +191,17 @@
                     </tr>
                     </thead>
                     <tbody>
-                    {% for specie in species%}
+                    <!-- To be populated -->
                         <tr>
-                            <td>{{ specie.division }}</td>
-                            <td>{{ specie.class_name }}</td>
-                            <td>{{ specie.order }}</td>
-                            <td>{{ specie.family }}</td>
-                            <td>{{ specie.scientificNameFull }}</td>
-                            <td>{{ specie.updated_at }}</td>
-                            <td>{{ specie.status|default_if_none:"" }}</td>
-                            <td>{{ specie.determined }}</td>
-                            <td style="width: 10%">
-                                <a href="{% url 'update_taxa' id=specie.id %}"><i class="fas fa-fw fa-edit text-primary"></i> Editar</a><br/>
-                                <a href="{% url 'split_1_taxa' id=specie.id %}"><i class="fas fa-sharp fa-solid fa-expand-arrows-alt text-primary"></i> Dividir con 1 nuevo taxón</a><br/>
-                                <a href="{% url 'split_2_taxa' id=specie.id %}"><i class="fas fa-sharp fa-solid fa-expand-arrows-alt text-primary"></i> Dividir a 2 nuevos taxones</a><br/>
-                                <a href="{% url 'merge_taxa' id=specie.id %}"><i class="fas fa-sharp fa-solid fa-compress text-primary"></i> Unir</a>
-                                <!--<br/><a href="" class="text-danger"><i class="fas fa-fw fa-trash text-danger"></i> Eliminar</a>-->
+                            <td colspan="11" >
+                                <div class="d-flex justify-content-center">
+                                    <button type="button" class="btn btn-info" onclick="loadTable()">
+                                        <i class="fas fa-fw fa-sync"></i>
+                                        Cargar tabla
+                                    </button>
+                                </div>
                             </td>
                         </tr>
-                    {% endfor%}
                     </tbody>
                 </table>
             </div>

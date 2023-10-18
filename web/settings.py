@@ -13,6 +13,8 @@ https://docs.djangoproject.com/en/4.1/ref/settings/
 from pathlib import Path
 import os
 
+from celery.schedules import crontab
+
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
 
@@ -51,9 +53,12 @@ INSTALLED_APPS = [
     'storages',
     'django.contrib.gis',
     'corsheaders',
+    'widget_tweaks',
+    'django_hosts',
 ]
 
 MIDDLEWARE = [
+    'django_hosts.middleware.HostsRequestMiddleware',
     'django.middleware.security.SecurityMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
@@ -62,9 +67,12 @@ MIDDLEWARE = [
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
     'corsheaders.middleware.CorsMiddleware',
+    'django_hosts.middleware.HostsResponseMiddleware',
 ]
 
-ROOT_URLCONF = 'web.urls'
+ROOT_URLCONF = 'web.main_urls'
+ROOT_HOSTCONF = 'web.hosts'
+DEFAULT_HOST = 'digitalization'
 
 TEMPLATES = [
     {
@@ -86,6 +94,7 @@ TEMPLATES = [
 
 WSGI_APPLICATION = 'web.wsgi.application'
 
+DATA_UPLOAD_MAX_NUMBER_FIELDS = None
 
 # Database
 # https://docs.djangoproject.com/en/4.1/ref/settings/#databases
@@ -146,7 +155,7 @@ if DEBUG:
     STATICFILES_DIRS = [os.path.join(BASE_DIR, 'static')]
 else:
     STATICFILES_STORAGE = 'apps.digitalization.storage_backends.StaticStorage'
-    AWS_STATIC_LOCATION = 'static'
+    AWS_STATIC_LOCATION = 'static/digitalization'
     STATIC_URL = "https://%s/%s/" % (AWS_S3_CUSTOM_DOMAIN, AWS_STATIC_LOCATION)
 
 
@@ -169,8 +178,27 @@ DATA_UPLOAD_MAX_NUMBER_FIELDS = 5000
 
 # Geographical libraries
 GEOS_LIBRARY_PATH = '/usr/lib/x86_64-linux-gnu/libgeos_c.so'
-GDAL_LIBRARY_PATH = '/usr/lib/libgdal.so'
-PROJ_LIBRARY_PATH = '/usr/lib/libproj.so'
+GDAL_LIBRARY_PATH = '/usr/lib/x86_64-linux-gnu/libgdal.so'
+PROJ_LIBRARY_PATH = '/usr/lib/x86_64-linux-gnu/libproj.so'
+
+CELERY_TASK_TRACK_STARTED = True
+CELERY_TASK_TIME_LIMIT = 24 * 60 * 60
+CELERY_BROKER_URL = os.environ.get("CELERY_BROKER_URL")
+CELERY_RESULT_BACKEND = os.environ.get("CELERY_RESULT_BACKEND")
+CELERY_TIMEZONE = TIME_ZONE
+
+CELERY_BEAT_SCHEDULE = {
+    'daily_postprocessing': {
+        'task': 'scheduled_postprocessing',
+        'schedule': crontab(hour="1", minute="0"),
+        'args': ('input', 'tmp', '/var/log/postprocessing')
+    },
+    'weekly_clean_storage': {
+        'task': 'clean_storage',
+        'schedule': crontab(hour="3", minute="0", day_of_week='sunday'),
+        'args': ('/var/log/clean_storage', )
+    }
+}
 
 USE_X_FORWARDED_HOST = True
 USE_X_FORWARDED_PORT = True
@@ -184,6 +212,9 @@ else:
         'https://herbariodigital.cl',
         'https://www.herbariodigital.cl',
     )
+
+CSRF_TRUSTED_ORIGINS = ['https://*.herbariodigital.cl']
+CSRF_COOKIE_SECURE = not DEBUG
 
 REST_FRAMEWORK = {
     'DEFAULT_PAGINATION_CLASS': 'rest_framework.pagination.PageNumberPagination',

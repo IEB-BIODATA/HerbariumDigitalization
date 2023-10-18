@@ -1,13 +1,15 @@
+import os
 from typing import Union, List
 
 from django.contrib.auth.models import User
 from rest_framework import serializers
 from rest_framework.serializers import HyperlinkedModelSerializer, ModelSerializer, CharField, ReadOnlyField, \
-    SerializerMethodField
+    SerializerMethodField, URLField
 
-from apps.catalog.models import Species, Family, Genus, Synonymy, Region, Division, Class_name, Order, Status, \
-    CommonName, ConservationState, PlantHabit, EnvironmentalHabit, Cycle
-from apps.digitalization.models import VoucherImported, GalleryImage
+from apps.catalog.models import Species, Family, Genus, Synonymy, Region, Division, ClassName, Order, Status, \
+    CommonName, ConservationState, PlantHabit, EnvironmentalHabit, Cycle, TaxonomicModel, CatalogView, Binnacle
+from apps.digitalization.models import VoucherImported, GalleryImage, BiodataCode, GeneratedPage, ColorProfileFile, \
+    PriorityVouchersFile
 
 
 class StatusSerializer(HyperlinkedModelSerializer):
@@ -22,28 +24,53 @@ class CycleSerializer(HyperlinkedModelSerializer):
         fields = ['id', 'name', ]
 
 
-class DivisionSerializer(HyperlinkedModelSerializer):
+class TaxonomicSerializer(HyperlinkedModelSerializer):
+    created_by = ReadOnlyField(source='created_by.username')
+
+    class Meta:
+        model = TaxonomicModel
+        fields = ['id', 'created_by', 'created_at', 'updated_at', ]
+        abstract = True
+
+
+class DivisionSerializer(TaxonomicSerializer):
+    kingdom = ReadOnlyField(source='kingdom.name')
+
     class Meta:
         model = Division
-        fields = ['id', 'name', ]
+        fields = TaxonomicSerializer.Meta.fields + ['name', 'kingdom']
 
 
-class ClassSerializer(HyperlinkedModelSerializer):
+class ClassSerializer(TaxonomicSerializer):
+    division = ReadOnlyField(source='division.name')
+
     class Meta:
-        model = Class_name
-        fields = ['id', 'name', ]
+        model = ClassName
+        fields = TaxonomicSerializer.Meta.fields + ['name', 'division']
 
 
-class OrderSerializer(HyperlinkedModelSerializer):
+class OrderSerializer(TaxonomicSerializer):
+    class_name = ReadOnlyField(source='class_name.name')
+
     class Meta:
         model = Order
-        fields = ['id', 'name', ]
+        fields = TaxonomicSerializer.Meta.fields + ['name', 'class_name']
 
 
-class FamilySerializer(HyperlinkedModelSerializer):
+class FamilySerializer(TaxonomicSerializer):
+    order = ReadOnlyField(source='order.name')
+
     class Meta:
         model = Family
-        fields = ['id', 'name', ]
+        fields = TaxonomicSerializer.Meta.fields + ['name', 'order']
+
+
+class GenusSerializer(TaxonomicSerializer):
+    family = ReadOnlyField(source='family.name')
+
+    class Meta:
+        model = Family
+        fields = TaxonomicSerializer.Meta.fields + ['name', 'family']
 
 
 class PlantHabitSerializer(HyperlinkedModelSerializer):
@@ -58,16 +85,52 @@ class EnvHabitSerializer(HyperlinkedModelSerializer):
         fields = ["id", "female_name", "male_name", ]
 
 
-class SpeciesSerializer(HyperlinkedModelSerializer):
+class SpeciesSerializer(TaxonomicSerializer):
+    genus = ReadOnlyField(source='genus.name')
+    family = ReadOnlyField(source='genus.family.name')
+    order = ReadOnlyField(source='genus.family.order.name')
+    class_name = ReadOnlyField(source='genus.family.order.class_name.name')
+    division = ReadOnlyField(source='genus.family.order.class_name.division.name')
+    kingdom = ReadOnlyField(source='genus.family.order.class_name.division.kingdom.name')
+    habit = SerializerMethodField()
+
     class Meta:
         model = Species
-        fields = ['id', 'scientificName', ]
+        fields = TaxonomicSerializer.Meta.fields + [
+            'scientific_name', 'scientific_name_full',
+            'genus', 'family', 'order',
+            'class_name', 'division', 'kingdom',
+            'habit', "determined"
+        ]
+
+    def get_habit(self, obj):
+        return get_habit(obj.plant_habit.all(), obj.env_habit.all())
 
 
-class SynonymysSerializer(HyperlinkedModelSerializer):
+class CatalogViewSerializer(HyperlinkedModelSerializer):
+
+    class Meta:
+        model = CatalogView
+        fields = TaxonomicSerializer.Meta.fields + [
+            'division', 'class_name', 'order', 'family',
+            'scientific_name_full', 'status', 'determined',
+        ]
+
+
+class SynonymysSerializer(TaxonomicSerializer):
+    species = SerializerMethodField()
+
     class Meta:
         model = Synonymy
-        fields = ['id', 'scientificName', 'scientificNameFull', ]
+        fields = TaxonomicSerializer.Meta.fields + [
+            'scientific_name',
+            'scientific_name_full',
+            'species'
+        ]
+
+    def get_species(self, obj):
+        species = obj.species_set.all()
+        return "\t".join([specie.scientific_name for specie in species])
 
 
 class RegionSerializer(HyperlinkedModelSerializer):
@@ -76,10 +139,24 @@ class RegionSerializer(HyperlinkedModelSerializer):
         fields = ['id', 'name', ]
 
 
-class CommonNameSerializer(HyperlinkedModelSerializer):
+class CommonNameSerializer(TaxonomicSerializer):
+    species = SerializerMethodField()
+
     class Meta:
         model = CommonName
-        fields = ['id', 'name', ]
+        fields = TaxonomicSerializer.Meta.fields + ['name', 'species']
+
+    def get_species(self, obj):
+        species = obj.species_set.all()
+        return "\t".join([specie.scientific_name for specie in species])
+
+
+class BinnacleSerializer(TaxonomicSerializer):
+    class Meta:
+        model = Binnacle
+        fields = TaxonomicSerializer.Meta.fields + [
+            'type_update', 'model', 'description', 'note',
+        ]
 
 
 class UserSerializer(HyperlinkedModelSerializer):
@@ -89,20 +166,169 @@ class UserSerializer(HyperlinkedModelSerializer):
 
 
 class VoucherSerializer(HyperlinkedModelSerializer):
-    species = CharField(source='scientificName')
+    species = CharField(source='scientific_name')
     herbarium = ReadOnlyField(source='herbarium.name')
     herbarium_code = ReadOnlyField(source='herbarium.collection_code')
 
     class Meta:
         model = VoucherImported
-        fields = ['id', 'herbarium', 'herbarium_code', 'otherCatalogNumbers', 'catalogNumber', 'recordedBy',
-                  'recordNumber', 'organismRemarks', 'species', 'locality', 'verbatimElevation', 'georeferencedDate',
-                  'identifiedBy', 'dateIdentified', 'image_public', 'image_public_resized_10',
+        fields = ['id', 'herbarium', 'herbarium_code', 'other_catalog_numbers', 'catalog_number', 'recorded_by',
+                  'record_number', 'organism_remarks', 'species', 'locality', 'verbatim_elevation', 'georeferenced_date',
+                  'identified_by', 'identified_date', 'image_public', 'image_public_resized_10',
                   'image_public_resized_60']
 
 
+class PriorityVouchersSerializer(HyperlinkedModelSerializer):
+    herbarium = ReadOnlyField(source='herbarium.name')
+    created_by = ReadOnlyField(source='created_by.username')
+    file_url = serializers.SerializerMethodField()
+    filename = serializers.SerializerMethodField()
+
+    def get_file_url(self, obj):
+        return obj.file.url
+
+    def get_filename(self, obj):
+        return os.path.basename(obj.file.name)
+
+    class Meta:
+        model = PriorityVouchersFile
+        fields = [
+            'herbarium', 'file_url', 'filename',
+            'created_at', 'created_by',
+        ]
+
+
+class GeneratedPageSerializer(HyperlinkedModelSerializer):
+    created_by = ReadOnlyField(source='created_by.username')
+    herbarium = CharField(source='herbarium.name')
+    color_profile = serializers.SerializerMethodField()
+    stateless_count = serializers.SerializerMethodField()
+    found_count = serializers.SerializerMethodField()
+    not_found_count = serializers.SerializerMethodField()
+    digitalized = serializers.SerializerMethodField()
+    qr_count = serializers.SerializerMethodField()
+
+    def get_total(self, obj):
+        return obj.total
+
+    def get_stateless_count(self, obj):
+        return obj.stateless_count
+
+    def get_found_count(self, obj):
+        return obj.found_count
+
+    def get_not_found_count(self, obj):
+        return obj.not_found_count
+
+    def get_digitalized(self, obj):
+        return obj.digitalized
+
+    def get_color_profile(self, obj):
+        if obj.color_profile:
+            return obj.color_profile.file.url
+        else:
+            return None
+
+    def get_qr_count(self, obj):
+        return obj.qr_count
+
+    class Meta:
+        model = GeneratedPage
+        fields = [
+            "id", "name", "herbarium",
+            "created_by", "created_at",
+            "color_profile", "terminated",
+            "total", "stateless_count", "found_count",
+            "not_found_count", "digitalized", "qr_count"
+        ]
+
+
+class BiodataCodeSerializer(HyperlinkedModelSerializer):
+    voucher_state_name = SerializerMethodField()
+
+    class Meta:
+        model = BiodataCode
+        fields = [
+            "id", "voucher_state", "voucher_state_name", "code",
+        ]
+
+    def get_voucher_state_name(self, obj):
+        return obj.get_voucher_state_display()
+
+
+class SpecimenSerializer(HyperlinkedModelSerializer):
+    code = ReadOnlyField(source="biodata_code.code")
+    herbarium_code = ReadOnlyField(source="herbarium.collection_code")
+    species = SerializerMethodField()
+
+    class Meta:
+        model = VoucherImported
+        fields = [
+            "id", "code", "herbarium_code", "catalog_number",
+            "image_public_resized_10", "species",
+        ]
+
+    def get_species(self, obj):
+        return SpeciesSerializer(
+            instance=obj.scientific_name,
+            many=False
+        ).data
+
+
+class MinimizedVoucherSerializer(HyperlinkedModelSerializer):
+    species = CharField(source='scientific_name')
+    occurrence_id = SerializerMethodField()
+    priority_voucher = SerializerMethodField()
+    image_voucher_url = SerializerMethodField()
+    image_voucher_thumb_url = SerializerMethodField()
+    image_voucher_cr3_raw_url = SerializerMethodField()
+    image_voucher_jpg_raw_url = SerializerMethodField()
+    image_voucher_jpg_raw_url_public = SerializerMethodField()
+
+    class Meta:
+        model = VoucherImported
+        fields = [
+            'id', 'occurrence_id', 'catalog_number',
+            'recorded_by', 'record_number',
+            'species', 'locality',
+            'priority_voucher',
+            'image_voucher_url',
+            'image_voucher_thumb_url',
+            'image_voucher_cr3_raw_url',
+            'image_voucher_jpg_raw_url',
+            'image_voucher_jpg_raw_url_public',
+        ]
+
+    def get_occurrence_id(self, obj):
+        return BiodataCodeSerializer(
+            instance=obj.biodata_code,
+            many=False,
+        ).data
+
+    def get_priority_voucher(self, obj):
+        return PriorityVouchersSerializer(
+            instance=obj.vouchers_file,
+            many=False,
+        ).data
+
+    def get_image_voucher_url(self, obj):
+        return obj.image_voucher_url()
+
+    def get_image_voucher_thumb_url(self, obj):
+        return obj.image_voucher_thumb_url()
+
+    def get_image_voucher_cr3_raw_url(self, obj):
+        return obj.image_voucher_cr3_raw_url()
+
+    def get_image_voucher_jpg_raw_url(self, obj):
+        return obj.image_voucher_jpg_raw_url()
+
+    def get_image_voucher_jpg_raw_url_public(self, obj):
+        return obj.image_voucher_jpg_raw_url_public()
+
+
 class GallerySerializer(HyperlinkedModelSerializer):
-    species = CharField(source='scientificName')
+    species = CharField(source='scientific_name')
 
     class Meta:
         model = GalleryImage
@@ -115,13 +341,13 @@ class ConservationStateSerializer(HyperlinkedModelSerializer):
         fields = ['id', 'name', 'key', 'order', ]
 
 
-class SpecieSerializer(HyperlinkedModelSerializer):
+class SpeciesDetailSerializer(HyperlinkedModelSerializer):
     genus = ReadOnlyField(source='genus.name')
     genus_id = ReadOnlyField(source='genus.id')
     habit = SerializerMethodField()
     cycle = SerializerMethodField()
     status = ReadOnlyField(source='status.name')
-    synonymys = SynonymysSerializer(required=False, many=True)
+    synonyms = SynonymysSerializer(required=False, many=True)
     region = RegionSerializer(required=False, many=True)
     created_by = ReadOnlyField(source='created_by.username')
     family = ReadOnlyField(source='genus.family.name')
@@ -135,19 +361,40 @@ class SpecieSerializer(HyperlinkedModelSerializer):
     kingdom = ReadOnlyField(source='genus.family.order.class_name.division.kingdom.name')
     common_names = CommonNameSerializer(required=False, many=True)
     conservation_state = ConservationStateSerializer(required=False, many=True)
+
+    class Meta:
+        model = Species
+        fields = ['id', 'id_taxa', 'kingdom', 'division', 'division_id', 'class_name', 'class_name_id', 'order',
+                  'order_id', 'family', 'family_id', 'genus', 'genus_id', 'scientific_name', 'scientific_name_db',
+                  'scientific_name_full', 'specific_epithet', 'scientific_name_authorship', 'subspecies', 'ssp_authorship',
+                  'variety', 'variety_authorship', 'form', 'form_authorship', 'common_names', 'in_argentina', 'in_bolivia',
+                  'in_peru', 'habit', 'cycle', 'status', 'minimum_height', 'maximum_height', 'notes', 'type_id',
+                  'publication', 'volume', 'pages', 'year', 'synonyms', 'region', 'created_at',
+                  'updated_at', 'created_by', 'determined', 'id_taxa_origin', 'conservation_state', 'id_mma',]
+
+    def get_habit(self, obj):
+        return get_habit(obj.plant_habit.all(), obj.env_habit.all())
+
+    def get_cycle(self, obj):
+        cycles = list(obj.cycle.all())
+        if len(cycles) == 0:
+            return ""
+        elif len(cycles) == 1:
+            return cycles[0].name
+        else:
+            return " o ".join([
+                cycle.name if i == 0 else cycle.name.lower()
+                for i, cycle in enumerate(cycles)
+            ])
+
+
+class SpeciesImagesSerializer(SpeciesDetailSerializer):
     vouchers = SerializerMethodField()
     gallery_images = SerializerMethodField()
 
     class Meta:
         model = Species
-        fields = ['id', 'id_taxa', 'kingdom', 'division', 'division_id', 'class_name', 'class_name_id', 'order',
-                  'order_id', 'family', 'family_id', 'genus', 'genus_id', 'scientificName', 'scientificNameDB',
-                  'scientificNameFull', 'specificEpithet', 'scientificNameAuthorship', 'subespecie', 'autoresSsp',
-                  'variedad', 'autoresVariedad', 'forma', 'autoresForma', 'common_names', 'enArgentina', 'enBolivia',
-                  'enPeru', 'habit', 'cycle', 'status', 'alturaMinima', 'alturaMaxima', 'notas', 'id_tipo',
-                  'publicacion', 'volumen', 'paginas', 'anio', 'synonymys', 'region', 'created_at',
-                  'updated_at', 'created_by', 'determined', 'id_taxa_origin', 'conservation_state', 'id_mma',
-                  'vouchers', 'gallery_images']
+        fields = SpeciesDetailSerializer.Meta.fields + ['vouchers', 'gallery_images',]
 
     def get_vouchers(self, obj):
         vouchers = obj.voucherimported_set.all().exclude(image_public_resized_10__exact='')
@@ -169,30 +416,6 @@ class SpecieSerializer(HyperlinkedModelSerializer):
         }
         return response
 
-    def get_habit(self, obj):
-        plant_habit = obj.plant_habit.all()
-        env_habit = get_habit_name(
-            obj.env_habit.all(),
-            env=True,
-            plant_habit=list(plant_habit)[-1]
-        )
-        if env_habit != "":
-            return "{} {}".format(get_habit_name(plant_habit), env_habit)
-        else:
-            return get_habit_name(plant_habit)
-
-    def get_cycle(self, obj):
-        cycles = list(obj.cycle.all())
-        if len(cycles) == 0:
-            return ""
-        elif len(cycles) == 1:
-            return cycles[0].name
-        else:
-            return " o ".join([
-                cycle.name if i == 0 else cycle.name.lower()
-                for i, cycle in enumerate(cycles)
-            ])
-
 
 class SynonymySerializer(HyperlinkedModelSerializer):
     created_by = UserSerializer(required=False)
@@ -200,18 +423,18 @@ class SynonymySerializer(HyperlinkedModelSerializer):
 
     class Meta:
         model = Synonymy
-        fields = ['id', 'species', 'genus', 'scientificName', 'scientificNameDB', 'scientificNameFull',
-                  'specificEpithet', 'scientificNameAuthorship', 'subespecie', 'autoresSsp', 'variedad',
-                  'autoresVariedad', 'forma', 'autoresForma', 'created_at', 'updated_at', 'created_by']
+        fields = ['id', 'species', 'genus', 'scientific_name', 'scientific_name_db', 'scientific_name_full',
+                  'specific_epithet', 'scientific_name_authorship', 'subspecies', 'ssp_authorship', 'variety',
+                  'variety_authorship', 'form', 'form_authorship', 'created_at', 'updated_at', 'created_by']
 
     def get_species(self, obj):
         species = obj.species_set.all()
-        response = SpecieSerializer(species, many=True).data
+        response = SpeciesDetailSerializer(species, many=True).data
         return response
 
 
 class SpeciesFinderSerializer(ModelSerializer):
-    name = CharField(source='scientificName')
+    name = CharField(source='scientific_name')
     genus = CharField(source='genus.name')
     family = ReadOnlyField(source='genus.family.name')
     order = ReadOnlyField(source='genus.family.order.name')
@@ -220,8 +443,13 @@ class SpeciesFinderSerializer(ModelSerializer):
 
     class Meta:
         model = Species
-        fields = ['id', 'name', 'genus', 'specificEpithet', 'family', 'order', 'scientificNameAuthorship', 'habit',
-                  'subespecie', 'autoresSsp', 'variedad', 'autoresVariedad', 'forma', 'autoresForma', 'vouchers']
+        fields = [
+            'id', 'name', 'genus', 'specific_epithet',
+            'family', 'order', 'scientific_name_authorship',
+            'habit', 'subspecies', 'ssp_authorship',
+            'variety', 'variety_authorship', 'form',
+            'form_authorship', 'vouchers', 'determined'
+        ]
 
     def get_vouchers(self, obj):
         vouchers = obj.voucherimported_set.all().exclude(image_public_resized_10__exact='')[:1]
@@ -229,26 +457,17 @@ class SpeciesFinderSerializer(ModelSerializer):
         return response
 
     def get_habit(self, obj):
-        plant_habit = obj.plant_habit.all()
-        env_habit = get_habit_name(
-            obj.env_habit.all(),
-            env=True,
-            plant_habit=list(plant_habit)[-1]
-        )
-        if env_habit != "":
-            return "{} {}".format(get_habit_name(plant_habit), env_habit)
-        else:
-            return get_habit_name(plant_habit)
+        return get_habit(obj.plant_habit.all(), obj.env_habit.all())
 
 
 class SynonymysFinderSerializer(ModelSerializer):
-    name = CharField(source='scientificName')
+    name = CharField(source='scientific_name')
     species = SerializerMethodField()
 
     class Meta:
         model = Synonymy
-        fields = ['id', 'name', 'genus', 'specificEpithet', 'scientificNameAuthorship', 'species', 'subespecie',
-                  'autoresSsp', 'variedad', 'autoresVariedad', 'forma', 'autoresForma']
+        fields = ['id', 'name', 'genus', 'specific_epithet', 'scientific_name_authorship', 'species', 'subspecies',
+                  'ssp_authorship', 'variety', 'variety_authorship', 'form', 'form_authorship']
 
     def get_species(self, obj):
         species = obj.species_set.all()
@@ -274,25 +493,25 @@ class GenusFinderSerializer(ModelSerializer):
 class DistributionSerializer(ModelSerializer):
     class Meta:
         model = VoucherImported
-        fields = ['decimalLatitude_public', 'decimalLongitude_public', ]
+        fields = ['decimal_latitude_public', 'decimal_longitude_public', ]
 
 
 class ImagesSerializer(HyperlinkedModelSerializer):
-    name = CharField(source='scientificName')
-    specie_id = CharField(source='scientificName.id')
+    name = CharField(source='scientific_name')
+    specie_id = CharField(source='scientific_name.id')
     image_name = CharField(source='image_public.name')
     herbarium_code = CharField(source='herbarium.collection_code')
-    georeferencedDate = serializers.DateTimeField(format="%d-%m-%Y")
+    georeferenced_date = serializers.DateTimeField(format="%d-%m-%Y")
 
     class Meta:
         model = VoucherImported
         fields = ['id', 'name', 'specie_id', 'herbarium_code', 'image_public', 'image_public_resized_10',
-                  'image_public_resized_60', 'image_name', 'catalogNumber', 'recordedBy', 'recordNumber',
-                  'organismRemarks', 'locality', 'identifiedBy', 'dateIdentified', 'georeferencedDate']
+                  'image_public_resized_60', 'image_name', 'catalog_number', 'recorded_by', 'record_number',
+                  'organism_remarks', 'locality', 'identified_by', 'identified_date', 'georeferenced_date']
 
 
 class GalleryPhotosSerializer(HyperlinkedModelSerializer):
-    name = CharField(source='scientificName.scientificName')
+    name = CharField(source='scientific_name.scientific_name')
 
     class Meta:
         model = GalleryImage
@@ -303,6 +522,24 @@ class CommonNameFinderSerializer(ModelSerializer):
     class Meta:
         model = CommonName
         fields = ['id', 'name', ]
+
+
+def get_habit(
+        plant_habit: List[PlantHabit],
+        environmental_habit: List[EnvironmentalHabit]
+) -> str:
+    if len(list(plant_habit)) > 0:
+        env_habit = get_habit_name(
+            environmental_habit,
+            env=True,
+            plant_habit=list(plant_habit)[-1]
+        )
+        if env_habit != "":
+            return "{} {}".format(get_habit_name(plant_habit), env_habit)
+        else:
+            return get_habit_name(plant_habit)
+    else:
+        return ""
 
 
 def get_habit_name(

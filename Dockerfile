@@ -18,6 +18,7 @@ RUN pip install --upgrade pip
 RUN pip install --no-cache-dir -r requirements.txt
 
 COPY ./apps /app/apps
+COPY ./assets /app/assets
 COPY ./templates /app/templates
 COPY ./web /app/web
 COPY ./manage.py /app
@@ -37,5 +38,6 @@ ENTRYPOINT [ \
     "--log-level", "debug", \
     "--access-logformat", "'%(h)s %(l)s %(u)s %(t)s \"%(r)s\" %(s)s %(b)s \"%(f)s\" \"%(a)s\" %(L)s \"%({header_name}i)s\"'", \
     "--access-logfile", "/var/log/gunicorn/access.log", \
-    "--workers=2" \
+    "--workers=2", \
+    "--preload" \
 ]

@@ -1,133 +1,145 @@
 {% extends "base.html" %}
 {% load static %}
 {% block javascript %}
-  <script src="{% static 'vendor/chart.js/Chart.min.js' %}"></script>
-  <script>
-    // Set new default font family and font color to mimic Bootstrap's default styling
-    Chart.defaults.global.defaultFontFamily = '-apple-system,system-ui,BlinkMacSystemFont,"Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif';
-    Chart.defaults.global.defaultFontColor = '#292b2c';
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.3.0/chart.umd.js" integrity="sha512-CMF3tQtjOoOJoOKlsS7/2loJlkyctwzSoDK/S40iAB+MqWSaf50uObGQSk5Ny/gfRhRCjNLvoxuCvdnERU4WGg==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+    <script>
+        // Set new default font family and font color to mimic Bootstrap's default styling
+        Chart.defaults.defaultFontFamily = '-apple-system,system-ui,BlinkMacSystemFont,"Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif';
+        Chart.defaults.defaultFontColor = '#292b2c';
 
-    // Area Chart Example
-    var ctx = document.getElementById("generated_qr");
-    var myLineChart = new Chart(ctx, {
-      type: 'line',
-      data: {
-        labels: [
-        {% if count_total_codes %}
-          {% for count_total_code in count_total_codes %}
-            "{{count_total_code.day}}-{{count_total_code.month}}-{{count_total_code.year}}",
-          {% endfor %}
-        {% endif %}
-        ],
-        datasets: [{
-          label: "QRs Escaneados",
-          lineTension: 0.3,
-          backgroundColor: "rgba(2,117,216,0.2)",
-          borderColor: "rgba(2,117,216,1)",
-          pointRadius: 5,
-          pointBackgroundColor: "rgba(40,167,69,1)",
-          pointBorderColor: "rgba(255,255,255,0.8)",
-          pointHoverRadius: 5,
-          pointHoverBackgroundColor: "rgba(6,241,59,1)",
-          pointHitRadius: 50,
-          pointBorderWidth: 2,
-          data: [
-          {% if count_scanned_codes %}
-            {% for count_scanned_code in count_scanned_codes %}
-              "{{count_scanned_code.count}}",
-            {% endfor %}
-          {% endif %}
-          ],
-        },
-        {
-          label: "QRs Generados",
-          lineTension: 0.3,
-          backgroundColor: "rgba(2,117,216,0.2)",
-          borderColor: "rgba(2,117,216,1)",
-          pointRadius: 5,
-          pointBackgroundColor: "rgba(2,117,216,1)",
-          pointBorderColor: "rgba(255,255,255,0.8)",
-          pointHoverRadius: 5,
-          pointHoverBackgroundColor: "rgba(2,117,216,1)",
-          pointHitRadius: 50,
-          pointBorderWidth: 2,
-          data: [
-          {% if count_total_codes %}
-            {% for count_total_code in count_total_codes %}
-              "{{count_total_code.count}}",
-            {% endfor %}
-          {% endif %}
-          ],
-        }],
-      },
-      options: {
-        scales: {
-          xAxes: [{
-            time: {
-              unit: 'date'
+        // Area Chart Example
+        const ctx = document.getElementById("generated_qr");
+        const myLineChart = new Chart(ctx, {
+            type: 'line',
+            data: {
+                labels: [
+                    {% if count_total_codes %}
+                        {% for count_total_code in count_total_codes %}
+                            "{{count_total_code.day}}-{{count_total_code.month}}-{{count_total_code.year}}",
+                        {% endfor %}
+                    {% endif %}
+                ],
+                datasets: [{
+                    label: "QRs Escaneados",
+                    lineTension: 0.3,
+                    backgroundColor: "rgba(2,117,216,0.2)",
+                    borderColor: "rgba(2,117,216,1)",
+                    pointRadius: 5,
+                    pointBackgroundColor: "rgba(40,167,69,1)",
+                    pointBorderColor: "rgba(255,255,255,0.8)",
+                    pointHoverRadius: 5,
+                    pointHoverBackgroundColor: "rgba(6,241,59,1)",
+                    pointHitRadius: 50,
+                    pointBorderWidth: 2,
+                    fill: {
+                        target: "origin",
+                        below: "rgba(2,117,216,1)",
+                    },
+                    data: [
+                        {% if count_scanned_codes %}
+                            {% for count_scanned_code in count_scanned_codes %}
+                                "{{count_scanned_code.count}}",
+                            {% endfor %}
+                        {% endif %}
+                    ],
+                },
+                    {
+                        label: "QRs Generados",
+                        lineTension: 0.3,
+                        backgroundColor: "rgba(2,117,216,0.2)",
+                        borderColor: "rgba(2,117,216,1)",
+                        pointRadius: 5,
+                        pointBackgroundColor: "rgba(2,117,216,1)",
+                        pointBorderColor: "rgba(255,255,255,0.8)",
+                        pointHoverRadius: 5,
+                        pointHoverBackgroundColor: "rgba(2,117,216,1)",
+                        pointHitRadius: 50,
+                        pointBorderWidth: 2,
+                        fill: {
+                            target: "origin",
+                            below: "rgba(2,117,216,1)",
+                        },
+                        data: [
+                            {% if count_total_codes %}
+                                {% for count_total_code in count_total_codes %}
+                                    "{{count_total_code.count}}",
+                                {% endfor %}
+                            {% endif %}
+                        ],
+                    }],
             },
-            gridLines: {
-              display: false
-            },
-            ticks: {
-              maxTicksLimit: 7
+            options: {
+                scales: {
+                    x: {
+                        time: {
+                            unit: 'date'
+                        },
+                        grid: {
+                            display: false
+                        },
+                        ticks: {
+                            maxTicksLimit: 7,
+                        },
+                    },
+                    y: {
+                        min: 0,
+                        max: {{ y_max }},
+                        ticks: {
+                            maxTicksLimit: 5,
+                        },
+                        grid: {
+                            color: "rgba(0, 0, 0, .125)",
+                        }
+                    },
+                },
+                plugins: {
+                    legend: {
+                        display: false
+                    },
+                },
             }
-          }],
-          yAxes: [{
-            ticks: {
-              min: 0,
-              max: 300,
-              maxTicksLimit: 5
-            },
-            gridLines: {
-              color: "rgba(0, 0, 0, .125)",
-            }
-          }],
-        },
-        legend: {
-          display: false
-        }
-      }
-    });
+        });
 
-    var ctx2 = document.getElementById("total_generated_qr");
-    var myBarChart = new Chart(ctx2, {
-      type: 'bar',
-      data: {
-        labels: ["CONC", "ULS"],
-        datasets: [
-          {
-            label: "Especímenes Pendientes",
-            backgroundColor: "#007bff",
-            data: [{{stand_by_conc}},{{stand_by_uls}}]
-          }, {
-            label: "Especímenes Escaneados",
-            backgroundColor: "#28a745",
-            data: [{{digitalized_conc}},{{digitalized_uls}}]
-          }
-        ]
-      },
-      options: {
-        title: {
-          display: true,
-          text: 'Especímenes en Proceso'
-        }
-      }
-    });
-  </script>
+        const ctx2 = document.getElementById("total_generated_qr");
+        const myBarChart = new Chart(ctx2, {
+            type: 'bar',
+            data: {
+                labels: ["CONC", "ULS"],
+                datasets: [
+                    {
+                        label: "Especímenes Pendientes",
+                        backgroundColor: "#007bff",
+                        data: [{{ stand_by_conc }}, {{ stand_by_uls }}]
+                    }, {
+                        label: "Especímenes Escaneados",
+                        backgroundColor: "#28a745",
+                        data: [{{ digitalized_conc }}, {{ digitalized_uls }}]
+                    }
+                ]
+            },
+            options: {
+                plugins: {
+                    title: {
+                        display: true,
+                        text: 'Especímenes en Proceso'
+                    }
+                }
+            }
+        });
+    </script>
 {% endblock %}
 {% block content %}
-<h1>Digitalización Herbario</h1>
-<p>Indicadores de digitalización</p>
-<!-- Area Chart Example-->
-<div class="card mb-3">
-  <div class="card-header">
-    <i class="fas fa-chart-area"></i>
-    Cantidad de QR Generados</div>
-  <div class="card-body">
-    <canvas id="generated_qr" width="100%" height="30"></canvas>
-    <canvas id="total_generated_qr" width="100%" height="30"></canvas>
-  </div>
-</div>
+    <h1>Digitalización Herbario</h1>
+    <p>Indicadores de digitalización</p>
+    <!-- Area Chart Example-->
+    <div class="card mb-3">
+        <div class="card-header">
+            <i class="fas fa-chart-area"></i>
+            Cantidad de QR Generados</div>
+        <div class="card-body">
+            <canvas id="generated_qr" width="100%" height="30"></canvas>
+            <canvas id="total_generated_qr" width="100%" height="30"></canvas>
+        </div>
+    </div>
 
 {% endblock %}

@@ -1,75 +1,140 @@
 {% load static %}
 {% load roles %}
+{% block javascript %}
+    <script type="text/javascript">
+        function download_catalog() {
+            $(document).ajaxSend(function () {
+                $("#overlay").fadeIn(300);
+            });
+            $.ajax({
+                url: '/digitalization/download_catalog',
+                type: 'GET',
+                xhrFields: {
+                    // make sure the response knows we're expecting a binary type in return.
+                    // this is important, without it the excel file is marked corrupted.
+                    responseType: 'arraybuffer'
+                }
+            }).done(function (data, status, xmlHeaderRequest) {
+                const downloadLink = document.createElement('a');
+                const blob = new Blob([data],
+                    {
+                        type: xmlHeaderRequest.getResponseHeader('Content-Type')
+                    });
+                const url = window.URL || window.webkitURL;
+                const downloadUrl = url.createObjectURL(blob);
+                const fileName = 'catalog.xlsx';
+
+                if (typeof window.navigator.msSaveBlob !== 'undefined') {
+                    window.navigator.msSaveBlob(blob, fileName);
+                } else {
+                    if (fileName) {
+                        if (typeof downloadLink.download === 'undefined') {
+                            window.location = downloadUrl;
+                        } else {
+                            downloadLink.href = downloadUrl;
+                            downloadLink.download = "catalog.xlsx";
+                            document.body.appendChild(downloadLink);
+                            downloadLink.click();
+                        }
+                    } else {
+                        window.location = downloadUrl;
+                    }
+                    setTimeout(function () {
+                            url.revokeObjectURL(downloadUrl);
+                            $("#overlay").fadeOut(300);
+                        },
+                        100);
+                }
+            });
+        }
+    </script>
+{% endblock %}
 <li class="nav-item active">
-  <a class="nav-link" href="/">
-    <i class="fas fa-fw fa-home"></i>
-    <span>Inicio</span></a>
+    <a class="nav-link" href="/">
+        <i class="fas fa-fw fa-home"></i>
+        <span>Inicio</span></a>
 </li>
 {% if request.user|has_group:"Collection Researcher" %}
-<li class="nav-item">
-  <a class="nav-link" href="{% url 'load_priority_vouchers_file' %}">
-    <i class="fas fa-fw fa-file-excel"></i>
-    <span>Cargar Especímenes Priorizados</span></a>
-</li>
+    <li class="nav-item">
+        <a class="nav-link" href="{% url 'load_priority_vouchers_file' %}">
+            <i class="fas fa-fw fa-file-excel"></i>
+            <span>Cargar Especímenes Priorizados</span></a>
+    </li>
 {% endif %}
 {% if request.user|has_group:"Curator" %}
-<li class="nav-item ">
-  <a class="nav-link" href="{% url 'qr_generator' %}">
-    <i class="fas fa-fw fa-qrcode"></i>
-    <span>Generación de Códigos QR</span></a>
-</li>
+    <li class="nav-item ">
+        <a class="nav-link" href="{% url 'qr_generator' %}">
+            <i class="fas fa-fw fa-qrcode"></i>
+            <span>Generación de Códigos QR</span></a>
+    </li>
 {% endif %}
 {% if request.user|has_group:"Digitizer" %}
-<li class="nav-item">
-  <a class="nav-link" href="{% url 'mark_vouchers' %}">
-    <i class="fas fa-fw fa-camera"></i>
-    <span>Digitalización de Especímenes</span></a>
-</li>
+    <li class="nav-item">
+        <a class="nav-link" href="{% url 'mark_vouchers' %}">
+            <i class="fas fa-fw fa-camera"></i>
+            <span>Digitalización de Especímenes</span></a>
+    </li>
 {% endif %}
 {% if request.user|has_group:"Control" %}
-<li class="nav-item">
-  <a class="nav-link" href="{% url 'control_vouchers' %}">
-    <i class="fas fa-fw fa-search"></i>
-    <span>Control de Digitalización</span></a>
-</li>
+    <li class="nav-item">
+        <a class="nav-link" href="{% url 'control_vouchers' %}">
+            <i class="fas fa-fw fa-search"></i>
+            <span>Control de Digitalización</span></a>
+    </li>
 {% endif %}
 {% if request.user|has_group:"Curator" %}
-<li class="nav-item ">
-  <a class="nav-link" href="{% url 'validate_vouchers' %}">
-    <i class="fas fa-fw fa-check"></i>
-    <span>Validación de Especímenes</span>
-  </a>
-</li>
+    <li class="nav-item ">
+        <a class="nav-link" href="{% url 'validate_vouchers' %}">
+            <i class="fas fa-fw fa-check"></i>
+            <span>Validación de Especímenes</span>
+        </a>
+    </li>
 {% endif %}
-{% if request.user|has_group:"Catalog" %}
 <li class="nav-item dropdown">
-  <a class="nav-link dropdown-toggle" href="#" id="pagesDropdown" role="button" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
-    <i class="fas fa-fw fa-leaf"></i>
-    <span>Catálogo</span>
-  </a>
-  <div class="dropdown-menu" aria-labelledby="pagesDropdown">
-    <a class="dropdown-item" href="{% url 'list_division' %}">División</a>
-    <a class="dropdown-item" href="{% url 'list_class' %}">Clase</a>
-    <a class="dropdown-item" href="{% url 'list_order' %}">Orden</a>
-    <a class="dropdown-item" href="{% url 'list_family' %}">Familia</a>
-    <a class="dropdown-item" href="{% url 'list_genus' %}">Género</a>
-    <a class="dropdown-item" href="{% url 'list_taxa' %}">Taxón</a>
-    <a class="dropdown-item" href="{% url 'list_synonymy' %}">Sinónimo</a>
-    <a class="dropdown-item" href="{% url 'list_common_name' %}">Nombre Común</a>
-    <a class="dropdown-item" href="{% url 'list_binnacle' %}">Bitácora de Cambios</a>
-  </div>
+    <a class="nav-link dropdown-toggle" href="#" id="pagesDropdown" role="button" data-toggle="dropdown" aria-haspopup="true" data-bs-toggle="dropdown" aria-expanded="false">
+        <i class="fas fa-fw fa-leaf"></i>
+        <span>Catálogo</span>
+    </a>
+    <div class="dropdown-menu" aria-labelledby="pagesDropdown">
+        {% if request.user|has_group:"Catalog" %}
+            <a class="dropdown-item" href="{% url 'list_division' %}">División</a>
+            <a class="dropdown-item" href="{% url 'list_class' %}">Clase</a>
+            <a class="dropdown-item" href="{% url 'list_order' %}">Orden</a>
+            <a class="dropdown-item" href="{% url 'list_family' %}">Familia</a>
+            <a class="dropdown-item" href="{% url 'list_genus' %}">Género</a>
+            <a class="dropdown-item" href="{% url 'list_taxa' %}">Taxón</a>
+            <a class="dropdown-item" href="{% url 'list_synonymy' %}">Sinónimo</a>
+            <a class="dropdown-item" href="{% url 'list_common_name' %}">Nombre Común</a>
+        {% endif %}
+        <a class="dropdown-item" href="{% url 'list_binnacle' %}">Bitácora de Cambios</a>
+    </div>
 </li>
-<li class="nav-item">
-  <a class="nav-link" href="{% url 'upload_gallery_image' %}">
-    <i class="fas fa-fw fa-images"></i>
-    <span>Subir a Galeria</span>
-  </a>
-</li>
+{% if request.user|has_group:"Catalog" %}
+    <li class="nav-item">
+        <a class="nav-link" href="{% url 'modify_gallery_image' %}">
+            <i class="fas fa-fw fa-images"></i>
+            <span>Subir a Galeria</span>
+        </a>
+    </li>
+    <li class="nav-item">
+        <a class="nav-link" href="#" onclick="download_catalog()">
+            <i class="fas fa-fw fa-download"></i>
+            <span>Descargar actual versión</span>
+        </a>
+    </li>
 {% endif %}
 {% if request.user|has_group:"Test" %}
-<li class="nav-item ">
-  <a class="nav-link" href="{% url 'validate_vouchers' %}">
-    <i class="fas fa-fw fa-check"></i>
-    <span>Validación de Especímenes</span></a>
-</li>
+    <li class="nav-item ">
+        <a class="nav-link" href="{% url 'validate_vouchers' %}">
+            <i class="fas fa-fw fa-check"></i>
+            <span>Validación de Especímenes</span></a>
+    </li>
 {% endif %}
+<!-- For test new task
+<li class="nav-item">
+    <a class="nav-link" href="#" onclick="new_task()">
+        <i class="fas fa-fw fa-check"></i>
+        <span>New Task</span>
+    </a>
+</li>
+-->
