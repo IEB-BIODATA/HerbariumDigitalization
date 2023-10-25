@@ -1,5 +1,5 @@
 """
-WSGI config for web project.
+WSGI config for intranet project.
 
 It exposes the WSGI callable as a module-level variable named ``application``.
 
@@ -12,7 +12,7 @@ from django.conf import settings
 from django.contrib.staticfiles.handlers import StaticFilesHandler
 from django.core.wsgi import get_wsgi_application
 
-os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'web.settings')
+os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'intranet.settings')
 
 if settings.DEBUG:
     application = StaticFilesHandler(get_wsgi_application())

@@ -1,13 +1,40 @@
+from __future__ import annotations
 import logging
 import os
 import tempfile
+from abc import ABC, abstractmethod
+from typing import Dict, List
 
 from django.contrib.gis.gdal import DataSource
 from django.contrib.gis.geos import GEOSGeometry
 from django.core.paginator import Paginator
+from django.db import models
 from django.db.models import Q, QuerySet
 from django.http import HttpRequest, JsonResponse
 from rest_framework.serializers import SerializerMetaclass
+
+
+class CatalogQuerySet(models.QuerySet, ABC):
+
+    @abstractmethod
+    def filter_query_in(self, **parameters: Dict[str, List[str]]) -> CatalogQuerySet:
+        pass
+
+    @abstractmethod
+    def filter_query(self, **parameters: Dict[str, List[str]]) -> CatalogQuerySet:
+        pass
+
+    @abstractmethod
+    def filter_taxonomy_in(self, **parameters: Dict[str: List[str]]) -> CatalogQuerySet:
+        pass
+
+    @abstractmethod
+    def filter_taxonomy(self, **parameters: Dict[str: List[str]]) -> CatalogQuerySet:
+        pass
+
+    @abstractmethod
+    def search(self, text: str) -> CatalogQuerySet:
+        pass
 
 
 def paginated_table(
