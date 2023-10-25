@@ -7,7 +7,8 @@ from rest_framework.serializers import HyperlinkedModelSerializer, ModelSerializ
     SerializerMethodField, URLField
 
 from apps.catalog.models import Species, Family, Genus, Synonymy, Region, Division, ClassName, Order, Status, \
-    CommonName, ConservationState, PlantHabit, EnvironmentalHabit, Cycle, TaxonomicModel, CatalogView, Binnacle
+    CommonName, ConservationState, PlantHabit, EnvironmentalHabit, Cycle, TaxonomicModel, CatalogView, Binnacle, \
+    FinderView
 from apps.digitalization.models import VoucherImported, GalleryImage, BiodataCode, GeneratedPage, ColorProfileFile, \
     PriorityVouchersFile
 
@@ -498,14 +499,14 @@ class DistributionSerializer(ModelSerializer):
 
 class ImagesSerializer(HyperlinkedModelSerializer):
     name = CharField(source='scientific_name')
-    specie_id = CharField(source='scientific_name.id')
+    species_id = CharField(source='scientific_name.id')
     image_name = CharField(source='image_public.name')
     herbarium_code = CharField(source='herbarium.collection_code')
     georeferenced_date = serializers.DateTimeField(format="%d-%m-%Y")
 
     class Meta:
         model = VoucherImported
-        fields = ['id', 'name', 'specie_id', 'herbarium_code', 'image_public', 'image_public_resized_10',
+        fields = ['id', 'name', 'species_id', 'herbarium_code', 'image_public', 'image_public_resized_10',
                   'image_public_resized_60', 'image_name', 'catalog_number', 'recorded_by', 'record_number',
                   'organism_remarks', 'locality', 'identified_by', 'identified_date', 'georeferenced_date']
 
@@ -522,6 +523,13 @@ class CommonNameFinderSerializer(ModelSerializer):
     class Meta:
         model = CommonName
         fields = ['id', 'name', ]
+
+
+class FinderSerializer(ModelSerializer):
+
+    class Meta:
+        model = FinderView
+        fields = '__all__'
 
 
 def get_habit(

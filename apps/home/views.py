@@ -51,3 +51,8 @@ def index(request):
             'digitalized_uls': digitalized_uls
         }
     )
+
+
+@login_required()
+def test_view(request):
+    return render(request, "test.html")

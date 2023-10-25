@@ -20,7 +20,7 @@ RUN pip install --no-cache-dir -r requirements.txt
 COPY ./apps /app/apps
 COPY ./assets /app/assets
 COPY ./templates /app/templates
-COPY ./web /app/web
+COPY intranet /app/intranet
 COPY ./manage.py /app
 
 RUN mkdir -p /app/media/upload
@@ -33,7 +33,7 @@ STOPSIGNAL SIGTERM
 ENV PYTHONPATH=/app:$PYTHONPATH
 
 ENTRYPOINT [ \
-    "gunicorn", "web.wsgi:application", \
+    "gunicorn", "intranet.wsgi:application", \
     "--bind", "0.0.0.0:8000", \
     "--log-level", "debug", \
     "--access-logformat", "'%(h)s %(l)s %(u)s %(t)s \"%(r)s\" %(s)s %(b)s \"%(f)s\" \"%(a)s\" %(L)s \"%({header_name}i)s\"'", \
