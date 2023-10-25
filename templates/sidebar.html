@@ -123,18 +123,12 @@
         </a>
     </li>
 {% endif %}
+<!-- For test new task -->
 {% if request.user|has_group:"Test" %}
-    <li class="nav-item ">
-        <a class="nav-link" href="{% url 'validate_vouchers' %}">
-            <i class="fas fa-fw fa-check"></i>
-            <span>Validación de Especímenes</span></a>
-    </li>
-{% endif %}
-<!-- For test new task
 <li class="nav-item">
-    <a class="nav-link" href="#" onclick="new_task()">
+    <a class="nav-link" href="{% url 'test_view' %}">
         <i class="fas fa-fw fa-check"></i>
-        <span>New Task</span>
+        <span>Pruebas</span>
     </a>
 </li>
--->
+{% endif %}

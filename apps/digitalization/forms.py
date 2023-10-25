@@ -56,6 +56,9 @@ class LoadColorProfileForm(forms.ModelForm):
 
 
 class VoucherImportedForm(forms.ModelForm):
+    def __init__(self, *args, **kwargs):
+        super(VoucherImportedForm, self).__init__(*args, **kwargs)
+
     class Meta:
         model = VoucherImported
         fields = (

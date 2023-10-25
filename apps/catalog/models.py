@@ -1,13 +1,145 @@
 from __future__ import annotations
 import logging
-from abc import abstractmethod
+from abc import abstractmethod, ABC
 from copy import deepcopy
-from typing import List
+from typing import List, Dict, Type
 
 from django.db import models
 from django.contrib.auth.models import User
 from django.db import connection
 from django.db.models import Q
+
+from intranet.utils import CatalogQuerySet
+
+ATTRIBUTES = [
+    "plant_habit", "env_habit",
+    "status", "cycle",
+    "region", "conservation_state",
+    "common_names",
+]
+
+TAXONOMIC_RANK = [
+    "kingdom", "division", "class_name", "order",
+    "family", "genus", "species",
+]
+
+
+class AttributeQuerySet(CatalogQuerySet, ABC):
+    __attribute_name__ = "query"
+
+    def filter_query_in(self, **parameters: Dict[str, List[str]]) -> AttributeQuerySet:
+        query = Q()
+        for query_key, parameter in parameters.items():
+            if query_key == self.__attribute_name__:
+                continue
+            query &= Q(**{f"species__{query_key}__in": parameter})
+        queryset = self.filter(query).distinct()
+        logging.debug(f"{self.__attribute_name__}: {query} and got {queryset}")
+        return queryset
+
+    def filter_query(self, **parameters: Dict[str, List[str]]) -> AttributeQuerySet:
+        query = Q()
+        for query_key, parameter in parameters.items():
+            query_name = f"species__{query_key}" if query_key != self.__attribute_name__ else "pk"
+            query &= Q(**{query_name: parameter})
+        queryset = self.filter(query).distinct()
+        logging.debug(f"{self.__attribute_name__}: {query} and got {queryset}")
+        return queryset
+
+    def filter_taxonomy_in(self, **parameters: Dict[str: List[str]]) -> AttributeQuerySet:
+        query = Q()
+        for taxonomic_rank, parameter in parameters.items():
+            rank_index = TAXONOMIC_RANK.index(taxonomic_rank)
+            query_name = "__".join(list(reversed(TAXONOMIC_RANK))[0:-rank_index])
+            query &= Q(**{f"{query_name}__in": parameter})
+        queryset = self.filter(query).distinct()
+        logging.debug(f"{self.__attribute_name__}: {query} and got {queryset}")
+        return queryset
+
+    def filter_taxonomy(self, **parameters: Dict[str: List[str]]) -> AttributeQuerySet:
+        query = Q()
+        for taxonomic_rank, parameter in parameters.items():
+            rank_index = TAXONOMIC_RANK.index(taxonomic_rank)
+            query_name = "__".join(list(reversed(TAXONOMIC_RANK))[0:-rank_index])
+            query &= Q(**{query_name: parameter})
+        queryset = self.filter(query).distinct()
+        logging.debug(f"{self.__attribute_name__}: {query} and got {queryset}")
+        return queryset
+
+    def search(self, text: str) -> AttributeQuerySet:
+        return self.filter(name__icontains=text)
+
+
+class TaxonomicQuerySet(CatalogQuerySet, ABC):
+    __rank_name__ = "taxonomy"
+
+    def __init__(self, model=None, query=None, using=None, hints=None):
+        super(TaxonomicQuerySet, self).__init__(model, query, using, hints)
+        self.___rank_index__ = TAXONOMIC_RANK.index(self.__rank_name__)
+        return
+
+    def filter_query_in(self, **parameters: Dict[str, List[str]]) -> TaxonomicQuerySet:
+        query = Q()
+        rank_index = TAXONOMIC_RANK.index(self.__rank_name__)
+        query_name = "__".join(TAXONOMIC_RANK[rank_index + 1:])
+        for query_key, parameter in parameters.items():
+            if query_name != "":
+                query_name = f"{query_name}__"
+            query &= Q(**{f"{query_name}{query_key}__in": parameter})
+        queryset = self.filter(query).distinct()
+        logging.debug(f"{self.__rank_name__}: {query} and got {queryset}")
+        return queryset
+
+    def filter_query(self, **parameters: Dict[str, List[str]]) -> TaxonomicQuerySet:
+        query = Q()
+        rank_index = TAXONOMIC_RANK.index(self.__rank_name__)
+        query_name = "__".join(TAXONOMIC_RANK[rank_index + 1:])
+        for query_key, parameter in parameters.items():
+            if query_name != "":
+                query_name = f"{query_name}__"
+            query &= Q(**{f"{query_name}{query_key}": parameter})
+        queryset = self.filter(query).distinct()
+        logging.debug(f"{self.__rank_name__}: {query} and got {queryset}")
+        return queryset
+
+    def get_taxonomic_query(self, taxonomic_rank: str, with_in: bool = False) -> str:
+        rank_index = TAXONOMIC_RANK.index(taxonomic_rank)
+        str_in = "__in" if with_in else ""
+        logging.debug(f"My: {self.___rank_index__}, Query: {rank_index}, in: {with_in}::{str_in}")
+        if self.___rank_index__ < rank_index:
+            return "__".join(TAXONOMIC_RANK[self.___rank_index__ + 1: rank_index + 1]) + str_in
+        elif self.___rank_index__ == rank_index:
+            if with_in:
+                raise RuntimeError
+            return "pk"
+        else:  # self.__rank_index__ > rank_index
+            return "__".join(reversed(TAXONOMIC_RANK[rank_index: self.___rank_index__])) + str_in
+
+    def filter_taxonomy_in(self, **parameters: Dict[str: List[str]]) -> TaxonomicQuerySet:
+        query = Q()
+        for taxonomic_rank, parameter in parameters.items():
+            try:
+                query &= Q(**{self.get_taxonomic_query(taxonomic_rank, with_in=True): parameter})
+            except RuntimeError:
+                continue
+        queryset = self.filter(query).distinct()
+        logging.debug(f"{self.__rank_name__}: {query} and got {queryset}")
+        return queryset
+
+    def filter_taxonomy(self, **parameters: Dict[str: List[str]]) -> TaxonomicQuerySet:
+        query = Q()
+        for taxonomic_rank, parameter in parameters.items():
+            query &= Q(**{self.get_taxonomic_query(taxonomic_rank): parameter})
+        queryset = self.filter(query).distinct()
+        logging.debug(f"{self.__rank_name__}: {query} and got {queryset}")
+        return queryset
+
+    def search(self, text: str) -> TaxonomicQuerySet:
+        return self.filter(self.model.get_query_name(text))
+
+
+class StatusQuerySet(AttributeQuerySet):
+    __attribute_name__ = "status"
 
 
 class Status(models.Model):
@@ -15,6 +147,8 @@ class Status(models.Model):
     created_at = models.DateTimeField(auto_now_add=True, blank=True, null=True, editable=False)
     updated_at = models.DateTimeField(auto_now=True)
     created_by = models.ForeignKey(User, on_delete=models.PROTECT, default=1, editable=False)
+
+    objects = StatusQuerySet.as_manager()
 
     def __unicode__(self):
         return u"%s" % self.name
@@ -30,11 +164,17 @@ class Status(models.Model):
         ordering = ['name']
 
 
+class CycleQuerySet(AttributeQuerySet):
+    __attribute_name__ = "cycle"
+
+
 class Cycle(models.Model):
     name = models.CharField(max_length=100, blank=True, null=True)
     created_at = models.DateTimeField(auto_now_add=True, blank=True, null=True, editable=False)
     updated_at = models.DateTimeField(auto_now=True)
     created_by = models.ForeignKey(User, on_delete=models.PROTECT, default=1, editable=False)
+
+    objects = CycleQuerySet.as_manager()
 
     def __unicode__(self):
         return u"%s" % self.name
@@ -50,6 +190,121 @@ class Cycle(models.Model):
         ordering = ['name']
 
 
+class PlantHabitQuerySet(AttributeQuerySet):
+    __attribute_name__ = "plant_habit"
+
+
+class PlantHabit(models.Model):
+    name = models.CharField(max_length=100, blank=True, null=True)
+    created_at = models.DateTimeField(auto_now_add=True, blank=True, null=True, editable=False)
+    updated_at = models.DateTimeField(auto_now=True)
+    created_by = models.ForeignKey(User, on_delete=models.PROTECT, default=1, editable=False)
+
+    objects = PlantHabitQuerySet.as_manager()
+
+    def __unicode__(self):
+        return u"%s" % self.name
+
+    def __str__(self):
+        return "%s" % self.name
+
+    def __repr__(self):
+        return "Plant Habit::%s" % self.name
+
+    class Meta:
+        verbose_name_plural = "Plant Habits"
+        ordering = ['name']
+
+
+class EnvironmentalHabitQuerySet(AttributeQuerySet):
+    __attribute_name__ = "env_habit"
+
+    def search(self, text: str) -> AttributeQuerySet:
+        return self.filter(
+            Q(female_name__icontains=text) |
+            Q(male_name__icontains=text)
+        )
+
+
+class EnvironmentalHabit(models.Model):
+    female_name = models.CharField(max_length=100, blank=True, null=True)
+    male_name = models.CharField(max_length=100, blank=True, null=True)
+    created_at = models.DateTimeField(auto_now_add=True, blank=True, null=True, editable=False)
+    updated_at = models.DateTimeField(auto_now=True)
+    created_by = models.ForeignKey(User, on_delete=models.PROTECT, default=1, editable=False)
+
+    objects = EnvironmentalHabitQuerySet.as_manager()
+
+    def __unicode__(self):
+        return u"%s" % self.__str__()
+
+    def __str__(self):
+        return "%s / %s" % (self.female_name, self.male_name)
+
+    def __repr__(self):
+        return "Environmental Habit::%s" % self.__str__()
+
+    class Meta:
+        verbose_name_plural = "Environmental Habits"
+        ordering = ['female_name']
+
+
+class RegionQuerySet(AttributeQuerySet):
+    __attribute_name__ = "region"
+
+
+class Region(models.Model):
+    name = models.CharField(max_length=300, blank=True, null=True)
+    key = models.CharField(max_length=3, blank=True, null=True)
+    order = models.IntegerField(blank=True, null=True, db_column="order")
+    created_at = models.DateTimeField(auto_now_add=True, blank=True, null=True, editable=False)
+    updated_at = models.DateTimeField(auto_now=True)
+    created_by = models.ForeignKey(User, on_delete=models.PROTECT, default=1, editable=False)
+
+    objects = RegionQuerySet.as_manager()
+
+    def __unicode__(self):
+        return u"%s" % self.name
+
+    def __str__(self):
+        return "%s " % self.name
+
+    def __repr__(self):
+        return "Region::%s" % self.name
+
+    class Meta:
+        verbose_name_plural = "Regions"
+        ordering = ['order']
+
+
+class ConservationStateQuerySet(AttributeQuerySet):
+    __attribute_name__ = "conservation_state"
+
+
+class ConservationState(models.Model):
+    name = models.CharField(max_length=300, blank=True, null=True)
+    key = models.CharField(max_length=3, blank=True, null=True)
+    order = models.IntegerField(blank=True, null=True, db_column="order")
+    created_at = models.DateTimeField(auto_now_add=True, blank=True, null=True, editable=False)
+    updated_at = models.DateTimeField(auto_now=True)
+    created_by = models.ForeignKey(User, on_delete=models.PROTECT, default=1, editable=False)
+
+    objects = ConservationStateQuerySet.as_manager()
+
+    def __unicode__(self):
+        return u"%s" % self.name
+
+    def __str__(self):
+        return "%s" % self.name
+
+    def __repr__(self):
+        return "Conservation State::%s" % self.name
+
+    class Meta:
+        verbose_name_plural = "Conservation States"
+        ordering = ['order']
+
+
 class TaxonomicModel(models.Model):
     created_at = models.DateTimeField(auto_now_add=True, blank=True, null=True, editable=False)
     updated_at = models.DateTimeField(auto_now=True)
@@ -57,7 +312,7 @@ class TaxonomicModel(models.Model):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        if self.id is not None:
+        if self.pk is not None:
             self.__original__ = deepcopy(self)
         else:
             self.__original__ = None
@@ -87,7 +342,7 @@ class TaxonomicModel(models.Model):
         return Q(created_by__username__icontains=search)
 
     def save(self, force_insert=False, force_update=False, using=None, update_fields=None, **kwargs):
-        if self.id is None:
+        if self.pk is None:
             try:
                 super().save(
                     force_insert=force_insert,
@@ -116,8 +371,14 @@ class TaxonomicModel(models.Model):
         abstract = True
 
 
+class KingdomQuerySet(TaxonomicQuerySet):
+    __rank_name__ = "kingdom"
+
+
 class Kingdom(TaxonomicModel):
     name = models.CharField(max_length=300, blank=True, null=True)
+
+    objects = KingdomQuerySet.as_manager()
 
     def __hash__(self):
         return super().__hash__()
@@ -152,9 +413,15 @@ class Kingdom(TaxonomicModel):
         ordering = ['name']
 
 
+class DivisionQuerySet(TaxonomicQuerySet):
+    __rank_name__ = "division"
+
+
 class Division(TaxonomicModel):
     name = models.CharField(max_length=300, blank=True, null=True)
     kingdom = models.ForeignKey(Kingdom, on_delete=models.CASCADE, blank=True, null=True, help_text="Reino")
+
+    objects = DivisionQuerySet.as_manager()
 
     def __hash__(self):
         return super().__hash__()
@@ -190,9 +457,15 @@ class Division(TaxonomicModel):
         ordering = ['name']
 
 
+class ClassQuerySet(TaxonomicQuerySet):
+    __rank_name__ = "class_name"
+
+
 class ClassName(TaxonomicModel):
     name = models.CharField(max_length=300, blank=True, null=True)
     division = models.ForeignKey(Division, on_delete=models.CASCADE, blank=True, null=True)
+
+    objects = ClassQuerySet.as_manager()
 
     def __hash__(self):
         return super().__hash__()
@@ -230,9 +503,15 @@ class ClassName(TaxonomicModel):
         default_related_name = "class_name"
 
 
+class OrderQuerySet(TaxonomicQuerySet):
+    __rank_name__ = "order"
+
+
 class Order(TaxonomicModel):
     name = models.CharField(max_length=300, blank=True, null=True)
     class_name = models.ForeignKey(ClassName, on_delete=models.CASCADE, blank=True, null=True, help_text="Clase")
+
+    objects = OrderQuerySet.as_manager()
 
     def __hash__(self):
         return super().__hash__()
@@ -268,12 +547,18 @@ class Order(TaxonomicModel):
         ordering = ['name']
 
 
+class FamilyQuerySet(TaxonomicQuerySet):
+    __rank_name__ = "family"
+
+
 class Family(TaxonomicModel):
     name = models.CharField(max_length=300, blank=True, null=True)
     order = models.ForeignKey(
         Order, on_delete=models.CASCADE, blank=True,
         null=True, help_text="order", db_column="order"
     )
+
+    objects = FamilyQuerySet.as_manager()
 
     def __hash__(self):
         return super().__hash__()
@@ -330,9 +615,15 @@ class Family(TaxonomicModel):
         ordering = ['name']
 
 
+class GenusQuerySet(TaxonomicQuerySet):
+    __rank_name__ = "genus"
+
+
 class Genus(TaxonomicModel):
     name = models.CharField(max_length=300, blank=True, null=True)
     family = models.ForeignKey(Family, on_delete=models.CASCADE, blank=True, null=True, help_text="Familia")
+
+    objects = GenusQuerySet.as_manager()
 
     def __hash__(self):
         return super().__hash__()
@@ -376,7 +667,7 @@ class Genus(TaxonomicModel):
                         using=using,
                         update_fields=update_fields,
                         **kwargs
-                   )
+                    )
                 else:
                     vouchers = species.voucherimported_set.all()
                     logging.debug("Vouchers on {} ({}): {}".format(
@@ -395,47 +686,6 @@ class Genus(TaxonomicModel):
     class Meta:
         verbose_name_plural = "Genus"
         ordering = ['name']
-
-
-class PlantHabit(models.Model):
-    name = models.CharField(max_length=100, blank=True, null=True)
-    created_at = models.DateTimeField(auto_now_add=True, blank=True, null=True, editable=False)
-    updated_at = models.DateTimeField(auto_now=True)
-    created_by = models.ForeignKey(User, on_delete=models.PROTECT, default=1, editable=False)
-
-    def __unicode__(self):
-        return u"%s" % self.name
-
-    def __str__(self):
-        return "%s" % self.name
-
-    def __repr__(self):
-        return "Plant Habit::%s" % self.name
-
-    class Meta:
-        verbose_name_plural = "Plant Habits"
-        ordering = ['name']
-
-
-class EnvironmentalHabit(models.Model):
-    female_name = models.CharField(max_length=100, blank=True, null=True)
-    male_name = models.CharField(max_length=100, blank=True, null=True)
-    created_at = models.DateTimeField(auto_now_add=True, blank=True, null=True, editable=False)
-    updated_at = models.DateTimeField(auto_now=True)
-    created_by = models.ForeignKey(User, on_delete=models.PROTECT, default=1, editable=False)
-
-    def __unicode__(self):
-        return u"%s" % self.__str__()
-
-    def __str__(self):
-        return "%s / %s" % (self.female_name, self.male_name)
-
-    def __repr__(self):
-        return "Environmental Habit::%s" % self.__str__()
-
-    class Meta:
-        verbose_name_plural = "Environmental Habits"
-        ordering = ['female_name']
 
 
 class ScientificName(TaxonomicModel):
@@ -521,7 +771,16 @@ class ScientificName(TaxonomicModel):
         abstract = True
 
 
+class SynonymyQuerySet(AttributeQuerySet):
+    __attribute_name__ = "synonymy"
+
+    def search(self, text: str) -> AttributeQuerySet:
+        return self.filter(scientific_name_full__icontains=text)
+
+
 class Synonymy(ScientificName):
+    objects = SynonymyQuerySet.as_manager()
+
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         if "species" in kwargs:
@@ -537,10 +796,6 @@ class Synonymy(ScientificName):
             self.variety_authorship = species.variety_authorship
             self.form = species.form
             self.form_authorship = species.form_authorship
-
-    @staticmethod
-    def get_query_name(search: str) -> Q:
-        return Q(scientific_name_full__icontains=search)
 
     @staticmethod
     def get_parent_query(search: str) -> Q:
@@ -566,8 +821,14 @@ class Synonymy(ScientificName):
         ordering = ['scientific_name']
 
 
+class CommonNameQuerySet(AttributeQuerySet):
+    __attribute_name__ = "common_names"
+
+
 class CommonName(TaxonomicModel):
     name = models.CharField(max_length=300, blank=True, null=True)
+
+    objects = CommonNameQuerySet.as_manager()
 
     def __hash__(self):
         return super().__hash__()
@@ -601,52 +862,11 @@ class CommonName(TaxonomicModel):
         ordering = ['name']
 
 
-class Region(models.Model):
-    name = models.CharField(max_length=300, blank=True, null=True)
-    key = models.CharField(max_length=3, blank=True, null=True)
-    order = models.IntegerField(blank=True, null=True, db_column="order")
-    created_at = models.DateTimeField(auto_now_add=True, blank=True, null=True, editable=False)
-    updated_at = models.DateTimeField(auto_now=True)
-    created_by = models.ForeignKey(User, on_delete=models.PROTECT, default=1, editable=False)
-
-    def __unicode__(self):
-        return u"%s" % self.name
-
-    def __str__(self):
-        return "%s " % self.name
-
-    def __repr__(self):
-        return "Region::%s" % self.name
-
-    class Meta:
-        verbose_name_plural = "Regions"
-        ordering = ['order']
-
-
-class ConservationState(models.Model):
-    name = models.CharField(max_length=300, blank=True, null=True)
-    key = models.CharField(max_length=3, blank=True, null=True)
-    order = models.IntegerField(blank=True, null=True, db_column="order")
-    created_at = models.DateTimeField(auto_now_add=True, blank=True, null=True, editable=False)
-    updated_at = models.DateTimeField(auto_now=True)
-    created_by = models.ForeignKey(User, on_delete=models.PROTECT, default=1, editable=False)
-
-    def __unicode__(self):
-        return u"%s" % self.name
-
-    def __str__(self):
-        return "%s" % self.name
-
-    def __repr__(self):
-        return "Conservation State::%s" % self.name
-
-    class Meta:
-        verbose_name_plural = "Conservation States"
-        ordering = ['order']
+class SpeciesQuerySet(TaxonomicQuerySet):
+    __rank_name__ = "species"
 
 
 class Species(ScientificName):
-    objects = None
     __attributes__ = {
         "id_taxa": "id del taxa",
         "in_argentina": "en Argentina",
@@ -691,9 +911,11 @@ class Species(ScientificName):
     determined = models.BooleanField(default=False)
     id_taxa_origin = models.IntegerField(blank=True, null=True, help_text="")
 
+    objects = SpeciesQuerySet.as_manager()
+
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        if self.id is not None:
+        if self.pk is not None:
             self.__prev__ = Synonymy(species=self)
         else:
             self.__prev__ = None
@@ -729,10 +951,6 @@ class Species(ScientificName):
 
     def kingdom(self):
         return self.genus.family.order.class_name.division.kingdom
-
-    @staticmethod
-    def get_query_name(search: str) -> Q:
-        return Q(scientific_name_full__icontains=search)
 
     @staticmethod
     def get_parent_query(search: str) -> Q:
@@ -824,7 +1042,7 @@ class Binnacle(models.Model):
         description = "Se crea {} {} ({})".format(
             rank_name,
             repr(model),
-            model.id
+            model.pk
         )
         logging.info("{}: {}".format(created_by.username, description))
         binnacle = Binnacle(
@@ -842,7 +1060,7 @@ class Binnacle(models.Model):
         description = "Se actualiza {} {} ({}) en {}".format(
             rank_name,
             prev_model,
-            model.id,
+            model.pk,
             repr(model)
         )
         logging.info("{}: {}".format(created_by.username, description))
@@ -861,7 +1079,7 @@ class Binnacle(models.Model):
         description = "Se elimina {} {} ({})".format(
             rank_name,
             repr(model),
-            model.id
+            model.pk
         )
         try:
             model.delete()
@@ -969,7 +1187,7 @@ class CatalogView(TaxonomicModel):
     created_by = models.CharField(max_length=300, blank=True, null=True)
 
     @classmethod
-    def refresh_view(cl):
+    def refresh_view(cls):
         with connection.cursor() as cursor:
             cursor.execute("REFRESH MATERIALIZED VIEW CONCURRENTLY catalog_view")
 
@@ -1055,7 +1273,7 @@ class SynonymyView(TaxonomicModel):
         return Q(created_by__icontains=search)
 
     @classmethod
-    def refresh_view(cl):
+    def refresh_view(cls):
         with connection.cursor() as cursor:
             cursor.execute("REFRESH MATERIALIZED VIEW CONCURRENTLY synonymy_view")
 
@@ -1070,7 +1288,7 @@ class RegionDistributionView(models.Model):
     SELECT species_region.id,
            species.id               AS specie_id,
            species.id_taxa,
-           species."scientific_name" AS specie_scientific_name,
+           species.scientific_name AS specie_scientific_name,
            region.name              AS region_name,
            region.key               AS region_key
     FROM catalog_species_region species_region
@@ -1091,10 +1309,44 @@ class RegionDistributionView(models.Model):
     region_key = models.CharField(max_length=3, blank=True, null=True)
 
     @classmethod
-    def refresh_view(cl):
+    def refresh_view(cls):
         with connection.cursor() as cursor:
             cursor.execute("REFRESH MATERIALIZED VIEW CONCURRENTLY region_view")
 
     class Meta:
         managed = False
         db_table = 'region_view'
+
+
+class FinderView(models.Model):
+    """
+    CREATE MATERIALIZED VIEW finder_view AS
+    SELECT id, 'species' AS type, scientific_name AS name, determined FROM catalog_species
+    UNION ALL
+    SELECT id, 'synonymy' AS type, scientific_name AS name, FALSE AS determined FROM catalog_synonymy
+    UNION ALL
+    SELECT id, 'family' AS type, name, FALSE AS determined FROM catalog_family
+    UNION ALL
+    SELECT id, 'genus' AS type, name, FALSE AS determined FROM catalog_genus
+    UNION ALL
+    SELECT id, 'common_name' AS type, name, FALSE AS determined FROM catalog_commonname
+    ORDER BY type, name;
+
+    ALTER MATERIALIZED VIEW region_view OWNER TO <POSTGRES_USER>;
+
+    CREATE INDEX finder_view_trgm_id
+        ON finder_view USING gin(name gin_trgm_ops);
+    """
+    id = models.IntegerField(primary_key=True, blank=False, null=False, help_text="id")
+    name = models.CharField(max_length=500, blank=True, null=True, help_text="name")
+    type = models.CharField(max_length=50, blank=True, null=True)
+    determined = models.BooleanField(default=False)
+
+    @classmethod
+    def refresh_view(cls):
+        with connection.cursor() as cursor:
+            cursor.execute("REFRESH MATERIALIZED VIEW CONCURRENTLY finder_view")
+
+    class Meta:
+        managed = False
+        db_table = 'finder_view'

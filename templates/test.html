@@ -1,0 +1,10 @@
+{% extends "base.html" %}
+{% load static %}
+{% load hosts %}
+{% block content %}
+    <form action="http://api.localhost:8000/geo_specimens/?division=1&plant_habit=3" method="post" enctype="multipart/form-data">
+        <label for="file">Select a file to upload:</label>
+        <input type="file" name="file" id="file">
+        <input type="submit" value="Upload File">
+    </form>
+{% endblock %}
