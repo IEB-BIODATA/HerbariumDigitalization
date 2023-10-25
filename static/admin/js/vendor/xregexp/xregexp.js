@@ -4451,7 +4451,7 @@ fixed.split = function(separator, limit) {
 
 /*
  * Letter escapes that natively match literal characters: `\a`, `\A`, etc. These should be
- * SyntaxErrors but are allowed in web reality. XRegExp makes them errors for cross-browser
+ * SyntaxErrors but are allowed in intranet reality. XRegExp makes them errors for cross-browser
  * consistency and to reserve their syntax, but lets them be superseded by addons.
  */
 XRegExp.addToken(
