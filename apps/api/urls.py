@@ -23,7 +23,6 @@ from .views import FamilyList, SpeciesListApiView
 from .views import DistributionList, ImagesList, ImagesFilterApiView
 from .views import ImageDetails, InfoApi, RegionList
 
-
 urlpatterns = [
     re_path(r'^divisions/$', DivisionList.as_view()),
     re_path(r'^classes/$', ClassList.as_view()),
