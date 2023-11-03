@@ -31,15 +31,14 @@ from django.views.decorators.csrf import csrf_exempt
 from django.views.decorators.http import require_POST, require_GET
 
 from apps.catalog.models import Species, CatalogView
-from web.utils import paginated_table
+from intranet.utils import paginated_table
 from .forms import LoadColorProfileForm, VoucherImportedForm, GalleryImageForm, LicenceForm, PriorityVoucherForm, \
     GeneratedPageForm
-from .models import BiodataCode, Herbarium, GeneratedPage, VoucherImported, PriorityVouchersFile, VouchersView, \
+from .models import BiodataCode, GeneratedPage, VoucherImported, PriorityVouchersFile, VouchersView, \
     GalleryImage, BannerImage, VOUCHER_STATE
 from .storage_backends import PrivateMediaStorage
 from .tasks import process_pending_vouchers, upload_priority_vouchers
 from .utils import render_to_pdf
-from ..api.decorators import backend_authenticated
 from ..api.serializers import MinimizedVoucherSerializer, CatalogViewSerializer, GeneratedPageSerializer, \
     PriorityVouchersSerializer
 
@@ -573,7 +572,6 @@ def validate_vouchers(request):
 
 
 @require_POST
-@backend_authenticated
 def upload_gallery(request):
     if request.method == 'POST':
         image = request.FILES['image']
@@ -616,7 +614,6 @@ def get_species(scientific_name_full: str) -> Tuple[Union[Species, None], Union[
 
 
 @require_POST
-@backend_authenticated
 def upload_banner(request):
     if request.method == "POST":
         banner = request.FILES['image']
