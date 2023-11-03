@@ -185,7 +185,6 @@ SWAGGER_SETTINGS = {
     'DEFAULT_AUTO_SCHEMA_CLASS': 'drf_yasg.inspectors.SwaggerAutoSchema',
 }
 
-
 CELERY_TASK_TRACK_STARTED = True
 CELERY_TASK_TIME_LIMIT = 24 * 60 * 60
 CELERY_BROKER_URL = os.environ.get("CELERY_BROKER_URL")
