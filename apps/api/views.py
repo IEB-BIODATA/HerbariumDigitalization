@@ -1,28 +1,34 @@
 import logging
 import os
+from urllib.parse import urlparse, parse_qs, urlencode
 
-from apps.catalog.models import Species, Synonymy, Family, Division, ClassName, Order, Status, Genus, \
-    CommonName, Region, ConservationState, PlantHabit, EnvironmentalHabit, Cycle
-from apps.digitalization.models import VoucherImported, GalleryImage, BannerImage, Areas
 from django.db.models import Q, ExpressionWrapper, F, FloatField, Value
 from django.db.models.functions import Length
 from django.http import JsonResponse
 from django.shortcuts import redirect
 from drf_multiple_model.pagination import MultipleModelLimitOffsetPagination
 from drf_multiple_model.views import FlatMultipleModelAPIView, ObjectMultipleModelAPIView
-from rest_framework import status
-from rest_framework.generics import ListAPIView
+from drf_yasg import openapi
+from drf_yasg.utils import swagger_auto_schema
+from rest_framework import exceptions
+from rest_framework.generics import ListAPIView, RetrieveAPIView
+from rest_framework.pagination import PageNumberPagination
 from rest_framework.renderers import JSONRenderer
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
-from web.utils import get_geometry
+from apps.catalog.models import Species, Synonymy, Family, Division, ClassName, Order, Status, Genus, \
+    Region, ConservationState, PlantHabit, EnvironmentalHabit, Cycle, FinderView
+from apps.digitalization.models import VoucherImported, GalleryImage, BannerImage, Areas
+from intranet.utils import get_geometry
 from .serializers import SynonymySerializer, SpeciesSerializer, SpeciesFinderSerializer, \
-    SynonymysFinderSerializer, FamilysFinderSerializer, DivisionSerializer, ClassSerializer, OrderSerializer, \
-    FamilySerializer, StatusSerializer, GenusFinderSerializer, \
-    ConservationStateSerializer, DistributionSerializer, CommonNameFinderSerializer, RegionSerializer, \
+    SynonymysFinderSerializer, DivisionSerializer, ClassSerializer, OrderSerializer, \
+    FamilySerializer, StatusSerializer, ConservationStateSerializer, DistributionSerializer, RegionSerializer, \
     ImagesSerializer, GalleryPhotosSerializer, PlantHabitSerializer, EnvHabitSerializer, CycleSerializer, \
-    SpeciesImagesSerializer, SpecimenSerializer
+    SpeciesImagesSerializer, SpecimenSerializer, FinderSerializer
+from .utils import filter_query_set, OpenAPIKingdom, OpenAPIClass, OpenAPIOrder, OpenAPIFamily, OpenAPIGenus, \
+    OpenAPISpecies, OpenAPIPlantHabit, OpenAPIEnvHabit, OpenAPIStatus, OpenAPICycle, OpenAPIRegion, OpenAPIConservation, \
+    OpenAPICommonName, OpenAPISearch, OpenAPIDivision, OpenAPIHerbarium
 from ..digitalization.utils import register_temporal_geometry
 
 
@@ -34,120 +40,108 @@ class LimitPaginationImages(MultipleModelLimitOffsetPagination):
     default_limit = 40
 
 
-class DivisionList(ListAPIView):
+class CustomPagination(PageNumberPagination):
+
+    def get_paginated_response(self, data):
+        paginate = self.request.query_params.get("paginated", "true")
+        if paginate.lower() == "false":
+            return Response(data)
+        else:
+            return super().get_paginated_response(data)
+
+
+class BadRequestError(exceptions.APIException):
+    status_code = 400
+    default_detail = "Bad Request"
+
+
+class QueryList(ListAPIView):
+    pagination_class = CustomPagination
+
+    def get_queryset(self):
+        logging.info(f"Getting {self.queryset.model._meta.model_name}: {self.request.get_full_path()}")
+        return filter_query_set(super().get_queryset(), self.request)
+
+    @swagger_auto_schema(manual_parameters=[
+        OpenAPIKingdom(), OpenAPIDivision(), OpenAPIClass(), OpenAPIOrder(),
+        OpenAPIFamily(), OpenAPIGenus(), OpenAPISpecies(),
+        OpenAPIPlantHabit(), OpenAPIEnvHabit(), OpenAPIStatus(), OpenAPICycle(),
+        OpenAPIRegion(), OpenAPIConservation(), OpenAPICommonName(), OpenAPISearch(),
+    ])
+    def get(self, request, *args, **kwargs):
+        return super().get(request, *args, **kwargs)
+
+
+class DivisionList(QueryList):
+    """
+    Gets all available divisions in the catalog
+    """
     serializer_class = DivisionSerializer
     queryset = Division.objects.all()
 
-    def get(self, request, limit=None, **kwargs):
-        if int(limit) == 0:
-            items = Division.objects.all()
-        else:
-            items = Division.objects.all()[:int(limit)]
-        divisions = DivisionSerializer(items, many=True)
-        return Response(status=status.HTTP_200_OK, data=divisions.data)
 
-
-class ClassList(ListAPIView):
+class ClassList(QueryList):
+    """
+    Gets all available classes in the catalog
+    """
     serializer_class = ClassSerializer
     queryset = ClassName.objects.all()
 
-    def get(self, request, limit=None, **kwargs):
-        if int(limit) == 0:
-            items = ClassName.objects.all()
-        else:
-            items = ClassName.objects.all()[:int(limit)]
-        classes = ClassSerializer(items, many=True)
-        return Response(status=status.HTTP_200_OK, data=classes.data)
 
-
-class OrderList(ListAPIView):
+class OrderList(QueryList):
+    """
+    Gets all available orders in the catalog
+    """
     serializer_class = OrderSerializer
     queryset = Order.objects.all()
 
-    def get(self, request, limit=None, **kwargs):
-        if int(limit) == 0:
-            items = Order.objects.all()
-        else:
-            items = Order.objects.all()[:int(limit)]
-        orders = OrderSerializer(items, many=True)
-        return Response(status=status.HTTP_200_OK, data=orders.data)
 
-
-class FamilyList(ListAPIView):
+class FamilyList(QueryList):
+    """
+    Gets all available families in the catalog
+    """
     serializer_class = FamilySerializer
     queryset = Family.objects.all()
 
-    def get(self, request, limit=None, **kwargs):
-        if int(limit) == 0:
-            items = Family.objects.all()
-        else:
-            items = Family.objects.all()[:int(limit)]
-        families = FamilySerializer(items, many=True)
-        return Response(status=status.HTTP_200_OK, data=families.data)
 
-
-class SpeciesList(ListAPIView):
-    serializer_class = SpeciesSerializer
-    queryset = Species.objects.all()
-
-    def get(self, request, specie_name=None, **kwargs):
-        items = Species.objects.filter(scientific_name__icontains=specie_name)
-        species = SpeciesSerializer(items, many=True)
-
-        for index, value in enumerate(species.data):
-            value['type'] = 'specie'
-        return Response(status=status.HTTP_200_OK, data=species.data)
-
-
-class RegionList(ListAPIView):
+class RegionList(QueryList):
+    """
+    Gets all available regions of Chile in the catalog
+    """
     serializer_class = RegionSerializer
     queryset = Region.objects.all()
 
-    def get(self, request, limit=None, **kwargs):
-        if int(limit) == 0:
-            items = Region.objects.all()
-        else:
-            items = Region.objects.all()[:int(limit)]
-        regions = RegionSerializer(items, many=True)
-        return Response(status=status.HTTP_200_OK, data=regions.data)
 
-
-class ConservationStateList(ListAPIView):
-    serializer_class = RegionSerializer
+class ConservationStateList(QueryList):
+    """
+    Gets all available conservation state in the catalog
+    """
+    serializer_class = ConservationStateSerializer
     queryset = ConservationState.objects.all()
 
-    def get(self, request, limit=None, **kwargs):
-        if int(limit) == 0:
-            items = ConservationState.objects.all()
-        else:
-            items = ConservationState.objects.all()[:int(limit)]
-        conservation_state = ConservationStateSerializer(items, many=True)
-        return Response(status=status.HTTP_200_OK, data=conservation_state.data)
 
-
-class SpeciesDetails(ListAPIView):
-    serializer_class = SpeciesImagesSerializer
+class SpeciesDetails(RetrieveAPIView):
+    """
+    Gets the detail of the species given the unique ID
+    """
     queryset = Species.objects.all()
-
-    def get(self, request, specie_id=None, **kwargs):
-        items = Species.objects.get(pk=specie_id)
-        species = SpeciesImagesSerializer(items, many=False, context={'request': request})
-        return Response(status=status.HTTP_200_OK, data=species.data)
+    serializer_class = SpeciesImagesSerializer
 
 
-class SynonymyDetails(ListAPIView):
-    serializer_class = SynonymySerializer
+class SynonymyDetails(RetrieveAPIView):
+    """
+    Gets the detail of the synonymy given the unique ID
+    """
     queryset = Synonymy.objects.all()
-
-    def get(self, request, synonymy_id=None, **kwargs):
-        items = Synonymy.objects.get(pk=synonymy_id)
-        synonymy = SynonymySerializer(instance=items, many=False, context={'request': request})
-        return Response(status=status.HTTP_200_OK, data=synonymy.data)
+    serializer_class = SynonymySerializer
 
 
 class SpecimensList(ListAPIView):
-    serializer_class = SpecimenSerializer
+    """
+    Gets the list of available specimens in the herbarium
+    """
     queryset = VoucherImported.objects.all()
+    serializer_class = SpecimenSerializer
 
     def get_queryset(self):
         queryset = super().get_queryset()
@@ -171,97 +165,100 @@ class SpecimensList(ListAPIView):
             "scientific_name__scientific_name",
         )
 
+    @swagger_auto_schema(manual_parameters=[
+        OpenAPIHerbarium(),
+        openapi.Parameter(
+            name="code", in_=openapi.IN_QUERY,
+            description="""
+            Either the catalogNumber or the complete code including institution, 
+            herbarium code and seven digits catalogNumber, example UDEC:CONC:000XXXX 
+            """,
+            type=openapi.TYPE_STRING
+        )
+    ])
+    def get(self, request, *args, **kwargs):
+        return super().get(request, *args, **kwargs)
 
-class FinderApiView(FlatMultipleModelAPIView):
-    sorting_fields = ['name']
+
+class FinderApiView(ListAPIView):
+    queryset = FinderView.objects.all()
+    serializer_class = FinderSerializer
     pagination_class = None
 
-    def get_querylist(self):
-        word = self.kwargs['word']
-        category = self.kwargs['category']
-        querylist = list()
-        if category == 'all':
-            querylist = [
-                {'queryset': Species.objects.filter(scientific_name__icontains=word),
-                 'serializer_class': SpeciesFinderSerializer},
-                {'queryset': Synonymy.objects.filter(scientific_name__icontains=word),
-                 'serializer_class': SynonymysFinderSerializer},
-                {'queryset': Family.objects.filter(name__icontains=word), 'serializer_class': FamilysFinderSerializer},
-                {'queryset': Genus.objects.filter(name__icontains=word), 'serializer_class': GenusFinderSerializer},
-                {'queryset': CommonName.objects.filter(name__icontains=word),
-                 'serializer_class': CommonNameFinderSerializer},
-            ]
-        elif category == 'species':
-            querylist = [
-                {'queryset': Species.objects.filter(scientific_name__icontains=word),
-                 'serializer_class': SpeciesFinderSerializer},
-            ]
-        elif category == 'synonyms':
-            querylist = [
-                {'queryset': Synonymy.objects.filter(scientific_name__icontains=word),
-                 'serializer_class': SynonymysFinderSerializer},
-            ]
-        elif category == 'families':
-            querylist = [
-                {'queryset': Family.objects.filter(name__icontains=word), 'serializer_class': FamilysFinderSerializer},
-            ]
-        elif category == 'genus':
-            querylist = [
-                {'queryset': Genus.objects.filter(name__icontains=word), 'serializer_class': GenusFinderSerializer},
-            ]
-        elif category == 'common_names':
-            querylist = [
-                {'queryset': CommonName.objects.filter(name__icontains=word),
-                 'serializer_class': CommonNameFinderSerializer},
-            ]
-        return querylist
+    def get_queryset(self):
+        text = self.kwargs.get("text", "")
+        category = self.request.query_params.get("category", None)
+        if category is None or category.lower() == "all":
+            logging.info(f"Getting names: {self.request.get_full_path()}")
+            return super().get_queryset().filter(name__icontains=text)
+        else:
+            logging.info(f"Getting {category.lower()}: {self.request.get_full_path()}")
+            return super().get_queryset().filter(name__icontains=text, type=category.lower())
 
 
-class GeoSpeciesListApiView(ListAPIView):
-    serializer_class = SpeciesSerializer
-    queryset = Species.objects.all()
+class GeoListApiView(QueryList):
+    point_query_name = "point__within"
 
     def get_queryset(self):
         query = Q()
-        areas = self.request.GET.getlist("area", None)
-        for area in areas:
+        queryset = filter_query_set(super().get_queryset(), self.request)
+        for area in self.request.GET.getlist("area", None):
             areas_model = Areas.objects.get(pk=area)
-            query = query | Q(voucherimported__point__within=areas_model.geometry)
-        return super().get_queryset().filter(query).distinct().order_by(
+            query = query | Q(**{self.point_query_name: areas_model.geometry})
+        for geometry in self.request.GET.getlist("geometry", None):
+            query = query | Q(**{self.point_query_name: geometry})
+        try:
+            return queryset.filter(query).distinct()
+        except ValueError as e:
+            logging.error(f"Value Error: {e}", exc_info=True)
+            raise BadRequestError(detail=str(e))
+
+    def post(self, request, *args, **kwargs):
+        geometry = get_geometry(request)[0]
+        area = register_temporal_geometry(geometry)
+        original_url = request.get_full_path()
+        parsed_url = urlparse(original_url)
+        base_url = parsed_url.path
+        query_params = parse_qs(parsed_url.query)
+        query_params["area"] = [str(area)]
+        updated_url = f"{base_url}?{urlencode(query_params, doseq=True)}"
+        logging.info(f"Redirecting POST at {original_url} to {updated_url}")
+        return redirect(updated_url)
+
+
+class GeoSpeciesListApiView(GeoListApiView):
+    """
+    Gets the list of available species within the area code or polygon
+    """
+    serializer_class = SpeciesSerializer
+    queryset = Species.objects.all()
+    point_query_name = "voucherimported__point__within"
+
+    def get_queryset(self):
+        return super().get_queryset().order_by(
             "genus__family__name",
             "genus__name",
             "scientific_name",
         )
 
-    def post(self, request, *args, **kwargs):
-        geometry = get_geometry(request)[0]
-        area = register_temporal_geometry(geometry)
-        return redirect(f"/geo_species/?area={area}")
 
-
-class GeoSpecimensListApiView(ListAPIView):
+class GeoSpecimensListApiView(GeoListApiView):
+    """
+    Gets the list of available specimens within the area code or polygon
+    """
     serializer_class = SpecimenSerializer
     queryset = VoucherImported.objects.all()
+    point_query_name = "point__within"
 
     def get_queryset(self):
-        query = Q()
-        areas = self.request.GET.getlist("area", None)
-        for area in areas:
-            areas_model = Areas.objects.get(pk=area)
-            query = query | Q(point__within=areas_model.geometry)
-        return super().get_queryset().filter(query).order_by(
+        return super().get_queryset().order_by(
             "scientific_name__genus__family__name",
             "scientific_name__genus__name",
             "scientific_name__scientific_name",
         )
 
-    def post(self, request, *args, **kwargs):
-        geometry = get_geometry(request)[0]
-        area = register_temporal_geometry(geometry)
-        return redirect(f"/geo_specimens/?area={area}")
 
-
-class SpeciesFilterApiView(FlatMultipleModelAPIView):
+class SpeciesListApiView(FlatMultipleModelAPIView):
     sorting_fields = ['name']
     pagination_class = LimitPagination
 
@@ -271,93 +268,46 @@ class SpeciesFilterApiView(FlatMultipleModelAPIView):
         self.synonyms_count = 0
 
     def get_querylist(self):
-        query_species = Q()
-        query_synonymy = Q()
-        division = self.request.query_params.get('division')
-        if division:
-            query_species &= Q(genus__family__order__class_name__division_id__in=division)
-            query_synonymy &= Q(species__genus__family__order__class_name__division_id__in=division)
-        class_name = self.request.query_params.getlist('class_name')
-        if class_name:
-            query_species &= Q(genus__family__order__class_name_id__in=class_name)
-            query_synonymy &= Q(species__genus__family__order__class_name_id__in=class_name)
-        order = self.request.query_params.getlist('order')
-        if order:
-            query_species &= Q(genus__family__order_id__in=order)
-            query_synonymy &= Q(species__genus__family__order_id__in=order)
-        family = self.request.query_params.getlist('family')
-        if family:
-            query_species &= Q(genus__family_id__in=family)
-            query_synonymy &= Q(species__genus__family_id__in=family)
-        plant_habit = self.request.query_params.getlist('plant_habit')
-        if plant_habit:
-            query_species &= Q(plant_habit__in=plant_habit)
-            query_synonymy &= Q(species__plant_habit__in=plant_habit)
-        env_habit = self.request.query_params.getlist('env_habit')
-        if env_habit:
-            query_species &= Q(env_habit__in=env_habit)
-            query_synonymy &= Q(species__env_habit__in=env_habit)
-        genus = self.request.query_params.getlist('genus')
-        if genus:
-            query_species &= Q(genus_id__in=genus)
-            query_synonymy &= Q(species__genus_id__in=genus)
-        common_name = self.request.query_params.getlist('common_name')
-        if common_name:
-            query_species &= Q(common_names__in=common_name)
-            query_synonymy &= Q(species__common_names__in=common_name)
-        status = self.request.query_params.getlist('status')
-        if status:
-            query_species &= Q(status__in=status)
-            query_synonymy &= Q(species__status__in=status)
-        cycle = self.request.query_params.getlist('cycle')
-        if cycle:
-            query_species &= Q(cycle__in=cycle)
-            query_synonymy &= Q(species__cycle__in=cycle)
-        region = self.request.query_params.getlist('region')
-        if region:
-            query_species &= Q(region__in=region)
-            query_synonymy &= Q(species__region__in=region)
-        conservation = self.request.query_params.getlist('conservation')
-        if conservation:
-            query_species &= Q(conservation_state__in=conservation)
-            query_synonymy &= Q(species__conservation_state__in=conservation)
-        search = self.request.query_params.get('search')
-        if search:
-            query_species &= Q(scientific_name__icontains=search)
-            query_synonymy &= Q(scientific_name__icontains=search)
-
-        species = self.request.query_params.get('species_filter')
-        synonyms = self.request.query_params.get('synonyms_filter')
-        images_filter = self.request.query_params.get('images_filter')
-        species_results = Species.objects.none()
-        synonyms_results = Synonymy.objects.none()
-        if images_filter:
-            species_results = Species.objects.filter(query_species).exclude(voucherimported__isnull=True).exclude(
-                voucherimported__image_public_resized_10__exact='')
-        else:
-            if species:
-                species_results = Species.objects.filter(query_species)
-            if synonyms:
-                synonyms_results = Synonymy.objects.filter(query_synonymy)
-            if not species and not synonyms:
-                species_results = Species.objects.filter(query_species)
-                synonyms_results = Synonymy.objects.filter(query_synonymy)
-
-        self.species_count = species_results.count()
-        self.synonyms_count = synonyms_results.count()
-
-        return [
-            {'queryset': species_results, 'serializer_class': SpeciesFinderSerializer},
-            {'queryset': synonyms_results, 'serializer_class': SynonymysFinderSerializer},
-        ]
+        species_filter = self.request.query_params.get("species_filter", "false").lower() == "true"
+        synonyms_filter = self.request.query_params.get("synonyms_filter", "false").lower() == "true"
+        image_filter = self.request.query_params.get("image_filter", "false").lower() == "true"
+        if not species_filter and not synonyms_filter:
+            species_filter = True
+            synonyms_filter = True
+        if image_filter:
+            species_filter = True
+            synonyms_filter = False
+        results = list()
+        if species_filter:
+            logging.info(f"Getting species: {self.request.get_full_path()}")
+            queryset = filter_query_set(Species.objects.all(), self.request)
+            if image_filter:
+                queryset = queryset.exclude(
+                    Q(voucherimported__isnull=True) &
+                    Q(voucherimported__image_public_resized_10__exact='')
+                )
+            self.species_count = queryset.count()
+            results.append({
+                "label": "species",
+                "queryset": queryset,
+                "serializer_class": SpeciesFinderSerializer
+            })
+        if synonyms_filter:
+            logging.info(f"Getting synonyms: {self.request.get_full_path()}")
+            queryset = filter_query_set(Synonymy.objects.all(), self.request)
+            self.synonyms_count = queryset.count()
+            results.append({
+                "label": "synonymy",
+                "queryset": queryset,
+                "serializer_class": SynonymysFinderSerializer
+            })
+        return results
 
     def list(self, request, *args, **kwargs):
         response = super().list(request, *args, **kwargs)
-
         # Modify the response data
         response.data['species_count'] = self.species_count
         response.data['synonyms_count'] = self.synonyms_count
-
         return response
 
 
@@ -366,251 +316,122 @@ class MenuApiView(ObjectMultipleModelAPIView):
 
     def get_querylist(self):
         querylist = [
-            {'queryset': Division.objects.all().order_by('name'), 'serializer_class': DivisionSerializer},
-            {'queryset': ClassName.objects.all().order_by('name'), 'serializer_class': ClassSerializer},
-            {'queryset': Order.objects.all().order_by('name')[:5], 'serializer_class': OrderSerializer},
-            {'queryset': Family.objects.all().order_by('name')[:5], 'serializer_class': FamilySerializer},
-            {'queryset': PlantHabit.objects.all().order_by('name')[:5], 'serializer_class': PlantHabitSerializer},
-            {'queryset': EnvironmentalHabit.objects.all().order_by('name')[:5], 'serializer_class': EnvHabitSerializer},
-            {'queryset': Region.objects.all().order_by('name')[:5], 'serializer_class': RegionSerializer},
-            {'queryset': ConservationState.objects.all().order_by('order')[:5],
-             'serializer_class': ConservationStateSerializer},
+            {
+                "label": "division",
+                "queryset": Division.objects.all(),
+                "serializer_class": DivisionSerializer
+            },
+            {
+                "label": "class_name",
+                "queryset": ClassName.objects.all(),
+                "serializer_class": ClassSerializer
+            },
+            {
+                "label": "order",
+                "queryset": Order.objects.all(),
+                "serializer_class": OrderSerializer
+            },
+            {
+                "label": "family",
+                "queryset": Family.objects.all(),
+                "serializer_class": FamilySerializer
+            },
+            {
+                "label": "plant_habit",
+                "queryset": PlantHabit.objects.all(),
+                "serializer_class": PlantHabitSerializer
+            },
+            {
+                "label": "env_habit",
+                "queryset": EnvironmentalHabit.objects.all(),
+                "serializer_class": EnvHabitSerializer
+            },
+            {
+                "label": "status",
+                "queryset": Status.objects.all(),
+                "serializer_class": StatusSerializer
+            },
+            {
+                "label": "cycle",
+                "queryset": Cycle.objects.all(),
+                "serializer_class": CycleSerializer
+            },
+            {
+                "label": "region",
+                "queryset": Region.objects.all(),
+                "serializer_class": RegionSerializer
+            },
+            {
+                "label": "conservation_state",
+                "queryset": ConservationState.objects.all(),
+                "serializer_class": ConservationStateSerializer
+            },
         ]
+        for i in range(len(querylist)):
+            label = querylist[i]["label"]
+            logging.info(label)
+            querylist[i]["queryset"] = filter_query_set(querylist[i]["queryset"], self.request)
+            logging.info(querylist[i])
         return querylist
 
 
-class MenuFilterApiView(ObjectMultipleModelAPIView):
-    pagination_class = None
-    QUERIES = {
-        "division": {
-            "model": Division,
-            "serializer": DivisionSerializer
-        },
-        "class_name": {
-            "model": ClassName,
-            "serializer": ClassSerializer
-        },
-        "order": {
-            "model": Order,
-            "serializer": OrderSerializer
-        },
-        "family": {
-            "model": Family,
-            "serializer": FamilySerializer
-        },
-        "plant_habit": {
-            "model": PlantHabit,
-            "serializer": PlantHabitSerializer
-        },
-        "env_habit": {
-            "model": EnvironmentalHabit,
-            "serializer": EnvHabitSerializer
-        },
-        "status": {
-            "model": Status,
-            "serializer": StatusSerializer
-        },
-        "cycle": {
-            "model": Cycle,
-            "serializer": CycleSerializer
-        },
-        "region": {
-            "model": Region,
-            "serializer": RegionSerializer
-        },
-        "conservation_state": {
-            "model": ConservationState,
-            "serializer": ConservationStateSerializer
-        },
-    }
-    TAXONOMY = list(QUERIES.keys())[0:4]
-
-    def get_querylist(self, limit=5):
-        limit = int(self.kwargs['limit'])
-        old_tag = ""
-        prev_tag = ""
-        querylist = list()
-        for query_name in self.QUERIES:
-            query = Q()
-            tag = ""
-            to_delete = ""
-            additive = False
-            for parameter_name in self.QUERIES:
-                parameters = self.request.query_params.getlist(parameter_name)
-                if query_name == parameter_name:
-                    tag = ""
-                    additive = True
-                    if query_name in self.TAXONOMY:
-                        prev_tag = "{}__{}".format(query_name, prev_tag)
-                        old_tag = ""
-                else:
-                    if query_name in self.TAXONOMY:
-                        if additive:
-                            if parameter_name in self.TAXONOMY:
-                                tag = "{}{}__".format(tag, parameter_name)
-                                old_tag = tag
-                            else:
-                                tag = "{}genus__species__{}__".format(old_tag, parameter_name)
-                        else:
-                            tag = prev_tag.replace(to_delete, "")
-                            to_delete = "{}__{}".format(parameter_name, to_delete)
-                    else:
-                        if parameter_name in self.TAXONOMY:
-                            tag = "species__genus__family__order__class_name__division__".replace(to_delete, "")
-                            to_delete = "{}{}__".format(to_delete, parameter_name)
-                        else:
-                            tag = "species__{}__".format(parameter_name)
-                logging.debug("Query: {}\tParameter: {}\n({}in)".format(query_name, parameter_name, tag))
-                if len(parameters) > 0 and tag != "":
-                    if parameter_name == "plant_habit" and '2' in parameters:
-                        logging.debug("Adding 5 (Small tree) to 2 (tree) filter")
-                        parameters += ['5']
-                    query &= Q(**{"{}in".format(tag): parameters})
-                logging.debug(query)
-            results = self.QUERIES[query_name]["model"].objects.filter(query).distinct()  # .order_by('name')
-            if limit != 0 and query_name not in list(self.QUERIES.keys())[0:2] + ["status"]:
-                results = results[:limit]
-            querylist.append({
-                "queryset": results, "serializer_class": self.QUERIES[query_name]["serializer"],
-            })
-        return querylist
-
-
-class DistributionList(ListAPIView):
+class DistributionList(QueryList):
+    queryset = VoucherImported.objects.all()
     serializer_class = DistributionSerializer
+
+    def get_queryset(self):
+        species_id = self.kwargs["species_id"]
+        queryset = super().get_queryset()
+        if species_id:
+            queryset = queryset.filter(scientific_name=species_id)
+        return queryset.order_by("id")
+
+
+class ImagesList(QueryList):
     queryset = VoucherImported.objects.all()
-
-    def get(self, request, specie_id=None, **kwargs):
-        items = VoucherImported.objects.filter(scientific_name=specie_id)
-        distribution = DistributionSerializer(items, many=True)
-
-        return Response(status=status.HTTP_200_OK, data=distribution.data)
-
-
-class ImagesList(ListAPIView):
     serializer_class = ImagesSerializer
-    queryset = VoucherImported.objects.all()
 
-    def get(self, request, specie_id=None, **kwargs):
-        items = VoucherImported.objects.filter(scientific_name=specie_id).exclude(image_public_resized_10__exact='')
-        images = ImagesSerializer(items, many=True)
+    def get_queryset(self):
+        species_id = self.kwargs["species_id"]
+        queryset = super().get_queryset()
+        if species_id:
+            queryset = queryset.filter(scientific_name=species_id)
+        queryset = queryset.exclude(image_public_resized_10__exact="")
+        return queryset.order_by("id")
 
-        return Response(status=status.HTTP_200_OK, data=images.data)
 
-
-class GalleryList(ListAPIView):
-    serializer_class = GalleryPhotosSerializer
+class GalleryList(QueryList):
     queryset = GalleryImage.objects.all()
+    serializer_class = GalleryPhotosSerializer
 
-    def get(self, request, specie_id=None, **kwargs):
-        items = GalleryImage.objects.filter(scientific_name=specie_id)
-        images = GalleryPhotosSerializer(items, many=True)
-        return Response(status=status.HTTP_200_OK, data=images.data)
+    def get_queryset(self):
+        species_id = self.kwargs["species_id"]
+        queryset = super().get_queryset()
+        if species_id:
+            queryset = queryset.filter(scientific_name=species_id)
+        return queryset.order_by("id")
 
 
 class ImagesFilterApiView(FlatMultipleModelAPIView):
+    sorting_fields = ['name']
     pagination_class = LimitPaginationImages
 
     def get_querylist(self):
-        query_images = Q()
-        division = self.request.query_params.get('division')
-        if division:
-            query_images &= Q(scientific_name__genus__family__order__class_name__division_id__in=division)
-        class_name = self.request.query_params.getlist('class_name')
-        if class_name:
-            query_images &= Q(scientific_name__genus__family__order__class_name_id__in=class_name)
-        order = self.request.query_params.getlist('order')
-        if order:
-            query_images &= Q(scientific_name__genus__family__order_id__in=order)
-        family = self.request.query_params.getlist('family')
-        if family:
-            query_images &= Q(scientific_name__genus__family_id__in=family)
-        habit = self.request.query_params.getlist('habit')
-        if habit:
-            query_images &= Q(scientific_name__habit_id__in=habit)
-        genus = self.request.query_params.getlist('genus')
-        if genus:
-            query_images &= Q(scientific_name__genus_id__in=genus)
-        common_name = self.request.query_params.getlist('common_name')
-        if common_name:
-            query_images &= Q(scientific_name__common_names__in=common_name)
-        status = self.request.query_params.getlist('status')
-        if status:
-            query_images &= Q(scientific_name__status__in=status)
-        cycle = self.request.query_params.getlist('cycle')
-        if cycle:
-            query_images &= Q(scientific_name__ciclo__in=cycle)
-        region = self.request.query_params.getlist('region')
-        if region:
-            query_images &= Q(scientific_name__region__in=region)
-        conservation = self.request.query_params.getlist('conservation')
-        if conservation:
-            query_images &= Q(scientific_name__conservation_state__in=conservation)
-        querylist = [
-            {'queryset': VoucherImported.objects.filter(query_images).exclude(
-                image_public_resized_10__exact='').order_by('scientific_name'), 'serializer_class': ImagesSerializer},
-
-        ]
-        return querylist
+        queryset = VoucherImported.objects.exclude(image_public_resized_10__exact='').all()
+        queryset = filter_query_set(queryset, self.request)
+        return [{
+            "label": "image",
+            "queryset": queryset,
+            "serializer_class": ImagesSerializer
+        }]
 
 
-class ImagesCountApiView(APIView):
-    """
-    A view that returns the count of active images.
-    """
-    renderer_classes = (JSONRenderer,)
-
-    def get(self, request, format=None):
-        query_images = Q()
-        division = self.request.query_params.get('division')
-        if division:
-            query_images &= Q(scientific_name__genus__family__order__class_name__division_id__in=division)
-        class_name = self.request.query_params.getlist('class_name')
-        if class_name:
-            query_images &= Q(scientific_name__genus__family__order__class_name_id__in=class_name)
-        order = self.request.query_params.getlist('order')
-        if order:
-            query_images &= Q(scientific_name__genus__family__order_id__in=order)
-        family = self.request.query_params.getlist('family')
-        if family:
-            query_images &= Q(scientific_name__genus__family_id__in=family)
-        habit = self.request.query_params.getlist('habit')
-        if habit:
-            query_images &= Q(scientific_name__habit_id__in=habit)
-        genus = self.request.query_params.getlist('genus')
-        if genus:
-            query_images &= Q(scientific_name__genus_id__in=genus)
-        common_name = self.request.query_params.getlist('common_name')
-        if common_name:
-            query_images &= Q(scientific_name__common_names__in=common_name)
-        status = self.request.query_params.getlist('status')
-        if status:
-            query_images &= Q(scientific_name__status__in=status)
-        cycle = self.request.query_params.getlist('cycle')
-        if cycle:
-            query_images &= Q(scientific_name__ciclo__in=cycle)
-        region = self.request.query_params.getlist('region')
-        if region:
-            query_images &= Q(scientific_name__region__in=region)
-        conservation = self.request.query_params.getlist('conservation')
-        if conservation:
-            query_images &= Q(scientific_name__conservation_state__in=conservation)
-        images_count = VoucherImported.objects.filter(query_images).exclude(image_public_resized_10__exact='').count()
-        content = {'images_count': images_count}
-        return Response(content)
-
-
-class ImageDetails(ListAPIView):
-    serializer_class = ImagesSerializer
+class ImageDetails(RetrieveAPIView):
     queryset = VoucherImported.objects.all()
-
-    def get(self, request, voucher_id=None, **kwargs):
-        items = VoucherImported.objects.get(pk=voucher_id)
-        voucher = ImagesSerializer(items, many=False, context={'request': request})
-        return Response(status=status.HTTP_200_OK, data=voucher.data)
+    serializer_class = ImagesSerializer
 
 
-class TotalImages(APIView):
+class InfoApi(APIView):
     """
     A view that returns the count of active images.
     """
@@ -618,20 +439,13 @@ class TotalImages(APIView):
 
     def get(self, request, format=None):
         images_count = VoucherImported.objects.all().exclude(image_public_resized_10__exact='').count()
-        content = {'total': images_count}
-        return Response(content)
-
-
-class TotalSpecies(APIView):
-    """
-    A view that returns the count of active images.
-    """
-    renderer_classes = (JSONRenderer,)
-
-    def get(self, request, format=None):
         species_count = Species.objects.all().exclude(voucherimported__isnull=True).exclude(
-            voucherimported__image_public_resized_10__exact='').count()
-        content = {'total': species_count}
+            voucherimported__image_public_resized_10__exact=''
+        ).count()
+        content = {
+            'images': images_count,
+            'species': species_count,
+        }
         return Response(content)
 
 

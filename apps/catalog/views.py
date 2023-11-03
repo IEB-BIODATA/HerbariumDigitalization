@@ -15,12 +15,12 @@ from django.shortcuts import render, redirect
 from django.urls import reverse
 from rest_framework.serializers import SerializerMetaclass
 
-from web.utils import paginated_table
+from intranet.utils import paginated_table
 from .forms import DivisionForm, ClassForm, OrderForm, FamilyForm, GenusForm, SpeciesForm, SynonymyForm, BinnacleForm, \
     CommonNameForm
 from .models import Species, CatalogView, SynonymyView, RegionDistributionView, Division, ClassName, Order, Family, \
     Genus, Synonymy, Region, CommonName, Binnacle, PlantHabit, EnvironmentalHabit, Cycle, TaxonomicModel, \
-    ConservationState
+    ConservationState, FinderView
 from ..api.serializers import DivisionSerializer, ClassSerializer, OrderSerializer, \
     FamilySerializer, GenusSerializer, SynonymysSerializer, CommonNameSerializer, CatalogViewSerializer, \
     BinnacleSerializer, SpeciesDetailSerializer
@@ -122,6 +122,7 @@ def __create_catalog__(
                         for identifier in request.POST.getlist(relation):
                             getattr(new_model, relation).add(many_model.objects.get(id=identifier))
             CatalogView.refresh_view()
+            FinderView.refresh_view()
             SynonymyView.refresh_view()
             RegionDistributionView.refresh_view()
             return new_model.id
@@ -157,6 +158,7 @@ def __update_catalog__(
                         Binnacle.update_entry(repr(new_model), new_model, user, notes=". ".join(changes))
             new_model.save(user=user)
             CatalogView.refresh_view()
+            FinderView.refresh_view()
             SynonymyView.refresh_view()
             RegionDistributionView.refresh_view()
             return True
@@ -174,6 +176,7 @@ def __update_catalog__(
 def __delete_catalog__(model: TaxonomicModel, user: User):
     Binnacle.delete_entry(model, user)
     CatalogView.refresh_view()
+    FinderView.refresh_view()
     SynonymyView.refresh_view()
     RegionDistributionView.refresh_view()
     return
@@ -588,6 +591,7 @@ def delete_taxa(request, species_id):
         )
         binnacle.save()
         CatalogView.refresh_view()
+        FinderView.refresh_view()
         SynonymyView.refresh_view()
         RegionDistributionView.refresh_view()
     except Exception as e:
@@ -637,6 +641,7 @@ def merge_taxa(request, taxa_1: int, taxa_2: int) -> HttpResponse:
                     voucher.generate_etiquette()
                 Binnacle.delete_entry(prev_species, request.user)
             CatalogView.refresh_view()
+            FinderView.refresh_view()
             SynonymyView.refresh_view()
             RegionDistributionView.refresh_view()
             return redirect("list_taxa")

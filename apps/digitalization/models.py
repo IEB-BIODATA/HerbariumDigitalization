@@ -4,13 +4,13 @@ from __future__ import annotations
 
 import logging
 import math
-from typing import BinaryIO, Union, Any, Tuple, Callable
+from typing import BinaryIO, Union, Any, Tuple, Callable, Dict, List
 
 import celery
 import numpy as np
 import pandas as pd
 import pytz
-from apps.catalog.models import Species
+from apps.catalog.models import Species, TAXONOMIC_RANK
 from django.conf import settings
 from django.contrib.auth.models import User
 from django.contrib.gis.db import models
@@ -23,6 +23,7 @@ from django.db.models.signals import post_delete, pre_save
 from django.dispatch import receiver
 from django.forms import CharField
 
+from intranet.utils import CatalogQuerySet
 from .storage_backends import PublicMediaStorage, PrivateMediaStorage
 from .validators import validate_file_size
 
@@ -205,6 +206,52 @@ class PriorityVouchersFile(models.Model):
         return "%s " % self.file.name
 
 
+class VoucherImportedQuerySet(CatalogQuerySet):
+
+    def filter_query_in(self, **parameters: Dict[str, List[str]]) -> CatalogQuerySet:
+        query = Q()
+        for query_key, parameter in parameters.items():
+            query &= Q(**{f"scientific_name__{query_key}__in": parameter})
+        queryset = self.filter(query).distinct()
+        logging.debug(f"Voucher Imported: {query} and got {queryset}")
+        return queryset
+
+    def filter_query(self, **parameters: Dict[str, List[str]]) -> CatalogQuerySet:
+        query = Q()
+        for query_key, parameter in parameters.items():
+            query &= Q(**{f"scientific_name__{query_key}": parameter})
+        queryset = self.filter(query).distinct()
+        logging.debug(f"Voucher Imported: {query} and got {queryset}")
+        return queryset
+
+    def filter_taxonomy_in(self, **parameters: Dict[str: List[str]]) -> CatalogQuerySet:
+        query = Q()
+        for taxonomic_rank, parameter in parameters.items():
+            rank_index = TAXONOMIC_RANK.index(taxonomic_rank)
+            query_name = "__".join(list(reversed(TAXONOMIC_RANK))[0:-rank_index]).replace(
+                "species", "scientific_name"
+            )
+            query &= Q(**{f"{query_name}__in": parameter})
+        queryset = self.filter(query).distinct()
+        logging.debug(f"Voucher Imported: {query} and got {queryset}")
+        return queryset
+
+    def filter_taxonomy(self, **parameters: Dict[str: List[str]]) -> CatalogQuerySet:
+        query = Q()
+        for taxonomic_rank, parameter in parameters.items():
+            rank_index = TAXONOMIC_RANK.index(taxonomic_rank)
+            query_name = "__".join(list(reversed(TAXONOMIC_RANK))[0:-rank_index]).replace(
+                "species", "scientific_name"
+            )
+            query &= Q(**{query_name: parameter})
+        queryset = self.filter(query).distinct()
+        logging.debug(f"Voucher Imported: {query} and got {queryset}")
+        return queryset
+
+    def search(self, text: str) -> CatalogQuerySet:
+        return self.filter(scientific_name__scientific_name__icontains=text)
+
+
 class VoucherImported(models.Model):
     vouchers_file = models.ForeignKey(PriorityVouchersFile, on_delete=models.CASCADE, blank=True, null=True)
     biodata_code = models.ForeignKey(BiodataCode, on_delete=models.CASCADE, blank=True, null=True)
@@ -234,6 +281,8 @@ class VoucherImported(models.Model):
     decimal_longitude_public = models.FloatField(blank=True, null=True)
     point_public = models.PointField(null=True, blank=True, )
     priority = models.IntegerField(blank=True, null=True, default=3)
+
+    objects = VoucherImportedQuerySet.as_manager()
 
     class Meta:
         verbose_name_plural = "Vouchers"

@@ -1,4 +1,4 @@
-"""web URL Configuration
+"""intranet URL Configuration
 
 The `urlpatterns` list routes URLs to views. For more information please see:
     https://docs.djangoproject.com/en/4.1/topics/http/urls/
@@ -20,20 +20,6 @@ from django.contrib import admin
 from django.contrib.auth import views as auth_views
 from django.contrib.auth.views import LogoutView
 from django.urls import re_path
-from drf_yasg import openapi
-from drf_yasg.views import get_schema_view
-from rest_framework import permissions
-
-schema_view = get_schema_view(
-   openapi.Info(
-      title="Herbarium Catalog API",
-      default_version='v3',
-      description="Catálogo de Plantas Vasculares y digitalización de Herbarios",
-      contact=openapi.Contact(email="jmsaez@ieb-chile.cl"),
-   ),
-   public=True,
-   permission_classes=[permissions.AllowAny],
-)
 
 urlpatterns = [
     re_path(r'^admin/', admin.site.urls),
@@ -42,13 +28,10 @@ urlpatterns = [
     re_path(r'^catalog/', include('apps.catalog.urls'), name='index'),
     re_path(r'^accounts/login/', auth_views.LoginView.as_view(), name='login'),
     re_path(r'^logout/', LogoutView.as_view(next_page=settings.LOGOUT_REDIRECT_URL), name='logout'),
-    re_path(r'^swagger(?P<format>\.json|\.yaml)$', schema_view.without_ui(cache_timeout=0), name='schema-json'),
-    re_path(r'^swagger/$', schema_view.with_ui('swagger', cache_timeout=0), name='schema-swagger-ui'),
-    re_path(r'^redoc/$', schema_view.with_ui('redoc', cache_timeout=0), name='schema-redoc'),
 ]
 
-handler404 = 'web.views.handler404'
-handler500 = 'web.views.handler500'
+handler404 = 'intranet.views.handler404'
+handler500 = 'intranet.views.handler500'
 
 if settings.DEBUG:
     urlpatterns += static(settings.STATIC_URL, document_root=settings.STATIC_ROOT)
