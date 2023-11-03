@@ -267,6 +267,8 @@ class SpecimenSerializer(HyperlinkedModelSerializer):
         fields = [
             "id", "code", "herbarium_code", "catalog_number",
             "image_public_resized_10", "species",
+            "decimal_latitude_public",
+            "decimal_longitude_public",
         ]
 
     def get_species(self, obj):

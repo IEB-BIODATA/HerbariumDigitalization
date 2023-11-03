@@ -23,23 +23,8 @@ from .views import FamilyList, SpeciesListApiView
 from .views import DistributionList, ImagesList, ImagesFilterApiView
 from .views import ImageDetails, InfoApi, RegionList
 
-from drf_yasg import openapi
-from drf_yasg.views import get_schema_view
-from rest_framework import permissions
-
-schema_view = get_schema_view(
-   openapi.Info(
-      title="Herbarium Catalog API",
-      default_version='v3',
-      description="Catálogo de Plantas Vasculares y digitalización de Herbarios",
-      contact=openapi.Contact(email="jmsaez@ieb-chile.cl"),
-   ),
-   public=True,
-   permission_classes=[permissions.AllowAny],
-)
-
 urlpatterns = [
-    re_path(r'^divisions/$', DivisionList.as_view(), name="divisions"),
+    re_path(r'^divisions/$', DivisionList.as_view()),
     re_path(r'^classes/$', ClassList.as_view()),
     re_path(r'^orders/$', OrderList.as_view()),
     re_path(r'^families/$', FamilyList.as_view()),
@@ -59,8 +44,5 @@ urlpatterns = [
     re_path(r'^image/(?P<pk>\d+)/$', ImageDetails.as_view()),
     re_path(r'^info/$', InfoApi.as_view()),
     re_path(r'^banner/(?P<specie_id>\d+)/$', BannerSpecie.as_view()),
-    re_path(r'^names/$', views.get_names, name='get_names'),
-    re_path(r'^swagger(?P<format>\.json|\.yaml)$', schema_view.without_ui(cache_timeout=0), name='schema-json'),
-    re_path(r'^swagger/$', schema_view.with_ui('swagger', cache_timeout=0), name='schema-swagger-ui'),
-    re_path(r'^redoc/$', schema_view.with_ui('redoc', cache_timeout=0), name='schema-redoc'),
+    re_path(r'^names/$', views.get_names),
 ]

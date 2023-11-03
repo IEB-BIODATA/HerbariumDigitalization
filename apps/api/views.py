@@ -2,32 +2,33 @@ import logging
 import os
 from urllib.parse import urlparse, parse_qs, urlencode
 
-from drf_yasg.utils import swagger_auto_schema
-
-from apps.catalog.models import Species, Synonymy, Family, Division, ClassName, Order, Status, Genus, \
-    CommonName, Region, ConservationState, PlantHabit, EnvironmentalHabit, Cycle, TAXONOMIC_RANK, ATTRIBUTES, FinderView
-from apps.digitalization.models import VoucherImported, GalleryImage, BannerImage, Areas
 from django.db.models import Q, ExpressionWrapper, F, FloatField, Value
 from django.db.models.functions import Length
 from django.http import JsonResponse
 from django.shortcuts import redirect
 from drf_multiple_model.pagination import MultipleModelLimitOffsetPagination
 from drf_multiple_model.views import FlatMultipleModelAPIView, ObjectMultipleModelAPIView
-from rest_framework import status
+from drf_yasg import openapi
+from drf_yasg.utils import swagger_auto_schema
+from rest_framework import exceptions
 from rest_framework.generics import ListAPIView, RetrieveAPIView
 from rest_framework.pagination import PageNumberPagination
 from rest_framework.renderers import JSONRenderer
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
+from apps.catalog.models import Species, Synonymy, Family, Division, ClassName, Order, Status, Genus, \
+    Region, ConservationState, PlantHabit, EnvironmentalHabit, Cycle, FinderView
+from apps.digitalization.models import VoucherImported, GalleryImage, BannerImage, Areas
 from intranet.utils import get_geometry
 from .serializers import SynonymySerializer, SpeciesSerializer, SpeciesFinderSerializer, \
-    SynonymysFinderSerializer, FamilysFinderSerializer, DivisionSerializer, ClassSerializer, OrderSerializer, \
-    FamilySerializer, StatusSerializer, GenusFinderSerializer, \
-    ConservationStateSerializer, DistributionSerializer, CommonNameFinderSerializer, RegionSerializer, \
+    SynonymysFinderSerializer, DivisionSerializer, ClassSerializer, OrderSerializer, \
+    FamilySerializer, StatusSerializer, ConservationStateSerializer, DistributionSerializer, RegionSerializer, \
     ImagesSerializer, GalleryPhotosSerializer, PlantHabitSerializer, EnvHabitSerializer, CycleSerializer, \
     SpeciesImagesSerializer, SpecimenSerializer, FinderSerializer
-from .utils import filter_query_set
+from .utils import filter_query_set, OpenAPIKingdom, OpenAPIClass, OpenAPIOrder, OpenAPIFamily, OpenAPIGenus, \
+    OpenAPISpecies, OpenAPIPlantHabit, OpenAPIEnvHabit, OpenAPIStatus, OpenAPICycle, OpenAPIRegion, OpenAPIConservation, \
+    OpenAPICommonName, OpenAPISearch, OpenAPIDivision, OpenAPIHerbarium
 from ..digitalization.utils import register_temporal_geometry
 
 
@@ -49,6 +50,11 @@ class CustomPagination(PageNumberPagination):
             return super().get_paginated_response(data)
 
 
+class BadRequestError(exceptions.APIException):
+    status_code = 400
+    default_detail = "Bad Request"
+
+
 class QueryList(ListAPIView):
     pagination_class = CustomPagination
 
@@ -56,52 +62,84 @@ class QueryList(ListAPIView):
         logging.info(f"Getting {self.queryset.model._meta.model_name}: {self.request.get_full_path()}")
         return filter_query_set(super().get_queryset(), self.request)
 
+    @swagger_auto_schema(manual_parameters=[
+        OpenAPIKingdom(), OpenAPIDivision(), OpenAPIClass(), OpenAPIOrder(),
+        OpenAPIFamily(), OpenAPIGenus(), OpenAPISpecies(),
+        OpenAPIPlantHabit(), OpenAPIEnvHabit(), OpenAPIStatus(), OpenAPICycle(),
+        OpenAPIRegion(), OpenAPIConservation(), OpenAPICommonName(), OpenAPISearch(),
+    ])
+    def get(self, request, *args, **kwargs):
+        return super().get(request, *args, **kwargs)
+
 
 class DivisionList(QueryList):
     """
     Gets all available divisions in the catalog
     """
-
     serializer_class = DivisionSerializer
     queryset = Division.objects.all()
 
 
 class ClassList(QueryList):
+    """
+    Gets all available classes in the catalog
+    """
     serializer_class = ClassSerializer
     queryset = ClassName.objects.all()
 
 
 class OrderList(QueryList):
+    """
+    Gets all available orders in the catalog
+    """
     serializer_class = OrderSerializer
     queryset = Order.objects.all()
 
 
 class FamilyList(QueryList):
+    """
+    Gets all available families in the catalog
+    """
     serializer_class = FamilySerializer
     queryset = Family.objects.all()
 
 
 class RegionList(QueryList):
+    """
+    Gets all available regions of Chile in the catalog
+    """
     serializer_class = RegionSerializer
     queryset = Region.objects.all()
 
 
 class ConservationStateList(QueryList):
+    """
+    Gets all available conservation state in the catalog
+    """
     serializer_class = ConservationStateSerializer
     queryset = ConservationState.objects.all()
 
 
 class SpeciesDetails(RetrieveAPIView):
+    """
+    Gets the detail of the species given the unique ID
+    """
     queryset = Species.objects.all()
     serializer_class = SpeciesImagesSerializer
 
 
 class SynonymyDetails(RetrieveAPIView):
+    """
+    Gets the detail of the synonymy given the unique ID
+    """
     queryset = Synonymy.objects.all()
     serializer_class = SynonymySerializer
 
 
 class SpecimensList(ListAPIView):
+    """
+    Gets the list of available specimens in the herbarium
+    """
     queryset = VoucherImported.objects.all()
     serializer_class = SpecimenSerializer
 
@@ -127,6 +165,20 @@ class SpecimensList(ListAPIView):
             "scientific_name__scientific_name",
         )
 
+    @swagger_auto_schema(manual_parameters=[
+        OpenAPIHerbarium(),
+        openapi.Parameter(
+            name="code", in_=openapi.IN_QUERY,
+            description="""
+            Either the catalogNumber or the complete code including institution, 
+            herbarium code and seven digits catalogNumber, example UDEC:CONC:000XXXX 
+            """,
+            type=openapi.TYPE_STRING
+        )
+    ])
+    def get(self, request, *args, **kwargs):
+        return super().get(request, *args, **kwargs)
+
 
 class FinderApiView(ListAPIView):
     queryset = FinderView.objects.all()
@@ -144,17 +196,22 @@ class FinderApiView(ListAPIView):
             return super().get_queryset().filter(name__icontains=text, type=category.lower())
 
 
-class GeoListApiView(ListAPIView):
+class GeoListApiView(QueryList):
     point_query_name = "point__within"
 
     def get_queryset(self):
         query = Q()
         queryset = filter_query_set(super().get_queryset(), self.request)
-        areas = self.request.GET.getlist("area", None)
-        for area in areas:
+        for area in self.request.GET.getlist("area", None):
             areas_model = Areas.objects.get(pk=area)
             query = query | Q(**{self.point_query_name: areas_model.geometry})
-        return queryset.filter(query).distinct()
+        for geometry in self.request.GET.getlist("geometry", None):
+            query = query | Q(**{self.point_query_name: geometry})
+        try:
+            return queryset.filter(query).distinct()
+        except ValueError as e:
+            logging.error(f"Value Error: {e}", exc_info=True)
+            raise BadRequestError(detail=str(e))
 
     def post(self, request, *args, **kwargs):
         geometry = get_geometry(request)[0]
@@ -170,6 +227,9 @@ class GeoListApiView(ListAPIView):
 
 
 class GeoSpeciesListApiView(GeoListApiView):
+    """
+    Gets the list of available species within the area code or polygon
+    """
     serializer_class = SpeciesSerializer
     queryset = Species.objects.all()
     point_query_name = "voucherimported__point__within"
@@ -183,6 +243,9 @@ class GeoSpeciesListApiView(GeoListApiView):
 
 
 class GeoSpecimensListApiView(GeoListApiView):
+    """
+    Gets the list of available specimens within the area code or polygon
+    """
     serializer_class = SpecimenSerializer
     queryset = VoucherImported.objects.all()
     point_query_name = "point__within"
@@ -214,7 +277,6 @@ class SpeciesListApiView(FlatMultipleModelAPIView):
         if image_filter:
             species_filter = True
             synonyms_filter = False
-        search = self.request.query_params.get("search", None)
         results = list()
         if species_filter:
             logging.info(f"Getting species: {self.request.get_full_path()}")
@@ -224,8 +286,6 @@ class SpeciesListApiView(FlatMultipleModelAPIView):
                     Q(voucherimported__isnull=True) &
                     Q(voucherimported__image_public_resized_10__exact='')
                 )
-            if search:
-                queryset = queryset.search(search)
             self.species_count = queryset.count()
             results.append({
                 "label": "species",
@@ -235,8 +295,6 @@ class SpeciesListApiView(FlatMultipleModelAPIView):
         if synonyms_filter:
             logging.info(f"Getting synonyms: {self.request.get_full_path()}")
             queryset = filter_query_set(Synonymy.objects.all(), self.request)
-            if search:
-                queryset = queryset.search(search)
             self.synonyms_count = queryset.count()
             results.append({
                 "label": "synonymy",
