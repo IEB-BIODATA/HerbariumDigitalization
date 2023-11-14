@@ -74,7 +74,7 @@
         </div>
         <div class="card-body">
             <div class="table-responsive">
-                <form action="/digitalization/update_voucher/{{id}}/" method="post" class="form-horizontal">
+                <form action="{% url 'update_voucher' voucher_id=id %}" method="post" class="form-horizontal">
                     {% csrf_token %}
                     <div class="form-group row">
                         <label class="col-sm-2 col-form-label">Número de Catálogo</label>

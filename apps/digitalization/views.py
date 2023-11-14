@@ -1,5 +1,4 @@
 # -*- coding: utf-8 -*-
-import glob
 import hashlib
 import json
 import logging
@@ -7,19 +6,16 @@ import os
 import shutil
 from datetime import datetime, date
 from http import HTTPStatus
-from pathlib import Path
 from typing import Tuple, Union, Dict
 
 import numpy
 import pytz
 import qrcode
 import tablib
-from PIL import Image
 from celery.result import AsyncResult
 from django.contrib.auth.decorators import login_required
 from django.contrib.gis.geos import GEOSGeometry
 from django.core import serializers
-from django.core.files import File
 from django.core.files.base import ContentFile
 from django.db import transaction
 from django.db.models import Q, Count, CharField, Case, When, Value
@@ -37,7 +33,7 @@ from .forms import LoadColorProfileForm, VoucherImportedForm, GalleryImageForm, 
 from .models import BiodataCode, GeneratedPage, VoucherImported, PriorityVouchersFile, VouchersView, \
     GalleryImage, BannerImage, VOUCHER_STATE
 from .storage_backends import PrivateMediaStorage
-from .tasks import process_pending_vouchers, upload_priority_vouchers
+from .tasks import process_pending_vouchers, upload_priority_vouchers, etiquette_picture
 from .utils import render_to_pdf
 from ..api.serializers import MinimizedVoucherSerializer, CatalogViewSerializer, GeneratedPageSerializer, \
     PriorityVouchersSerializer
@@ -902,30 +898,8 @@ def update_voucher(request, voucher_id):
                 voucher.point_public = GEOSGeometry(
                     'POINT(' + str(decimal_longitude_public) + ' ' + str(decimal_latitude_public) + ')', srid=4326)
                 voucher.save()
-                if voucher.image:
-                    filename = ""  # generate_etiquette(id)
-                    voucher_image = Image.open(filename)
-                    path = Path(filename)
-                    with path.open(mode='rb') as f:
-                        voucher.image_public = File(f, name=filename)
-                        voucher.save()
-                    filename_60 = filename.replace(".jpg", "_resized_60.jpg")
-                    voucher_image.save(filename_60, quality=50)
-                    path = Path(filename_60)
-                    with path.open(mode='rb') as f:
-                        voucher.image_public_resized_60 = File(f, name=filename_60)
-                        voucher.save()
-                    filename_10 = filename.replace(".jpg", "_resized_10.jpg")
-                    voucher_image.save(filename_10, quality=20)
-                    path = Path(filename_10)
-                    with path.open(mode='rb') as f:
-                        voucher.image_public_resized_10 = File(f, name=filename_10)
-                        voucher.save()
-                    os.remove(filename.replace("_public.jpg", ".jpg"))
-                    os.remove(filename)
-                    os.remove(filename_60)
-                    os.remove(filename_10)
-
+                if voucher.image and voucher.biodata_code.voucher_state == 7:
+                    etiquette_picture.delay(int(voucher.pk))
             return redirect('control_vouchers')
     else:
         form = VoucherImportedForm(instance=voucher)
