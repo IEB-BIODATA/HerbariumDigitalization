@@ -238,7 +238,7 @@ class GeneratedPageSerializer(HyperlinkedModelSerializer):
         fields = [
             "id", "name", "herbarium",
             "created_by", "created_at",
-            "color_profile", "terminated",
+            "color_profile", "terminated",  # TODO: terminated -> finished
             "total", "stateless_count", "found_count",
             "not_found_count", "digitalized", "qr_count"
         ]

@@ -1,11 +1,14 @@
 {% extends "base.html" %}
 {% load static %}
+{% load i18n %}
 {% block javascript %}
     <script type="text/javascript">
-        $.fn.selectpicker.Constructor.DEFAULTS.noneSelectedText = "Nada seleccionado";
+        $.fn.selectpicker.Constructor.DEFAULTS.noneSelectedText = "{% translate 'Nothing selected' %}";
     </script>
 {% endblock %}
 {% block content %}
-    <h1>Catálogo: Taxón</h1>
-    {% include 'catalog/taxa_form.html' with form=form form_title='Actualizar Taxón' form_url=form_url delete_button=False %}
+    {% translate "Taxon" as rank %}
+    <h1>{% translate "Catalogue" %}: {{ rank }}</h1>
+    {% blocktranslate with title=rank asvar title %}Create {{ title }}{% endblocktranslate %}
+    {% include 'catalog/taxa_form.html' with form=form form_title=title form_url=form_url delete_button=False %}
 {% endblock %}

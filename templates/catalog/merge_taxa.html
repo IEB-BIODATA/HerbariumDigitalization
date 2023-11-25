@@ -1,8 +1,9 @@
 {% extends "base.html" %}
 {% load static %}
+{% load i18n %}
 {% block javascript %}
     <script type="text/javascript">
-        $.fn.selectpicker.Constructor.DEFAULTS.noneSelectedText = "Nada seleccionado";
+        $.fn.selectpicker.Constructor.DEFAULTS.noneSelectedText = "{% translate 'Nothing selected' %}";
         document.addEventListener("DOMContentLoaded", function() {
             const selectField = document.getElementById("select-taxon");
             const form = document.getElementById("taxon-form");
@@ -20,15 +21,14 @@
     </script>
 {% endblock %}
 {% block content %}
-    <h1>Unir Taxón</h1>
-    <p>Este proceso permite unir dos taxones, creando un nuevo taxa y eliminando los dos taxones de origen. Los nombres comunes, sinónimos y distribución son unificados en el nuevo taxón. Además se establece automaticamente la altura máxima y mínima entre ambos taxones. Sin embargo, es posible editar todos los cambos de este nuevo taxa, ya que lo anterior solo es una propuesta.
-        Todos los vouchers asociados de ambos taxones son unificados en este nuevo taxa.</p>
-    <!-- DataTables Example -->
+    {% translate "Taxon" as rank %}
+    <h1>{% blocktranslate with title=rank %}Merge {{ title }}{% endblocktranslate %}</h1>
+    <p>{% translate "Merge taxa info" %}</p>
     <div class="row">
         <div class="col-12" style="margin-bottom: 30px">
             {% if taxa_2 %}
                 <form id="taxon-form" action="{% url 'merge_taxa' taxa_1=taxa_1.id taxa_2=0 %}" method="get" class="form-horizontal">
-                    Seleccione Taxón que el que se unirá <b>{{ taxa_1.scientific_name}}</b>:<br>
+                    {% translate "Select taxon to join" %} <b>{{ taxa_1.scientific_name}}</b>:<br>
                     <select id="select-taxon" class="selectpicker">
                         <option value="0"></option>
                         {% for taxa in species %}
@@ -44,145 +44,145 @@
             <div class="card mb-3">
                 <div class="card-header">
                     <i class="fas fa-table"></i>
-                    Taxón 1
+                    {% translate "Taxon" %} 1
                 </div>
                 <div class="card-body">
                     <div class="table-responsive">
                         <table class="table">
                             <tr>
-                                <td><strong>Género</strong></td>
+                                <td><strong>{% translate "Genus" %}</strong></td>
                                 <td>
                                     {{ taxa_1.genus }}
                                 </td>
                             </tr>
                             <tr>
-                                <td><strong>Epiteto Específico</strong></td>
+                                <td><strong>{% translate "Specific Epithet" %}</strong></td>
                                 <td>
                                     {{ taxa_1.specific_epithet }}
                                 </td>
                             </tr>
                             <tr>
-                                <td><strong>Autor(es)</strong></td>
+                                <td><strong>{% translate "Author" %}</strong></td>
                                 <td>
                                     {{ taxa_1.scientific_name_authorship }}
                                 </td>
                             </tr>
                             <tr>
-                                <td><strong>Subespecie</strong></td>
+                                <td><strong>{% translate "Subspecies" %}</strong></td>
                                 <td>
                                     {{ taxa_1.subspecies|default_if_none:"" }}
                                 </td>
                             </tr>
                             <tr>
-                                <td><strong>Autor(es) Subespecie</strong></td>
+                                <td><strong>{% translate "Subspecies Author" %}</strong></td>
                                 <td>
                                     {{ taxa_1.ssp_authorship|default_if_none:"" }}
                                 </td>
                             </tr>
                             <tr>
-                                <td><strong>Variedad</strong></td>
+                                <td><strong>{% translate "Variety" %}</strong></td>
                                 <td>
                                     {{ taxa_1.variety|default_if_none:"" }}
                                 </td>
                             </tr>
                             <tr>
-                                <td><strong>Autor(es) Variedad</strong></td>
+                                <td><strong>{% translate "Variety Author" %}</strong></td>
                                 <td>
                                     {{ taxa_1.variety_authorship|default_if_none:"" }}
                                 </td>
                             </tr>
                             <tr>
-                                <td><strong>Forma</strong></td>
+                                <td><strong>{% translate "Form" %}</strong></td>
                                 <td>
                                     {{ taxa_1.form|default_if_none:"" }}
                                 </td>
                             </tr>
                             <tr>
-                                <td><strong>Autor(es) Forma</strong></td>
+                                <td><strong>{% translate "Form Author" %}</strong></td>
                                 <td>
                                     {{ taxa_1.form_authorship|default_if_none:"" }}
                                 </td>
                             </tr>
                             <tr>
-                                <td><strong>Hábito</strong></td>
+                                <td><strong>{% translate "Habit" %}</strong></td>
                                 <td>
                                     {{ taxa_1.habit }}
                                 </td>
                             </tr>
                             <tr>
-                                <td><strong>Ciclo de vida</strong></td>
+                                <td><strong>{% translate "Life cycle" %}</strong></td>
                                 <td>
                                     {{ taxa_1.cycle }}
                                 </td>
                             </tr>
                             <tr>
-                                <td><strong>Estado</strong></td>
+                                <td><strong>{% translate "Origin" %}</strong></td>
                                 <td>
                                     {{ taxa_1.status|default_if_none:"" }}
                                 </td>
                             </tr>
                             <tr>
-                                <td><strong>En Argentina</strong></td>
+                                <td><strong>{% translate "In Argentina" %}</strong></td>
                                 <td>
                                     <input type="checkbox" {% if taxa_1.in_argentina %} checked {% endif %} disabled>
                                 </td>
                             </tr>
                             <tr>
-                                <td><strong>En Bolivia</strong></td>
+                                <td><strong>{% translate "In Bolivia" %}</strong></td>
                                 <td>
                                     <input type="checkbox" {% if taxa_1.in_bolivia %} checked {% endif %} disabled>
                                 </td>
                             </tr>
                             <tr>
-                                <td><strong>En Peru</strong></td>
+                                <td><strong>{% translate "In Peru" %}</strong></td>
                                 <td>
                                     <input type="checkbox" {% if taxa_1.in_peru %} checked {% endif %} disabled>
                                 </td>
                             </tr>
                             <tr>
-                                <td><strong>Altura Máxima</strong></td>
+                                <td><strong>{% translate "Maximum Height" %}</strong></td>
                                 <td>
                                     {{ taxa_1.maximum_height|default_if_none:"" }}
                                 </td>
                             </tr>
                             <tr>
-                                <td><strong>Altura Mínima</strong></td>
+                                <td><strong>{% translate "Minimum Height" %}</strong></td>
                                 <td>
                                     {{ taxa_1.minimum_height|default_if_none:"" }}
                                 </td>
                             </tr>
                             <tr>
-                                <td><strong>Notas</strong></td>
+                                <td><strong>{% translate "Notes" %}</strong></td>
                                 <td>
                                     {{ taxa_1.notes|default_if_none:"" }}
                                 </td>
                             </tr>
                             <tr>
-                                <td><strong>Publicacion</strong></td>
+                                <td><strong>{% translate "Publication" %}</strong></td>
                                 <td>
                                     {{ taxa_1.publication|default_if_none:"" }}
                                 </td>
                             </tr>
                             <tr>
-                                <td><strong>Volumen</strong></td>
+                                <td><strong>{% translate "Volume" %}</strong></td>
                                 <td>
                                     {{ taxa_1.volume|default_if_none:"" }}
                                 </td>
                             </tr>
                             <tr>
-                                <td><strong>Páginas</strong></td>
+                                <td><strong>{% translate "Pages" %}</strong></td>
                                 <td>
                                     {{ taxa_1.pages|default_if_none:"" }}
                                 </td>
                             </tr>
                             <tr>
-                                <td><strong>ID Tipo</strong></td>
+                                <td><strong>{% translate "Type ID" %}</strong></td>
                                 <td>
                                     {{ taxa_1.type_id|default_if_none:"" }}
                                 </td>
                             </tr>
                             <tr>
-                                <td><strong>Nombres Comunes</strong></td>
+                                <td><strong>{% translate "Common Names" %}</strong></td>
                                 <td>
                                     <ul>
                                         {% for common_name in taxa_1.common_names %}
@@ -192,7 +192,7 @@
                                 </td>
                             </tr>
                             <tr>
-                                <td><strong>Sinónimos</strong></td>
+                                <td><strong>{% translate "Synonyms" %}</strong></td>
                                 <td>
                                     <ul>
                                         {% for synonymy in taxa_1.synonyms %}
@@ -202,7 +202,7 @@
                                 </td>
                             </tr>
                             <tr>
-                                <td><strong>Distribución Regional</strong></td>
+                                <td><strong>{% translate "Regional Distribution" %}</strong></td>
                                 <td>
                                     <ul>
                                         {% for region in taxa_1.region %}
@@ -220,146 +220,146 @@
             <div class="card mb-3">
                 <div class="card-header">
                     <i class="fas fa-table"></i>
-                    Taxón 2
+                    {% translate "Taxon" %} 2
                 </div>
                 <div class="card-body">
                     {% if taxa_2 %}
                         <div class="table-responsive">
                             <table class="table">
                                 <tr>
-                                    <td><strong>Género</strong></td>
+                                    <td><strong>{% translate "Genus" %}</strong></td>
                                     <td>
                                         {{ taxa_2.genus }}
                                     </td>
                                 </tr>
                                 <tr>
-                                    <td><strong>Epiteto Específico</strong></td>
+                                    <td><strong>{% translate "Specific Epithet" %}</strong></td>
                                     <td>
                                         {{ taxa_2.specific_epithet }}
                                     </td>
                                 </tr>
                                 <tr>
-                                    <td><strong>Autor(es)</strong></td>
+                                    <td><strong>{% translate "Author" %}</strong></td>
                                     <td>
                                         {{ taxa_2.scientific_name_authorship }}
                                     </td>
                                 </tr>
                                 <tr>
-                                    <td><strong>Subespecie</strong></td>
+                                    <td><strong>{% translate "Subspecies" %}</strong></td>
                                     <td>
                                         {{ taxa_2.subspecies|default_if_none:"" }}
                                     </td>
                                 </tr>
                                 <tr>
-                                    <td><strong>Autor(es) Subespecie</strong></td>
+                                    <td><strong>{% translate "Subspecies Author" %}</strong></td>
                                     <td>
                                         {{ taxa_2.ssp_authorship|default_if_none:"" }}
                                     </td>
                                 </tr>
                                 <tr>
-                                    <td><strong>Variedad</strong></td>
+                                    <td><strong>{% translate "Variety" %}</strong></td>
                                     <td>
                                         {{ taxa_2.variety|default_if_none:"" }}
                                     </td>
                                 </tr>
                                 <tr>
-                                    <td><strong>Autor(es) Variedad</strong></td>
+                                    <td><strong>{% translate "Variety Author" %}</strong></td>
                                     <td>
                                         {{ taxa_2.variety_authorship|default_if_none:"" }}
                                     </td>
                                 </tr>
                                 <tr>
-                                    <td><strong>Forma</strong></td>
+                                    <td><strong>{% translate "Form" %}</strong></td>
                                     <td>
                                         {{ taxa_2.form|default_if_none:"" }}
                                     </td>
                                 </tr>
                                 <tr>
-                                    <td><strong>Autor(es) Forma</strong></td>
+                                    <td><strong>{% translate "Form Author" %}</strong></td>
                                     <td>
                                         {{ taxa_2.form_authorship|default_if_none:"" }}
                                     </td>
                                 </tr>
                                 <tr>
-                                    <td><strong>Hábito</strong></td>
+                                    <td><strong>{% translate "Habit" %}</strong></td>
                                     <td>
                                         {{ taxa_2.habit }}
                                     </td>
                                 </tr>
                                 <tr>
-                                    <td><strong>Ciclo de vida</strong></td>
+                                    <td><strong>{% translate "Life cycle" %}</strong></td>
                                     <td>
                                         {{ taxa_2.cycle }}
                                     </td>
                                 </tr>
                                 <tr>
-                                    <td><strong>Estado</strong></td>
+                                    <td><strong>{% translate "Origin" %}</strong></td>
                                     <td>
                                         {{ taxa_2.status|default_if_none:"" }}
                                     </td>
                                 </tr>
                                 <tr>
-                                    <td><strong>En Argentina</strong></td>
+                                    <td><strong>{% translate "In Argentina" %}</strong></td>
                                     <td>
                                         <input type="checkbox" {% if taxa_2.in_argentina %} checked {% endif %} disabled>
                                     </td>
                                 </tr>
                                 <tr>
-                                    <td><strong>En Bolivia</strong></td>
+                                    <td><strong>{% translate "In Bolivia" %}</strong></td>
                                     <td>
                                         <input type="checkbox" {% if taxa_2.in_bolivia %} checked {% endif %} disabled>
                                     </td>
                                 </tr>
                                 <tr>
-                                    <td><strong>En Peru</strong></td>
+                                    <td><strong>{% translate "In Peru" %}</strong></td>
                                     <td>
                                         <input type="checkbox" {% if taxa_2.in_peru %} checked {% endif %} disabled>
                                     </td>
                                 </tr>
                                 <tr>
-                                    <td><strong>Altura Máxima</strong></td>
+                                    <td><strong>{% translate "Maximum Height" %}</strong></td>
                                     <td>
                                         {{ taxa_2.maximum_height|default_if_none:"" }}
                                     </td>
                                 </tr>
                                 <tr>
-                                    <td><strong>Altura Mínima</strong></td>
+                                    <td><strong>{% translate "Minimum Height" %}</strong></td>
                                     <td>
                                         {{ taxa_2.minimum_height|default_if_none:"" }}
                                     </td>
                                 </tr>
                                 <tr>
-                                    <td><strong>Notas</strong></td>
+                                    <td><strong>{% translate "Notes" %}</strong></td>
                                     <td>
                                         {{ taxa_2.notes|default_if_none:"" }}
                                     </td>
                                 </tr>
                                 <tr>
-                                    <td><strong>Publicacion</strong></td>
+                                    <td><strong>{% translate "Publication" %}</strong></td>
                                     <td>
                                         {{ taxa_2.publication|default_if_none:"" }}
                                     </td>
                                 </tr>
                                 <tr>
-                                    <td><strong>Volumen</strong></td>
+                                    <td><strong>{% translate "Volume" %}</strong></td>
                                     <td>
                                         {{ taxa_2.volume|default_if_none:"" }}
                                     </td>
                                 </tr>
                                 <tr>
-                                    <td><strong>Páginas</strong></td>
+                                    <td><strong>{% translate "Pages" %}</strong></td>
                                     <td>
                                         {{ taxa_2.pages|default_if_none:"" }}
                                     </td>
                                 </tr>
                                 <tr>
-                                    <td><strong>ID Tipo</strong></td>
+                                    <td><strong>{% translate "Type ID" %}</strong></td>
                                     <td>
                                         {{ taxa_2.type_id|default_if_none:"" }}
                                     </td>
                                 </tr>
                                 <tr>
-                                    <td><strong>Nombres Comunes</strong></td>
+                                    <td><strong>{% translate "Common Names" %}</strong></td>
                                     <td>
                                         <ul>
                                             {% for common_name in taxa_2.common_names %}
@@ -369,7 +369,7 @@
                                     </td>
                                 </tr>
                                 <tr>
-                                    <td><strong>Sinónimos</strong></td>
+                                    <td><strong>{% translate "Synonyms" %}</strong></td>
                                     <td>
                                         <ul>
                                             {% for synonymy in taxa_2.synonyms %}
@@ -379,7 +379,7 @@
                                     </td>
                                 </tr>
                                 <tr>
-                                    <td><strong>Distribución Regional</strong></td>
+                                    <td><strong>{% translate "Regional Distribution" %}</strong></td>
                                     <td>
                                         <ul>
                                             {% for region in taxa_2.region %}
@@ -392,7 +392,7 @@
                         </div>
                     {% else %}
                         <form id="taxon-form" action="{% url 'merge_taxa' taxa_1=taxa_1.id taxa_2=0 %}" method="get" class="form-horizontal">
-                            Seleccione Taxón que el que se unirá <b>{{ taxa_1.scientific_name}}</b>:<br>
+                            {% translate "Select taxon to join" %} <b>{{ taxa_1.scientific_name}}</b>:<br>
                             <select id="select-taxon" class="selectpicker">
                                 <option value="0"></option>
                                 {% for taxa in species %}
@@ -407,7 +407,8 @@
     </div>
     <div class="row">
         <div class="col-sm-12">
-            {% include 'catalog/taxa_form.html' with form=form form_title='Nuevo Taxón' form_url=form_url delete_button=False %}
+            {% blocktranslate with title=rank asvar title %}New {{ title }}{% endblocktranslate %}
+            {% include 'catalog/taxa_form.html' with form=form form_title=title form_url=form_url delete_button=False %}
         </div>
     </div>
 {% endblock %}

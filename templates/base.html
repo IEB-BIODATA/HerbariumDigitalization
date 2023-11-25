@@ -1,13 +1,15 @@
 {% load static %}
+{% load i18n %}
+{% get_current_language as LANGUAGE_CODE %}
 <!DOCTYPE html>
-<html lang="es">
+<html lang="{{ LANGUAGE_CODE }}">
 <head>
     <!-- Site Title-->
-    <title>{% block title %}Plataforma Digitalización{% endblock %}</title>
+    <title>{% block title %}{% translate "Digitalization Platform" %}{% endblock %}</title>
     <meta charset="utf-8">
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
     <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
-    <meta name="description" content="Sistema Digitalización de Herbario">
+    <meta name="description" content="{% translate 'Herbarium Digitialization System' %}">
     <meta name="author" content="jmsaez">
     <link rel="icon" href="{% static 'favicon.png' %}" type="image/x-icon">
     <!-- Stylesheets-->
@@ -62,15 +64,15 @@
     <div class="modal-dialog" role="document">
         <div class="modal-content">
             <div class="modal-header">
-                <h5 class="modal-title" id="exampleModalLabel">¿Está seguro de que desea salir?</h5>
+                <h5 class="modal-title" id="exampleModalLabel">{% translate "Are you sure you want to log out?" %}</h5>
                 <button class="close" type="button" data-dismiss="modal" aria-label="Close">
                     <span aria-hidden="true">×</span>
                 </button>
             </div>
-            <div class="modal-body">Presione "Logout" si confirma salir de la cuenta.</div>
+            <div class="modal-body">{% translate "Press 'Log out' if you confirm leaving the account" %}</div>
             <div class="modal-footer">
-                <button class="btn btn-secondary" type="button" data-dismiss="modal">Cancelar</button>
-                <a class="btn btn-primary" href="{% url 'logout' %}">Logout</a>
+                <button class="btn btn-secondary" type="button" data-dismiss="modal">{% translate "Cancel" %}</button>
+                <a class="btn btn-primary" href="{% url 'logout' %}">{% translate "Log out" %}</a>
             </div>
         </div>
     </div>
