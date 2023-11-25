@@ -1,25 +1,28 @@
 {% extends "base.html" %}
 {% load static %}
+{% load i18n %}
 {% block javascript %}
     <script type="text/javascript">
-        $.fn.selectpicker.Constructor.DEFAULTS.noneSelectedText = "Nada seleccionado";
+        $.fn.selectpicker.Constructor.DEFAULTS.noneSelectedText = "{% translate 'Nothing selected' %}";
     </script>
 {% endblock %}
 {% block content %}
-    <h1>Catálogo: Taxón</h1>
-    {% include 'catalog/taxa_form.html' with form=form form_title='Actualizar Taxón' form_url=form_url delete_button=True %}
+    {% translate "Taxon" as rank %}
+    <h1>{% translate "Catalogue" %}: {{ rank }}</h1>
+    {% blocktranslate with title=rank asvar title %}Update {{ title }}{% endblocktranslate %}
+    {% include 'catalog/taxa_form.html' with form=form form_title=title form_url=form_url delete_button=True %}
     <div class="modal fade" id="warningModalDelete" tabindex="-1" aria-labelledby="warningModalLabel" aria-hidden="true">
         <div class="modal-dialog modal-dialog-centered">
             <div class="modal-content">
                 <div class="modal-header">
-                    <h5 class="modal-title" id="warningModalLabel">¡Cuidado!</h5>
+                    <h5 class="modal-title" id="warningModalLabel">{% translate "Warning!" %}</h5>
                 </div>
                 <div class="modal-body">
-                    ¿Estás seguro que deseas borrar la especie {{ species_name }}?
+                    {% blocktranslate with name=species_name %}Are you sure? Species {{ name }}{% endblocktranslate %}
                 </div>
                 <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
-                    <a href="{% url 'delete_taxa' species_id=id %}" class="btn btn-danger">Borrar</a>
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">{% translate "Cancel" %}</button>
+                    <a href="{% url 'delete_taxa' species_id=id %}" class="btn btn-danger">{% translate "Delete" %}</a>
                 </div>
             </div>
         </div>

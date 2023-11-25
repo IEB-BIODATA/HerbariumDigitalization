@@ -1,18 +1,16 @@
 import datetime as dt
-import json
 import logging
-from copy import deepcopy
 from typing import Type
 
 import tablib
 from django import forms
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth.models import User
-from django.core import serializers
 from django.db.models import Q
 from django.http import HttpResponse, JsonResponse, HttpRequest, HttpResponseServerError
 from django.shortcuts import render, redirect
 from django.urls import reverse
+from django.utils.translation import gettext_lazy as _
 from rest_framework.serializers import SerializerMetaclass
 
 from intranet.utils import paginated_table
@@ -187,10 +185,6 @@ def __create_catalog_route__(
         form_class: Type[forms.ModelForm],
         model_name: str,
         rank_title: str,
-        rank_name: str,
-        rank_name_label: str,
-        parent_name: str,
-        parent_name_label: str
 ) -> HttpResponse:
     if request.method == "POST":
         form = form_class(request.POST)
@@ -201,10 +195,6 @@ def __create_catalog_route__(
     return render(request, "catalog/create_catalog.html", {
         "rank_title": rank_title,
         "create_rank_url": reverse("create_{}".format(model_name)),
-        "rank_name_label": rank_name_label,
-        "parent_name_label": parent_name_label,
-        "form_name": form[rank_name],
-        "form_parent": form[parent_name],
         "form": form,
         "list_url": reverse("list_{}".format(model_name))
     })
@@ -216,10 +206,6 @@ def __update_catalog_route__(
         form_class: Type[forms.ModelForm],
         model_name: str,
         rank_title: str,
-        rank_name: str,
-        rank_name_label: str,
-        parent_name: str,
-        parent_name_label: str,
         identifier: int
 ) -> HttpResponse:
     entry = model.objects.get(id=identifier)
@@ -238,11 +224,7 @@ def __update_catalog_route__(
                 "{}_id".format(model_name): identifier
             }
         ),
-        "rank_name_label": rank_name_label,
-        "parent_rank_label": parent_name_label,
         "form": form,
-        "form_name": form[rank_name],
-        "form_parent": form[parent_name],
         "list_url": reverse("list_{}".format(model_name))
     })
 
@@ -254,10 +236,10 @@ def list_division(request):
         "rank_name": "name",
         "parent_rank": "kingdom",
         "update_rank_url": reverse("update_division", kwargs={"division_id": 0}),
-        "rank_title": "División",
+        "rank_title": _("Division"),
         "create_rank_url": reverse("create_division"),
-        "rank_name_title": "Nombre",
-        "parent_rank_title": "Reino",
+        "rank_name_title": _("Name"),
+        "parent_rank_title": _("Kingdom"),
         "deletable": 0,
     })
 
@@ -281,9 +263,7 @@ def division_table(request):
 def create_division(request):
     return __create_catalog_route__(
         request, DivisionForm,
-        "division", "División",
-        "name", "Nombre",
-        "kingdom", "Reino"
+        "division", _("Division"),
     )
 
 
@@ -291,8 +271,7 @@ def create_division(request):
 def update_division(request, division_id):
     return __update_catalog_route__(
         request, Division, DivisionForm,
-        "division", "División",
-        "name", "Nombre", "kingdom", "Reino",
+        "division", _("Division"),
         division_id
     )
 
@@ -304,10 +283,10 @@ def list_class(request):
         "rank_name": "name",
         "parent_rank": "division",
         "update_rank_url": reverse("update_class", kwargs={"class_id": 0}),
-        "rank_title": "Clase",
+        "rank_title": _("Class"),
         "create_rank_url": reverse("create_class"),
-        "rank_name_title": "Nombre",
-        "parent_rank_title": "División",
+        "rank_name_title": _("Name"),
+        "parent_rank_title": _("Division"),
         "deletable": 0,
     })
 
@@ -331,9 +310,7 @@ def class_table(request):
 def create_class(request):
     return __create_catalog_route__(
         request, ClassForm,
-        "class", "Clase",
-        "name", "Nombre",
-        "division", "Division"
+        "class", _("Class"),
     )
 
 
@@ -341,8 +318,7 @@ def create_class(request):
 def update_class(request, class_id):
     return __update_catalog_route__(
         request, ClassName, ClassForm,
-        "class", "Clase",
-        "name", "Nombre", "division", "División",
+        "class", _("Class"),
         class_id
     )
 
@@ -354,10 +330,10 @@ def list_order(request):
         "rank_name": "name",
         "parent_rank": "class_name",
         "update_rank_url": reverse("update_order", kwargs={"order_id": 0}),
-        "rank_title": "Orden",
-        "rank_name_title": "Nombre",
+        "rank_title": _("Order"),
+        "rank_name_title": _("Name"),
         "create_rank_url": reverse("create_order"),
-        "parent_rank_title": "Clase",
+        "parent_rank_title": _("Class"),
         "deletable": 0,
     })
 
@@ -381,9 +357,7 @@ def order_table(request):
 def create_order(request):
     return __create_catalog_route__(
         request, OrderForm,
-        "order", "Orden",
-        "name", "Nombre",
-        "class", "Clase"
+        "order", _("Order"),
     )
 
 
@@ -391,8 +365,7 @@ def create_order(request):
 def update_order(request, order_id):
     return __update_catalog_route__(
         request, Order, OrderForm,
-        "order", "Orden",
-        "name", "Nombre", "class_name", "Clase",
+        "order", _("Order"),
         order_id
     )
 
@@ -404,10 +377,10 @@ def list_family(request):
         "rank_name": "name",
         "parent_rank": "order",
         "update_rank_url": reverse("update_family", kwargs={"family_id": 0}),
-        "rank_title": "Familia",
-        "rank_name_title": "Nombre",
+        "rank_title": _("Family"),
+        "rank_name_title": _("Name"),
         "create_rank_url": reverse("create_family"),
-        "parent_rank_title": "Orden",
+        "parent_rank_title": _("Order"),
         "deletable": 0,
     })
 
@@ -431,9 +404,7 @@ def family_table(request):
 def create_family(request):
     return __create_catalog_route__(
         request, FamilyForm,
-        "family", "Familia",
-        "name", "Nombre",
-        "order", "Orden"
+        "family", _("Family"),
     )
 
 
@@ -441,8 +412,7 @@ def create_family(request):
 def update_family(request, family_id):
     return __update_catalog_route__(
         request, Family, FamilyForm,
-        "family", "Familia",
-        "name", "Nombre", "order", "Orden",
+        "family", _("Family"),
         family_id
     )
 
@@ -454,10 +424,10 @@ def list_genus(request):
         "rank_name": "name",
         "parent_rank": "family",
         "update_rank_url": reverse("update_genus", kwargs={"genus_id": 0}),
-        "rank_title": "Género",
-        "rank_name_title": "Nombre",
+        "rank_title": _("Genus"),
+        "rank_name_title": _("Name"),
         "create_rank_url": reverse("create_genus"),
-        "parent_rank_title": "Familia",
+        "parent_rank_title": _("Family"),
         "deletable": 0,
     })
 
@@ -481,9 +451,7 @@ def genus_table(request):
 def create_genus(request):
     return __create_catalog_route__(
         request, GenusForm,
-        "genus", "Género",
-        "name", "Nombre",
-        "family", "Familia"
+        "genus", _("Genus"),
     )
 
 
@@ -491,8 +459,7 @@ def create_genus(request):
 def update_genus(request, genus_id):
     return __update_catalog_route__(
         request, Genus, GenusForm,
-        "genus", "Género",
-        "name", "Nombre", "family", "Familia",
+        "genus", _("Genus"),
         genus_id
     )
 
@@ -677,10 +644,10 @@ def list_synonymy(request):
         "rank_name": "scientific_name_full",
         "parent_rank": "species",
         "update_rank_url": reverse("update_synonymy", kwargs={"synonymy_id": 0}),
-        "rank_title": "Sinónimos",
-        "rank_name_title": "Nombre Científico Completo",
+        "rank_title": _("Synonyms"),
+        "rank_name_title": _("Complete Scientific Name"),
         "create_rank_url": reverse("create_synonymy"),
-        "parent_rank_title": "Especie",
+        "parent_rank_title": _("Species"),
         "deletable": 1,
     })
 
@@ -702,29 +669,19 @@ def synonymy_table(request):
 
 @login_required
 def create_synonymy(request):
-    if request.method == "POST":
-        form = SynonymyForm(request.POST)
-        if __create_catalog__(form, request.user):
-            return redirect("list_synonymy")
-    else:
-        form = SynonymyForm()
-    return render(request, "catalog/create_synonymy.html", {
-        "form": form
-    })
+    return __create_catalog_route__(
+        request, SynonymyForm,
+        "synonymy", _("Synonymy"),
+    )
 
 
 @login_required
 def update_synonymy(request, synonymy_id):
-    synonymy = Synonymy.objects.get(id=synonymy_id)
-    if request.method == "POST":
-        form = SynonymyForm(request.POST, instance=synonymy)
-        if __update_catalog__(form, request.user):
-            return redirect("list_synonymy")
-    else:
-        form = SynonymyForm(instance=synonymy)
-    return render(request, "catalog/update_synonymy.html", {
-        "form": form, "id": synonymy_id
-    })
+    return __update_catalog_route__(
+        request, Synonymy, SynonymyForm,
+        "synonymy", _("Synonymy"),
+        synonymy_id
+    )
 
 
 @login_required
@@ -794,11 +751,11 @@ def list_common_name(request):
         "table_url": reverse("common_name_table"),
         "rank_name": "name",
         "parent_rank": "species",
-        "update_rank_url": reverse("update_common_name", kwargs={"common_id": 0}),
-        "rank_title": "Nombre Común",
-        "rank_name_title": "Nombre",
+        "update_rank_url": reverse("update_common_name", kwargs={"common_name_id": 0}),
+        "rank_title": _("Common Name"),
+        "rank_name_title": _("Name"),
         "create_rank_url": reverse("create_common_name"),
-        "parent_rank_title": "Especie",
+        "parent_rank_title": _("Species"),
         "deletable": 1,
     })
 
@@ -814,40 +771,30 @@ def common_name_table(request):
     }
     return __catalog_table__(
         request, CommonName, CommonNameSerializer,
-        sort_by_func, "divisions"
+        sort_by_func, "common name"
     )
 
 
 @login_required
 def create_common_name(request):
-    if request.method == "POST":
-        form = CommonNameForm(request.POST)
-        if __create_catalog__(form, request.user):
-            return redirect("list_common_name")
-    else:
-        form = CommonNameForm()
-    return render(request, "catalog/create_common_name.html", {
-        "form": form
-    })
+    return __create_catalog_route__(
+        request, CommonNameForm,
+        "common_name", _("Common Name"),
+    )
 
 
 @login_required
-def update_common_name(request, common_id):
-    common_name = CommonName.objects.get(id=common_id)
-    if request.method == "POST":
-        form = CommonNameForm(request.POST, instance=common_name)
-        if __update_catalog__(form, request.user):
-            return redirect("list_common_name")
-    else:
-        form = CommonNameForm(instance=common_name)
-    return render(request, "catalog/update_common_name.html", {
-        "form": form, "id": common_id
-    })
+def update_common_name(request, common_name_id):
+    return __update_catalog_route__(
+        request, CommonName, CommonNameForm,
+        "common_name", _("Common Name"),
+        common_name_id
+    )
 
 
 @login_required
-def delete_common_name(request, common_id):
-    common_name = CommonName.objects.get(id=common_id)
+def delete_common_name(request, common_name_id):
+    common_name = CommonName.objects.get(id=common_name_id)
     try:
         __delete_catalog__(common_name, request.user)
         return redirect("list_common_name")

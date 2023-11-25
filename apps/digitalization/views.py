@@ -72,7 +72,7 @@ def priority_vouchers_table(request):
     if search_value:
         search_query = (
                 Q(herbarium__name__icontains=search_value) |
-                Q(created_at__icontains=search_value) |
+                Q(created_at__icontains=search_value) |  # TODO: To search in same display format
                 Q(created_by__username__icontains=search_value) |
                 Q(file__icontains=search_value) |
                 Q(voucherimported__biodata_code__code=search_value)

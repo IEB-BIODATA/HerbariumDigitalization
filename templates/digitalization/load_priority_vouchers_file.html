@@ -1,15 +1,18 @@
 {% extends "base.html" %}
 {% load static %}
+{% load i18n %}
+{% get_current_language as LANGUAGE_CODE %}
 {% block javascript %}
     <script type="text/javascript">
         const csrfToken = "{{ csrf_token }}";
         const alertLoad = document.getElementById("alert");
         let errorData = {};
+        let language = getTableLanguage("{{ LANGUAGE_CODE }}");
         $(document).ready(function() {
             $('#FilesTable').DataTable({
                 serverSide: true,
                 processing: true,
-                language: languageTable.spanish,
+                language: language,
                 ajax: {
                     url: '{% url "priority_vouchers_table" %}',
                 },
@@ -25,7 +28,7 @@
                         render: (data, type) => {
                             let date = new Date(data);
                             if (type === 'display' || type === 'search') {
-                                return dateFormat(date)
+                                return dateFormat(date, "{{ LANGUAGE_CODE }}");
                             } else if (type === 'sort')
                                 return date.toISOString();
                             else
@@ -117,14 +120,16 @@
 
         function getErrorMessage(error) {
             let errorDataBlock = "";
-            if (error.data !== undefined){
+            if (error.data !== undefined) {
                 errorData = JSON.parse(error.data);
+                const downloadText = "{% translate 'Download' %}";
+                const printText = "{% translate 'Print' %}";
                 errorDataBlock = `
                 <a class="btn btn-primary btn-block" href="#" onclick="downloadXLSXDataError(errorData); return false;" style="width:200px;">
-                    Descargar
+                    ${downloadText}
                 </a>
                 <a class="btn btn-primary btn-block" href="#" onclick="printDataError(errorData); return false;" style="width:200px;">
-                    Imprimir
+                    ${printText}
                 </a>
                 <table class="table table-bordered no-footer" id="ErrorTable" width="100%" cellspacing="0">
                     <thead>
@@ -136,29 +141,35 @@
                 </table>
                 `;
             }
+            let message;
             switch (error.type) {
                 case 'duplicates in file':
+                    message = "{% translate 'Duplicated register on file' %}";
                     return `
-                    <p>Registros duplicados en archivo</p>
+                    <p>${message}</p>
                     ${errorDataBlock}
                     `;
                 case 'duplicates in database':
+                    message = "{% translate 'Duplicated register on the database' %}";
                     return `
-                    <p>Registros duplicados en la base de datos</p>
+                    <p>${message}</p>
                     ${errorDataBlock}
                     `;
                 case 'no match with catalog':
+                    message = "{% translate 'There are register in which the species name does not match with the catalogue' %}";
                     return `
-                    <p>Existen registros en que el nombre de la especie no coincide con el catálogo</p>
+                    <p>${message}</p>
                     ${errorDataBlock}
                     `;
                 case 'code':
+                    message = "{% translate 'Import Error' %}";
                     return `
-                    <p>Error en la importación</p>
+                    <p>${message}</p>
                     ${errorDataBlock}
                     `;
                 default:
-                    return '<h6>Ocurrió un error inesperado, favor contactar al administrador antes de cerrar esta ventana</h6>';
+                    message = "{% translate 'An unexpected error has happened, please contact the admin before closing this window' %}";
+                    return `<h6>${message}</h6>`;
             }
         }
 
@@ -267,19 +278,18 @@
     </script>
 {% endblock %}
 {% block content %}
-    <h1>Cargar Excel</h1>
-
+    <h1>{% translate "Load Excel" %}</h1>
     <form id="fileForm" method="post" enctype="multipart/form-data">
         {% csrf_token %}
         <div class="form-group">
             {{ form }}
             <div class="row">
                 <div class="col-3">
-                    <button type="submit" class="btn btn-primary" id="loadButton" {% if task_id %} disabled="disabled" {% endif %}>Cargar</button>
+                    <button type="submit" class="btn btn-primary" id="loadButton" {% if task_id %} disabled="disabled" {% endif %}>{% translate "Load" %}</button>
                 </div>
                 <div class="offset-md-6 col-3">
                     <a class="btn btn-primary w-100" href="#" onclick="downloadVouchersXLSX()">
-                        Descargar Vouchers
+                        {% translate "Download Vouchers" %}
                     </a>
                 </div>
             </div>
@@ -293,17 +303,17 @@
     <div class="card mb-3">
         <div class="card-header">
             <i class="fas fa-table"></i>
-            Tabla de Archivos
+            {% translate "Files Table" %}
         </div>
         <div class="card-body">
             <div class="table-responsive" id="vouchers-content">
                 <table class="table table-bordered" id="FilesTable" width="100%" cellspacing="0">
                     <thead>
                     <tr>
-                        <th>Herbario</th>
-                        <th>Fecha</th>
-                        <th>Usuario</th>
-                        <th>Archivo</th>
+                        <th>{% translate "Herbarium" %}</th>
+                        <th>{% translate "Date" %}</th>
+                        <th>{% translate "User" %}</th>
+                        <th>{% translate "File" %}</th>
                     </tr>
                     </thead>
                     <tbody>

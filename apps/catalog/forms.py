@@ -1,5 +1,6 @@
 from django import forms
 from django.core.exceptions import ValidationError
+from django.utils.translation import gettext_lazy as _
 
 from .models import Division, ClassName, Order, Family, Genus, Species, Synonymy, Binnacle, CommonName
 
@@ -11,6 +12,11 @@ class DivisionForm(forms.ModelForm):
             'name',
             'kingdom',
         )
+
+        labels = {
+            'name': _('Name'),
+            'kingdom': _('Kingdom'),
+        }
 
         widgets = {
             'name': forms.TextInput(attrs={'required': True, 'class': "form-control"}),
@@ -26,6 +32,11 @@ class ClassForm(forms.ModelForm):
             'division',
         )
 
+        labels = {
+            'name': _('Name'),
+            'division': _('Division'),
+        }
+
         widgets = {
             'name': forms.TextInput(attrs={'required': True, 'class': "form-control"}),
             'division': forms.Select(attrs={'required': True, 'class': "form-control"}),
@@ -39,6 +50,11 @@ class OrderForm(forms.ModelForm):
             'name',
             'class_name',
         )
+
+        labels = {
+            'name': _('Name'),
+            'class_name': _('Class'),
+        }
 
         widgets = {
             'name': forms.TextInput(attrs={'required': True, 'class': "form-control"}),
@@ -54,6 +70,11 @@ class FamilyForm(forms.ModelForm):
             'order',
         )
 
+        labels = {
+            'name': _('Name'),
+            'order': _('Order'),
+        }
+
         widgets = {
             'name': forms.TextInput(attrs={'required': True, 'class': "form-control"}),
             'order': forms.Select(attrs={'required': True, 'class': "form-control"}),
@@ -67,6 +88,11 @@ class GenusForm(forms.ModelForm):
             'name',
             'family',
         )
+
+        labels = {
+            'name': _('Name'),
+            'family': _('Family'),
+        }
 
         widgets = {
             'name': forms.TextInput(attrs={'required': True, 'class': "form-control"}),
@@ -83,6 +109,13 @@ class BinnacleForm(forms.ModelForm):
             'description',
             'note',
         )
+
+        labels = {
+            'type_update': _('Type'),
+            'model': _('Modelo'),
+            'description': _('Description'),
+            'note': _('Note'),
+        }
 
         widgets = {
             'type_update': forms.TextInput(attrs={'required': True, 'class': "form-control", 'readonly': 'true'}),
@@ -111,35 +144,35 @@ class SpeciesForm(forms.ModelForm):
         )
 
         labels = {
-            'genus': 'Género',
-            'specific_epithet': 'Epíteto específico',
-            'scientific_name_authorship': 'Autor(es)',
-            'subspecies': 'Subespecie',
-            'ssp_authorship': 'Autor(es) subspecies',
-            'variety': 'Variedad',
-            'variety_authorship': 'Autor(es) variedad',
-            'form': 'Forma',
-            'form_authorship': 'Autor(es) forma',
-            'plant_habit': 'Hábito',
-            'env_habit': 'Forma de vida',
-            'cycle': 'Ciclo de vida',
-            'status': 'Origen',
-            'in_argentina': 'En Argentina',
-            'in_bolivia': 'En Bolivia',
-            'in_peru': 'En Perú',
-            'maximum_height': 'Altura Máxima',
-            'minimum_height': 'Altura Mínima',
-            'notes': 'Notas',
-            'publication': 'Publicación',
-            'volume': 'Volumen',
-            'pages': 'Páginas',
-            'type_id': 'ID Tipo',
-            'common_names': 'Nombres Comunes',
-            'synonyms': 'Sinónimos',
-            'region': 'Distribución Regional',
-            'conservation_state': 'Estado de Conservación',
-            'determined': '¿Terminal?',
-            'id_mma': 'ID MMA',
+            'genus': _('Genus'),
+            'specific_epithet': _('Specific Epithet'),
+            'scientific_name_authorship': _('Author'),
+            'subspecies': _('Subspecies'),
+            'ssp_authorship': _('Subspecies Author'),
+            'variety': _('Variety'),
+            'variety_authorship': _('Variety Author'),
+            'form': _('Form'),
+            'form_authorship': _('Form Author'),
+            'plant_habit': _('Habit'),
+            'env_habit': _('Life form'),
+            'cycle': _('Life Cycle'),
+            'status': _('Origin'),
+            'in_argentina': _('In Argentina'),
+            'in_bolivia': _('In Bolivia'),
+            'in_peru': _('In Peru'),
+            'maximum_height': _('Maximum Height'),
+            'minimum_height': _('Minimum Height'),
+            'notes': _('Notes'),
+            'publication': _('Publication'),
+            'volume': _('Volume'),
+            'pages': _('Pages'),
+            'type_id': _('Type ID'),
+            'common_names': _('Common Names'),
+            'synonyms': _('Synonyms'),
+            'region': _('Region Distribution'),
+            'conservation_state': _('Conservation State'),
+            'determined': _('Determined?'),
+            'id_mma': _('MMA ID'),
         }
 
         widgets = {
@@ -263,6 +296,21 @@ class SynonymyForm(forms.ModelForm):
             'form_authorship',
         )
 
+        labels = {
+            'scientific_name': _('Scientific Name'),
+            'scientific_name_full': _('Complete Scientific Name'),
+            'scientific_name_db': _('Database Scientific Name'),
+            'genus': _('Genus'),
+            'specific_epithet': _('Specific Epithet'),
+            'scientific_name_authorship': _('Author'),
+            'subspecies': _('Subspecies'),
+            'ssp_authorship': _('Subspecies Author'),
+            'variety': _('Variety'),
+            'variety_authorship': _('Variety Author'),
+            'form': _('Form'),
+            'form_authorship': _('Form Author'),
+        }
+
         widgets = {
             'scientific_name': forms.HiddenInput(),
             'scientific_name_full': forms.HiddenInput(),
@@ -285,6 +333,10 @@ class CommonNameForm(forms.ModelForm):
         fields = (
             'name',
         )
+
+        labels = {
+            'name': _('Name'),
+        }
 
         widgets = {
             'name': forms.TextInput(attrs={'required': True, 'class': "form-control"}),
