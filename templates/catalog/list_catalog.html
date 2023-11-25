@@ -1,9 +1,12 @@
 {% extends "base.html" %}
 {% load static %}
+{% load i18n %}
+{% get_current_language as LANGUAGE_CODE %}
 {% block javascript %}
     <script type="text/javascript">
         const tempSearchBar = document.getElementById('temp-search-bar');
         const warningModelDelete = document.getElementById('warningModalDelete')
+        let language = getTableLanguage("{{ LANGUAGE_CODE }}");
 
         tempSearchBar.addEventListener('input', function () {
             if (tempSearchBar.value.length > 3) {
@@ -30,7 +33,7 @@
             $('#CatalogTable').DataTable({
                 serverSide: true,
                 processing: true,
-                language: languageTable.spanish,
+                language: language,
                 ajax: {
                     url: '{{ table_url }}',
                     type: 'GET',
@@ -62,7 +65,7 @@
                         render: (data, type) => {
                             let date = new Date(data);
                             if (type === 'display' || type === 'search'){
-                                return dateFormat(date);
+                                return dateFormat(date, "{{ LANGUAGE_CODE }}");
                             } else if (type === 'sort'){
                                 return date.toISOString();
                             } else {
@@ -76,7 +79,7 @@
                         render: (data, type) => {
                             let date = new Date(data);
                             if (type === 'display' || type === 'search'){
-                                return dateFormat(date);
+                                return dateFormat(date, "{{ LANGUAGE_CODE }}");
                             } else if (type === 'sort'){
                                 return date.toISOString();
                             } else {
@@ -109,7 +112,7 @@
     <div class="card mb-3">
         <div class="row">
             <div class="col-3">
-                <a class="btn btn-primary" href="{{ create_rank_url }}">Nuevo</a>
+                <a class="btn btn-primary" href="{{ create_rank_url }}">{% translate "New" %}</a>
             </div>
         </div>
         <div class="card-header">
@@ -120,7 +123,7 @@
             <div class="row" id="TemporalSearch">
                 <div class="col-sm-12 col-md-6"></div>
                 <div class="col-sm-12 col-md-6" style="text-align: right;">
-                    <label>Buscar:
+                    <label>{% translate "Search" %}:
                         <input id="temp-search-bar" type="search" class="form-control form-control-sm" style="display: inline-block;box-sizing: border-box;width: auto;">
                     </label>
                 </div>
@@ -131,10 +134,10 @@
                     <tr>
                         <th>{{ rank_name_title }}</th>
                         <th>{{ parent_rank_title }}</th>
-                        <th>Creado por</th>
-                        <th>Fecha Creación</th>
-                        <th>Fecha Actualización</th>
-                        <th>Acción</th>
+                        <th>{% translate "Created by" %}</th>
+                        <th>{% translate "Created at" %}</th>
+                        <th>{% translate "Updated at" %}</th>
+                        <th>{% translate "Action" %}</th>
                     </tr>
                     </thead>
                     <tbody>
@@ -144,7 +147,7 @@
                                 <div class="d-flex justify-content-center">
                                     <button type="button" class="btn btn-info" onclick="loadTable()">
                                         <i class="fas fa-fw fa-sync"></i>
-                                        Cargar tabla
+                                        {% translate "Load table" %}
                                     </button>
                                 </div>
                             </td>
@@ -158,14 +161,14 @@
         <div class="modal-dialog modal-dialog-centered">
             <div class="modal-content">
                 <div class="modal-header">
-                    <h5 class="modal-title" id="warningModalLabel">¡Cuidado!</h5>
+                    <h5 class="modal-title" id="warningModalLabel">{% translate "Warning!" %}</h5>
                 </div>
                 <div class="modal-body">
-                    ¿Estás seguro que deseas borrar {{ rank_title }} rank_name?
+                    {% blocktranslate with rank=rank_title%}Are you sure? {{ rank }}{% endblocktranslate %}
                 </div>
                 <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
-                    <a id="delete_url" href="#" class="btn btn-danger">Borrar</a>
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">{% translate "Cancel" %}</button>
+                    <a id="delete_url" href="#" class="btn btn-danger">{% translate "Delete" %}</a>
                 </div>
             </div>
         </div>

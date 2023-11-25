@@ -8,7 +8,8 @@ RUN apt-get install -y \
     libproj-dev \
     libgdal-dev \
     libgeos-dev \
-    libpq-dev
+    libpq-dev \
+    gettext
 
 RUN mkdir /app
 WORKDIR /app

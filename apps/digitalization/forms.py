@@ -1,5 +1,5 @@
 from django import forms
-
+from django.utils.translation import gettext_lazy as _
 from .models import Herbarium
 from .models import PriorityVouchersFile, ColorProfileFile, GeneratedPage
 from .models import VoucherImported, GalleryImage, Licence
@@ -136,6 +136,13 @@ class LicenceForm(forms.ModelForm):
             'link',
             'short_name',
         }
+
+        labels = {
+            'name': _('Name'),
+            'link': _('Source (URL)'),
+            'short_name': _('Short Name'),
+        }
+
         widgets = {
             'name': forms.TextInput(attrs={'class': "form-control"}),
             'link': forms.TextInput(attrs={'class': "form-control"}),

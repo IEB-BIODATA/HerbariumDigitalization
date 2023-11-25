@@ -40,6 +40,12 @@ class Migration(migrations.Migration):
         ),
         migrations.RunSQL(
             """
+            CREATE UNIQUE INDEX finder_view_id
+                ON finder_view (id, type);
+            """
+        ),
+        migrations.RunSQL(
+            """
             CREATE INDEX finder_view_trgm_id
                 ON finder_view USING gin(name gin_trgm_ops);
             """
