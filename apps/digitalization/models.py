@@ -22,21 +22,22 @@ from django.db.models import Q
 from django.db.models.signals import post_delete, pre_save
 from django.dispatch import receiver
 from django.forms import CharField
+from django.utils.translation import gettext_lazy as _
 
 from intranet.utils import CatalogQuerySet
 from .storage_backends import PublicMediaStorage, PrivateMediaStorage
 from .validators import validate_file_size
 
 VOUCHER_STATE = (
-    (0, 'Sin Estado'),
-    (1, 'Encontrado'),
-    (2, 'No Encontrado'),
-    (3, 'En Préstamo'),
-    (4, 'Extraviado'),
-    (5, 'En Préstado Encontrado'),
-    (6, 'En curatoria'),
-    (7, 'Digitalizado'),
-    (8, 'Pendiente'),
+    (0, _('No State')),
+    (1, _('Found')),
+    (2, _('Not Found')),
+    (3, _('Borrowed')),
+    (4, _('Lost')),
+    (5, _('Found And Borrowed')),
+    (6, _('In Curatorship')),
+    (7, _('Digitalized')),
+    (8, _('Pending')),
 )
 
 DCW_SQL = {

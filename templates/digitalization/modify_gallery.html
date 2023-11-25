@@ -1,5 +1,6 @@
 {% extends "base.html" %}
 {% load static %}
+{% load i18n %}
 {% load gallery_name %}
 {% block javascript %}
     <script type="text/javascript">
@@ -95,7 +96,7 @@
     </style>
 {% endblock %}
 {% block content %}
-    <h1>Galería de Fotografías</h1>
+    <h1>{% translate "Photo Gallery" %}</h1>
     <div class="card mb-3">
         <div class="card-header">
             <i class="fas fa-solid fa-leaf"></i> &nbsp;
@@ -113,11 +114,11 @@
                         <tr>
                             <th></th>
                             <th></th>
-                            <th>Espécimen</th>
-                            <th>Tomada por</th>
-                            <th>Licencia</th>
-                            <th>Subida por</th>
-                            <th>Subida el</th>
+                            <th>{% translate "Specimen" %}</th>
+                            <th>{% translate "Taken by" %}</th>
+                            <th>{% translate "Licence" %}</th>
+                            <th>{% translate "Upload by" %}</th>
+                            <th>{% translate "Upload at" %}</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -127,12 +128,12 @@
                                     <a href="{% url 'gallery_image' gallery_id=image.id %}">
                                         <i class="fas fa-solid fa-edit text-primary"></i>
                                     </a>
-                                    <a data-toggle="modal" data-target="#warningModal-{{ forloop.counter0 }}" style="cursor: pointer;">
+                                    <a data-bs-toggle="modal" data-bs-target="#warningModal-{{ forloop.counter0 }}" style="cursor: pointer;">
                                         <i class="fas fa-solid fa-trash text-danger"></i>
                                     </a>
                                 </td>
                                 <td>
-                                    <a class="thumbnail" id="thumbnail-{{ forloop.counter0 }}" href="{{ image.image.url }}", target="_blank">
+                                    <a class="thumbnail" id="thumbnail-{{ forloop.counter0 }}" href="{{ image.image.url }}" target="_blank">
                                         {{ image.image.name|replace_gallery_name }}
                                         <span class="enlarge-image below" id="enlarge-image-{{ forloop.counter0 }}">
                                             <img src="{{ image.image.url }}" width="300px" height="auto">
@@ -141,20 +142,20 @@
                                 </td>
                                 <td>
                                     {% if image.specimen is None %}
-                                        <i style="color: #808080">No asignado</i>
+                                        <i style="color: #808080">{% translate "Not assigned" %}</i>
                                     {% else %}
                                         {{ image.specimen.code }}
                                     {% endif %}
                                 </td>
                                 <td>
                                     {% if image.taken_by is None %}
-                                        <i style="color: #808080">No reportado</i>
+                                        <i style="color: #808080">{% translate "Not reported" %}</i>
                                     {% else %}
                                         {{ image.taken_by }}
                                     {% endif %}
                                 </td>
                                 <td>{{ image.licence }}</td>
-                                <td>{{ image.upload_by.first_name }} {{ image.upload_by.last_name }}</td>
+                                <td>{{ image.upload_by.username }}</td>
                                 <td>{{ image.upload_at }}</td>
                             </tr>
                         {% endfor %}
@@ -170,14 +171,14 @@
             <div class="modal-dialog modal-dialog-centered">
                 <div class="modal-content">
                     <div class="modal-header">
-                        <h5 class="modal-title" id="warningModalLabel">¡Cuidado!</h5>
+                        <h5 class="modal-title" id="warningModalLabel">{% translate "Warning!" %}</h5>
                     </div>
                     <div class="modal-body">
-                        ¿Estás seguro que deseas borrar la imagen {{ image.image.name|replace_gallery_name }}?
+                        {% blocktranslate with image=image.image.name|replace_gallery_name %}Are you sure? image {{ image }}{% endblocktranslate %}
                     </div>
                     <div class="modal-footer">
-                        <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancelar</button>
-                        <a href="{% url 'delete_gallery_image' gallery_id=image.id %}" class="btn btn-danger">Borrar</a>
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">{% translate "Cancel" %}</button>
+                        <a href="{% url 'delete_gallery_image' gallery_id=image.id %}" class="btn btn-danger">{% translate "Delete" %}</a>
                     </div>
                 </div>
             </div>

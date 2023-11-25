@@ -1,0 +1,55 @@
+{% extends "base.html" %}
+{% load static %}
+{% load i18n %}
+{% load widget_tweaks %}
+{% block javascript %}
+    <script type="text/javascript">
+        $.fn.selectpicker.Constructor.DEFAULTS.noneSelectedText = "Nada seleccionado";
+    </script>
+{% endblock %}
+{% block content %}
+    <div class="card mb-3">
+        <div class="card-header">
+            <i class="fa-solid fa-user"></i>
+            {% translate "Preference" %}: {{ request.user }}
+        </div>
+        <div class="card-body">
+            <div class="table-responsive">
+                <form action="{% url "preference" %}" method="post" class="form-horizontal">
+                    {% csrf_token %}
+                    {% include 'form_base.html' with form=user_form %}
+                    {% include 'form_base.html' with form=profile_form %}
+                    <div class="form-group row">
+                        <div class="col-sm-10">
+                            <a
+                                    class="btn btn-primary"
+                                    data-bs-toggle="modal"
+                                    data-bs-target="#warningModelSave"
+                                    style="cursor: pointer;"
+                            >
+                                {% translate "Save Changes" %}
+                            </a>
+                            <a href="{% url 'index' %}" class="btn btn-danger">{% translate "Cancel" %}</a>
+                        </div>
+                    </div>
+                    <div class="modal fade" id="warningModelSave" tabindex="-1" aria-labelledby="warningModalLabel" aria-hidden="true">
+                        <div class="modal-dialog modal-dialog-centered">
+                            <div class="modal-content">
+                                <div class="modal-header">
+                                    <h5 class="modal-title" id="warningModalLabel">{% translate "Are you sure?" %}</h5>
+                                </div>
+                                <div class="modal-body">
+                                    {% translate "Are you sure you want to save changes?" %}
+                                </div>
+                                <div class="modal-footer">
+                                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">{% translate "Cancel" %}</button>
+                                    <input type="submit" class="btn btn-primary" value="{% translate 'Save' %}">
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+{% endblock %}

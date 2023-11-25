@@ -1,5 +1,6 @@
 {% extends "base.html" %}
 {% load static %}
+{% load i18n %}
 {% load roles %}
 {% block javascript %}
   <script type="text/javascript">
@@ -19,7 +20,7 @@
   </script>
 {% endblock %}
 {% block content %}
-    <h1>Galería de Fotografías</h1>
+    <h1>{% translate "Photo Gallery" %}</h1>
     <div class="card mb-3">
         <div class="card-header">
             <i class="{% if gallery is None %}far {% else %}fas {% endif %}fa-image"></i>
@@ -28,19 +29,18 @@
         </div>
         <div class="card-body">
             <div class="table-responsive">
-                <form action="
-                    {% if gallery is None %} /digitalization/new_gallery_image/{{ specie.id }}
-                    {% else %} /digitalization/gallery_image/{{ gallery.id }}
-                    {% endif %}
-                " method="post" enctype=multipart/form-data>
+                <form
+                        action="{% if gallery is None %}{% url 'new_gallery_image' catalog_id=specie.id %}{% else %}{% url 'gallery_image' gallery_id=gallery.id %}{% endif %}"
+                        method="post" enctype=multipart/form-data
+                >
                     {% csrf_token %}
                     <input type="hidden" name="scientific_name" value="{{ specie.id }}">
                     <div class="form-group row">
-                        <label class="col-sm-2 col-form-label">Imagen</label>
+                        <label class="col-sm-2 col-form-label">{% translate "Image" %}</label>
                         <div class="col-sm-10">
                             {% if gallery is not None %}
                                 <div class="row">
-                                    <label class="col-sm-2 col-form-label">Actualmente</label>
+                                    <label class="col-sm-2 col-form-label">{% translate "Currently" %}</label>
                                     <div class="col-sm-10">
                                         <img id="preview" src="{{ form.initial.image.url }}" style="height: 300px; width: auto">
                                     </div>
@@ -50,9 +50,9 @@
                             <div class="row">
                                 <label class="col-sm-2 col-form-label">
                                     {% if gallery is None %}
-                                        Subir
+                                        {% translate "Upload" %}
                                     {% else %}
-                                        Modificar
+                                        {% translate "Edit" %}
                                     {% endif %}
                                 </label>
                                 <div class="col-sm-10">
@@ -68,31 +68,31 @@
                         </div>
                     </div>
                     <div class="form-group row">
-                        <label class="col-sm-2 col-form-label">Tomada por</label>
+                        <label class="col-sm-2 col-form-label">{% translate "Taken by" %}</label>
                         <div class="col-sm-10">
                             {{ form.taken_by }}
                         </div>
                     </div>
                     <div class="form-group row">
-                        <label class="col-sm-2 col-form-label">Licencia</label>
+                        <label class="col-sm-2 col-form-label">{% translate "Licence" %}</label>
                         <div class="col-sm-10">
                             {{ form.licence }}
                         </div>
                     </div>
                     <div class="form-group row">
-                        <label class="col-sm-2 col-form-label">Espécimen</label>
+                        <label class="col-sm-2 col-form-label">{% translate "Specimen" %}</label>
                         <div class="col-sm-10">
                             {{ form.specimen }}
                         </div>
                     </div>
                     <div style="display: flex; justify-content: space-around; margin: 20px;">
                         <button type="submit" class="btn btn-primary" id="load_button">
-                            {% if gallery is None %} Cargar
-                            {% else %} Modificar
+                            {% if gallery is None %} {% translate "Load" %}
+                            {% else %} {% translate "Edit" %}
                             {% endif %}
-                            Fotografía
+                            {% translate "Photo" %}
                         </button>
-                        <a href="{% url 'modify_gallery' species_id=specie.id %}" class="nav-link btn btn-danger" id="cancel_button">Cancelar</a>
+                        <a href="{% url 'modify_gallery' species_id=specie.id %}" class="nav-link btn btn-danger" id="cancel_button">{% translate "Cancel" %}</a>
                     </div>
                 </form>
             </div>

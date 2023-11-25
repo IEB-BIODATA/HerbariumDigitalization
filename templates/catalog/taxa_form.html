@@ -1,4 +1,4 @@
-{% load widget_tweaks %}
+{% load i18n %}
 <div class="card mb-3">
     <div class="card-header">
         <i class="fas fa-table"></i>
@@ -8,32 +8,11 @@
         <div class="table-responsive">
             <form action="{{ form_url }}" method="post" class="form-horizontal">
                 {% csrf_token %}
-                {{ form.id_taxa }}
-                {{ form.scientific_name }}
-                {{ form.scientific_name_full }}
-                {% for field in form %}
-                    {% if not field.is_hidden %}
-                        <div class="form-group row">
-                            <label class="col-sm-2 col-form-label" for="{{ field.id_for_label }}">
-                                {{ field.label_tag }}
-                            </label>
-                            <div class="col-sm-10">
-                                {% if field.errors %}
-                                    {{ field|add_class:'is-invalid' }}
-                                    <div class="invalid-feedback">
-                                        {{ field.errors|join:", " }}
-                                    </div>
-                                {% else %}
-                                    {{ field }}
-                                {% endif %}
-                            </div>
-                        </div>
-                    {% endif %}
-                {% endfor %}
+                {% include 'form_base.html' with form=form %}
                 <div class="form-group row">
                     <div class="col-sm-10">
-                        <input type="submit" class="btn btn-primary" value="Guardar">
-                        <a href="{% url 'list_taxa' %}" class="btn btn-danger">Cancelar</a>
+                        <input type="submit" class="btn btn-primary" value="{% translate 'Save' %}">
+                        <a href="{% url 'list_taxa' %}" class="btn btn-danger">{% translate "Cancel" %}</a>
                     </div>
                     {% if delete_button %}
                         <div class="col-sm-2"
@@ -47,7 +26,7 @@
                                class="btn btn-danger {% if warnings %}disabled{% endif %}"
                             >
                                 <i class="fas fa-fw fa-trash"></i>
-                                Eliminar
+                                {% translate "Delete" %}
                             </a>
                         </div>
                     {% endif %}
