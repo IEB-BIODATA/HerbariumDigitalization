@@ -41,13 +41,12 @@ class LimitPaginationImages(MultipleModelLimitOffsetPagination):
 
 
 class CustomPagination(PageNumberPagination):
-
-    def get_paginated_response(self, data):
-        paginate = self.request.query_params.get("paginated", "true")
-        if paginate.lower() == "false":
-            return Response(data)
+    def paginate_queryset(self, queryset, request, view=None):
+        paginated = request.query_params.get('paginated', 'true')
+        if paginated.lower() == 'false':
+            return None
         else:
-            return super().get_paginated_response(data)
+            return super().paginate_queryset(queryset, request, view)
 
 
 class BadRequestError(exceptions.APIException):
