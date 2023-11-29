@@ -220,16 +220,9 @@ class PlantHabit(models.Model):
 class EnvironmentalHabitQuerySet(AttributeQuerySet):
     __attribute_name__ = "env_habit"
 
-    def search(self, text: str) -> AttributeQuerySet:
-        return self.filter(
-            Q(female_name__icontains=text) |
-            Q(male_name__icontains=text)
-        )
-
 
 class EnvironmentalHabit(models.Model):
-    female_name = models.CharField(max_length=100, blank=True, null=True)
-    male_name = models.CharField(max_length=100, blank=True, null=True)
+    name = models.CharField(max_length=100, blank=True, null=True)
     created_at = models.DateTimeField(auto_now_add=True, blank=True, null=True, editable=False)
     updated_at = models.DateTimeField(auto_now=True)
     created_by = models.ForeignKey(User, on_delete=models.PROTECT, default=1, editable=False)
@@ -240,14 +233,14 @@ class EnvironmentalHabit(models.Model):
         return u"%s" % self.__str__()
 
     def __str__(self):
-        return "%s / %s" % (self.female_name, self.male_name)
+        return "%s" % self.name
 
     def __repr__(self):
         return "Environmental Habit::%s" % self.__str__()
 
     class Meta:
         verbose_name_plural = "Environmental Habits"
-        ordering = ['female_name']
+        ordering = ['name']
 
 
 class RegionQuerySet(AttributeQuerySet):
@@ -1122,7 +1115,9 @@ class CatalogView(TaxonomicModel):
            species.in_argentina,
            species.in_bolivia,
            species.in_peru,
-           status.name     AS status,
+           status.name     AS status
+           status.name_es  AS status_es,
+           status.name_en  AS status_en,
            species.minimum_height,
            species.maximum_height,
            species.notes,
@@ -1145,8 +1140,6 @@ class CatalogView(TaxonomicModel):
          JOIN catalog_division division ON class.division_id = division.id
          JOIN catalog_kingdom kingdom ON division.kingdom_id = kingdom.id
          LEFT JOIN catalog_status status ON species.status_id = status.id;
-
-    ALTER MATERIALIZED VIEW catalog_view OWNER TO <POSTGRES_USER>;
 
     CREATE UNIQUE INDEX catalog_view_id_idx
         ON catalog_view (id);
@@ -1236,8 +1229,6 @@ class SynonymyView(TaxonomicModel):
         LEFT JOIN catalog_species species ON species_synonymy.species_id = species.id
         LEFT JOIN auth_user "user" ON synonymy.created_by_id = "user".id;
 
-    ALTER MATERIALIZED VIEW synonymy_view OWNER TO <POSTGRES_USER>;
-
     CREATE UNIQUE INDEX synonymy_view_id_idx
         ON synonymy_view (synonymy_id);
     """
@@ -1287,17 +1278,17 @@ class RegionDistributionView(models.Model):
     """
     CREATE MATERIALIZED VIEW region_view AS
     SELECT species_region.id,
-           species.id               AS specie_id,
+           species.id              AS specie_id,
            species.id_taxa,
            species.scientific_name AS specie_scientific_name,
-           region.name              AS region_name,
-           region.key               AS region_key
+           region.name             AS region_name,
+           region.name_es          AS region_name_es,
+           region.name_en          AS region_name_en,
+           region.key              AS region_key
     FROM catalog_species_region species_region
          JOIN catalog_species species ON species_region.species_id = species.id
          JOIN catalog_region region ON species_region.region_id = region.id
     ORDER BY species_region.id;
-
-    ALTER MATERIALIZED VIEW region_view OWNER TO <POSTGRES_USER>;
 
     CREATE UNIQUE INDEX region_distribution_view_id_idx
         ON region_view (id);
@@ -1322,21 +1313,55 @@ class RegionDistributionView(models.Model):
 class FinderView(models.Model):
     """
     CREATE MATERIALIZED VIEW finder_view AS
-    SELECT id, 'species' AS type, scientific_name AS name, determined FROM catalog_species
+    SELECT id,
+           'species'       AS type,
+           scientific_name AS name,
+           scientific_name AS name_es,
+           scientific_name AS name_en,
+           determined
+    FROM catalog_species
     UNION ALL
-    SELECT id, 'synonymy' AS type, scientific_name AS name, FALSE AS determined FROM catalog_synonymy
+    SELECT id,
+           'synonymy'      AS type,
+           scientific_name AS name,
+           scientific_name AS name_es,
+           scientific_name AS name_en,
+           FALSE           AS determined
+    FROM catalog_synonymy
     UNION ALL
-    SELECT id, 'family' AS type, name, FALSE AS determined FROM catalog_family
+    SELECT id,
+           'family'        AS type,
+           name            AS name,
+           name            AS name_es,
+           name            AS name_en,
+           FALSE           AS determined
+    FROM catalog_family
     UNION ALL
-    SELECT id, 'genus' AS type, name, FALSE AS determined FROM catalog_genus
+    SELECT id,
+           'genus'         AS type,
+           name            AS name,
+           name            AS name_es,
+           name            AS name_en,
+           FALSE           AS determined
+    FROM catalog_genus
     UNION ALL
-    SELECT id, 'common_name' AS type, name, FALSE AS determined FROM catalog_commonname
+    SELECT id,
+           'common_name'   AS type,
+           name,
+           name_es,
+           name_en,
+           FALSE           AS determined
+    FROM catalog_commonname
     ORDER BY type, name;
 
-    ALTER MATERIALIZED VIEW region_view OWNER TO <POSTGRES_USER>;
+    CREATE UNIQUE INDEX finder_view_id
+        ON finder_view (id, type);
 
-    CREATE INDEX finder_view_trgm_id
-        ON finder_view USING gin(name gin_trgm_ops);
+    CREATE INDEX finder_view_trgm_es_id
+        ON finder_view USING gin(name_es gin_trgm_ops);
+
+    CREATE INDEX finder_view_trgm_en_id
+        ON finder_view USING gin(name_en gin_trgm_ops);
     """
     id = models.IntegerField(primary_key=True, blank=False, null=False, help_text="id")
     name = models.CharField(max_length=500, blank=True, null=True, help_text="name")

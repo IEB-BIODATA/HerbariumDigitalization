@@ -19,9 +19,8 @@ from .forms import DivisionForm, ClassForm, OrderForm, FamilyForm, GenusForm, Sp
 from .models import Species, CatalogView, SynonymyView, RegionDistributionView, Division, ClassName, Order, Family, \
     Genus, Synonymy, Region, CommonName, Binnacle, PlantHabit, EnvironmentalHabit, Cycle, TaxonomicModel, \
     ConservationState, FinderView
-from ..api.serializers import DivisionSerializer, ClassSerializer, OrderSerializer, \
-    FamilySerializer, GenusSerializer, SynonymysSerializer, CommonNameSerializer, CatalogViewSerializer, \
-    BinnacleSerializer, SpeciesDetailSerializer
+from .serializers import DivisionSerializer, ClassSerializer, OrderSerializer, FamilySerializer, GenusSerializer, \
+    CatalogViewSerializer, SpeciesSerializer, SynonymsSerializer, BinnacleSerializer, CommonNameSerializer
 
 MANY_RELATIONS = [
     ("common_names", "nombres comunes", CommonName),
@@ -576,7 +575,7 @@ def select_taxa(request, species_id: int) -> HttpResponse:
     form = SpeciesForm(instance=taxa_1)
     return render(request, "catalog/merge_taxa.html", {
         "form": form, "species": species,
-        "taxa_1": SpeciesDetailSerializer(
+        "taxa_1": SpeciesSerializer(
             instance=taxa_1,
             many=False,
             context=request
@@ -622,12 +621,12 @@ def merge_taxa(request, taxa_1: int, taxa_2: int) -> HttpResponse:
             form.initial[relation_name] = [new_relation.id for new_relation in new_relations]
     return render(request, "catalog/merge_taxa.html", {
         "form": form,
-        "taxa_1": SpeciesDetailSerializer(
+        "taxa_1": SpeciesSerializer(
             instance=species_1,
             many=False,
             context=request
         ).data,
-        "taxa_2": SpeciesDetailSerializer(
+        "taxa_2": SpeciesSerializer(
             instance=species_2,
             many=False,
             context=request
@@ -662,7 +661,7 @@ def synonymy_table(request):
         4: "updated_at",
     }
     return __catalog_table__(
-        request, Synonymy, SynonymysSerializer,
+        request, Synonymy, SynonymsSerializer,
         sort_by_func, "synonyms"
     )
 
