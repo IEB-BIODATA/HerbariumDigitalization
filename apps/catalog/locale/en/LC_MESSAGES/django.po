@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2023-11-24 20:12-0300\n"
+"POT-Creation-Date: 2023-11-29 09:23-0300\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -20,33 +20,33 @@ msgstr ""
 
 #: apps/catalog/forms.py:17 apps/catalog/forms.py:36 apps/catalog/forms.py:55
 #: apps/catalog/forms.py:74 apps/catalog/forms.py:93 apps/catalog/forms.py:338
-#: apps/catalog/views.py:241 apps/catalog/views.py:288
-#: apps/catalog/views.py:334 apps/catalog/views.py:381
-#: apps/catalog/views.py:428 apps/catalog/views.py:756
+#: apps/catalog/views.py:240 apps/catalog/views.py:287
+#: apps/catalog/views.py:333 apps/catalog/views.py:380
+#: apps/catalog/views.py:427 apps/catalog/views.py:755
 msgid "Name"
 msgstr ""
 
-#: apps/catalog/forms.py:18 apps/catalog/views.py:242
+#: apps/catalog/forms.py:18 apps/catalog/views.py:241
 msgid "Kingdom"
 msgstr ""
 
-#: apps/catalog/forms.py:37 apps/catalog/views.py:239 apps/catalog/views.py:266
-#: apps/catalog/views.py:274 apps/catalog/views.py:289
+#: apps/catalog/forms.py:37 apps/catalog/views.py:238 apps/catalog/views.py:265
+#: apps/catalog/views.py:273 apps/catalog/views.py:288
 msgid "Division"
 msgstr ""
 
-#: apps/catalog/forms.py:56 apps/catalog/views.py:286 apps/catalog/views.py:313
-#: apps/catalog/views.py:321 apps/catalog/views.py:336
+#: apps/catalog/forms.py:56 apps/catalog/views.py:285 apps/catalog/views.py:312
+#: apps/catalog/views.py:320 apps/catalog/views.py:335
 msgid "Class"
 msgstr ""
 
-#: apps/catalog/forms.py:75 apps/catalog/views.py:333 apps/catalog/views.py:360
-#: apps/catalog/views.py:368 apps/catalog/views.py:383
+#: apps/catalog/forms.py:75 apps/catalog/views.py:332 apps/catalog/views.py:359
+#: apps/catalog/views.py:367 apps/catalog/views.py:382
 msgid "Order"
 msgstr ""
 
-#: apps/catalog/forms.py:94 apps/catalog/views.py:380 apps/catalog/views.py:407
-#: apps/catalog/views.py:415 apps/catalog/views.py:430
+#: apps/catalog/forms.py:94 apps/catalog/views.py:379 apps/catalog/views.py:406
+#: apps/catalog/views.py:414 apps/catalog/views.py:429
 msgid "Family"
 msgstr ""
 
@@ -67,8 +67,8 @@ msgid "Note"
 msgstr ""
 
 #: apps/catalog/forms.py:147 apps/catalog/forms.py:303
-#: apps/catalog/views.py:427 apps/catalog/views.py:454
-#: apps/catalog/views.py:462
+#: apps/catalog/views.py:426 apps/catalog/views.py:453
+#: apps/catalog/views.py:461
 msgid "Genus"
 msgstr ""
 
@@ -164,7 +164,7 @@ msgstr ""
 msgid "Common Names"
 msgstr ""
 
-#: apps/catalog/forms.py:171 apps/catalog/views.py:647
+#: apps/catalog/forms.py:171 apps/catalog/views.py:646
 msgid "Synonyms"
 msgstr ""
 
@@ -188,7 +188,7 @@ msgstr ""
 msgid "Scientific Name"
 msgstr ""
 
-#: apps/catalog/forms.py:301 apps/catalog/views.py:648
+#: apps/catalog/forms.py:301 apps/catalog/views.py:647
 msgid "Complete Scientific Name"
 msgstr ""
 
@@ -196,15 +196,15 @@ msgstr ""
 msgid "Database Scientific Name"
 msgstr ""
 
-#: apps/catalog/views.py:650 apps/catalog/views.py:758
+#: apps/catalog/views.py:649 apps/catalog/views.py:757
 msgid "Species"
 msgstr ""
 
-#: apps/catalog/views.py:674 apps/catalog/views.py:682
+#: apps/catalog/views.py:673 apps/catalog/views.py:681
 msgid "Synonymy"
 msgstr ""
 
-#: apps/catalog/views.py:755 apps/catalog/views.py:782
-#: apps/catalog/views.py:790
+#: apps/catalog/views.py:754 apps/catalog/views.py:781
+#: apps/catalog/views.py:789
 msgid "Common Name"
 msgstr ""
