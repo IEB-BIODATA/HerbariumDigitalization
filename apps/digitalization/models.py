@@ -489,7 +489,7 @@ class BannerImage(models.Model):
     specie = models.OneToOneField(Species, on_delete=models.CASCADE)
     banner = models.ImageField(upload_to="banners", storage=PublicMediaStorage())
     image = models.ForeignKey(VoucherImported, on_delete=models.CASCADE)
-    updated_at= models.DateTimeField(auto_now=True)
+    updated_at = models.DateTimeField(auto_now=True)
 
 
 class Areas(models.Model):
@@ -596,8 +596,6 @@ class VouchersView(models.Model):
          JOIN digitalization_priorityvouchersfile voucherfile ON voucher.vouchers_file_id = voucherfile.id
          JOIN digitalization_biodatacode biodatacode ON voucher.biodata_code_id = biodatacode.id
          JOIN catalog_species species ON voucher.scientific_name_id = species.id;
-
-    ALTER MATERIALIZED VIEW vouchers_view OWNER TO <POSTGRES_USER>;
 
     CREATE UNIQUE INDEX vouchers_view_id_idx
         ON vouchers_view (id);
