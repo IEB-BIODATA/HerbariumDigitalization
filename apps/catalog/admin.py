@@ -1,84 +1,41 @@
 from django.contrib import admin
-from import_export.admin import ImportExportModelAdmin
-from .models import Species, Synonymy, Kingdom, Division, ClassName, Order, Family, Genus, Region, \
-    Status, CommonName, ConservationState, Binnacle
-from .resources import SpeciesAdminResource
+from modeltranslation.admin import TranslationAdmin
+
+from .models import PlantHabit, EnvironmentalHabit, Status, Cycle, Region, ConservationState
+
+ATTRIBUTE_LIST_DISPLAY = (['id', 'name', 'created_by', 'created_at', 'updated_at'])
 
 
-@admin.register(Kingdom)
-class KingdomAdmin(ImportExportModelAdmin):
-    list_display = (['name', 'created_by', 'created_at', 'updated_at'])
+class AttributeAdmin(TranslationAdmin):
+    list_display = ATTRIBUTE_LIST_DISPLAY
     search_fields = ['name']
 
 
-@admin.register(Division)
-class DivisionAdmin(ImportExportModelAdmin):
-    list_display = (['name', 'kingdom', 'created_by', 'created_at', 'updated_at'])
-    search_fields = ['name']
+@admin.register(PlantHabit)
+class PlantHabitAdmin(AttributeAdmin):
+    pass
 
 
-@admin.register(ClassName)
-class ClassNameAdmin(ImportExportModelAdmin):
-    list_display = (['name', 'division', 'created_by', 'created_at', 'updated_at'])
-    search_fields = ['name']
-
-
-@admin.register(Order)
-class OrderAdmin(ImportExportModelAdmin):
-    list_display = (['name', 'class_name', 'created_by', 'created_at', 'updated_at'])
-    search_fields = ['name']
-
-
-@admin.register(Family)
-class FamilyAdmin(ImportExportModelAdmin):
-    list_display = (['name', 'order', 'created_by', 'created_at', 'updated_at'])
-    search_fields = ['name']
-
-
-@admin.register(Genus)
-class GenusAdmin(ImportExportModelAdmin):
-    list_display = (['name', 'family', 'created_by', 'created_at', 'updated_at'])
-    search_fields = ['name']
-
-
-@admin.register(Species)
-class SpeciesAdmin(ImportExportModelAdmin):
-    resource_class = SpeciesAdminResource
-    list_display = (['id', 'id_taxa', 'scientific_name', 'genus', 'created_by', 'created_at', 'updated_at'])
-    search_fields = ['scientific_name']
-
-
-@admin.register(Synonymy)
-class SynonymyAdmin(ImportExportModelAdmin):
-    list_display = (['scientific_name', 'created_by', 'created_at', 'updated_at'])
-    search_fields = ['scientific_name']
-
-
-@admin.register(Region)
-class RegionAdmin(ImportExportModelAdmin):
-    list_display = (['name', 'created_by', 'created_at', 'updated_at'])
-    search_fields = ['name']
+@admin.register(EnvironmentalHabit)
+class EnvHabitAdmin(AttributeAdmin):
+    pass
 
 
 @admin.register(Status)
-class StatusAdmin(ImportExportModelAdmin):
-    list_display = (['name', 'created_by', 'created_at', 'updated_at'])
-    search_fields = ['name']
+class StatusAdmin(AttributeAdmin):
+    pass
 
 
-@admin.register(CommonName)
-class CommonNameAdmin(ImportExportModelAdmin):
-    list_display = (['name', 'created_by', 'created_at', 'updated_at'])
-    search_fields = ['name']
+@admin.register(Cycle)
+class CycleAdmin(AttributeAdmin):
+    pass
+
+
+@admin.register(Region)
+class RegionAdmin(AttributeAdmin):
+    pass
 
 
 @admin.register(ConservationState)
-class ConservationStateAdmin(ImportExportModelAdmin):
-    list_display = (['name', 'key', 'created_by', 'created_at', 'updated_at'])
-    search_fields = ['name']
-
-
-@admin.register(Binnacle)
-class BinnacleAdmin(ImportExportModelAdmin):
-    list_display = (['id', 'type_update', 'model', 'description', 'created_by', 'created_at', 'updated_at'])
-    search_fields = ['type_update']
+class ConservationStateAdmin(AttributeAdmin):
+    pass

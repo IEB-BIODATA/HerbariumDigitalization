@@ -1,57 +1,35 @@
 # -*- coding: utf-8 -*-
 from django.contrib import admin
-from .models import Herbarium, BiodataCode, GeneratedPage, HerbariumMember, PriorityVouchersFile, VoucherImported, \
-    ColorProfileFile
 from django.contrib.auth.admin import UserAdmin as BaseUserAdmin
 from django.contrib.auth.models import User
-from import_export.admin import ImportExportModelAdmin
-from .resources import VoucherImportedAdminResource
+from django.utils.translation import gettext_lazy as _
+from modeltranslation.admin import TranslationAdmin
+
+from .models import Herbarium, HerbariumMember
+from ..home.models import Profile
 
 
 @admin.register(Herbarium)
-class HerbariumAdmin(admin.ModelAdmin):
-    list_display = (['name', 'institution_code', 'collection_code'])
+class HerbariumAdmin(TranslationAdmin):
+    list_display = (['id', 'name', 'institution_code', 'collection_code'])
 
 
-@admin.register(BiodataCode)
-class BiodataCodeAdmin(admin.ModelAdmin):
-    list_display = (
-    ['code', 'catalog_number', 'herbarium', 'created_by', 'created_at', 'qr_generated', 'page', 'voucher_state'])
-    search_fields = ['catalog_number', ]
-
-
-@admin.register(GeneratedPage)
-class GeneratedPageAdmin(admin.ModelAdmin):
-    list_display = (['name', 'herbarium', 'terminated', 'created_by', 'created_at'])
-
-
-# Se define la clase para integrar las unidades en el formulario de usuario django
+# The classes are defined to integer the units in the django user form
 class HerbariumMemberInline(admin.StackedInline):
     model = HerbariumMember
-    verbose_name = 'Herbario'
-    verbose_name_plural = 'Herbarios'
+    verbose_name = _('Herbarium')
+    verbose_name_plural = _('Herbariums')
 
 
-@admin.register(PriorityVouchersFile)
-class PriorityVouchersFileAdmin(admin.ModelAdmin):
-    list_display = (['id', 'file', 'herbarium', 'created_by', 'created_at'])
+class PreferenceInline(admin.StackedInline):
+    model = Profile
+    verbose_name = _('Profile')
+    verbose_name_plural = _('Profiles')
 
 
-@admin.register(VoucherImported)
-class VoucherImportedAdmin(ImportExportModelAdmin):
-    resource_class = VoucherImportedAdminResource
-    list_display = (['herbarium', 'catalog_number', 'scientific_name', 'vouchers_file'])
-    search_fields = ['catalog_number', ]
-
-
-@admin.register(ColorProfileFile)
-class ColorProfileFileAdmin(admin.ModelAdmin):
-    list_display = (['file', 'created_by', 'created_at'])
-
-
-# Define a new User admin que integra las clases para vincular unidades y programas en el admin del usuario
+# Define a new User admin that integers the classes to link units and programs to the user admin
 class UserAdmin(BaseUserAdmin):
-    inlines = ([HerbariumMemberInline])
+    inlines = ([HerbariumMemberInline, PreferenceInline])
 
 
 # Re-register UserAdmin

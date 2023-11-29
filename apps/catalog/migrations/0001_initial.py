@@ -418,6 +418,8 @@ class Migration(migrations.Migration):
                    species.in_bolivia,
                    species.in_peru,
                    status.name     AS status,
+                   status.name_es  AS status_es,
+                   status.name_en  AS status_en,
                    species.minimum_height,
                    species.maximum_height,
                    species.notes,
@@ -486,11 +488,13 @@ class Migration(migrations.Migration):
             """
             CREATE MATERIALIZED VIEW region_view AS
             SELECT species_region.id,
-                   species.id               AS specie_id,
+                   species.id              AS specie_id,
                    species.id_taxa,
                    species.scientific_name AS specie_scientific_name,
-                   region.name              AS region_name,
-                   region.key               AS region_key
+                   region.name             AS region_name,
+                   region.name_es          AS region_name_es,
+                   region.name_en          AS region_name_en,
+                   region.key              AS region_key
             FROM catalog_species_region species_region
                  JOIN catalog_species species ON species_region.species_id = species.id
                  JOIN catalog_region region ON species_region.region_id = region.id
