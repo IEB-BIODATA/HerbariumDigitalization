@@ -8,11 +8,12 @@ def get_habit(species: Species) -> str:
     plant_habit = species.plant_habit.all()
     env_habit = species.env_habit.all()
     if env_habit.count() == 0:
-        env_habit = [EnvironmentalHabit.objects.get(pk=0)]
-    habits = Habit.objects.filter(
-        plant_habit__in=plant_habit,
-        env_habit__in=env_habit
-    )
+        habits = plant_habit
+    else:
+        habits = Habit.objects.filter(
+            plant_habit__in=plant_habit,
+            env_habit__in=env_habit
+        )
     return _(' or ').join([habit.name for habit in habits])
 
 
