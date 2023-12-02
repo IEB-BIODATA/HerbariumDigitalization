@@ -30,6 +30,8 @@ DEBUG = os.environ.get("DJANGO_DEBUG", 'false') == 'true'
 
 ALLOWED_HOSTS = ['*']
 
+HERBARIUM_FRONTEND = os.environ.get("HERBARIUM_FRONTEND")
+
 
 # Application definition
 
@@ -44,7 +46,8 @@ INSTALLED_APPS = [
     'django.contrib.postgres',
     'drf_multiple_model',
     'rest_framework',
-    'drf_yasg',
+    'drf_spectacular',
+    'drf_spectacular_sidecar',
     'apps.home',
     'apps.digitalization',
     'apps.catalog',
@@ -221,12 +224,12 @@ USE_X_FORWARDED_PORT = True
 CORS_ORIGIN_ALLOW_ALL = False
 if DEBUG:
     CORS_ORIGIN_WHITELIST = (
-        'http://localhost:8002',
+        HERBARIUM_FRONTEND,
     )
 else:
     CORS_ORIGIN_WHITELIST = (
         'https://herbariodigital.cl',
-        'https://www.herbariodigital.cl',
+        HERBARIUM_FRONTEND,
     )
 
 CSRF_TRUSTED_ORIGINS = ['https://*.herbariodigital.cl']
@@ -235,6 +238,25 @@ CSRF_COOKIE_SECURE = not DEBUG
 REST_FRAMEWORK = {
     'DEFAULT_PAGINATION_CLASS': 'rest_framework.pagination.PageNumberPagination',
     'PAGE_SIZE': 20,
+    'DEFAULT_SCHEMA_CLASS': 'drf_spectacular.openapi.AutoSchema',
+}
+
+SPECTACULAR_SETTINGS = {
+    'TITLE': _("Digital Herbarium API"),
+    'DESCRIPTION': _("API description"),
+    'VERSION': '1.0.0',
+    'CONTACT': {
+        'email': "soporte.portal@ieb-chile.cl",
+    },
+    'LICENSE': {
+        'name': _("Mozilla Public License, version 2.0"),
+        'url': _("Mozilla MPL URL"),
+    },
+    'TOS': "https://www.herbariodigital.cl/catalog_about/",
+    'SERVE_URLCONF': 'apps.api.urls',
+    'SWAGGER_UI_DIST': 'SIDECAR',  # shorthand to use the sidecar instead
+    'SWAGGER_UI_FAVICON_HREF': 'SIDECAR',
+    'REDOC_DIST': 'SIDECAR',
 }
 
 SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')

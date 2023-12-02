@@ -15,34 +15,14 @@ Including another URLconf
 """
 from django.conf.urls import include
 from django.urls import re_path
-from drf_yasg import openapi
-from drf_yasg.views import get_schema_view
-from rest_framework import permissions
-
-schema_view = get_schema_view(
-    openapi.Info(
-        title="Herbarium Catalog API",
-        default_version='v2',
-        description="""
-        Catalogue of Vascular Plants of Chile and Herbarium digitalization
-        """,
-        terms_of_service="https://www.herbariodigital.cl/catalog_about/",
-        contact=openapi.Contact(email="soporte.portal@ieb-chile.cl"),
-        license=openapi.License(
-            name="Mozilla Public License, version 2.0",
-            url="https://www.mozilla.org/en-US/MPL/2.0/"
-        ),
-    ),
-    public=True,
-    permission_classes=[permissions.AllowAny],
-    urlconf="apps.api.urls",
-)
+from drf_spectacular.views import SpectacularAPIView, SpectacularSwaggerView, SpectacularRedocView
 
 urlpatterns = [
     re_path(r'^', include('apps.api.urls'),),
-    re_path(r'^swagger/$', schema_view.with_ui('swagger', cache_timeout=0), name='schema-swagger-ui'),
-    re_path(r'^swagger/$', schema_view.with_ui('swagger', cache_timeout=0), name='schema-swagger-ui'),
-    re_path(r'^redoc/$', schema_view.with_ui('redoc', cache_timeout=0), name='schema-redoc'),
+    re_path(r'^schema/$', SpectacularAPIView.as_view(), name='schema'),
+    # Optional UI:
+    re_path(r'^swagger-ui/', SpectacularSwaggerView.as_view(url_name='schema'), name='swagger-ui'),
+    re_path(r'^redoc/', SpectacularRedocView.as_view(url_name='schema'), name='redoc'),
 ]
 
 handler404 = 'intranet.views.handler404'

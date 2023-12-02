@@ -1,10 +1,17 @@
-from drf_yasg import openapi
+from django.conf import settings
+from django.utils.translation import activate
+from drf_spectacular.types import OpenApiTypes
+from drf_spectacular.utils import OpenApiParameter
+from modeltranslation.utils import get_language
 from rest_framework.request import Request
 
 from apps.catalog.models import ATTRIBUTES, TAXONOMIC_RANK, CatalogQuerySet
 
 
 def filter_query_set(queryset: CatalogQuerySet, request: Request) -> CatalogQuerySet:
+    default_language = get_language()
+    lang = request.query_params.get("lang", default_language)
+    activate(lang)
     attribute_query = dict()
     for attribute in ATTRIBUTES:
         parameters = request.query_params.getlist(attribute, [])
@@ -25,17 +32,17 @@ def filter_query_set(queryset: CatalogQuerySet, request: Request) -> CatalogQuer
         return queryset.filter_query_in(**attribute_query).filter_taxonomy_in(**taxonomic_query)
 
 
-class OpenAPIQueryParameter(openapi.Parameter):
+class OpenAPIQueryParameter(OpenApiParameter):
     __default_description__ = ("IDs of {0} to include. It can be search using the /{0} "
                                "endpoint and query parameter search")
 
     def __init__(self, name, description):
         super(OpenAPIQueryParameter, self).__init__(
-            name=name, in_=openapi.IN_QUERY,
+            name=name,
+            location=OpenApiParameter.QUERY,
             description=description,
-            type=openapi.TYPE_ARRAY,
-            items=openapi.Items(type=openapi.TYPE_INTEGER),
-            collection_format="multi"
+            many=True,
+            type=OpenApiTypes.INT,
         )
         return
 
@@ -168,23 +175,47 @@ class OpenAPICommonName(OpenAPIQueryParameter):
         return
 
 
-class OpenAPISearch(openapi.Parameter):
+class OpenApiPaginated(OpenApiParameter):
     def __init__(self):
-        super(OpenAPISearch, self).__init__(
-            name="search", in_=openapi.IN_QUERY,
-            description="A string to match (case insensitive) the name of the model",
-            type=openapi.TYPE_STRING,
+        super(OpenApiPaginated, self).__init__(
+            name="paginated",
+            location=OpenApiParameter.QUERY,
+            description="Whether the response is a paginated list or all results are delivered at once",
+            type=OpenApiTypes.BOOL,
         )
         return
 
 
-class OpenAPIHerbarium(openapi.Parameter):
+class OpenAPILang(OpenApiParameter):
+    def __init__(self):
+        super(OpenAPILang, self).__init__(
+            name="lang",
+            location=OpenApiParameter.QUERY,
+            description="Language code to use, 'en' for English or 'es' for 'Spanish'. Default 'es'",
+            type=OpenApiTypes.STR,
+            enum=[code for code, _ in settings.LANGUAGES]
+        )
+
+
+class OpenAPISearch(OpenApiParameter):
+    def __init__(self):
+        super(OpenAPISearch, self).__init__(
+            name="search",
+            location=OpenApiParameter.QUERY,
+            description="A string to match (case insensitive) the name of the model",
+            type=OpenApiTypes.STR,
+        )
+        return
+
+
+class OpenAPIHerbarium(OpenApiParameter):
     def __init__(self):
         super(OpenAPIHerbarium, self).__init__(
-            name="herbarium", in_=openapi.IN_QUERY,
+            name="herbarium",
+            location=OpenApiParameter.QUERY,
             description="Filter by the herbarium of the specimen. `all` "
                         "equivalent to use no filter",
-            type=openapi.TYPE_STRING,
+            type=OpenApiTypes.STR,
             enum=["CONC", "ULS", "all"],
         )
         return

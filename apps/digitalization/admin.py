@@ -29,7 +29,7 @@ class PreferenceInline(admin.StackedInline):
 
 # Define a new User admin that integers the classes to link units and programs to the user admin
 class UserAdmin(BaseUserAdmin):
-    inlines = ([HerbariumMemberInline, PreferenceInline])
+    inlines = [HerbariumMemberInline, PreferenceInline]
 
 
 # Re-register UserAdmin
