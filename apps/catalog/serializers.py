@@ -3,14 +3,13 @@ from rest_framework.fields import ReadOnlyField, SerializerMethodField
 from rest_framework.serializers import ModelSerializer
 
 from apps.catalog.models import CommonName, PlantHabit, EnvironmentalHabit, Status, Cycle, Region, ConservationState, \
-    TaxonomicModel, Genus, Family, Order, ClassName, Division, CatalogView, Synonymy, Species, Binnacle
+    TaxonomicModel, Genus, Family, Order, ClassName, Division, CatalogView, Synonymy, Species, Binnacle, Habit
+from apps.catalog.utils import get_habit, get_cycle, get_conservation_state
 
 
 class CommonSerializer(ModelSerializer):
-    created_by = ReadOnlyField(source='created_by.username')
-
     class Meta:
-        fields = ['id', 'created_by', 'created_at', 'updated_at', ]
+        fields = ['id', ]
         abstract = True
 
 
@@ -41,6 +40,7 @@ class StatusSerializer(AttributeSerializer):
 class CycleSerializer(AttributeSerializer):
     class Meta:
         model = Cycle
+        fields = AttributeSerializer.Meta.fields
 
 
 class RegionSerializer(AttributeSerializer):
@@ -52,7 +52,15 @@ class RegionSerializer(AttributeSerializer):
 class ConservationStateSerializer(AttributeSerializer):
     class Meta:
         model = ConservationState
-        fields = AttributeSerializer.Meta.fields
+        fields = AttributeSerializer.Meta.fields + ['key']
+
+
+class TaxonomicSerializer(CommonSerializer):
+    created_by = ReadOnlyField(source='created_by.username')
+    class Meta:
+        model = TaxonomicModel
+        fields = CommonSerializer.Meta.fields + ['created_by', 'created_at', 'updated_at', ]
+        abstract = True
 
 
 class CommonNameSerializer(AttributeSerializer):
@@ -60,18 +68,11 @@ class CommonNameSerializer(AttributeSerializer):
 
     class Meta:
         model = CommonName
-        fields = AttributeSerializer.Meta.fields + ['species',]
+        fields = AttributeSerializer.Meta.fields + ['name', 'species',]
 
     def get_species(self, obj):
         species = obj.species_set.all()
         return "\t".join([specie.scientific_name for specie in species])
-
-
-class TaxonomicSerializer(CommonSerializer):
-    class Meta:
-        model = TaxonomicModel
-        fields = CommonSerializer.Meta.fields
-        abstract = True
 
 
 class DivisionSerializer(TaxonomicSerializer):
@@ -150,6 +151,7 @@ class SpeciesSerializer(TaxonomicSerializer):
     kingdom = ReadOnlyField(source='kingdom.name')
     habit = SerializerMethodField()
     cycle = SerializerMethodField()
+    conservation_state = SerializerMethodField()
     status = ReadOnlyField(source='status.name')
     synonyms = SynonymsSerializer(required=False, many=True)
     region = RegionSerializer(required=False, many=True)
@@ -173,11 +175,14 @@ class SpeciesSerializer(TaxonomicSerializer):
             'id_taxa_origin',
         ]
 
-    def get_habit(self, obj):
-        return "Pending"
-
     def get_cycle(self, obj):
-        return _('or').join([cycle.name for cycle in obj.cycle.all()])
+        return get_cycle(obj)
+
+    def get_habit(self, obj):
+        return get_habit(obj)
+
+    def get_conservation_state(self, obj):
+        return get_conservation_state(obj)
 
 
 class BinnacleSerializer(TaxonomicSerializer):
