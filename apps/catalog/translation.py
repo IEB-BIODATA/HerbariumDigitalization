@@ -1,7 +1,7 @@
 from modeltranslation.translator import register, TranslationOptions
 
 from .models import PlantHabit, EnvironmentalHabit, Status, Cycle, Region, ConservationState, CommonName, CatalogView, \
-    RegionDistributionView, FinderView, Binnacle
+    RegionDistributionView, FinderView, Binnacle, Habit
 
 
 @register(PlantHabit)
@@ -11,6 +11,11 @@ class PlanHabitTranslationOptions(TranslationOptions):
 
 @register(EnvironmentalHabit)
 class EnvHabitTranslationOptions(TranslationOptions):
+    fields = ('name',)
+
+
+@register(Habit)
+class HabitTranslationOptions(TranslationOptions):
     fields = ('name',)
 
 

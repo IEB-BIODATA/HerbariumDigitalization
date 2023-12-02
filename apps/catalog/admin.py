@@ -1,7 +1,7 @@
 from django.contrib import admin
 from modeltranslation.admin import TranslationAdmin
 
-from .models import PlantHabit, EnvironmentalHabit, Status, Cycle, Region, ConservationState
+from .models import PlantHabit, EnvironmentalHabit, Status, Cycle, Region, ConservationState, Habit
 
 ATTRIBUTE_LIST_DISPLAY = (['id', 'name', 'created_by', 'created_at', 'updated_at'])
 
@@ -19,6 +19,11 @@ class PlantHabitAdmin(AttributeAdmin):
 @admin.register(EnvironmentalHabit)
 class EnvHabitAdmin(AttributeAdmin):
     pass
+
+
+@admin.register(Habit)
+class HabitAdmin(AttributeAdmin):
+    list_display = AttributeAdmin.list_display + ["plant_habit", "env_habit"]
 
 
 @admin.register(Status)

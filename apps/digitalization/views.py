@@ -32,11 +32,11 @@ from .forms import LoadColorProfileForm, VoucherImportedForm, GalleryImageForm, 
     GeneratedPageForm
 from .models import BiodataCode, GeneratedPage, VoucherImported, PriorityVouchersFile, VouchersView, \
     GalleryImage, BannerImage, VOUCHER_STATE
+from .serializers import PriorityVouchersSerializer, GeneratedPageSerializer, VoucherSerializer
 from .storage_backends import PrivateMediaStorage
 from .tasks import process_pending_vouchers, upload_priority_vouchers, etiquette_picture
 from .utils import render_to_pdf
-from ..api.serializers import MinimizedVoucherSerializer, CatalogViewSerializer, GeneratedPageSerializer, \
-    PriorityVouchersSerializer
+from ..catalog.serializers import CatalogViewSerializer
 
 
 class HttpResponsePreconditionFailed(HttpResponse):
@@ -443,7 +443,7 @@ def vouchers_table(request, voucher_state: str):
                 Q(locality__icontains=search_value)
         )
     return paginated_table(
-        request, entries, MinimizedVoucherSerializer,
+        request, entries, VoucherSerializer,
         sort_by_func, "voucher imported", search_query
     )
 
@@ -477,7 +477,7 @@ def get_vouchers_to_validate(request, page_id, voucher_state):
         5: "locality",
     }
     return paginated_table(
-        request, biodata_codes, MinimizedVoucherSerializer,
+        request, biodata_codes, VoucherSerializer,
         sort_by_func, "biodata code", search_query
     )
 
