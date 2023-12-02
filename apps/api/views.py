@@ -387,7 +387,8 @@ class SynonymyDetails(ScientificNameDetails):
     serializer_class = SynonymyDetailsSerializer
 
 
-class DistributionList(QueryList):
+class DistributionList(ListAPIView):
+    pagination_class = CustomPagination
     queryset = VoucherImported.objects.all()
     serializer_class = DistributionSerializer
 
