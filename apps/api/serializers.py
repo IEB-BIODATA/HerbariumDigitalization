@@ -179,7 +179,10 @@ class SpeciesDetailsSerializer(SpeciesSerializer):
         ]
 
     def get_status(self, obj):
-        return obj.status.name
+        try:
+            return obj.status.name
+        except AttributeError:
+            return None
 
     def get_conservation_state(self, obj):
         return get_conservation_state(obj)
