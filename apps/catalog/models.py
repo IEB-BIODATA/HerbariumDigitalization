@@ -3,12 +3,13 @@ from __future__ import annotations
 import logging
 from abc import abstractmethod, ABC
 from copy import deepcopy
-from typing import List, Dict
+from typing import List, Dict, Tuple, Any
 
 from django.contrib.auth.models import User
 from django.db import connection
 from django.db import models
 from django.db.models import Q
+from django.utils.translation import gettext_lazy as _
 
 from intranet.utils import CatalogQuerySet
 
@@ -82,8 +83,8 @@ class TaxonomicQuerySet(CatalogQuerySet, ABC):
     def filter_query_in(self, **parameters: Dict[str, List[str]]) -> TaxonomicQuerySet:
         query = Q()
         rank_index = TAXONOMIC_RANK.index(self.__rank_name__)
-        query_name = "__".join(TAXONOMIC_RANK[rank_index + 1:])
         for query_key, parameter in parameters.items():
+            query_name = "__".join(TAXONOMIC_RANK[rank_index + 1:])
             if query_name != "":
                 query_name = f"{query_name}__"
             query &= Q(**{f"{query_name}{query_key}__in": parameter})
@@ -94,8 +95,8 @@ class TaxonomicQuerySet(CatalogQuerySet, ABC):
     def filter_query(self, **parameters: Dict[str, List[str]]) -> TaxonomicQuerySet:
         query = Q()
         rank_index = TAXONOMIC_RANK.index(self.__rank_name__)
-        query_name = "__".join(TAXONOMIC_RANK[rank_index + 1:])
         for query_key, parameter in parameters.items():
+            query_name = "__".join(TAXONOMIC_RANK[rank_index + 1:])
             if query_name != "":
                 query_name = f"{query_name}__"
             query &= Q(**{f"{query_name}{query_key}": parameter})
@@ -187,7 +188,7 @@ class Cycle(models.Model):
         return "Cycle::%s" % self.name
 
     class Meta:
-        verbose_name_plural = "Ciclos"
+        verbose_name_plural = _("Cycles")
         ordering = ['name']
 
 
@@ -243,6 +244,34 @@ class EnvironmentalHabit(models.Model):
         ordering = ['name']
 
 
+class Habit(models.Model):
+    plant_habit = models.ForeignKey(PlantHabit, on_delete=models.CASCADE)
+    env_habit = models.ForeignKey(EnvironmentalHabit, on_delete=models.CASCADE)
+    name = models.CharField(max_length=200, blank=True, null=True)
+    created_at = models.DateTimeField(auto_now_add=True, blank=True, null=True, editable=False)
+    updated_at = models.DateTimeField(auto_now=True)
+    created_by = models.ForeignKey(User, on_delete=models.PROTECT, default=1, editable=False)
+
+    def __unicode__(self):
+        return u"%s" % self.__str__()
+
+    def __str__(self):
+        return "%s" % self.name
+
+    def __repr__(self):
+        return "Habit::%s" % self.__str__()
+
+    def natural_key(self) -> Tuple[models.ForeignKey, models.ForeignKey]:
+        return self.plant_habit.primary_key, self.env_habit.primary_key
+
+    class Meta:
+        verbose_name_plural = _("Habits")
+        ordering = ['plant_habit', 'env_habit']
+        constraints = [
+            models.UniqueConstraint(fields=['plant_habit', 'env_habit'], name='unique habit')
+        ]
+
+
 class RegionQuerySet(AttributeQuerySet):
     __attribute_name__ = "region"
 
@@ -289,7 +318,7 @@ class ConservationState(models.Model):
         return u"%s" % self.name
 
     def __str__(self):
-        return "%s" % self.name
+        return f"{self.name} ({self.key})"
 
     def __repr__(self):
         return "Conservation State::%s" % self.name

@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2023-11-29 09:23-0300\n"
+"POT-Creation-Date: 2023-11-30 13:24-0300\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -194,6 +194,18 @@ msgstr ""
 
 #: apps/catalog/forms.py:302
 msgid "Database Scientific Name"
+msgstr ""
+
+#: apps/catalog/models.py:191
+msgid "Cycles"
+msgstr ""
+
+#: apps/catalog/models.py:268
+msgid "Habits"
+msgstr ""
+
+#: apps/catalog/utils.py:12 apps/catalog/utils.py:16 apps/catalog/utils.py:20
+msgid " or "
 msgstr ""
 
 #: apps/catalog/views.py:649 apps/catalog/views.py:757
