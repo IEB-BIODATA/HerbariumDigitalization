@@ -1,17 +1,16 @@
-import logging
 from django.conf import settings
-
 from django.db.models import Q
-from rest_framework import serializers
+from drf_spectacular.utils import extend_schema_field
 from rest_framework.serializers import HyperlinkedModelSerializer, ModelSerializer, CharField, ReadOnlyField, \
     SerializerMethodField
+from typing import Union, List, Dict
 
 from apps.catalog.models import Species, Family, Genus, Synonymy, Division, ClassName, Order, CommonName, \
     TaxonomicModel, FinderView, ScientificName
-from apps.catalog.serializers import CommonSerializer, StatusSerializer
+from apps.catalog.serializers import CommonSerializer
 from apps.catalog.utils import get_habit, get_conservation_state
-from apps.digitalization.models import VoucherImported, GalleryImage
-from apps.digitalization.serializers import GallerySerializer, VoucherSerializer
+from apps.digitalization.models import VoucherImported
+from apps.digitalization.serializers import GallerySerializer
 
 
 class TaxonomicApiSerializer(CommonSerializer):
@@ -25,36 +24,42 @@ class CommonNameSerializer(TaxonomicApiSerializer):
     class Meta:
         model = CommonName
         fields = TaxonomicApiSerializer.Meta.fields
+        read_only_fields = fields
 
 
 class DivisionSerializer(TaxonomicApiSerializer):
     class Meta:
         model = Division
         fields = TaxonomicApiSerializer.Meta.fields
+        read_only_fields = fields
 
 
 class ClassSerializer(TaxonomicApiSerializer):
     class Meta:
         model = ClassName
         fields = TaxonomicApiSerializer.Meta.fields
+        read_only_fields = fields
 
 
 class OrderSerializer(TaxonomicApiSerializer):
     class Meta:
         model = Order
         fields = TaxonomicApiSerializer.Meta.fields
+        read_only_fields = fields
 
 
 class FamilySerializer(TaxonomicApiSerializer):
     class Meta:
         model = Family
         fields = TaxonomicApiSerializer.Meta.fields
+        read_only_fields = fields
 
 
 class GenusSerializer(TaxonomicApiSerializer):
     class Meta:
         model = Genus
         fields = TaxonomicApiSerializer.Meta.fields
+        read_only_fields = fields
 
 
 class FinderSerializer(ModelSerializer):
@@ -64,7 +69,7 @@ class FinderSerializer(ModelSerializer):
 
 
 class ScientificNameSerializer(TaxonomicApiSerializer):
-    name = CharField(source="scientific_name")
+    name = CharField(source="scientific_name", read_only=True)
 
     class Meta:
         model = ScientificName
@@ -94,7 +99,7 @@ class SpeciesSerializer(ScientificNameSerializer):
             'family', 'order', 'habit', 'determined',
         ]
 
-    def get_habit(self, obj):
+    def get_habit(self, obj: Species) -> str:
         return get_habit(obj)
 
 
@@ -106,13 +111,13 @@ class SampleSerializer(HyperlinkedModelSerializer):
         model = VoucherImported
         fields = ['id', 'image_resized_10', 'image_resized_60']
 
-    def get_image_resized_10(self, obj: VoucherImported):
+    def get_image_resized_10(self, obj: VoucherImported) -> str:
         try:
             return obj.image_public_resized_10.url
         except ValueError:
             return "#"
 
-    def get_image_resized_60(self, obj: VoucherImported):
+    def get_image_resized_60(self, obj: VoucherImported) -> str:
         try:
             return obj.image_public_resized_10.url
         except ValueError:
@@ -120,7 +125,7 @@ class SampleSerializer(HyperlinkedModelSerializer):
 
 
 class SpeciesFinderSerializer(SpeciesSerializer):
-    genus_name = CharField(source="genus.name")
+    genus_name = CharField(source="genus.name", read_only=True)
     sample = SerializerMethodField()
 
     class Meta:
@@ -128,8 +133,10 @@ class SpeciesFinderSerializer(SpeciesSerializer):
         fields = SpeciesSerializer.Meta.fields + [
             'genus_name', 'sample'
         ]
+        read_only_fields = fields
 
-    def get_sample(self, obj):
+    @extend_schema_field(SampleSerializer)
+    def get_sample(self, obj: Species) -> Union[Dict, None]:
         sample = obj.voucherimported_set.exclude(
             Q(image_public_resized_10__isnull=True) |
             Q(image_public_resized_10__exact='')
@@ -152,7 +159,7 @@ class SynonymyFinderSerializer(ScientificNameSerializer):
             'species', 'genus_name',
         ]
 
-    def get_species(self, obj):
+    def get_species(self, obj: Synonymy) -> SpeciesSerializer:
         return SpeciesSerializer(
             instance=obj.species_set.all(),
             many=True, context=self.context
@@ -178,19 +185,19 @@ class SpeciesDetailsSerializer(SpeciesSerializer):
             'herbarium_url',
         ]
 
-    def get_status(self, obj):
+    def get_status(self, obj: Species) -> Union[str, None]:
         try:
             return obj.status.name
         except AttributeError:
             return None
 
-    def get_conservation_state(self, obj):
+    def get_conservation_state(self, obj: Species) -> List[str]:
         return get_conservation_state(obj)
 
-    def get_synonyms(self, obj):
+    def get_synonyms(self, obj: Species) -> List[str]:
         return [synonym.scientific_name_full for synonym in obj.synonyms.all()]
 
-    def get_vouchers(self, obj):
+    def get_vouchers(self, obj: Species) -> SampleSerializer:
         vouchers = obj.voucherimported_set.exclude(
             Q(image_public_resized_10__isnull=True) |
             Q(image_public_resized_10__exact='') |
@@ -204,13 +211,13 @@ class SpeciesDetailsSerializer(SpeciesSerializer):
             many=True, context=self.context
         ).data
 
-    def get_gallery_images(self, obj):
+    def get_gallery_images(self, obj: Species) -> GallerySerializer:
         return GallerySerializer(
             instance=obj.galleryimage_set.all(),
             many=True, context=self.context
         ).data
 
-    def get_herbarium_url(self, obj):
+    def get_herbarium_url(self, obj: Species) -> str:
         return f"{settings.HERBARIUM_FRONTEND}/catalog/details/species/{obj.id}"
 
 
@@ -222,7 +229,7 @@ class SynonymyDetailsSerializer(SynonymyFinderSerializer):
             'scientific_name_full'
         ]
 
-    def get_species(self, obj):
+    def get_species(self, obj: Synonymy) -> SpeciesDetailsSerializer:
         return SpeciesDetailsSerializer(
             instance=obj.species_set.all(),
             many=True,
@@ -268,7 +275,7 @@ class SpecimenDetailSerializer(SpecimenFinderSerializer):
             'identified_date', 'organism_remarks',
         ]
 
-    def get_image(self, obj):
+    def get_image(self, obj: VoucherImported) -> Dict[str, str]:
         return {
             'name': obj.image_public.name,
             'url': obj.image_public.url,

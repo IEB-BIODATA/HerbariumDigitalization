@@ -1,4 +1,6 @@
 from django.conf import settings
+from django.db.models import Q
+from django.http import HttpRequest
 from django.utils.translation import activate
 from drf_spectacular.types import OpenApiTypes
 from drf_spectacular.utils import OpenApiParameter
@@ -6,6 +8,7 @@ from modeltranslation.utils import get_language
 from rest_framework.request import Request
 
 from apps.catalog.models import ATTRIBUTES, TAXONOMIC_RANK, CatalogQuerySet
+from apps.digitalization.models import Areas
 
 
 def filter_query_set(queryset: CatalogQuerySet, request: Request) -> CatalogQuerySet:
@@ -30,6 +33,16 @@ def filter_query_set(queryset: CatalogQuerySet, request: Request) -> CatalogQuer
         return queryset.filter_query_in(**attribute_query).filter_taxonomy_in(**taxonomic_query).search(search)
     else:
         return queryset.filter_query_in(**attribute_query).filter_taxonomy_in(**taxonomic_query)
+
+
+def filter_by_geo(request: HttpRequest, point_query_name: str) -> Q:
+    query = Q()
+    for area in request.GET.getlist("area", None):
+        areas_model = Areas.objects.get(pk=area)
+        query = query | Q(**{point_query_name: areas_model.geometry})
+    for geometry in request.GET.getlist("geometry", None):
+        query = query | Q(**{point_query_name: geometry})
+    return query
 
 
 class OpenAPIQueryParameter(OpenApiParameter):
@@ -171,6 +184,26 @@ class OpenAPICommonName(OpenAPIQueryParameter):
         super(OpenAPICommonName, self).__init__(
             name="common_name",
             description="IDs of common names to include."
+        )
+        return
+
+
+class OpenAPIArea(OpenAPIQueryParameter):
+    def __init__(self):
+        super(OpenAPIArea, self).__init__(
+            name="area",
+            description="IDs of areas to include."
+        )
+        return
+
+
+class OpenAPIGeometry(OpenApiParameter):
+    def __init__(self):
+        super(OpenAPIGeometry, self).__init__(
+            name="geometry",
+            location=OpenApiParameter.QUERY,
+            description="Well-known text representation of geometry.",
+            type=OpenApiTypes.STR,
         )
         return
 
