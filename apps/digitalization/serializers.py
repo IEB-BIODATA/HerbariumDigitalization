@@ -113,12 +113,14 @@ class VoucherSerializer(HyperlinkedModelSerializer):
         return BiodataCodeSerializer(
             instance=obj.biodata_code,
             many=False,
+            context=self.context
         ).data
 
     def get_priority_voucher(self, obj):
         return PriorityVouchersSerializer(
             instance=obj.vouchers_file,
             many=False,
+            context=self.context
         ).data
 
     def get_image_voucher_url(self, obj):
