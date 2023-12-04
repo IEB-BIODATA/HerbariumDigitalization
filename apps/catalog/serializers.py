@@ -1,9 +1,8 @@
-from django.utils.translation import gettext_lazy as _
 from rest_framework.fields import ReadOnlyField, SerializerMethodField
 from rest_framework.serializers import ModelSerializer
 
 from apps.catalog.models import CommonName, PlantHabit, EnvironmentalHabit, Status, Cycle, Region, ConservationState, \
-    TaxonomicModel, Genus, Family, Order, ClassName, Division, CatalogView, Synonymy, Species, Binnacle, Habit
+    TaxonomicModel, Genus, Family, Order, ClassName, Division, CatalogView, Synonymy, Species, Binnacle
 from apps.catalog.utils import get_habit, get_cycle, get_conservation_state
 
 
