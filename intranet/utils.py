@@ -82,7 +82,7 @@ def paginated_table(
         data.append(serializer(
             instance=item,
             many=False,
-            context=request
+            context={"request": request}
         ).data)
 
     return JsonResponse({
