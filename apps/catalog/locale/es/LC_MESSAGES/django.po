@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2023-11-30 13:24-0300\n"
+"POT-Creation-Date: 2023-12-05 17:13-0300\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -204,7 +204,7 @@ msgstr "Ciclos"
 msgid "Habits"
 msgstr "Hábitos"
 
-#: apps/catalog/utils.py:12 apps/catalog/utils.py:16 apps/catalog/utils.py:20
+#: apps/catalog/utils.py:17 apps/catalog/utils.py:21
 msgid " or "
 msgstr " ó "
 

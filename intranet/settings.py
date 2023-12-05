@@ -48,6 +48,7 @@ INSTALLED_APPS = [
     'rest_framework',
     'drf_spectacular',
     'drf_spectacular_sidecar',
+    'leaflet',
     'apps.home',
     'apps.digitalization',
     'apps.catalog',
@@ -265,6 +266,24 @@ SPECTACULAR_SETTINGS = {
 }
 
 SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
+
+LEAFLET_CONFIG = {
+    'DEFAULT_CENTER': (-39.8232657, -73.261518),
+    'DEFAULT_ZOOM': 4,
+    'TILES': [
+        ('Custom Tiles', 'https://{s}.google.com/vt/lyrs=s,h&x={x}&y={y}&z={z}', {
+            'maxZoom': 20,
+            'subdomains': ['mt0', 'mt1', 'mt2', 'mt3'],
+        }),
+    ],
+    'RESET_VIEW': False,
+    'PLUGINS': {
+        'draw': {
+            'css': 'https://cdnjs.cloudflare.com/ajax/libs/leaflet.draw/1.0.4/leaflet.draw.css',
+            'js': 'https://cdnjs.cloudflare.com/ajax/libs/leaflet.draw/1.0.4/leaflet.draw.js',
+        }
+    }
+}
 
 LOGGING = {
     'version': 1,
