@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2023-11-30 13:24-0300\n"
+"POT-Creation-Date: 2023-12-05 17:13-0300\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -50,7 +50,7 @@ msgstr "Presione 'Cerrar Sesión' si confirma salir de la cuenta."
 #: templates/digitalization/gallery_image.html:95
 #: templates/digitalization/modify_gallery.html:180
 #: templates/digitalization/new_licence.html:20
-#: templates/digitalization/update_voucher.html:194
+#: templates/digitalization/update_voucher.html:180
 #: templates/registration/preference.html:32
 #: templates/registration/preference.html:45
 msgid "Cancel"
@@ -69,7 +69,7 @@ msgstr "Nuevo %(title)s"
 #: templates/catalog/create_catalog.html:18 templates/catalog/taxa_form.html:14
 #: templates/catalog/update_binnacle.html:20
 #: templates/catalog/update_catalog.html:18
-#: templates/digitalization/update_voucher.html:193
+#: templates/digitalization/update_voucher.html:179
 #: templates/registration/preference.html:46
 msgid "Save"
 msgstr "Guardar"
@@ -517,22 +517,22 @@ msgstr "Nombre Especie"
 #: templates/digitalization/control_vouchers.html:209
 #: templates/digitalization/mark_vouchers.html:365
 #: templates/digitalization/template_list_priority_voucher.html:41
-#: templates/digitalization/update_voucher.html:99
+#: templates/digitalization/update_voucher.html:85
 msgid "Collected by"
 msgstr "Colectado por"
 
 #: templates/digitalization/control_vouchers.html:210
 #: templates/digitalization/mark_vouchers.html:366
 #: templates/digitalization/template_list_priority_voucher.html:42
-#: templates/digitalization/update_voucher.html:93
+#: templates/digitalization/update_voucher.html:79
 #: templates/digitalization/validate_vouchers.html:422
 msgid "Collection Number"
 msgstr "Número de Colecta"
 
 #: templates/digitalization/control_vouchers.html:211
 #: templates/digitalization/mark_vouchers.html:367
-#: templates/digitalization/update_voucher.html:111
-#: templates/digitalization/update_voucher.html:173
+#: templates/digitalization/update_voucher.html:97
+#: templates/digitalization/update_voucher.html:159
 #: templates/digitalization/validate_vouchers.html:423
 msgid "Locality"
 msgstr "Ubicación"
@@ -544,7 +544,7 @@ msgid "Photo Gallery"
 msgstr "Galería de Fotografías"
 
 #: templates/digitalization/gallery_image.html:39
-#: templates/digitalization/update_voucher.html:154
+#: templates/digitalization/update_voucher.html:140
 #: templates/digitalization/validate_vouchers.html:424
 msgid "Image"
 msgstr "Imagen"
@@ -811,7 +811,7 @@ msgid "Herbarium Code"
 msgstr "Código Herbario"
 
 #: templates/digitalization/template_list_priority_voucher.html:39
-#: templates/digitalization/update_voucher.html:105
+#: templates/digitalization/update_voucher.html:91
 msgid "Species"
 msgstr "Especie"
 
@@ -824,53 +824,53 @@ msgstr "Lista de QRs"
 msgid "Document date: %(date)s"
 msgstr "Fecha Documento: %(date)s"
 
-#: templates/digitalization/update_voucher.html:69
+#: templates/digitalization/update_voucher.html:55
 msgid "Digitalization: Voucher"
 msgstr "Digitalización: Voucher"
 
-#: templates/digitalization/update_voucher.html:74
+#: templates/digitalization/update_voucher.html:60
 msgid "Update Voucher"
 msgstr "Actualizar Voucher"
 
-#: templates/digitalization/update_voucher.html:81
+#: templates/digitalization/update_voucher.html:67
 msgid "Catalogue Number"
 msgstr "Número de Catálogo"
 
-#: templates/digitalization/update_voucher.html:87
+#: templates/digitalization/update_voucher.html:73
 msgid "Herbarium Database ID"
 msgstr "ID Base Dato herbario"
 
-#: templates/digitalization/update_voucher.html:117
+#: templates/digitalization/update_voucher.html:103
 msgid "Altitude"
 msgstr "Altura"
 
-#: templates/digitalization/update_voucher.html:123
+#: templates/digitalization/update_voucher.html:109
 msgid "Collection Date"
 msgstr "Fecha de Colecta"
 
-#: templates/digitalization/update_voucher.html:129
+#: templates/digitalization/update_voucher.html:115
 msgid "Identified by"
 msgstr "Determinado por"
 
-#: templates/digitalization/update_voucher.html:135
+#: templates/digitalization/update_voucher.html:121
 msgid "Identified Date"
 msgstr "Fecha de Determinación"
 
-#: templates/digitalization/update_voucher.html:141
+#: templates/digitalization/update_voucher.html:127
 msgid "Observations"
 msgstr "Observaciones"
 
-#: templates/digitalization/update_voucher.html:147
+#: templates/digitalization/update_voucher.html:133
 msgid "Priority"
 msgstr "Prioridad"
 
-#: templates/digitalization/update_voucher.html:161
-#: templates/digitalization/update_voucher.html:178
+#: templates/digitalization/update_voucher.html:147
+#: templates/digitalization/update_voucher.html:164
 msgid "Latitude"
 msgstr "Latitud"
 
-#: templates/digitalization/update_voucher.html:167
-#: templates/digitalization/update_voucher.html:179
+#: templates/digitalization/update_voucher.html:153
+#: templates/digitalization/update_voucher.html:165
 msgid "Longitude"
 msgstr "Longitud"
 
@@ -1034,26 +1034,26 @@ msgstr "Descargar actual versión"
 msgid "Test"
 msgstr "Pruebas"
 
-#: intranet/settings.py:146
+#: intranet/settings.py:149
 msgid "Spanish"
 msgstr "Español"
 
-#: intranet/settings.py:147
+#: intranet/settings.py:150
 msgid "English"
 msgstr "Inglés"
 
-#: intranet/settings.py:243
+#: intranet/settings.py:251
 msgid "Digital Herbarium API"
 msgstr "API del Herbario Digital"
 
-#: intranet/settings.py:244
+#: intranet/settings.py:252
 msgid "API description"
 msgstr "API del Catálogo de Plantas Vasculares de Chile y Herbario Digital"
 
-#: intranet/settings.py:250
+#: intranet/settings.py:258
 msgid "Mozilla Public License, version 2.0"
 msgstr "Licencia pública de Mozilla, versión 2.0"
 
-#: intranet/settings.py:251
+#: intranet/settings.py:259
 msgid "Mozilla MPL URL"
 msgstr "https://www.mozilla.org/en-US/MPL/2.0/"

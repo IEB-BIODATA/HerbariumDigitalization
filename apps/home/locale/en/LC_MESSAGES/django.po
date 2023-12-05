@@ -20,19 +20,19 @@ msgstr ""
 
 #: apps/home/forms.py:20
 msgid "Language"
-msgstr ""
+msgstr "Language"
 
 #: apps/home/forms.py:21
 msgid "Theme"
-msgstr ""
+msgstr "Theme"
 
 #: apps/home/forms.py:33
 msgid "Old Password"
-msgstr ""
+msgstr "Old Password"
 
 #: apps/home/forms.py:38
 msgid "New Password"
-msgstr ""
+msgstr "New Password"
 
 #: apps/home/forms.py:43
 msgid "Validate Password"
@@ -40,19 +40,19 @@ msgstr "Re-type Password"
 
 #: apps/home/forms.py:62
 msgid "User Name"
-msgstr ""
+msgstr "User Name"
 
 #: apps/home/forms.py:63
 msgid "First Name"
-msgstr ""
+msgstr "First Name"
 
 #: apps/home/forms.py:64
 msgid "Last Name"
-msgstr ""
+msgstr "Last Name"
 
 #: apps/home/forms.py:65
 msgid "Email"
-msgstr ""
+msgstr "Email"
 
 #: apps/home/models.py:7
 msgid "Light"

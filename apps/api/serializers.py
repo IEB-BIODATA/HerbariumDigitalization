@@ -238,29 +238,35 @@ class SynonymyDetailsSerializer(SynonymyFinderSerializer):
 
 
 class DistributionSerializer(SampleSerializer):
+    code = ReadOnlyField(source="biodata_code.code")
     decimal_latitude = ReadOnlyField(source='decimal_latitude_public')
     decimal_longitude = ReadOnlyField(source='decimal_longitude_public')
 
     class Meta:
         model = VoucherImported
         fields = SampleSerializer.Meta.fields + [
+            'code',
             'decimal_latitude',
             'decimal_longitude',
         ]
 
 
 class SpecimenFinderSerializer(SampleSerializer):
-    code = ReadOnlyField(source="biodata_code.code")
-    herbarium_code = ReadOnlyField(source="herbarium.collection_code")
-    species = SpeciesSerializer(source="scientific_name")
+    code = ReadOnlyField(source='biodata_code.code')
+    herbarium_code = ReadOnlyField(source='herbarium.collection_code')
+    decimal_latitude = ReadOnlyField(source='decimal_latitude_public')
+    decimal_longitude = ReadOnlyField(source='decimal_longitude_public')
+    species = SpeciesSerializer(source='scientific_name')
 
     class Meta:
         model = VoucherImported
         fields = SampleSerializer.Meta.fields + [
-            "code",
-            "herbarium_code",
-            "catalog_number",
-            "species",
+            'code',
+            'herbarium_code',
+            'catalog_number',
+            'decimal_latitude',
+            'decimal_longitude',
+            'species',
         ]
 
 

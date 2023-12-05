@@ -20,64 +20,64 @@ msgstr ""
 
 #: apps/digitalization/admin.py:20
 msgid "Herbarium"
-msgstr ""
+msgstr "Herbarium"
 
 #: apps/digitalization/admin.py:21
 msgid "Herbariums"
-msgstr ""
+msgstr "Herbariums"
 
 #: apps/digitalization/admin.py:26
 msgid "Profile"
-msgstr ""
+msgstr "Profile"
 
 #: apps/digitalization/admin.py:27
 msgid "Profiles"
-msgstr ""
+msgstr "Profiles"
 
 #: apps/digitalization/forms.py:141
 msgid "Name"
-msgstr ""
+msgstr "Name"
 
 #: apps/digitalization/forms.py:142
 msgid "Source (URL)"
-msgstr ""
+msgstr "Source (URL)"
 
 #: apps/digitalization/forms.py:143
 msgid "Short Name"
-msgstr ""
+msgstr "Short Name"
 
 #: apps/digitalization/models.py:32
 msgid "No State"
-msgstr ""
+msgstr "No State"
 
 #: apps/digitalization/models.py:33
 msgid "Found"
-msgstr ""
+msgstr "Found"
 
 #: apps/digitalization/models.py:34
 msgid "Not Found"
-msgstr ""
+msgstr "Not Found"
 
 #: apps/digitalization/models.py:35
 msgid "Borrowed"
-msgstr ""
+msgstr "Borrowed"
 
 #: apps/digitalization/models.py:36
 msgid "Lost"
-msgstr ""
+msgstr "Lost"
 
 #: apps/digitalization/models.py:37
 msgid "Found And Borrowed"
-msgstr ""
+msgstr "Found And Borrowed"
 
 #: apps/digitalization/models.py:38
 msgid "In Curatorship"
-msgstr ""
+msgstr "In Curatorship"
 
 #: apps/digitalization/models.py:39
 msgid "Digitalized"
-msgstr ""
+msgstr "Digitalized"
 
 #: apps/digitalization/models.py:40
 msgid "Pending"
-msgstr ""
+msgstr "Pending"
