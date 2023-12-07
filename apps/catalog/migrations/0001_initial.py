@@ -488,7 +488,7 @@ class Migration(migrations.Migration):
             """
             CREATE MATERIALIZED VIEW region_view AS
             SELECT species_region.id,
-                   species.id              AS specie_id,
+                   species.id              AS species_id,
                    species.id_taxa,
                    species.scientific_name AS specie_scientific_name,
                    region.name             AS region_name,
