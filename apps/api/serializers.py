@@ -7,7 +7,7 @@ from typing import Union, List, Dict
 
 from apps.catalog.models import Species, Family, Genus, Synonymy, Division, ClassName, Order, CommonName, \
     TaxonomicModel, FinderView, ScientificName
-from apps.catalog.serializers import CommonSerializer
+from apps.catalog.serializers import CommonSerializer, RegionSerializer
 from apps.catalog.utils import get_habit, get_conservation_state
 from apps.digitalization.models import VoucherImported
 from apps.digitalization.serializers import GallerySerializer
@@ -174,15 +174,14 @@ class SpeciesDetailsSerializer(SpeciesSerializer):
     vouchers = SerializerMethodField()
     gallery_images = SerializerMethodField()
     herbarium_url = SerializerMethodField()
+    region = RegionSerializer(required=False, many=True)
 
     class Meta:
         model = Species
         fields = SpeciesSerializer.Meta.fields + [
-            'scientific_name_db', 'scientific_name_full',
-            'common_names', 'status', 'minimum_height', 'maximum_height',
-            'conservation_state', 'id_mma',
-            'synonyms', 'vouchers', 'gallery_images',
-            'herbarium_url',
+            'scientific_name_db', 'scientific_name_full', 'synonyms', 'common_names',
+            'status', 'minimum_height', 'maximum_height', 'conservation_state', 'id_mma',
+            'region', 'vouchers', 'gallery_images', 'herbarium_url',
         ]
 
     def get_status(self, obj: Species) -> Union[str, None]:
