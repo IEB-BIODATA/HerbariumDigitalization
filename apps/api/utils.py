@@ -28,11 +28,11 @@ def filter_query_set(queryset: CatalogQuerySet, request: Request) -> CatalogQuer
         parameters = request.query_params.getlist(taxonomic_rank, [])
         if len(parameters) > 0:
             taxonomic_query[taxonomic_rank] = parameters.copy()
+    queryset = queryset.filter_query_in(**attribute_query).filter_taxonomy_in(**taxonomic_query)
     search = request.query_params.get("search")
     if search:
-        return queryset.filter_query_in(**attribute_query).filter_taxonomy_in(**taxonomic_query).search(search)
-    else:
-        return queryset.filter_query_in(**attribute_query).filter_taxonomy_in(**taxonomic_query)
+        queryset = queryset.search(search)
+    return queryset
 
 
 def filter_by_geo(request: HttpRequest, point_query_name: str) -> Q:

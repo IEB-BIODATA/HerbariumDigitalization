@@ -29,6 +29,13 @@ TAXONOMIC_RANK = [
 class AttributeQuerySet(CatalogQuerySet, ABC):
     __attribute_name__ = "query"
 
+    @staticmethod
+    def species_filter():
+        return "species"
+
+    def filter_for_species(self, query: Q) -> AttributeQuerySet:
+        return self.filter(query).distinct()
+
     def filter_query_in(self, **parameters: Dict[str, List[str]]) -> AttributeQuerySet:
         query = Q()
         for query_key, parameter in parameters.items():
@@ -49,22 +56,18 @@ class AttributeQuerySet(CatalogQuerySet, ABC):
         return queryset
 
     def filter_taxonomy_in(self, **parameters: Dict[str: List[str]]) -> AttributeQuerySet:
-        query = Q()
-        for taxonomic_rank, parameter in parameters.items():
-            rank_index = TAXONOMIC_RANK.index(taxonomic_rank)
-            query_name = "__".join(list(reversed(TAXONOMIC_RANK))[0:-rank_index])
-            query &= Q(**{f"{query_name}__in": parameter})
-        queryset = self.filter(query).distinct()
-        logging.debug(f"{self.__attribute_name__}: {query} and got {queryset}")
-        return queryset
+        return self.filter_taxonomy(_in=True, **parameters)
 
-    def filter_taxonomy(self, **parameters: Dict[str: List[str]]) -> AttributeQuerySet:
+    def filter_taxonomy(self, _in: bool = False, **parameters: Dict[str: List[str]]) -> AttributeQuerySet:
         query = Q()
+        with_in = "__in" if _in else ""
         for taxonomic_rank, parameter in parameters.items():
             rank_index = TAXONOMIC_RANK.index(taxonomic_rank)
-            query_name = "__".join(list(reversed(TAXONOMIC_RANK))[0:-rank_index])
-            query &= Q(**{query_name: parameter})
-        queryset = self.filter(query).distinct()
+            query_name = "__".join(list(reversed(TAXONOMIC_RANK))[1:-rank_index])
+            logging.debug(f"{self.__attribute_name__}: Species from {query_name}{with_in}: {parameter}")
+            species = Species.objects.select_related(query_name).filter(**{f"{query_name}{with_in}": parameter})
+            query &= Q(**{f"{self.species_filter()}__in": species})
+        queryset = self.filter_for_species(query)
         logging.debug(f"{self.__attribute_name__}: {query} and got {queryset}")
         return queryset
 
@@ -107,7 +110,7 @@ class TaxonomicQuerySet(CatalogQuerySet, ABC):
     def get_taxonomic_query(self, taxonomic_rank: str, with_in: bool = False) -> str:
         rank_index = TAXONOMIC_RANK.index(taxonomic_rank)
         str_in = "__in" if with_in else ""
-        logging.debug(f"My: {self.___rank_index__}, Query: {rank_index}, in: {with_in}::{str_in}")
+        logging.debug(f"My: {self.___rank_index__}, Query: {rank_index}, in: ::{str_in}")
         if self.___rank_index__ < rank_index:
             return "__".join(TAXONOMIC_RANK[self.___rank_index__ + 1: rank_index + 1]) + str_in
         elif self.___rank_index__ == rank_index:
@@ -274,6 +277,14 @@ class Habit(models.Model):
 
 class RegionQuerySet(AttributeQuerySet):
     __attribute_name__ = "region"
+
+    @staticmethod
+    def species_filter():
+        return "species_id"
+
+    def filter_for_species(self, query: Q) -> AttributeQuerySet:
+        regions = RegionDistributionView.objects.filter(query).distinct()
+        return self.filter(key__in=[region.region_key for region in regions]).distinct()
 
 
 class Region(models.Model):
@@ -960,20 +971,25 @@ class Species(ScientificName):
                 ))
         return difference
 
+    @property
     def family(self):
         return self.genus.family
 
+    @property
     def order(self):
-        return self.genus.family.order
+        return self.family.order
 
+    @property
     def class_name(self):
-        return self.genus.family.order.class_name
+        return self.order.class_name
 
+    @property
     def division(self):
-        return self.genus.family.order.class_name.division
+        return self.class_name.division
 
+    @property
     def kingdom(self):
-        return self.genus.family.order.class_name.division.kingdom
+        return self.division.kingdom
 
     @staticmethod
     def get_parent_query(search: str) -> Q:
@@ -1307,7 +1323,7 @@ class RegionDistributionView(models.Model):
     """
     CREATE MATERIALIZED VIEW region_view AS
     SELECT species_region.id,
-           species.id              AS specie_id,
+           species.id              AS species_id,
            species.id_taxa,
            species.scientific_name AS specie_scientific_name,
            region.name             AS region_name,
@@ -1323,7 +1339,7 @@ class RegionDistributionView(models.Model):
         ON region_view (id);
     """
     id = models.IntegerField(primary_key=True, blank=False, null=False, help_text="")
-    specie_id = models.IntegerField(blank=False, null=False, help_text="")
+    species_id = models.IntegerField(blank=False, null=False, help_text="")
     id_taxa = models.IntegerField(blank=False, null=False, help_text="")
     specie_scientific_name = models.CharField(max_length=500, blank=True, null=True, help_text="sp")
     region_name = models.CharField(max_length=300, blank=True, null=True)

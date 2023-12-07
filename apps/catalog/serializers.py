@@ -1,3 +1,5 @@
+from typing import List
+
 from rest_framework.fields import ReadOnlyField, SerializerMethodField
 from rest_framework.serializers import ModelSerializer
 
@@ -142,12 +144,7 @@ class SynonymsSerializer(TaxonomicSerializer):
 
 
 class SpeciesSerializer(TaxonomicSerializer):
-    genus = ReadOnlyField(source='genus.name')
-    family = ReadOnlyField(source='family.name')
-    order = ReadOnlyField(source='order.name')
-    class_name = ReadOnlyField(source='class_name.name')
-    division = ReadOnlyField(source='division.name')
-    kingdom = ReadOnlyField(source='kingdom.name')
+    genus = SerializerMethodField()
     habit = SerializerMethodField()
     cycle = SerializerMethodField()
     conservation_state = SerializerMethodField()
@@ -158,9 +155,7 @@ class SpeciesSerializer(TaxonomicSerializer):
     class Meta:
         model = Species
         fields = TaxonomicSerializer.Meta.fields + [
-            'scientific_name', 'scientific_name_full',
-            'genus', 'family', 'order',
-            'class_name', 'division', 'kingdom',
+            'scientific_name', 'scientific_name_full', 'genus',
             'specific_epithet', 'scientific_name_authorship',
             'subspecies', 'ssp_authorship',
             'variety', 'variety_authorship',
@@ -174,13 +169,16 @@ class SpeciesSerializer(TaxonomicSerializer):
             'id_taxa_origin',
         ]
 
-    def get_cycle(self, obj):
+    def get_genus(self, obj: Species) -> str:
+        return obj.genus.name
+
+    def get_cycle(self, obj: Species) -> str:
         return get_cycle(obj)
 
-    def get_habit(self, obj):
+    def get_habit(self, obj: Species) -> str:
         return get_habit(obj)
 
-    def get_conservation_state(self, obj):
+    def get_conservation_state(self, obj: Species) -> List[str]:
         return get_conservation_state(obj)
 
 
