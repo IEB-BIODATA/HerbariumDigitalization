@@ -24,7 +24,7 @@ msgstr "Página no encontrada"
 
 #: templates/500.html:6
 msgid "Error 500"
-msgstr "Un error a ocurrido, favor contactar al administrador"
+msgstr "Un error ha ocurrido, favor contactar al administrador"
 
 #: templates/base.html:8
 msgid "Digitalization Platform"
