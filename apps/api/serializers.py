@@ -84,7 +84,7 @@ class ScientificNameSerializer(TaxonomicApiSerializer):
 
 
 class SpeciesSerializer(ScientificNameSerializer):
-    kingdom = ReadOnlyField(source='genus.family.order.class_name.division.kingdom.name')
+    kingdom = ReadOnlyField(source='kingdom.name')
     division = DivisionSerializer()
     class_name = ClassSerializer()
     genus = GenusSerializer()

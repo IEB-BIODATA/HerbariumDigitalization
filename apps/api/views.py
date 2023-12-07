@@ -481,7 +481,7 @@ class SpecimensList(QueryList, POSTRedirect):
             query = query & Q(herbarium__collection_code=herbarium)
         if code is not None and code != "":
             similarity_score = ExpressionWrapper(
-                F("catalogue_number") / Length(Value(code)),
+                F("catalog_number") / Length(Value(code)),
                 output_field=FloatField()
             )
             query = query & Q(biodata_code__code__icontains=code)
@@ -513,8 +513,8 @@ class SpecimensList(QueryList, POSTRedirect):
             name="code",
             location=OpenApiParameter.QUERY,
             description="""
-            Either the catalogueNumber or the complete code including institution, 
-            herbarium code and seven digits catalogueNumber, example UDEC:CONC:000XXXX 
+            Either the catalogNumber or the complete code including institution, 
+            herbarium code and seven digits catalogNumber, example UDEC:CONC:000XXXX 
             """,
             type=OpenApiTypes.STR
         )
@@ -552,7 +552,7 @@ class BannerSpecie(APIView):
                 }, status=501)
         return Response({
             'image': banners.first().banner.url,
-            'url': "{}/catalogue/details/Species/{}/".format(
+            'url': "{}/catalog/details/Species/{}/".format(
                 os.environ.get("HERBARIUM_FRONTEND"),
                 specie_id
             )
