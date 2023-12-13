@@ -71,6 +71,7 @@ PyJWT==2.8.0
 pypdf==3.16.4
 pypng==0.20220715.0
 pyproj==3.6.1
+pytesseract==0.3.10
 python-bidi==0.4.2
 python-dateutil==2.8.2
 pytz==2023.3.post1

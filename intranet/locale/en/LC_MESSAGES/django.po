@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2023-12-05 17:13-0300\n"
+"POT-Creation-Date: 2023-12-12 09:41-0300\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -47,9 +47,9 @@ msgstr "Press 'Log out' if you confirm leaving the account."
 #: templates/catalog/update_binnacle.html:21
 #: templates/catalog/update_catalog.html:19
 #: templates/catalog/update_taxa.html:24
-#: templates/digitalization/gallery_image.html:95
-#: templates/digitalization/modify_gallery.html:180
+#: templates/digitalization/modify_gallery_image.html:96
 #: templates/digitalization/new_licence.html:20
+#: templates/digitalization/species_gallery.html:183
 #: templates/digitalization/update_voucher.html:180
 #: templates/registration/preference.html:32
 #: templates/registration/preference.html:45
@@ -139,7 +139,7 @@ msgstr "Created at"
 
 #: templates/catalog/list_binnacle.html:105
 #: templates/catalog/list_catalog.html:139 templates/catalog/list_taxa.html:193
-#: templates/digitalization/modify_gallery_image.html:105
+#: templates/digitalization/gallery_images.html:109
 msgid "Updated at"
 msgstr "Updated at"
 
@@ -154,18 +154,18 @@ msgid "New"
 msgstr "New"
 
 #: templates/catalog/list_catalog.html:126 templates/catalog/list_taxa.html:177
-#: templates/digitalization/modify_gallery_image.html:91
+#: templates/digitalization/gallery_images.html:94
 msgid "Search"
 msgstr "Search"
 
 #: templates/catalog/list_catalog.html:150 templates/catalog/list_taxa.html:206
-#: templates/digitalization/modify_gallery_image.html:115
+#: templates/digitalization/gallery_images.html:119
 msgid "Load table"
 msgstr "Load table"
 
 #: templates/catalog/list_catalog.html:164
 #: templates/catalog/update_taxa.html:18
-#: templates/digitalization/modify_gallery.html:174
+#: templates/digitalization/species_gallery.html:177
 msgid "Warning!"
 msgstr "Warning!"
 
@@ -176,14 +176,14 @@ msgstr "Are you sure you want to delete %(rank)s?"
 
 #: templates/catalog/list_catalog.html:171 templates/catalog/taxa_form.html:29
 #: templates/catalog/update_taxa.html:25
-#: templates/digitalization/modify_gallery.html:181
+#: templates/digitalization/species_gallery.html:184
 msgid "Delete"
 msgstr "Delete"
 
 #: templates/catalog/list_taxa.html:98
 #: templates/digitalization/control_vouchers.html:117
-#: templates/digitalization/gallery_image.html:55
-#: templates/digitalization/gallery_image.html:91
+#: templates/digitalization/modify_gallery_image.html:56
+#: templates/digitalization/modify_gallery_image.html:92
 msgid "Edit"
 msgstr "Edit"
 
@@ -198,32 +198,29 @@ msgid "Download"
 msgstr "Download"
 
 #: templates/catalog/list_taxa.html:186
-#: templates/digitalization/modify_gallery_image.html:100
-#: templates/sidebar.html:105
+#: templates/digitalization/gallery_images.html:103 templates/sidebar.html:105
 msgid "Division"
 msgstr "Division"
 
 #: templates/catalog/list_taxa.html:187
-#: templates/digitalization/modify_gallery_image.html:101
-#: templates/sidebar.html:106
+#: templates/digitalization/gallery_images.html:104 templates/sidebar.html:106
 msgid "Class"
 msgstr "Class"
 
 #: templates/catalog/list_taxa.html:188
-#: templates/digitalization/modify_gallery_image.html:102
-#: templates/sidebar.html:107
+#: templates/digitalization/gallery_images.html:105 templates/sidebar.html:107
 msgid "Order"
 msgstr "Order"
 
 #: templates/catalog/list_taxa.html:189
-#: templates/digitalization/modify_gallery_image.html:103
+#: templates/digitalization/gallery_images.html:106
 #: templates/digitalization/template_list_priority_voucher.html:40
 #: templates/sidebar.html:108
 msgid "Family"
 msgstr "Family"
 
 #: templates/catalog/list_taxa.html:190
-#: templates/digitalization/modify_gallery_image.html:104
+#: templates/digitalization/gallery_images.html:107
 msgid "Complete Scientific Name"
 msgstr "Complete Scientific Name"
 
@@ -537,51 +534,15 @@ msgstr "Collection Number"
 msgid "Locality"
 msgstr "Locality"
 
-#: templates/digitalization/gallery_image.html:23
-#: templates/digitalization/modify_gallery.html:99
-#: templates/digitalization/modify_gallery_image.html:85
+#: templates/digitalization/gallery_images.html:88
+#: templates/digitalization/modify_gallery_image.html:23
+#: templates/digitalization/species_gallery.html:102
 msgid "Photo Gallery"
 msgstr "Photo Gallery"
 
-#: templates/digitalization/gallery_image.html:39
-#: templates/digitalization/update_voucher.html:140
-#: templates/digitalization/validate_vouchers.html:424
-msgid "Image"
-msgstr "Image"
-
-#: templates/digitalization/gallery_image.html:43
-msgid "Currently"
-msgstr "Currently"
-
-#: templates/digitalization/gallery_image.html:53
-#: templates/digitalization/mark_vouchers.html:71
-msgid "Upload"
-msgstr "Upload"
-
-#: templates/digitalization/gallery_image.html:71
-#: templates/digitalization/modify_gallery.html:118
-msgid "Taken by"
-msgstr "Taken by"
-
-#: templates/digitalization/gallery_image.html:77
-#: templates/digitalization/modify_gallery.html:119
-#: templates/digitalization/new_licence.html:6
-msgid "Licence"
-msgstr "Licence"
-
-#: templates/digitalization/gallery_image.html:83
-#: templates/digitalization/modify_gallery.html:117
-msgid "Specimen"
-msgstr "Specimen"
-
-#: templates/digitalization/gallery_image.html:90
-#: templates/digitalization/load_priority_vouchers_file.html:288
-msgid "Load"
-msgstr "Load"
-
-#: templates/digitalization/gallery_image.html:93
-msgid "Photo"
-msgstr "Photo"
+#: templates/digitalization/gallery_images.html:108
+msgid "Gallery Images"
+msgstr ""
 
 #: templates/digitalization/load_priority_vouchers_file.html:126
 msgid "Print"
@@ -619,6 +580,11 @@ msgstr ""
 msgid "Load Excel"
 msgstr "Load Excel"
 
+#: templates/digitalization/load_priority_vouchers_file.html:288
+#: templates/digitalization/modify_gallery_image.html:91
+msgid "Load"
+msgstr "Load"
+
 #: templates/digitalization/load_priority_vouchers_file.html:292
 msgid "Download Vouchers"
 msgstr "Download Vouchers"
@@ -638,6 +604,11 @@ msgstr "User"
 #: templates/digitalization/load_priority_vouchers_file.html:316
 msgid "File"
 msgstr "File"
+
+#: templates/digitalization/mark_vouchers.html:71
+#: templates/digitalization/modify_gallery_image.html:54
+msgid "Upload"
+msgstr "Upload"
 
 #: templates/digitalization/mark_vouchers.html:97
 msgid "Finished"
@@ -696,26 +667,35 @@ msgstr "URL"
 msgid "Updated yesterday at %(time)s"
 msgstr "Updated yesterday at %(time)s"
 
-#: templates/digitalization/modify_gallery.html:120
-msgid "Upload by"
-msgstr "Upload by"
+#: templates/digitalization/modify_gallery_image.html:40
+#: templates/digitalization/update_voucher.html:140
+#: templates/digitalization/validate_vouchers.html:424
+msgid "Image"
+msgstr "Image"
 
-#: templates/digitalization/modify_gallery.html:121
-msgid "Upload at"
-msgstr "Upload at"
+#: templates/digitalization/modify_gallery_image.html:44
+msgid "Currently"
+msgstr "Currently"
 
-#: templates/digitalization/modify_gallery.html:145
-msgid "Not assigned"
-msgstr "Not assigned"
+#: templates/digitalization/modify_gallery_image.html:72
+#: templates/digitalization/species_gallery.html:121
+msgid "Taken by"
+msgstr "Taken by"
 
-#: templates/digitalization/modify_gallery.html:152
-msgid "Not reported"
-msgstr "Not reported"
+#: templates/digitalization/modify_gallery_image.html:78
+#: templates/digitalization/new_licence.html:6
+#: templates/digitalization/species_gallery.html:122
+msgid "Licence"
+msgstr "Licence"
 
-#: templates/digitalization/modify_gallery.html:177
-#, python-format
-msgid "Are you sure? image %(image)s"
-msgstr "Are you sure you want to delete the image %(image)s?"
+#: templates/digitalization/modify_gallery_image.html:84
+#: templates/digitalization/species_gallery.html:120
+msgid "Specimen"
+msgstr "Specimen"
+
+#: templates/digitalization/modify_gallery_image.html:94
+msgid "Photo"
+msgstr "Photo"
 
 #: templates/digitalization/new_licence.html:10
 msgid "Image licence"
@@ -759,8 +739,8 @@ msgid "There are no records available to generate QR codes"
 msgstr "There are no records available to generate QR codes."
 
 #: templates/digitalization/qr_generator.html:132
-msgid "All sessions must be terminated to generate a new one"
-msgstr "All sessions must be terminated to generate a new one."
+msgid "All sessions must be finished to generate a new one"
+msgstr "All sessions must be finished to generate a new one."
 
 #: templates/digitalization/qr_generator.html:134
 msgid "Unidentified error, please contact the administrator"
@@ -789,6 +769,27 @@ msgstr "List"
 #: templates/digitalization/qr_generator.html:160
 msgid "QRs"
 msgstr "QRs"
+
+#: templates/digitalization/species_gallery.html:123
+msgid "Upload by"
+msgstr "Upload by"
+
+#: templates/digitalization/species_gallery.html:124
+msgid "Upload at"
+msgstr "Upload at"
+
+#: templates/digitalization/species_gallery.html:148
+msgid "Not assigned"
+msgstr "Not assigned"
+
+#: templates/digitalization/species_gallery.html:155
+msgid "Not reported"
+msgstr "Not reported"
+
+#: templates/digitalization/species_gallery.html:180
+#, python-format
+msgid "Are you sure? image %(image)s"
+msgstr "Are you sure you want to delete the image %(image)s?"
 
 #: templates/digitalization/template_list_priority_voucher.html:7
 #: templates/digitalization/template_qr.html:7

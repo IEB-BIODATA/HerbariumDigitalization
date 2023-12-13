@@ -2,15 +2,12 @@
 # from django.db import models
 from __future__ import annotations
 
+import celery
 import logging
 import math
-from typing import BinaryIO, Union, Any, Tuple, Callable, Dict, List
-
-import celery
 import numpy as np
 import pandas as pd
 import pytz
-from apps.catalog.models import Species, TAXONOMIC_RANK
 from django.conf import settings
 from django.contrib.auth.models import User
 from django.contrib.gis.db import models
@@ -23,7 +20,9 @@ from django.db.models.signals import post_delete, pre_save
 from django.dispatch import receiver
 from django.forms import CharField
 from django.utils.translation import gettext_lazy as _
+from typing import BinaryIO, Union, Any, Tuple, Callable, Dict, List
 
+from apps.catalog.models import Species, TAXONOMIC_RANK
 from intranet.utils import CatalogQuerySet
 from .storage_backends import PublicMediaStorage, PrivateMediaStorage
 from .validators import validate_file_size
@@ -74,7 +73,7 @@ class Herbarium(models.Model):
         return "%s " % self.name
 
     def natural_key(self) -> Tuple[Any, CharField]:
-        return self.id, self.name
+        return self.pk, self.name
 
 
 class ColorProfileFile(models.Model):
@@ -95,7 +94,7 @@ class ColorProfileFile(models.Model):
 class GeneratedPage(models.Model):
     name = models.CharField(max_length=300)
     herbarium = models.ForeignKey(Herbarium, on_delete=models.CASCADE)
-    terminated = models.BooleanField(default=False)
+    finished = models.BooleanField(default=False)
     color_profile = models.ForeignKey(ColorProfileFile, on_delete=models.SET_NULL, blank=True, null=True)
     created_at = models.DateTimeField(auto_now_add=True, blank=True, null=True, editable=False)
     created_by = models.ForeignKey(User, on_delete=models.PROTECT)
@@ -105,30 +104,30 @@ class GeneratedPage(models.Model):
 
     @property
     def total(self):
-        return BiodataCode.objects.filter(page__id=self.id).count()
+        return BiodataCode.objects.filter(page__id=self.pk).count()
 
     @property
     def stateless_count(self):
-        return BiodataCode.objects.filter(page__id=self.id, voucher_state=0).count()
+        return BiodataCode.objects.filter(page__id=self.pk, voucher_state=0).count()
 
     @property
     def found_count(self):
-        return BiodataCode.objects.filter(page__id=self.id, voucher_state=1).count()
+        return BiodataCode.objects.filter(page__id=self.pk, voucher_state=1).count()
 
     @property
     def not_found_count(self):
-        return BiodataCode.objects.filter(page__id=self.id, voucher_state=2).count()
+        return BiodataCode.objects.filter(page__id=self.pk, voucher_state=2).count()
 
     @property
     def digitalized(self):
         return BiodataCode.objects.filter(
-            Q(page__id=self.id) & (Q(voucher_state=7) | Q(voucher_state=8))
+            Q(page__id=self.pk) & (Q(voucher_state=7) | Q(voucher_state=8))
         ).count()
 
     @property
     def qr_count(self):
         return BiodataCode.objects.filter(
-            Q(page__id=self.id) & Q(qr_generated=True)
+            Q(page__id=self.pk) & Q(qr_generated=True)
         ).count()
 
     def save(
@@ -144,7 +143,7 @@ class GeneratedPage(models.Model):
                 ).strftime('%d-%m-%Y %H:%M')
             )
         except AttributeError:
-            logging.debug(f"Cannot define name for session ({self.id})")
+            logging.debug(f"Cannot define name for session ({self.pk})")
         return super().save(
             force_insert=force_insert,
             force_update=force_update,
@@ -159,7 +158,7 @@ class GeneratedPage(models.Model):
         return "%s " % self.name
 
     def natural_key(self) -> Tuple[Any, CharField]:
-        return self.id, self.name
+        return self.pk, self.name
 
 
 class BiodataCode(models.Model):
@@ -182,7 +181,7 @@ class BiodataCode(models.Model):
         return "%s " % self.code
 
     def natural_key(self) -> Tuple[Any, CharField]:
-        return self.id, self.code
+        return self.pk, self.code
 
 
 class HerbariumMember(models.Model):
@@ -290,14 +289,14 @@ class VoucherImported(models.Model):
 
     def generate_etiquette(self):
         if self.biodata_code.voucher_state == 7:
-            logging.debug("Regenerating public image ({})".format(self.id))
+            logging.debug("Regenerating public image ({})".format(self.pk))
             self.biodata_code.voucher_state = 8
             self.biodata_code.save()
             self.save()
-            celery.current_app.send_task('etiquette_picture', (self.id,))
+            celery.current_app.send_task('etiquette_picture', (self.pk,))
             return
         else:
-            logging.debug("Voucher not digitalized, skipping ({})".format(self.id))
+            logging.debug("Voucher not digitalized, skipping ({})".format(self.pk))
             return
 
     def image_voucher_thumb_url(self):
@@ -358,7 +357,7 @@ class VoucherImported(models.Model):
             file_info
         )
         logging.info("Voucher {}: Saving {} with name {}".format(
-            self.id, image_variable, image_name
+            self.pk, image_variable, image_name
         ))
         getattr(self, image_variable).save(image_name, image_content, save=True)
         return
@@ -473,6 +472,7 @@ class Licence(models.Model):
 class GalleryImage(models.Model):
     scientific_name = models.ForeignKey(Species, on_delete=models.CASCADE)
     image = models.ImageField(upload_to="gallery", storage=PublicMediaStorage())
+    thumbnail = models.ImageField(upload_to="gallery", storage=PublicMediaStorage(), null=True)
     specimen = models.ForeignKey(BiodataCode, on_delete=models.SET_NULL, blank=True, null=True)
     taken_by = models.CharField(max_length=300, blank=True, null=True)
     licence = models.ForeignKey(
@@ -483,6 +483,10 @@ class GalleryImage(models.Model):
     )
     upload_by = models.ForeignKey(User, on_delete=models.PROTECT, default=1, editable=False)
     upload_at = models.DateTimeField(auto_now_add=True, blank=True, null=True, editable=False)
+
+    def generate_thumbnail(self) -> None:
+        celery.current_app.send_task('generate_thumbnail', (self.pk,))
+        return
 
 
 class BannerImage(models.Model):

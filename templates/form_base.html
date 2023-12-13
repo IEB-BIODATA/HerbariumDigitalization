@@ -1,3 +1,4 @@
+{% load i18n %}
 {% load widget_tweaks %}
 {% for field in form %}
     {% if not field.is_hidden %}
@@ -6,6 +7,16 @@
                 {{ field.label_tag }}
             </label>
             <div class="col-sm-10">
+                {% if "image" in field.name and field.value %}
+                    <div class="row align-items-center">
+                        <div class="col-sm-2">
+                            {% translate "Preview" %}
+                        </div>
+                        <div class="col-sm-10">
+                            <img id="{{ field.name }}Preview" src="{{ field.value.url }}" style="height: 300px; width: auto" alt="{% translate 'Preview' %}">
+                        </div>
+                    </div>
+                {% endif %}
                 {% if field.errors %}
                     {{ field|add_class:'is-invalid' }}
                     <div class="invalid-feedback">
