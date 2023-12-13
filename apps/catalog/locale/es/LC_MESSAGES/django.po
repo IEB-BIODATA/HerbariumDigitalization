@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2023-12-05 17:13-0300\n"
+"POT-Creation-Date: 2023-12-12 09:41-0300\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -196,11 +196,11 @@ msgstr "Nombre Científico Completo"
 msgid "Database Scientific Name"
 msgstr "Nombre Científico DB"
 
-#: apps/catalog/models.py:191
+#: apps/catalog/models.py:194
 msgid "Cycles"
 msgstr "Ciclos"
 
-#: apps/catalog/models.py:268
+#: apps/catalog/models.py:271
 msgid "Habits"
 msgstr "Hábitos"
 

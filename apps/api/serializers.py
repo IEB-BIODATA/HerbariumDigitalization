@@ -9,8 +9,7 @@ from apps.catalog.models import Species, Family, Genus, Synonymy, Division, Clas
     TaxonomicModel, FinderView, ScientificName
 from apps.catalog.serializers import CommonSerializer, RegionSerializer
 from apps.catalog.utils import get_habit, get_conservation_state
-from apps.digitalization.models import VoucherImported
-from apps.digitalization.serializers import GallerySerializer
+from apps.digitalization.models import VoucherImported, GalleryImage, Licence
 
 
 class TaxonomicApiSerializer(CommonSerializer):
@@ -166,6 +165,25 @@ class SynonymyFinderSerializer(ScientificNameSerializer):
         ).data
 
 
+class LicenceSerializer(HyperlinkedModelSerializer):
+    class Meta:
+        model = Licence
+        fields = [
+            'id', 'name', 'short_name', 'link',
+        ]
+
+
+class GallerySerializer(HyperlinkedModelSerializer):
+    licence = LicenceSerializer()
+
+    class Meta:
+        model = GalleryImage
+        fields = [
+            'id', 'image', 'thumbnail',
+            'specimen', 'taken_by', 'licence',
+        ]
+
+
 class SpeciesDetailsSerializer(SpeciesSerializer):
     common_names = CommonNameSerializer(required=False, many=True)
     status = SerializerMethodField()
@@ -210,7 +228,7 @@ class SpeciesDetailsSerializer(SpeciesSerializer):
             many=True, context=self.context
         ).data
 
-    def get_gallery_images(self, obj: Species) -> GallerySerializer:
+    def get_gallery_images(self, obj: Species) -> Dict:
         return GallerySerializer(
             instance=obj.galleryimage_set.all(),
             many=True, context=self.context

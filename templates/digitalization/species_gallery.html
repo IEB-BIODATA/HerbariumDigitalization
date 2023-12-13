@@ -2,12 +2,34 @@
 {% load static %}
 {% load i18n %}
 {% load gallery_name %}
+{% block title %}{{ block.super }}: {% translate "Photo Gallery" %}{% endblock %}
 {% block javascript %}
     <script type="text/javascript">
+        let language = getTableLanguage("{{ LANGUAGE_CODE }}");
+        $("#galleryTable{{ species.id }}").DataTable({
+            language: language,
+            order: [[6, 'desc']],
+            columnDefs: [
+                {
+                    targets: [0, 1],
+                    orderable: false,
+                },
+                {
+                    targets: 6,
+                    render: (data, type) => {
+                        let date = new Date(data);
+                        if (type === "sort"){
+                            return date;
+                        } else {
+                            return dateFormat(date, "{{ LANGUAGE_CODE }}");
+                        }
+                    }
+                }
+            ],
+        });
         const thumbnails = document.querySelectorAll('.thumbnail');
 
         thumbnails.forEach(thumbnail => {
-            const thumbnailId = thumbnail.id;
             const enlargedImageId = thumbnail.querySelector('span').id;
             const enlargedImage = document.getElementById(enlargedImageId);
 
@@ -48,14 +70,6 @@
             margin-left: auto;
         }
 
-        th {
-            white-space: nowrap;
-        }
-
-        td {
-            white-space: nowrap;
-        }
-
         .thumbnail {
             position: relative;
             z-index: 0;
@@ -80,6 +94,7 @@
         }
 
         .enlarge-image img{ /*CSS for enlarged image*/
+            position: absolute;
             border-width: 0;
             padding: 2px;
         }
@@ -102,14 +117,13 @@
             <i class="fas fa-solid fa-leaf"></i> &nbsp;
             {{ species.scientific_name }} &nbsp;
             <i style="color: #808080">{{ species.scientific_name_full }}</i>
-            <a href="{% url 'new_gallery_image' catalog_id=species.id %}">
+            <a href="{% url 'new_gallery_image' species_id=species.id %}">
                 <i class="fas fa-solid fa-plus-circle"></i>
             </a>
         </div>
         <div class="card-body">
-            <div class="table-responsive">
+            <div class="table-responsive" style="overflow: visible">
                 <table id="galleryTable{{ species.id }}" class="table table-bordered" style="width: 100%" cellspacing="0">
-                {% if gallery.count > 0 %}
                     <thead>
                         <tr>
                             <th></th>
@@ -125,7 +139,7 @@
                         {% for image in gallery %}
                             <tr>
                                 <td>
-                                    <a href="{% url 'gallery_image' gallery_id=image.id %}">
+                                    <a href="{% url 'modify_gallery_image' gallery_id=image.id %}">
                                         <i class="fas fa-solid fa-edit text-primary"></i>
                                     </a>
                                     <a data-bs-toggle="modal" data-bs-target="#warningModal-{{ forloop.counter0 }}" style="cursor: pointer;">
@@ -133,10 +147,10 @@
                                     </a>
                                 </td>
                                 <td>
-                                    <a class="thumbnail" id="thumbnail-{{ forloop.counter0 }}" href="{{ image.image.url }}" target="_blank">
-                                        {{ image.image.name|replace_gallery_name }}
+                                    <a class="thumbnail" id="thumbnail-{{ forloop.counter0 }}" href="{{ image.image }}" target="_blank">
+                                        {{ image.image|replace_gallery_name }}
                                         <span class="enlarge-image below" id="enlarge-image-{{ forloop.counter0 }}">
-                                            <img src="{{ image.image.url }}" width="300px" height="auto">
+                                            <img src="{{ image.image }}" width="300px" height="auto">
                                         </span>
                                     </a>
                                 </td>
@@ -155,12 +169,11 @@
                                     {% endif %}
                                 </td>
                                 <td>{{ image.licence }}</td>
-                                <td>{{ image.upload_by.username }}</td>
+                                <td>{{ image.upload_by }}</td>
                                 <td>{{ image.upload_at }}</td>
                             </tr>
                         {% endfor %}
                     </tbody>
-                {% endif %}
                 </table>
             </div>
         </div>
@@ -174,7 +187,7 @@
                         <h5 class="modal-title" id="warningModalLabel">{% translate "Warning!" %}</h5>
                     </div>
                     <div class="modal-body">
-                        {% blocktranslate with image=image.image.name|replace_gallery_name %}Are you sure? image {{ image }}{% endblocktranslate %}
+                        {% blocktranslate with image=image.image|replace_gallery_name %}Are you sure? image {{ image }}{% endblocktranslate %}
                     </div>
                     <div class="modal-footer">
                         <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">{% translate "Cancel" %}</button>
