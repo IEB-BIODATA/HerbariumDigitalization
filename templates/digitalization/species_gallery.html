@@ -86,7 +86,7 @@
 
         .enlarge-image { /*CSS for enlarged image*/
             position: absolute;
-            left: -1000px;
+            left: -100px;
             border: 1px black;
             visibility: hidden;
             color: black;
@@ -101,12 +101,12 @@
 
         /* Position the enlarged image above the mouse if there is not enough space below */
         .enlarge-image.below{
-            top: 20px; /* offset from the link element */
+            top: 5px; /* offset from the link element */
         }
 
         /* Position the enlarged image below the mouse if there is not enough space above */
         .enlarge-image.above{
-            bottom: 20px; /* offset from the link element */
+            bottom: 5px; /* offset from the link element */
         }
     </style>
 {% endblock %}
@@ -150,7 +150,7 @@
                                     <a class="thumbnail" id="thumbnail-{{ forloop.counter0 }}" href="{{ image.image }}" target="_blank">
                                         {{ image.image|replace_gallery_name }}
                                         <span class="enlarge-image below" id="enlarge-image-{{ forloop.counter0 }}">
-                                            <img src="{{ image.image }}" width="300px" height="auto">
+                                            <img src="{{ image.thumbnail }}">
                                         </span>
                                     </a>
                                 </td>

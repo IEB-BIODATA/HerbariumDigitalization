@@ -93,8 +93,9 @@ def preference(request):
 @login_required()
 def test_view(request):
     from apps.digitalization.models import GalleryImage
-    gallery = GalleryImage.objects.first()
-    gallery.generate_thumbnail()
+    whole_gallery = GalleryImage.objects.all()
+    for gallery in whole_gallery:
+        gallery.generate_thumbnail()
     return redirect("index")
 
 
