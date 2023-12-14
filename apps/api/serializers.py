@@ -105,10 +105,11 @@ class SpeciesSerializer(ScientificNameSerializer):
 class SampleSerializer(HyperlinkedModelSerializer):
     image_resized_10 = SerializerMethodField()
     image_resized_60 = SerializerMethodField()
+    code = ReadOnlyField(source='biodata_code.code')
 
     class Meta:
         model = VoucherImported
-        fields = ['id', 'image_resized_10', 'image_resized_60']
+        fields = ['id', 'code', 'image_resized_10', 'image_resized_60']
 
     def get_image_resized_10(self, obj: VoucherImported) -> str:
         try:
@@ -269,7 +270,6 @@ class DistributionSerializer(SampleSerializer):
 
 
 class SpecimenFinderSerializer(SampleSerializer):
-    code = ReadOnlyField(source='biodata_code.code')
     herbarium_code = ReadOnlyField(source='herbarium.collection_code')
     decimal_latitude = ReadOnlyField(source='decimal_latitude_public')
     decimal_longitude = ReadOnlyField(source='decimal_longitude_public')
@@ -278,7 +278,6 @@ class SpecimenFinderSerializer(SampleSerializer):
     class Meta:
         model = VoucherImported
         fields = SampleSerializer.Meta.fields + [
-            'code',
             'herbarium_code',
             'catalog_number',
             'decimal_latitude',
