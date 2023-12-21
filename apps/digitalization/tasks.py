@@ -674,7 +674,7 @@ def generate_thumbnail(gallery_id: int) -> None:
     try:
         gallery: GalleryImage = GalleryImage.objects.get(pk=gallery_id)
         image = Image.open(gallery.image)
-        scale_percent = image.size[1] / 200
+        scale_percent = 200 * 100 / image.size[1]
         resized_image = change_image_resolution(image, scale_percent)
         image_content = ContentFile(resized_image.read())
         filepath = os.path.basename(gallery.image.name)
