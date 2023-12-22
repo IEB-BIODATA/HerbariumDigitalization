@@ -165,6 +165,6 @@ class GallerySerializer(HyperlinkedModelSerializer):
     class Meta:
         model = GalleryImage
         fields = [
-            'id', 'species', 'image', 'thumbnail', 'specimen',
-            'taken_by', 'licence', 'upload_by', 'upload_at',
+            'id', 'species', 'image', 'thumbnail', 'aspect_ratio',
+            'specimen', 'taken_by', 'licence', 'upload_by', 'upload_at',
         ]

@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2023-12-12 09:41-0300\n"
+"POT-Creation-Date: 2023-12-22 13:19-0300\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -34,39 +34,35 @@ msgstr "Perfil"
 msgid "Profiles"
 msgstr "Perfiles"
 
-#: apps/digitalization/forms.py:110
+#: apps/digitalization/forms.py:111
 msgid "(Add new licence)"
 msgstr "(Añadir nueva licencia)"
 
 #: apps/digitalization/forms.py:123
-msgid "Species"
-msgstr "Especie"
-
-#: apps/digitalization/forms.py:124
 msgid "Image"
 msgstr "Imagen"
 
-#: apps/digitalization/forms.py:125
+#: apps/digitalization/forms.py:124
 msgid "Taken by"
 msgstr "Tomada por"
 
-#: apps/digitalization/forms.py:126
+#: apps/digitalization/forms.py:125
 msgid "Licence"
 msgstr "Licencia"
 
-#: apps/digitalization/forms.py:127
+#: apps/digitalization/forms.py:126
 msgid "Specimen"
 msgstr "Espécimen"
 
-#: apps/digitalization/forms.py:150
+#: apps/digitalization/forms.py:148
 msgid "Name"
 msgstr "Nombre"
 
-#: apps/digitalization/forms.py:151
+#: apps/digitalization/forms.py:149
 msgid "Source (URL)"
 msgstr "Fuente (URL)"
 
-#: apps/digitalization/forms.py:152
+#: apps/digitalization/forms.py:150
 msgid "Short Name"
 msgstr "Nombre Corto"
 

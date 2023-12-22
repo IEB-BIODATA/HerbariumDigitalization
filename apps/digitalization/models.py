@@ -8,6 +8,7 @@ import math
 import numpy as np
 import pandas as pd
 import pytz
+from PIL import Image
 from django.conf import settings
 from django.contrib.auth.models import User
 from django.contrib.gis.db import models
@@ -473,6 +474,7 @@ class GalleryImage(models.Model):
     scientific_name = models.ForeignKey(Species, on_delete=models.CASCADE)
     image = models.ImageField(upload_to="gallery", storage=PublicMediaStorage())
     thumbnail = models.ImageField(upload_to="gallery", storage=PublicMediaStorage(), null=True)
+    aspect_ratio = models.FloatField(null=True, blank=True)
     specimen = models.ForeignKey(BiodataCode, on_delete=models.SET_NULL, blank=True, null=True)
     taken_by = models.CharField(max_length=300, blank=True, null=True)
     licence = models.ForeignKey(
