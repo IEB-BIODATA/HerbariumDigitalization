@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2023-12-12 09:41-0300\n"
+"POT-Creation-Date: 2023-12-22 13:19-0300\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -47,9 +47,9 @@ msgstr "Press 'Log out' if you confirm leaving the account."
 #: templates/catalog/update_binnacle.html:21
 #: templates/catalog/update_catalog.html:19
 #: templates/catalog/update_taxa.html:24
-#: templates/digitalization/modify_gallery_image.html:96
+#: templates/digitalization/gallery_image.html:135
 #: templates/digitalization/new_licence.html:20
-#: templates/digitalization/species_gallery.html:183
+#: templates/digitalization/species_gallery.html:193
 #: templates/digitalization/update_voucher.html:180
 #: templates/registration/preference.html:32
 #: templates/registration/preference.html:45
@@ -83,7 +83,7 @@ msgstr "Nothing selected"
 #: templates/catalog/merge_taxa.html:47 templates/catalog/merge_taxa.html:223
 #: templates/catalog/update_taxa.html:10 templates/sidebar.html:110
 msgid "Taxon"
-msgstr ""
+msgstr "Taxon"
 
 #: templates/catalog/create_taxa.html:11 templates/catalog/list_taxa.html:159
 #: templates/catalog/list_taxa.html:171 templates/catalog/update_taxa.html:11
@@ -125,7 +125,7 @@ msgstr "Note"
 #: templates/catalog/list_catalog.html:137 templates/catalog/list_taxa.html:191
 #: templates/digitalization/mark_vouchers.html:336
 #: templates/digitalization/qr_generator.html:155
-#: templates/digitalization/validate_vouchers.html:393
+#: templates/digitalization/validate_vouchers.html:394
 msgid "Created by"
 msgstr "Created by"
 
@@ -133,7 +133,7 @@ msgstr "Created by"
 #: templates/catalog/list_catalog.html:138 templates/catalog/list_taxa.html:192
 #: templates/digitalization/mark_vouchers.html:337
 #: templates/digitalization/qr_generator.html:156
-#: templates/digitalization/validate_vouchers.html:394
+#: templates/digitalization/validate_vouchers.html:395
 msgid "Created at"
 msgstr "Created at"
 
@@ -165,7 +165,7 @@ msgstr "Load table"
 
 #: templates/catalog/list_catalog.html:164
 #: templates/catalog/update_taxa.html:18
-#: templates/digitalization/species_gallery.html:177
+#: templates/digitalization/species_gallery.html:187
 msgid "Warning!"
 msgstr "Warning!"
 
@@ -176,14 +176,13 @@ msgstr "Are you sure you want to delete %(rank)s?"
 
 #: templates/catalog/list_catalog.html:171 templates/catalog/taxa_form.html:29
 #: templates/catalog/update_taxa.html:25
-#: templates/digitalization/species_gallery.html:184
+#: templates/digitalization/species_gallery.html:194
 msgid "Delete"
 msgstr "Delete"
 
 #: templates/catalog/list_taxa.html:98
-#: templates/digitalization/control_vouchers.html:117
-#: templates/digitalization/modify_gallery_image.html:56
-#: templates/digitalization/modify_gallery_image.html:92
+#: templates/digitalization/control_vouchers.html:118
+#: templates/digitalization/gallery_image.html:131
 msgid "Edit"
 msgstr "Edit"
 
@@ -365,110 +364,108 @@ msgstr "Update %(title)s"
 msgid "Are you sure? Species %(name)s"
 msgstr "Are you sure you want to delete the species %(name)s?"
 
-#: templates/digitalization/control_vouchers.html:46
+#: templates/digitalization/control_vouchers.html:5
+msgid "Voucher Validation"
+msgstr "Voucher Validation"
+
+#: templates/digitalization/control_vouchers.html:47
 #: templates/digitalization/mark_vouchers.html:165
 msgctxt "spaced"
 msgid "No State"
 msgstr "&nbsp;No State&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;"
 
-#: templates/digitalization/control_vouchers.html:47
+#: templates/digitalization/control_vouchers.html:48
 #: templates/digitalization/mark_vouchers.html:166
 msgctxt "spaced"
 msgid "Found"
 msgstr ""
 "&nbsp;Found&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;"
 
-#: templates/digitalization/control_vouchers.html:48
+#: templates/digitalization/control_vouchers.html:49
 #: templates/digitalization/mark_vouchers.html:167
 msgctxt "spaced"
 msgid "Not Found"
 msgstr "&nbsp;Not Found&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;"
 
-#: templates/digitalization/control_vouchers.html:49
+#: templates/digitalization/control_vouchers.html:50
 #: templates/digitalization/mark_vouchers.html:168
 msgctxt "spaced"
 msgid "Borrowed"
 msgstr "&nbsp;Borrowed&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;"
 
-#: templates/digitalization/control_vouchers.html:50
+#: templates/digitalization/control_vouchers.html:51
 #: templates/digitalization/mark_vouchers.html:169
 msgctxt "spaced"
 msgid "In Curatorship"
 msgstr "&nbsp;In Curatorship&nbsp;"
 
-#: templates/digitalization/control_vouchers.html:131
+#: templates/digitalization/control_vouchers.html:132
 #: templates/digitalization/mark_vouchers.html:206
-#: templates/digitalization/validate_vouchers.html:194
+#: templates/digitalization/validate_vouchers.html:195
 msgid "Filter State"
 msgstr "Filter State"
 
-#: templates/digitalization/control_vouchers.html:132
+#: templates/digitalization/control_vouchers.html:133
 #: templates/digitalization/mark_vouchers.html:207
-#: templates/digitalization/validate_vouchers.html:195
+#: templates/digitalization/validate_vouchers.html:196
 msgid "All"
 msgstr "All"
 
-#: templates/digitalization/control_vouchers.html:133
+#: templates/digitalization/control_vouchers.html:134
 #: templates/digitalization/mark_vouchers.html:208
 #: templates/digitalization/mark_vouchers.html:339
-#: templates/digitalization/validate_vouchers.html:196
-#: templates/digitalization/validate_vouchers.html:396
+#: templates/digitalization/validate_vouchers.html:197
+#: templates/digitalization/validate_vouchers.html:397
 msgid "Found"
 msgstr "Found"
 
-#: templates/digitalization/control_vouchers.html:134
+#: templates/digitalization/control_vouchers.html:135
 #: templates/digitalization/mark_vouchers.html:209
 #: templates/digitalization/mark_vouchers.html:338
-#: templates/digitalization/validate_vouchers.html:197
-#: templates/digitalization/validate_vouchers.html:395
+#: templates/digitalization/validate_vouchers.html:198
+#: templates/digitalization/validate_vouchers.html:396
 msgid "No State"
 msgstr "No State"
 
-#: templates/digitalization/control_vouchers.html:135
+#: templates/digitalization/control_vouchers.html:136
 #: templates/digitalization/mark_vouchers.html:210
 #: templates/digitalization/mark_vouchers.html:340
-#: templates/digitalization/validate_vouchers.html:198
-#: templates/digitalization/validate_vouchers.html:397
+#: templates/digitalization/validate_vouchers.html:199
+#: templates/digitalization/validate_vouchers.html:398
 msgid "Not Found"
 msgstr "Not Found"
 
-#: templates/digitalization/control_vouchers.html:136
+#: templates/digitalization/control_vouchers.html:137
 #: templates/digitalization/mark_vouchers.html:211
-#: templates/digitalization/validate_vouchers.html:199
+#: templates/digitalization/validate_vouchers.html:200
 msgid "Borrowed"
 msgstr "Borrowed"
 
-#: templates/digitalization/control_vouchers.html:137
+#: templates/digitalization/control_vouchers.html:138
 #: templates/digitalization/mark_vouchers.html:212
-#: templates/digitalization/validate_vouchers.html:200
+#: templates/digitalization/validate_vouchers.html:201
 msgid "Lost"
 msgstr "Lost"
 
-#: templates/digitalization/control_vouchers.html:138
+#: templates/digitalization/control_vouchers.html:139
 #: templates/digitalization/mark_vouchers.html:213
-#: templates/digitalization/validate_vouchers.html:201
+#: templates/digitalization/validate_vouchers.html:202
 msgid "Found And Borrowed"
 msgstr "Found And Borrowed"
 
-#: templates/digitalization/control_vouchers.html:139
+#: templates/digitalization/control_vouchers.html:140
 #: templates/digitalization/mark_vouchers.html:214
-#: templates/digitalization/validate_vouchers.html:202
+#: templates/digitalization/validate_vouchers.html:203
 msgid "In Curatorship"
 msgstr "In Curatorship"
 
-#: templates/digitalization/control_vouchers.html:140
+#: templates/digitalization/control_vouchers.html:141
 #: templates/digitalization/mark_vouchers.html:215
 #: templates/digitalization/mark_vouchers.html:341
-#: templates/digitalization/validate_vouchers.html:203
-#: templates/digitalization/validate_vouchers.html:398
+#: templates/digitalization/validate_vouchers.html:204
+#: templates/digitalization/validate_vouchers.html:399
 msgid "Digitalized"
 msgstr "Digitalized"
-
-#: templates/digitalization/control_vouchers.html:141
-#: templates/digitalization/mark_vouchers.html:216
-#: templates/digitalization/validate_vouchers.html:204
-msgid "Pending"
-msgstr "Pending"
 
 #: templates/digitalization/control_vouchers.html:191
 msgid "Voucher Digitalization"
@@ -480,8 +477,8 @@ msgstr "Voucher table"
 
 #: templates/digitalization/control_vouchers.html:203
 #: templates/digitalization/mark_vouchers.html:362
-#: templates/digitalization/validate_vouchers.html:418
-#: templates/digitalization/validate_vouchers.html:421
+#: templates/digitalization/validate_vouchers.html:419
+#: templates/digitalization/validate_vouchers.html:422
 msgid "State"
 msgstr "State"
 
@@ -501,13 +498,13 @@ msgstr "Biodata ID"
 
 #: templates/digitalization/control_vouchers.html:207
 #: templates/digitalization/mark_vouchers.html:363
-#: templates/digitalization/validate_vouchers.html:419
+#: templates/digitalization/validate_vouchers.html:420
 msgid "Herbarium ID"
 msgstr "Herbarium ID"
 
 #: templates/digitalization/control_vouchers.html:208
 #: templates/digitalization/mark_vouchers.html:364
-#: templates/digitalization/validate_vouchers.html:420
+#: templates/digitalization/validate_vouchers.html:421
 msgid "Species Name"
 msgstr "Species Name"
 
@@ -522,7 +519,7 @@ msgstr "Collected by"
 #: templates/digitalization/mark_vouchers.html:366
 #: templates/digitalization/template_list_priority_voucher.html:42
 #: templates/digitalization/update_voucher.html:79
-#: templates/digitalization/validate_vouchers.html:422
+#: templates/digitalization/validate_vouchers.html:423
 msgid "Collection Number"
 msgstr "Collection Number"
 
@@ -530,19 +527,38 @@ msgstr "Collection Number"
 #: templates/digitalization/mark_vouchers.html:367
 #: templates/digitalization/update_voucher.html:97
 #: templates/digitalization/update_voucher.html:159
-#: templates/digitalization/validate_vouchers.html:423
+#: templates/digitalization/validate_vouchers.html:424
 msgid "Locality"
 msgstr "Locality"
 
+#: templates/digitalization/gallery_image.html:34 templates/form_base.html:13
+#: templates/form_base.html:16
+msgid "Preview"
+msgstr "Preview"
+
+#: templates/digitalization/gallery_image.html:89
+msgid "Text found in image:"
+msgstr "Text found in image:"
+
+#: templates/digitalization/gallery_image.html:115
 #: templates/digitalization/gallery_images.html:88
-#: templates/digitalization/modify_gallery_image.html:23
-#: templates/digitalization/species_gallery.html:102
+#: templates/digitalization/species_gallery.html:5
+#: templates/digitalization/species_gallery.html:114
 msgid "Photo Gallery"
 msgstr "Photo Gallery"
 
+#: templates/digitalization/gallery_image.html:130
+#: templates/digitalization/load_priority_vouchers_file.html:288
+msgid "Load"
+msgstr "Load"
+
+#: templates/digitalization/gallery_image.html:133
+msgid "Photo"
+msgstr "Photo"
+
 #: templates/digitalization/gallery_images.html:108
 msgid "Gallery Images"
-msgstr ""
+msgstr "Gallery Images"
 
 #: templates/digitalization/load_priority_vouchers_file.html:126
 msgid "Print"
@@ -580,11 +596,6 @@ msgstr ""
 msgid "Load Excel"
 msgstr "Load Excel"
 
-#: templates/digitalization/load_priority_vouchers_file.html:288
-#: templates/digitalization/modify_gallery_image.html:91
-msgid "Load"
-msgstr "Load"
-
 #: templates/digitalization/load_priority_vouchers_file.html:292
 msgid "Download Vouchers"
 msgstr "Download Vouchers"
@@ -606,7 +617,6 @@ msgid "File"
 msgstr "File"
 
 #: templates/digitalization/mark_vouchers.html:71
-#: templates/digitalization/modify_gallery_image.html:54
 msgid "Upload"
 msgstr "Upload"
 
@@ -625,10 +635,15 @@ msgstr "Finish"
 #: templates/digitalization/mark_vouchers.html:131
 #: templates/digitalization/template_list_priority_voucher.html:34
 #: templates/digitalization/template_qr.html:43
-#: templates/digitalization/validate_vouchers.html:98
+#: templates/digitalization/validate_vouchers.html:99
 #, python-format
 msgid "Session %(pageId)s"
 msgstr "Session %(pageId)s"
+
+#: templates/digitalization/mark_vouchers.html:216
+#: templates/digitalization/validate_vouchers.html:205
+msgid "Pending"
+msgstr "Pending"
 
 #: templates/digitalization/mark_vouchers.html:295
 msgid "Are you sure? Session"
@@ -637,19 +652,19 @@ msgstr ""
 "marking these records)."
 
 #: templates/digitalization/mark_vouchers.html:323
-#: templates/digitalization/validate_vouchers.html:370
+#: templates/digitalization/validate_vouchers.html:371
 #: templates/sidebar.html:78
 msgid "Specimens Digitalization"
 msgstr "Specimens Digitalization"
 
 #: templates/digitalization/mark_vouchers.html:328
-#: templates/digitalization/validate_vouchers.html:385
+#: templates/digitalization/validate_vouchers.html:386
 msgid "Page Table"
 msgstr "Page Table"
 
 #: templates/digitalization/mark_vouchers.html:335
 #: templates/digitalization/qr_generator.html:153
-#: templates/digitalization/validate_vouchers.html:392
+#: templates/digitalization/validate_vouchers.html:393
 msgid "Session"
 msgstr "Session"
 
@@ -658,7 +673,7 @@ msgid "Color Profile"
 msgstr "Color Profile"
 
 #: templates/digitalization/mark_vouchers.html:343
-#: templates/digitalization/validate_vouchers.html:399
+#: templates/digitalization/validate_vouchers.html:400
 msgid "URL"
 msgstr "URL"
 
@@ -667,35 +682,10 @@ msgstr "URL"
 msgid "Updated yesterday at %(time)s"
 msgstr "Updated yesterday at %(time)s"
 
-#: templates/digitalization/modify_gallery_image.html:40
-#: templates/digitalization/update_voucher.html:140
-#: templates/digitalization/validate_vouchers.html:424
-msgid "Image"
-msgstr "Image"
-
-#: templates/digitalization/modify_gallery_image.html:44
-msgid "Currently"
-msgstr "Currently"
-
-#: templates/digitalization/modify_gallery_image.html:72
-#: templates/digitalization/species_gallery.html:121
-msgid "Taken by"
-msgstr "Taken by"
-
-#: templates/digitalization/modify_gallery_image.html:78
 #: templates/digitalization/new_licence.html:6
-#: templates/digitalization/species_gallery.html:122
+#: templates/digitalization/species_gallery.html:133
 msgid "Licence"
 msgstr "Licence"
-
-#: templates/digitalization/modify_gallery_image.html:84
-#: templates/digitalization/species_gallery.html:120
-msgid "Specimen"
-msgstr "Specimen"
-
-#: templates/digitalization/modify_gallery_image.html:94
-msgid "Photo"
-msgstr "Photo"
 
 #: templates/digitalization/new_licence.html:10
 msgid "Image licence"
@@ -770,23 +760,31 @@ msgstr "List"
 msgid "QRs"
 msgstr "QRs"
 
-#: templates/digitalization/species_gallery.html:123
+#: templates/digitalization/species_gallery.html:131
+msgid "Specimen"
+msgstr "Specimen"
+
+#: templates/digitalization/species_gallery.html:132
+msgid "Taken by"
+msgstr "Taken by"
+
+#: templates/digitalization/species_gallery.html:134
 msgid "Upload by"
 msgstr "Upload by"
 
-#: templates/digitalization/species_gallery.html:124
+#: templates/digitalization/species_gallery.html:135
 msgid "Upload at"
 msgstr "Upload at"
 
-#: templates/digitalization/species_gallery.html:148
+#: templates/digitalization/species_gallery.html:159
 msgid "Not assigned"
 msgstr "Not assigned"
 
-#: templates/digitalization/species_gallery.html:155
+#: templates/digitalization/species_gallery.html:166
 msgid "Not reported"
 msgstr "Not reported"
 
-#: templates/digitalization/species_gallery.html:180
+#: templates/digitalization/species_gallery.html:190
 #, python-format
 msgid "Are you sure? image %(image)s"
 msgstr "Are you sure you want to delete the image %(image)s?"
@@ -864,6 +862,11 @@ msgstr "Observations"
 msgid "Priority"
 msgstr "Priority"
 
+#: templates/digitalization/update_voucher.html:140
+#: templates/digitalization/validate_vouchers.html:425
+msgid "Image"
+msgstr "Image"
+
 #: templates/digitalization/update_voucher.html:147
 #: templates/digitalization/update_voucher.html:164
 msgid "Latitude"
@@ -874,50 +877,54 @@ msgstr "Latitude"
 msgid "Longitude"
 msgstr "Longitude"
 
-#: templates/digitalization/validate_vouchers.html:68
+#: templates/digitalization/validate_vouchers.html:6
+msgid "Specimen Digitalization"
+msgstr "Specimen Digitalization"
+
+#: templates/digitalization/validate_vouchers.html:69
 msgid "Review"
 msgstr "Review"
 
-#: templates/digitalization/validate_vouchers.html:76
+#: templates/digitalization/validate_vouchers.html:77
 msgid "This session is not over yet"
 msgstr "This session is not over yet."
 
-#: templates/digitalization/validate_vouchers.html:158
-#: templates/digitalization/validate_vouchers.html:231
+#: templates/digitalization/validate_vouchers.html:159
+#: templates/digitalization/validate_vouchers.html:232
 msgid "Download CR3"
 msgstr "Download CR3"
 
-#: templates/digitalization/validate_vouchers.html:160
+#: templates/digitalization/validate_vouchers.html:161
 msgid "No Image"
 msgstr "No Image"
 
-#: templates/digitalization/validate_vouchers.html:161
+#: templates/digitalization/validate_vouchers.html:162
 msgid "Upload image"
 msgstr "Upload image"
 
-#: templates/digitalization/validate_vouchers.html:175
+#: templates/digitalization/validate_vouchers.html:176
 msgid "Download Original JPG"
 msgstr "Download Original JPG"
 
-#: templates/digitalization/validate_vouchers.html:176
+#: templates/digitalization/validate_vouchers.html:177
 msgid "Download Public JPG"
 msgstr "Download Public JPG"
 
-#: templates/digitalization/validate_vouchers.html:265
+#: templates/digitalization/validate_vouchers.html:266
 #, python-format
 msgid "Found %(found)s images to process. Do you wish to continue?"
 msgstr "Found %(found)s images to process. Do you wish to continue?"
 
-#: templates/digitalization/validate_vouchers.html:268
+#: templates/digitalization/validate_vouchers.html:269
 msgid "If you decide to proceed, this window should remain open"
 msgstr "If you decide to proceed, this window should remain open."
 
-#: templates/digitalization/validate_vouchers.html:286
+#: templates/digitalization/validate_vouchers.html:287
 msgid "An error occurred, please close this window and try again later"
 msgstr "An error occurred, please close this window and try again later"
 
-#: templates/digitalization/validate_vouchers.html:323
-#: templates/digitalization/validate_vouchers.html:344
+#: templates/digitalization/validate_vouchers.html:324
+#: templates/digitalization/validate_vouchers.html:345
 msgid ""
 "An unexpected error occurred, please contact the administrator before "
 "closing this window"
@@ -925,20 +932,20 @@ msgstr ""
 "An unexpected error occurred, please contact the administrator before "
 "closing this window."
 
-#: templates/digitalization/validate_vouchers.html:375
+#: templates/digitalization/validate_vouchers.html:376
 msgid "Process pending images"
 msgstr "Process pending images"
 
-#: templates/digitalization/validate_vouchers.html:455
-#: templates/digitalization/validate_vouchers.html:471
+#: templates/digitalization/validate_vouchers.html:456
+#: templates/digitalization/validate_vouchers.html:472
 msgid "Close"
 msgstr "Close"
 
-#: templates/digitalization/validate_vouchers.html:464
+#: templates/digitalization/validate_vouchers.html:465
 msgid "Pending image processing"
 msgstr "Pending image processing"
 
-#: templates/digitalization/validate_vouchers.html:470
+#: templates/digitalization/validate_vouchers.html:471
 msgid "Continue"
 msgstr "Continue"
 
@@ -1057,3 +1064,6 @@ msgstr "Mozilla Public License, version 2.0"
 #: intranet/settings.py:259
 msgid "Mozilla MPL URL"
 msgstr "https://www.mozilla.org/en-US/MPL/2.0/"
+
+#~ msgid "Currently"
+#~ msgstr "Currently"

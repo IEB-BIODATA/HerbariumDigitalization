@@ -674,6 +674,7 @@ def generate_thumbnail(gallery_id: int) -> None:
     try:
         gallery: GalleryImage = GalleryImage.objects.get(pk=gallery_id)
         image = Image.open(gallery.image)
+        gallery.aspect_ratio = image.size[0] / image.size[1]
         scale_percent = 200 * 100 / image.size[1]
         resized_image = change_image_resolution(image, scale_percent)
         image_content = ContentFile(resized_image.read())
@@ -681,6 +682,7 @@ def generate_thumbnail(gallery_id: int) -> None:
         filename, ext = os.path.splitext(filepath)
         image_name = f"{filename}_thumbnail{ext}"
         gallery.thumbnail.save(image_name, image_content, save=True)
+        gallery.save()
         logging.info(f"{image_name} saved")
     except Exception as e:
         logging.error(f"Error on thumbnail: {e}", exc_info=True)
