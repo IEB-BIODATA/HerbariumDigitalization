@@ -3,20 +3,112 @@
 {% load i18n %}
 {% load roles %}
 {% block javascript %}
-  <script type="text/javascript">
-      document.getElementById("imageId").onchange = function (event){
-          console.log("Image changed");
-          let photo = URL.createObjectURL(event.target.files[0]);
-          document.getElementById("preview").src = photo;
-      }
-
-      document.querySelector("#id_licence").addEventListener("change", function() {
+    <script type="text/javascript">
+        const csrfToken = "{{ csrf_token }}";
+        document.querySelector("#id_licence").addEventListener("change", function() {
             const selectedValue = this.value;
             if (selectedValue === "") {
                 this.value = 1;
                 window.location.href = "{% url 'new_licence' %}";
             }
         });
+
+        $("#id_image").change(function() {
+            const formData = new FormData();
+            formData.append('image', this.files[0]);
+            const loadingDOM = document.getElementById("loading");
+            loadingDOM.innerHTML = `
+            <div class="progress" role="progressbar" aria-label="progress" aria-valuenow="0" aria-valuemin="0" aria-valuemax="100">
+                <div class="progress-bar progress-bar-striped progress-bar-animated" style="width: 100%"></div>
+            </div>
+            `;
+            $.ajax({
+                url: "{% url 'upload_temporal_image' %}",
+                type: 'POST',
+                data: formData,
+                headers: {'X-CSRFToken': csrfToken},
+                processData: false,
+                contentType: false,
+                success: function(response) {
+                    console.debug('Temporal image uploaded');
+                    const previewMsg = "{% translate "Preview" %}";
+                    $(`
+                    <div class="row align-items-center">
+                        <div class="col-sm-2">
+                            ${previewMsg}
+                        </div>
+                        <div class="col-sm-10">
+                            <img id="imagePreview" src="${response.image_url}" style="height: 300px; width: auto" alt="${previewMsg}">
+                        </div>
+                    </div>
+                    `).insertBefore("#id_image");
+                },
+                error: function(error) {
+                    console.error('Upload error:', error);
+                }
+            }).done(function (response) {
+                const url = "{% url 'extract_taken_by' image_file='placeholder' %}".replace(
+                    "placeholder", response.temporal_image.replace(
+                        "temporal/", ""
+                    )
+                );
+                $.ajax({
+                    url: url,
+                    type: 'GET',
+                    headers: {'X-CSRFToken': csrfToken},
+                    success: function (response) {
+                        getTakenBy(response, loadingDOM);
+                    },
+                    error: function(error) {
+                        console.error('Upload error:', error);
+                    }
+                })
+            });
+        });
+
+        function getTakenBy(taskId, loadingDOM){
+            const progressUrl = "{% url 'get_progress' task_id='placeholder' %}".replace(
+                "placeholder", taskId
+            );
+            $.ajax({
+                url: progressUrl,
+                type: 'GET',
+                headers: {'X-CSRFToken': csrfToken},
+                success: function(response) {
+                    if (response.state === "PROGRESS"){
+                        console.debug("Progress:", response.details.on);
+                        setTimeout(getTakenBy, 500, taskId, loadingDOM);
+                    } else if (response.state === "STARTED") {
+                        console.debug(`${taskId} process started`);
+                        setTimeout(getTakenBy, 500, taskId, loadingDOM);
+                    } else if (response.state === "PENDING") {
+                        console.debug(`${taskId} pending...`);
+                        setTimeout(getTakenBy, 500, taskId, loadingDOM);
+                    } else if (response.state === "SUCCESS") {
+                        console.debug(`${taskId} success`);
+                        const foundMsg = "{% translate 'Text found in image:' %}";
+                        loadingDOM.innerHTML = `
+                        <div class="alert alert-success">
+                            ${foundMsg}
+                            <pre class="console-log"><code>${response.details[0]}</code></pre>
+                        </div>
+                        `;
+                        document.getElementById("id_taken_by").value = response.details[1];
+                    } else if (response.state === "FAILURE") {
+                        console.error(`${taskId} failed`);
+                        loadingDOM.innerHTML = "";
+                    } else if (response.state === "ERROR") {
+                        console.error(`${taskId} error`);
+                        loadingDOM.innerHTML = "";
+                    } else {
+                        setTimeout(getTakenBy, 500, taskId, loadingDOM);
+                    }
+                },
+                error: function(error) {
+                    console.error('Upload error:', error);
+                }
+            });
+        }
   </script>
 {% endblock %}
 {% block content %}
@@ -24,67 +116,15 @@
     <div class="card mb-3">
         <div class="card-header">
             <i class="{% if gallery is None %}far {% else %}fas {% endif %}fa-image"></i>
-            {{ specie.scientific_name }} &nbsp;
-            <i style="color: #808080">{{ specie.scientific_name_full }}</i>
+            {{ species.scientific_name }} &nbsp;
+            <i style="color: #808080">{{ species.scientific_name_full }}</i>
         </div>
         <div class="card-body">
             <div class="table-responsive">
-                <form
-                        action="{% if gallery is None %}{% url 'new_gallery_image' catalog_id=specie.id %}{% else %}{% url 'gallery_image' gallery_id=gallery.id %}{% endif %}"
-                        method="post" enctype=multipart/form-data
-                >
+                <div id="loading" class="col-sm-12"></div>
+                <form action="{% if gallery is None %}{% url 'new_gallery_image' species_id=species.id %}{% else %}{% url 'modify_gallery_image' gallery_id=gallery.id %}{% endif %}" method="post" enctype="multipart/form-data">
                     {% csrf_token %}
-                    <input type="hidden" name="scientific_name" value="{{ specie.id }}">
-                    <div class="form-group row">
-                        <label class="col-sm-2 col-form-label">{% translate "Image" %}</label>
-                        <div class="col-sm-10">
-                            {% if gallery is not None %}
-                                <div class="row">
-                                    <label class="col-sm-2 col-form-label">{% translate "Currently" %}</label>
-                                    <div class="col-sm-10">
-                                        <img id="preview" src="{{ form.initial.image.url }}" style="height: 300px; width: auto">
-                                    </div>
-                                </div>
-                                <br>
-                            {% endif %}
-                            <div class="row">
-                                <label class="col-sm-2 col-form-label">
-                                    {% if gallery is None %}
-                                        {% translate "Upload" %}
-                                    {% else %}
-                                        {% translate "Edit" %}
-                                    {% endif %}
-                                </label>
-                                <div class="col-sm-10">
-                                    <input
-                                            id="imageId"
-                                            type="file"
-                                            name="image"
-                                            accept="image/*"
-                                            value="{{ form.initial.image.url }}"
-                                    >
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                    <div class="form-group row">
-                        <label class="col-sm-2 col-form-label">{% translate "Taken by" %}</label>
-                        <div class="col-sm-10">
-                            {{ form.taken_by }}
-                        </div>
-                    </div>
-                    <div class="form-group row">
-                        <label class="col-sm-2 col-form-label">{% translate "Licence" %}</label>
-                        <div class="col-sm-10">
-                            {{ form.licence }}
-                        </div>
-                    </div>
-                    <div class="form-group row">
-                        <label class="col-sm-2 col-form-label">{% translate "Specimen" %}</label>
-                        <div class="col-sm-10">
-                            {{ form.specimen }}
-                        </div>
-                    </div>
+                    {% include "form_base.html" with form=form %}
                     <div style="display: flex; justify-content: space-around; margin: 20px;">
                         <button type="submit" class="btn btn-primary" id="load_button">
                             {% if gallery is None %} {% translate "Load" %}
@@ -92,7 +132,7 @@
                             {% endif %}
                             {% translate "Photo" %}
                         </button>
-                        <a href="{% url 'modify_gallery' species_id=specie.id %}" class="nav-link btn btn-danger" id="cancel_button">{% translate "Cancel" %}</a>
+                        <a href="{% url 'species_gallery' species_id=species.id %}" class="nav-link btn btn-danger" id="cancel_button">{% translate "Cancel" %}</a>
                     </div>
                 </form>
             </div>

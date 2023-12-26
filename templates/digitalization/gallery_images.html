@@ -29,7 +29,7 @@
                     type: 'GET',
                     dataSrc: 'data',
                 },
-                order: [[5, 'desc']],
+                order: [[6, 'desc']],
                 columnDefs: [
                     {
                         targets: 0,
@@ -54,16 +54,19 @@
                             if (type === 'search'){
                                 return data;
                             } else {
-                                const to_modify_gallery = "{% url 'modify_gallery' species_id=0 %}".replace(
+                                const urlSpecies = "{% url 'species_gallery' species_id=0 %}".replace(
                                     "0", row["id"]
                                 );
-                                console.log(to_modify_gallery);
-                                return `<a href="${to_modify_gallery}">${data}</a>`;
+                                return `<a href="${urlSpecies}">${data}</a>`;
                             }
                         }
                     },
                     {
                         targets: 5,
+                        data: 'gallery_images',
+                    },
+                    {
+                        targets: 6,
                         data: 'updated_at',
                         render: (data, type) => {
                             let date = new Date(data);
@@ -96,14 +99,15 @@
             <div class="table-responsive">
                 <table class="table table-bordered" id="CatalogTable" style="width: 100%" cellspacing="0">
                     <thead>
-                    <tr>
-                        <th>{% translate "Division" %}</th>
-                        <th>{% translate "Class" %}</th>
-                        <th>{% translate "Order" %}</th>
-                        <th>{% translate "Family" %}</th>
-                        <th>{% translate "Complete Scientific Name" %}</th>
-                        <th>{% translate "Updated at" %}</th>
-                    </tr>
+                        <tr>
+                            <th>{% translate "Division" %}</th>
+                            <th>{% translate "Class" %}</th>
+                            <th>{% translate "Order" %}</th>
+                            <th>{% translate "Family" %}</th>
+                            <th>{% translate "Complete Scientific Name" %}</th>
+                            <th>{% translate "Gallery Images" %}</th>
+                            <th>{% translate "Updated at" %}</th>
+                        </tr>
                     </thead>
                     <tbody>
                     <!-- To be populated -->

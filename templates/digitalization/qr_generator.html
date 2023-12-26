@@ -48,7 +48,7 @@
                     },
                     {
                         targets: 5,
-                        data: 'terminated',
+                        data: 'finished',
                         render: (data) => {
                             return data ? "{% translate 'Yes' %}" : "{% translate 'No' %}";
                         }
@@ -128,8 +128,8 @@
             {% if info.state == 'error' %}
                 {% if info.type == 'no data' %}
                     <p>{% translate "There are no records available to generate QR codes" %}</p>
-                {% elif info.type == 'not terminated' %}
-                    <p>{% translate "All sessions must be terminated to generate a new one" %}</p>
+                {% elif info.type == 'not finished' %}
+                    <p>{% translate "All sessions must be finished to generate a new one" %}</p>
                 {% else %}
                     <p>{% translate "Unidentified error, please contact the administrator" %}</p>
                 {% endif %}

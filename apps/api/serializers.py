@@ -9,8 +9,7 @@ from apps.catalog.models import Species, Family, Genus, Synonymy, Division, Clas
     TaxonomicModel, FinderView, ScientificName
 from apps.catalog.serializers import CommonSerializer, RegionSerializer
 from apps.catalog.utils import get_habit, get_conservation_state
-from apps.digitalization.models import VoucherImported
-from apps.digitalization.serializers import GallerySerializer
+from apps.digitalization.models import VoucherImported, GalleryImage, Licence
 
 
 class TaxonomicApiSerializer(CommonSerializer):
@@ -106,10 +105,11 @@ class SpeciesSerializer(ScientificNameSerializer):
 class SampleSerializer(HyperlinkedModelSerializer):
     image_resized_10 = SerializerMethodField()
     image_resized_60 = SerializerMethodField()
+    code = ReadOnlyField(source='biodata_code.code')
 
     class Meta:
         model = VoucherImported
-        fields = ['id', 'image_resized_10', 'image_resized_60']
+        fields = ['id', 'code', 'image_resized_10', 'image_resized_60']
 
     def get_image_resized_10(self, obj: VoucherImported) -> str:
         try:
@@ -166,6 +166,25 @@ class SynonymyFinderSerializer(ScientificNameSerializer):
         ).data
 
 
+class LicenceSerializer(HyperlinkedModelSerializer):
+    class Meta:
+        model = Licence
+        fields = [
+            'id', 'name', 'short_name', 'link',
+        ]
+
+
+class GallerySerializer(HyperlinkedModelSerializer):
+    licence = LicenceSerializer()
+
+    class Meta:
+        model = GalleryImage
+        fields = [
+            'id', 'image', 'thumbnail', 'aspect_ratio',
+            'specimen', 'taken_by', 'licence',
+        ]
+
+
 class SpeciesDetailsSerializer(SpeciesSerializer):
     common_names = CommonNameSerializer(required=False, many=True)
     status = SerializerMethodField()
@@ -210,7 +229,7 @@ class SpeciesDetailsSerializer(SpeciesSerializer):
             many=True, context=self.context
         ).data
 
-    def get_gallery_images(self, obj: Species) -> GallerySerializer:
+    def get_gallery_images(self, obj: Species) -> Dict:
         return GallerySerializer(
             instance=obj.galleryimage_set.all(),
             many=True, context=self.context
@@ -251,7 +270,6 @@ class DistributionSerializer(SampleSerializer):
 
 
 class SpecimenFinderSerializer(SampleSerializer):
-    code = ReadOnlyField(source='biodata_code.code')
     herbarium_code = ReadOnlyField(source='herbarium.collection_code')
     decimal_latitude = ReadOnlyField(source='decimal_latitude_public')
     decimal_longitude = ReadOnlyField(source='decimal_longitude_public')
@@ -260,7 +278,6 @@ class SpecimenFinderSerializer(SampleSerializer):
     class Meta:
         model = VoucherImported
         fields = SampleSerializer.Meta.fields + [
-            'code',
             'herbarium_code',
             'catalog_number',
             'decimal_latitude',

@@ -1,11 +1,15 @@
+import cv2
 import datetime as dt
 import glob
 import json
 import logging
 import math
+import numpy as np
 import os
+import pytesseract
 import shutil
 import textwrap
+from django.core.files.base import ContentFile
 from io import BytesIO
 from typing import List, Tuple, Type, Dict
 
@@ -288,52 +292,58 @@ def clean_storage(log_folder: str):
         bucket = settings.AWS_STORAGE_BUCKET_NAME
         process_logger.info("Cleaning Public Storage...")
         public_location = PublicMediaStorage().location
-        response = s3.list_objects_v2(Bucket=bucket, Prefix=public_location)
+        paginator = s3.get_paginator("list_objects_v2")
+        page_response = paginator.paginate(Bucket=bucket, Prefix=public_location)
         to_delete = list()
         public_files_to_delete = 0
-        if 'Contents' in response:
-            for obj in response['Contents']:
-                file_name = obj['Key'].replace(public_location + "/", "")
-                found = False
-                for model, field, contains, extension in [
-                    (GalleryImage, "image", "", ".jpg"),
-                    (BannerImage, "banner", "", ".png"),
-                    (ColorProfileFile, "file", "", ".dcp"),
-                    (PriorityVouchersFile, "file", "", ".xls"),
-                    (PriorityVouchersFile, "file", "", ".xlsx"),
-                    (VoucherImported, "image_public_resized_10", "_public_resized_10", ".jpg"),
-                    (VoucherImported, "image_public_resized_60", "_public_resized_60", ".jpg"),
-                    (VoucherImported, "image_public", "_public", ".jpg"),
-                ]:
-                    found = found or check_on_model(file_name, model, field, contains, extension, process_logger)
-                    if found:
-                        break
-                if not found:
-                    process_logger.error(f"{file_name} not found on database")
-                    to_delete.append((obj['Key'], obj['Size']))
-                    public_files_to_delete += 1
+        for i, response in enumerate(page_response):
+            process_logger.debug(f"Page: {i + 1}")
+            if 'Contents' in response:
+                for obj in response['Contents']:
+                    file_name = obj['Key'].replace(public_location + "/", "")
+                    found = False
+                    for model, field, contains, extension in [
+                        (GalleryImage, "image", "", ".jpg"),
+                        (GalleryImage, "thumbnail", "_thumbnail", ".jpg"),
+                        (BannerImage, "banner", "", ".png"),
+                        (ColorProfileFile, "file", "", ".dcp"),
+                        (PriorityVouchersFile, "file", "", ".xls"),
+                        (PriorityVouchersFile, "file", "", ".xlsx"),
+                        (VoucherImported, "image_public_resized_10", "_public_resized_10", ".jpg"),
+                        (VoucherImported, "image_public_resized_60", "_public_resized_60", ".jpg"),
+                        (VoucherImported, "image_public", "_public", ".jpg"),
+                    ]:
+                        found = found or check_on_model(file_name, model, field, contains, extension, process_logger)
+                        if found:
+                            break
+                    if not found:
+                        process_logger.error(f"{file_name} not found on database")
+                        to_delete.append((obj['Key'], obj['Size']))
+                        public_files_to_delete += 1
         process_logger.info(f"Public files to delete {public_files_to_delete}")
         process_logger.info("Cleaning Private Storage...")
         private_location = PrivateMediaStorage().location
-        response = s3.list_objects_v2(Bucket=bucket, Prefix=private_location)
+        page_response = paginator.paginate(Bucket=bucket, Prefix=private_location)
         private_files_to_delete = 0
-        if 'Contents' in response:
-            for obj in response['Contents']:
-                file_name = obj['Key'].replace(private_location + "/", "")
-                found = False
-                for model, field, contains, extension in [
-                    (VoucherImported, "image_raw", "", ".CR3"),
-                    (VoucherImported, "image_resized_10", "_resized_10", ".jpg"),
-                    (VoucherImported, "image_resized_60", "_resized_60", ".jpg"),
-                    (VoucherImported, "image", "", ".jpg"),
-                ]:
-                    found = found or check_on_model(file_name, model, field, contains, extension, process_logger)
-                    if found:
-                        break
-                if not found:
-                    process_logger.error(f"{file_name} not found on database")
-                    to_delete.append((obj['Key'], obj['Size']))
-                    private_files_to_delete += 1
+        for i, response in enumerate(page_response):
+            process_logger.debug(f"Page: {i + 1}")
+            if 'Contents' in response:
+                for obj in response['Contents']:
+                    file_name = obj['Key'].replace(private_location + "/", "")
+                    found = False
+                    for model, field, contains, extension in [
+                        (VoucherImported, "image_raw", "", ".CR3"),
+                        (VoucherImported, "image_resized_10", "_resized_10", ".jpg"),
+                        (VoucherImported, "image_resized_60", "_resized_60", ".jpg"),
+                        (VoucherImported, "image", "", ".jpg"),
+                    ]:
+                        found = found or check_on_model(file_name, model, field, contains, extension, process_logger)
+                        if found:
+                            break
+                    if not found:
+                        process_logger.error(f"{file_name} not found on database")
+                        to_delete.append((obj['Key'], obj['Size']))
+                        private_files_to_delete += 1
         process_logger.info(f"Private files to delete {private_files_to_delete}")
         assert len(to_delete) == public_files_to_delete + private_files_to_delete, "Error on number of files to delete"
         process_logger.info(f"Files to delete {len(to_delete)}")
@@ -628,4 +638,52 @@ def close_process(logger: GroupLogger, log_filename: str, task: Task, meta: Dict
             state='ERROR',
             meta=meta
         )
+        return
+
+
+@shared_task(name="extract_taken_by", bind=True)
+def get_taken_by(self, image_path: str, logger: logging.Logger = None) -> Tuple[str, str]:
+    if logger is None:
+        logger = logging.getLogger(__name__)
+    logger.info(f"Image to process: {image_path}")
+    try:
+        image = PrivateMediaStorage().open(image_path)
+        self.update_state(state="PROGRESS", meta={"on": "Image loaded"})
+        arr = np.asarray(bytearray(image.read()), dtype=np.uint8)
+        img = cv2.imdecode(arr, -1)
+        self.update_state(state="PROGRESS", meta={"on": "Image converted"})
+        text = pytesseract.image_to_string(img)
+        self.update_state(state="PROGRESS", meta={"on": "Text found"})
+        taken_by = GalleryImage.objects.filter(
+            taken_by__isnull=False
+        ).values("taken_by").distinct().annotate(
+            similarity=TrigramSimilarity('taken_by', text),
+        ).order_by('-similarity')
+        self.update_state(state="PROGRESS", meta={"on": "Looking for similar"})
+        candidate = taken_by.first()["taken_by"]
+    except Exception as e:
+        logger.error(e, exc_info=True)
+        self.update_state(state='ERROR', meta={"error": str(e)})
+        text = ""
+        candidate = ""
+    return text, candidate
+
+
+@shared_task(name="generate_thumbnail")
+def generate_thumbnail(gallery_id: int) -> None:
+    try:
+        gallery: GalleryImage = GalleryImage.objects.get(pk=gallery_id)
+        image = Image.open(gallery.image)
+        gallery.aspect_ratio = image.size[0] / image.size[1]
+        scale_percent = 200 * 100 / image.size[1]
+        resized_image = change_image_resolution(image, scale_percent)
+        image_content = ContentFile(resized_image.read())
+        filepath = os.path.basename(gallery.image.name)
+        filename, ext = os.path.splitext(filepath)
+        image_name = f"{filename}_thumbnail{ext}"
+        gallery.thumbnail.save(image_name, image_content, save=True)
+        gallery.save()
+        logging.info(f"{image_name} saved")
+    except Exception as e:
+        logging.error(f"Error on thumbnail: {e}", exc_info=True)
         return
