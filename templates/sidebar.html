@@ -8,7 +8,7 @@
                 $("#overlay").fadeIn(300);
             });
             $.ajax({
-                url: '/digitalization/download_catalog',
+                url: "{% url 'download_catalog' %}",
                 type: 'GET',
                 xhrFields: {
                     // make sure the response knows we're expecting a binary type in return.
@@ -116,7 +116,7 @@
 </li>
 {% if request.user|has_group:"Catalog" %}
     <li class="nav-item">
-        <a class="nav-link" href="{% url 'modify_gallery_image' %}">
+        <a class="nav-link" href="{% url 'gallery_images' %}">
             <i class="fas fa-fw fa-images"></i>
             <span>{% translate "Upload to Gallery" %}</span>
         </a>

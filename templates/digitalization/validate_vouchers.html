@@ -3,6 +3,7 @@
 {% load i18n %}
 {% get_current_language as LANGUAGE_CODE %}
 {% load roles %}
+{% block title %}{{ block.super }}: {% translate "Specimen Digitalization" %}{% endblock %}
 {% block javascript %}
     <script type="text/javascript">
         const csrfToken = "{{ csrf_token }}";
@@ -64,7 +65,7 @@
                         orderable: false,
                         render: (data, type, row) => {
                             let content;
-                            if (row.terminated){
+                            if (row.finished){
                                 const reviewMsg = "{% translate 'Review' %}";
                                 let complement;
                                 if (data === null)

@@ -1,7 +1,7 @@
 import os
-
 from rest_framework.serializers import HyperlinkedModelSerializer, CharField, ReadOnlyField, SerializerMethodField
 
+from apps.catalog.models import Species
 from apps.digitalization.models import VoucherImported, PriorityVouchersFile, GeneratedPage, BiodataCode, GalleryImage
 
 
@@ -64,7 +64,7 @@ class GeneratedPageSerializer(HyperlinkedModelSerializer):
         fields = [
             "id", "name", "herbarium",
             "created_by", "created_at",
-            "color_profile", "terminated",  # TODO: terminated -> finished
+            "color_profile", "finished",
             "total", "stateless_count", "found_count",
             "not_found_count", "digitalized", "qr_count"
         ]
@@ -139,9 +139,32 @@ class VoucherSerializer(HyperlinkedModelSerializer):
         return obj.image_voucher_jpg_raw_url_public()
 
 
+class SpeciesGallerySerializer(HyperlinkedModelSerializer):
+    division = ReadOnlyField(source='division.name')
+    class_name = ReadOnlyField(source='class_name.name')
+    order = ReadOnlyField(source='order.name')
+    family = ReadOnlyField(source='family.name')
+    gallery_images = SerializerMethodField()
+
+    class Meta:
+        model = Species
+        fields = [
+            "id", "division", "class_name", "order", "family",
+            "scientific_name_full", "updated_at", "gallery_images"
+        ]
+
+    def get_gallery_images(self, obj: Species) -> int:
+        return obj.galleryimage_set.count()
+
+
 class GallerySerializer(HyperlinkedModelSerializer):
-    species = CharField(source='scientific_name')
+    species = ReadOnlyField(source='scientific_name')
+    licence = ReadOnlyField(source='licence.short_name')
+    upload_by = ReadOnlyField(source='upload_by.username')
 
     class Meta:
         model = GalleryImage
-        fields = ['id', 'species', 'image', 'taken_by', 'upload_at', ]  # 'licence', ]
+        fields = [
+            'id', 'species', 'image', 'thumbnail', 'aspect_ratio',
+            'specimen', 'taken_by', 'licence', 'upload_by', 'upload_at',
+        ]

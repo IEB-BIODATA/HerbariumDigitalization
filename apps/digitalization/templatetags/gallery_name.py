@@ -1,4 +1,8 @@
+import logging
+
 from django import template
+
+from apps.digitalization.storage_backends import PublicMediaStorage
 
 register = template.Library()
 
@@ -18,4 +22,5 @@ def replace_gallery_name(name: str) -> str:
     str
         Filename modified
     """
-    return name.replace("gallery/", "")
+    base_url = PublicMediaStorage().url("")
+    return name.replace(f"{base_url}gallery/", "")

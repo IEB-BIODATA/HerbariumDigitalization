@@ -93,7 +93,7 @@
                         orderable: false,
                         render: (data, type, row) => {
                             let color_profile;
-                            if (row.terminated){
+                            if (row.finished){
                                 const finishedMsg = "{% translate 'Finished' %}"
                                 color_profile = `<b>${finishedMsg}</b>`;
                             } else {
@@ -110,7 +110,7 @@
                                 }
                                 color_profile = `
                                 <a id="digitalized_link_${row.id}" href="#" ${digitizeClass}>${digitizeMsg}</a>
-                                <a id="terminated_link_${row.id}" href="#" ${finishClass}>${finishMsg}</a>
+                                <a id="finished_link_${row.id}" href="#" ${finishClass}>${finishMsg}</a>
                                 `;
                             }
                             return `

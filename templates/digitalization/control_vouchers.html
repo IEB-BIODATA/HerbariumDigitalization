@@ -2,6 +2,7 @@
 {% load static %}
 {% load i18n %}
 {% get_current_language as LANGUAGE_CODE %}
+{% block title %}{% translate "Voucher Validation" %} ({{ state_name }}){% endblock %}
 {% block javascript %}
     <script type="text/javascript">
         let language = getTableLanguage("{{ LANGUAGE_CODE }}");
@@ -138,7 +139,6 @@
             const foundAndBorrowed = "{% translate 'Found And Borrowed' %}";
             const inCuratorship = "{% translate 'In Curatorship' %}";
             const digitalized = "{% translate 'Digitalized' %}";
-            const pending = "{% translate 'Pending' %}";
             $('#VouchersTable_length').append(`
             <label class="p-3">
                 ${filterState}

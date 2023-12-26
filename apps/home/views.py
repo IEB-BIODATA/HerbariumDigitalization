@@ -92,7 +92,7 @@ def preference(request):
 
 @login_required()
 def test_view(request):
-    return render(request, "test.html")
+    return redirect("index")
 
 
 class ProfileLanguageMiddleware:
