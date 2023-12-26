@@ -1,10 +1,20 @@
-from drf_yasg import openapi
+from django.conf import settings
+from django.db.models import Q
+from django.http import HttpRequest
+from django.utils.translation import activate
+from drf_spectacular.types import OpenApiTypes
+from drf_spectacular.utils import OpenApiParameter
+from modeltranslation.utils import get_language
 from rest_framework.request import Request
 
 from apps.catalog.models import ATTRIBUTES, TAXONOMIC_RANK, CatalogQuerySet
+from apps.digitalization.models import Areas
 
 
 def filter_query_set(queryset: CatalogQuerySet, request: Request) -> CatalogQuerySet:
+    default_language = get_language()
+    lang = request.query_params.get("lang", default_language)
+    activate(lang)
     attribute_query = dict()
     for attribute in ATTRIBUTES:
         parameters = request.query_params.getlist(attribute, [])
@@ -18,24 +28,34 @@ def filter_query_set(queryset: CatalogQuerySet, request: Request) -> CatalogQuer
         parameters = request.query_params.getlist(taxonomic_rank, [])
         if len(parameters) > 0:
             taxonomic_query[taxonomic_rank] = parameters.copy()
+    queryset = queryset.filter_query_in(**attribute_query).filter_taxonomy_in(**taxonomic_query)
     search = request.query_params.get("search")
     if search:
-        return queryset.filter_query_in(**attribute_query).filter_taxonomy_in(**taxonomic_query).search(search)
-    else:
-        return queryset.filter_query_in(**attribute_query).filter_taxonomy_in(**taxonomic_query)
+        queryset = queryset.search(search)
+    return queryset
 
 
-class OpenAPIQueryParameter(openapi.Parameter):
+def filter_by_geo(request: HttpRequest, point_query_name: str) -> Q:
+    query = Q()
+    for area in request.GET.getlist("area", None):
+        areas_model = Areas.objects.get(pk=area)
+        query = query | Q(**{point_query_name: areas_model.geometry})
+    for geometry in request.GET.getlist("geometry", None):
+        query = query | Q(**{point_query_name: geometry})
+    return query
+
+
+class OpenAPIQueryParameter(OpenApiParameter):
     __default_description__ = ("IDs of {0} to include. It can be search using the /{0} "
                                "endpoint and query parameter search")
 
     def __init__(self, name, description):
         super(OpenAPIQueryParameter, self).__init__(
-            name=name, in_=openapi.IN_QUERY,
+            name=name,
+            location=OpenApiParameter.QUERY,
             description=description,
-            type=openapi.TYPE_ARRAY,
-            items=openapi.Items(type=openapi.TYPE_INTEGER),
-            collection_format="multi"
+            many=True,
+            type=OpenApiTypes.INT,
         )
         return
 
@@ -168,23 +188,67 @@ class OpenAPICommonName(OpenAPIQueryParameter):
         return
 
 
-class OpenAPISearch(openapi.Parameter):
+class OpenAPIArea(OpenAPIQueryParameter):
     def __init__(self):
-        super(OpenAPISearch, self).__init__(
-            name="search", in_=openapi.IN_QUERY,
-            description="A string to match (case insensitive) the name of the model",
-            type=openapi.TYPE_STRING,
+        super(OpenAPIArea, self).__init__(
+            name="area",
+            description="IDs of areas to include."
         )
         return
 
 
-class OpenAPIHerbarium(openapi.Parameter):
+class OpenAPIGeometry(OpenApiParameter):
+    def __init__(self):
+        super(OpenAPIGeometry, self).__init__(
+            name="geometry",
+            location=OpenApiParameter.QUERY,
+            description="Well-known text representation of geometry.",
+            type=OpenApiTypes.STR,
+        )
+        return
+
+
+class OpenApiPaginated(OpenApiParameter):
+    def __init__(self):
+        super(OpenApiPaginated, self).__init__(
+            name="paginated",
+            location=OpenApiParameter.QUERY,
+            description="Whether the response is a paginated list or all results are delivered at once",
+            type=OpenApiTypes.BOOL,
+        )
+        return
+
+
+class OpenAPILang(OpenApiParameter):
+    def __init__(self):
+        super(OpenAPILang, self).__init__(
+            name="lang",
+            location=OpenApiParameter.QUERY,
+            description="Language code to use, 'en' for English or 'es' for 'Spanish'. Default 'es'",
+            type=OpenApiTypes.STR,
+            enum=[code for code, _ in settings.LANGUAGES]
+        )
+
+
+class OpenAPISearch(OpenApiParameter):
+    def __init__(self):
+        super(OpenAPISearch, self).__init__(
+            name="search",
+            location=OpenApiParameter.QUERY,
+            description="A string to match (case insensitive) the name of the model",
+            type=OpenApiTypes.STR,
+        )
+        return
+
+
+class OpenAPIHerbarium(OpenApiParameter):
     def __init__(self):
         super(OpenAPIHerbarium, self).__init__(
-            name="herbarium", in_=openapi.IN_QUERY,
+            name="herbarium",
+            location=OpenApiParameter.QUERY,
             description="Filter by the herbarium of the specimen. `all` "
                         "equivalent to use no filter",
-            type=openapi.TYPE_STRING,
+            type=OpenApiTypes.STR,
             enum=["CONC", "ULS", "all"],
         )
         return

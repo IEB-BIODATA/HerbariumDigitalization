@@ -12,7 +12,7 @@ https://docs.djangoproject.com/en/4.1/ref/settings/
 
 from pathlib import Path
 import os
-
+from django.utils.translation import gettext_lazy as _
 from celery.schedules import crontab
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
@@ -30,10 +30,13 @@ DEBUG = os.environ.get("DJANGO_DEBUG", 'false') == 'true'
 
 ALLOWED_HOSTS = ['*']
 
+HERBARIUM_FRONTEND = os.environ.get("HERBARIUM_FRONTEND")
+
 
 # Application definition
 
 INSTALLED_APPS = [
+    'modeltranslation',
     'django.contrib.admin',
     'django.contrib.auth',
     'django.contrib.contenttypes',
@@ -43,7 +46,9 @@ INSTALLED_APPS = [
     'django.contrib.postgres',
     'drf_multiple_model',
     'rest_framework',
-    'drf_yasg',
+    'drf_spectacular',
+    'drf_spectacular_sidecar',
+    'leaflet',
     'apps.home',
     'apps.digitalization',
     'apps.catalog',
@@ -61,9 +66,11 @@ MIDDLEWARE = [
     'django_hosts.middleware.HostsRequestMiddleware',
     'django.middleware.security.SecurityMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
+    'django.middleware.locale.LocaleMiddleware',
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
     'django.contrib.auth.middleware.AuthenticationMiddleware',
+    'apps.home.views.ProfileLanguageMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
     'corsheaders.middleware.CorsMiddleware',
@@ -129,15 +136,24 @@ AUTH_PASSWORD_VALIDATORS = [
     },
 ]
 
-
 # Internationalization
-# https://docs.djangoproject.com/en/4.1/topics/i18n/
+# https://docs.djangoproject.com/en/4.2/topics/i18n/
 
-LANGUAGE_CODE = 'es'  # 'en'
+LANGUAGE_CODE = 'es'
 TIME_ZONE = 'America/Santiago'
 USE_I18N = True
 USE_L10N = True
 USE_TZ = True
+
+LANGUAGES = [
+    ('es', _('Spanish')),
+    ('en', _('English')),
+    # ('de', _('German')),
+]
+
+LOCALE_PATHS = [
+    "intranet/locale",
+]
 
 AWS_ACCESS_KEY_ID = os.environ.get("AWS_ACCESS_KEY_ID")
 AWS_SECRET_ACCESS_KEY = os.environ.get("AWS_SECRET_ACCESS_KEY")
@@ -209,12 +225,12 @@ USE_X_FORWARDED_PORT = True
 CORS_ORIGIN_ALLOW_ALL = False
 if DEBUG:
     CORS_ORIGIN_WHITELIST = (
-        'http://localhost:8002',
+        HERBARIUM_FRONTEND,
     )
 else:
     CORS_ORIGIN_WHITELIST = (
         'https://herbariodigital.cl',
-        'https://www.herbariodigital.cl',
+        HERBARIUM_FRONTEND,
     )
 
 CSRF_TRUSTED_ORIGINS = ['https://*.herbariodigital.cl']
@@ -223,9 +239,51 @@ CSRF_COOKIE_SECURE = not DEBUG
 REST_FRAMEWORK = {
     'DEFAULT_PAGINATION_CLASS': 'rest_framework.pagination.PageNumberPagination',
     'PAGE_SIZE': 20,
+    'DEFAULT_SCHEMA_CLASS': 'drf_spectacular.openapi.AutoSchema',
+    'DEFAULT_RENDERER_CLASSES': (
+        'apps.api.renderers.CustomBrowsableAPIRenderer',
+        'rest_framework.renderers.JSONRenderer',
+        'rest_framework.renderers.TemplateHTMLRenderer',
+    ),
+}
+
+SPECTACULAR_SETTINGS = {
+    'TITLE': _("Digital Herbarium API"),
+    'DESCRIPTION': _("API description"),
+    'VERSION': '1.0.0',
+    'CONTACT': {
+        'email': "soporte.portal@ieb-chile.cl",
+    },
+    'LICENSE': {
+        'name': _("Mozilla Public License, version 2.0"),
+        'url': _("Mozilla MPL URL"),
+    },
+    'TOS': "https://www.herbariodigital.cl/catalog_about/",
+    'SERVE_URLCONF': 'apps.api.urls',
+    'SWAGGER_UI_DIST': 'SIDECAR',  # shorthand to use the sidecar instead
+    'SWAGGER_UI_FAVICON_HREF': 'SIDECAR',
+    'REDOC_DIST': 'SIDECAR',
 }
 
 SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
+
+LEAFLET_CONFIG = {
+    'DEFAULT_CENTER': (-39.8232657, -73.261518),
+    'DEFAULT_ZOOM': 4,
+    'TILES': [
+        ('Custom Tiles', 'https://{s}.google.com/vt/lyrs=s,h&x={x}&y={y}&z={z}', {
+            'maxZoom': 20,
+            'subdomains': ['mt0', 'mt1', 'mt2', 'mt3'],
+        }),
+    ],
+    'RESET_VIEW': False,
+    'PLUGINS': {
+        'draw': {
+            'css': 'https://cdnjs.cloudflare.com/ajax/libs/leaflet.draw/1.0.4/leaflet.draw.css',
+            'js': 'https://cdnjs.cloudflare.com/ajax/libs/leaflet.draw/1.0.4/leaflet.draw.js',
+        }
+    }
+}
 
 LOGGING = {
     'version': 1,

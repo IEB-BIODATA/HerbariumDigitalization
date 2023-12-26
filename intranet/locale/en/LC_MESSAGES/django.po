@@ -1,0 +1,1069 @@
+# SOME DESCRIPTIVE TITLE.
+# Copyright (C) YEAR THE PACKAGE'S COPYRIGHT HOLDER
+# This file is distributed under the same license as the PACKAGE package.
+# FIRST AUTHOR <EMAIL@ADDRESS>, YEAR.
+#
+#, fuzzy
+msgid ""
+msgstr ""
+"Project-Id-Version: PACKAGE VERSION\n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2023-12-22 13:19-0300\n"
+"PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
+"Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
+"Language-Team: LANGUAGE <LL@li.org>\n"
+"Language: \n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=2; plural=(n != 1);\n"
+
+#: templates/404.html:6
+msgid "Page Not Found"
+msgstr "Page Not Found"
+
+#: templates/500.html:6
+msgid "Error 500"
+msgstr "An error has occurred, please contact the administrator"
+
+#: templates/base.html:8
+msgid "Digitalization Platform"
+msgstr "Digitalization Platform"
+
+#: templates/base.html:12
+msgid "Herbarium Digitialization System"
+msgstr "Herbarium Digitialization System"
+
+#: templates/base.html:67
+msgid "Are you sure you want to log out?"
+msgstr "Are you sure you want to log out?"
+
+#: templates/base.html:72
+msgid "Press 'Log out' if you confirm leaving the account"
+msgstr "Press 'Log out' if you confirm leaving the account."
+
+#: templates/base.html:74 templates/catalog/create_catalog.html:19
+#: templates/catalog/list_catalog.html:170 templates/catalog/taxa_form.html:15
+#: templates/catalog/update_binnacle.html:21
+#: templates/catalog/update_catalog.html:19
+#: templates/catalog/update_taxa.html:24
+#: templates/digitalization/gallery_image.html:135
+#: templates/digitalization/new_licence.html:20
+#: templates/digitalization/species_gallery.html:193
+#: templates/digitalization/update_voucher.html:180
+#: templates/registration/preference.html:32
+#: templates/registration/preference.html:45
+msgid "Cancel"
+msgstr "Cancel"
+
+#: templates/base.html:75 templates/navegation.html:20
+msgid "Log out"
+msgstr "Log out"
+
+#: templates/catalog/create_catalog.html:9
+#: templates/catalog/merge_taxa.html:410
+#, python-format
+msgid "New %(title)s"
+msgstr "New %(title)s"
+
+#: templates/catalog/create_catalog.html:18 templates/catalog/taxa_form.html:14
+#: templates/catalog/update_binnacle.html:20
+#: templates/catalog/update_catalog.html:18
+#: templates/digitalization/update_voucher.html:179
+#: templates/registration/preference.html:46
+msgid "Save"
+msgstr "Save"
+
+#: templates/catalog/create_taxa.html:6 templates/catalog/merge_taxa.html:6
+#: templates/catalog/update_taxa.html:6
+msgid "Nothing selected"
+msgstr "Nothing selected"
+
+#: templates/catalog/create_taxa.html:10 templates/catalog/merge_taxa.html:24
+#: templates/catalog/merge_taxa.html:47 templates/catalog/merge_taxa.html:223
+#: templates/catalog/update_taxa.html:10 templates/sidebar.html:110
+msgid "Taxon"
+msgstr "Taxon"
+
+#: templates/catalog/create_taxa.html:11 templates/catalog/list_taxa.html:159
+#: templates/catalog/list_taxa.html:171 templates/catalog/update_taxa.html:11
+#: templates/sidebar.html:101
+msgid "Catalogue"
+msgstr "Catalogue"
+
+#: templates/catalog/create_taxa.html:12
+#, python-format
+msgid "Create %(title)s"
+msgstr "Create %(title)s"
+
+#: templates/catalog/list_binnacle.html:87 templates/sidebar.html:114
+msgid "Change Log"
+msgstr "Change Log"
+
+#: templates/catalog/list_binnacle.html:92
+#: templates/catalog/update_binnacle.html:5
+msgid "Log"
+msgstr "Log"
+
+#: templates/catalog/list_binnacle.html:99
+msgid "Update Type"
+msgstr "Update Type"
+
+#: templates/catalog/list_binnacle.html:100
+msgid "Model"
+msgstr "Model"
+
+#: templates/catalog/list_binnacle.html:101
+msgid "Description"
+msgstr "Description"
+
+#: templates/catalog/list_binnacle.html:102
+msgid "Note"
+msgstr "Note"
+
+#: templates/catalog/list_binnacle.html:103
+#: templates/catalog/list_catalog.html:137 templates/catalog/list_taxa.html:191
+#: templates/digitalization/mark_vouchers.html:336
+#: templates/digitalization/qr_generator.html:155
+#: templates/digitalization/validate_vouchers.html:394
+msgid "Created by"
+msgstr "Created by"
+
+#: templates/catalog/list_binnacle.html:104
+#: templates/catalog/list_catalog.html:138 templates/catalog/list_taxa.html:192
+#: templates/digitalization/mark_vouchers.html:337
+#: templates/digitalization/qr_generator.html:156
+#: templates/digitalization/validate_vouchers.html:395
+msgid "Created at"
+msgstr "Created at"
+
+#: templates/catalog/list_binnacle.html:105
+#: templates/catalog/list_catalog.html:139 templates/catalog/list_taxa.html:193
+#: templates/digitalization/gallery_images.html:109
+msgid "Updated at"
+msgstr "Updated at"
+
+#: templates/catalog/list_binnacle.html:106
+#: templates/catalog/list_catalog.html:140 templates/catalog/list_taxa.html:196
+#: templates/digitalization/control_vouchers.html:212
+msgid "Action"
+msgstr "Action"
+
+#: templates/catalog/list_catalog.html:115 templates/catalog/list_taxa.html:163
+msgid "New"
+msgstr "New"
+
+#: templates/catalog/list_catalog.html:126 templates/catalog/list_taxa.html:177
+#: templates/digitalization/gallery_images.html:94
+msgid "Search"
+msgstr "Search"
+
+#: templates/catalog/list_catalog.html:150 templates/catalog/list_taxa.html:206
+#: templates/digitalization/gallery_images.html:119
+msgid "Load table"
+msgstr "Load table"
+
+#: templates/catalog/list_catalog.html:164
+#: templates/catalog/update_taxa.html:18
+#: templates/digitalization/species_gallery.html:187
+msgid "Warning!"
+msgstr "Warning!"
+
+#: templates/catalog/list_catalog.html:167
+#, python-format
+msgid "Are you sure? %(rank)s"
+msgstr "Are you sure you want to delete %(rank)s?"
+
+#: templates/catalog/list_catalog.html:171 templates/catalog/taxa_form.html:29
+#: templates/catalog/update_taxa.html:25
+#: templates/digitalization/species_gallery.html:194
+msgid "Delete"
+msgstr "Delete"
+
+#: templates/catalog/list_taxa.html:98
+#: templates/digitalization/control_vouchers.html:118
+#: templates/digitalization/gallery_image.html:131
+msgid "Edit"
+msgstr "Edit"
+
+#: templates/catalog/list_taxa.html:99
+msgid "Merge"
+msgstr "Merge"
+
+#: templates/catalog/list_taxa.html:166
+#: templates/digitalization/load_priority_vouchers_file.html:125
+#: templates/digitalization/mark_vouchers.html:81
+msgid "Download"
+msgstr "Download"
+
+#: templates/catalog/list_taxa.html:186
+#: templates/digitalization/gallery_images.html:103 templates/sidebar.html:105
+msgid "Division"
+msgstr "Division"
+
+#: templates/catalog/list_taxa.html:187
+#: templates/digitalization/gallery_images.html:104 templates/sidebar.html:106
+msgid "Class"
+msgstr "Class"
+
+#: templates/catalog/list_taxa.html:188
+#: templates/digitalization/gallery_images.html:105 templates/sidebar.html:107
+msgid "Order"
+msgstr "Order"
+
+#: templates/catalog/list_taxa.html:189
+#: templates/digitalization/gallery_images.html:106
+#: templates/digitalization/template_list_priority_voucher.html:40
+#: templates/sidebar.html:108
+msgid "Family"
+msgstr "Family"
+
+#: templates/catalog/list_taxa.html:190
+#: templates/digitalization/gallery_images.html:107
+msgid "Complete Scientific Name"
+msgstr "Complete Scientific Name"
+
+#: templates/catalog/list_taxa.html:194
+msgid "Status"
+msgstr "Status"
+
+#: templates/catalog/list_taxa.html:195
+#: templates/digitalization/qr_generator.html:158
+msgid "Determined?"
+msgstr "Determined?"
+
+#: templates/catalog/merge_taxa.html:25
+#, python-format
+msgid "Merge %(title)s"
+msgstr "Merge %(title)s"
+
+#: templates/catalog/merge_taxa.html:26
+msgid "Merge taxa info"
+msgstr ""
+"This process allows two taxa to be joined, creating a new taxa and "
+"eliminating the two taxa of origin. Common names, synonyms and distribution "
+"are unified in the new taxon. Furthermore, the maximum and minimum height "
+"between both taxa is automatically established. However, it is possible to "
+"edit all the changes of this new taxa, since the above is only a proposal. "
+"All associated vouchers of both taxa are unified in this new taxa."
+
+#: templates/catalog/merge_taxa.html:31 templates/catalog/merge_taxa.html:395
+msgid "Select taxon to join"
+msgstr "Select taxon to join"
+
+#: templates/catalog/merge_taxa.html:53 templates/catalog/merge_taxa.html:230
+#: templates/sidebar.html:109
+msgid "Genus"
+msgstr "Genus"
+
+#: templates/catalog/merge_taxa.html:59 templates/catalog/merge_taxa.html:236
+msgid "Specific Epithet"
+msgstr "Specific Epithet"
+
+#: templates/catalog/merge_taxa.html:65 templates/catalog/merge_taxa.html:242
+msgid "Author"
+msgstr "Author"
+
+#: templates/catalog/merge_taxa.html:71 templates/catalog/merge_taxa.html:248
+msgid "Subspecies"
+msgstr "Subspecies"
+
+#: templates/catalog/merge_taxa.html:77 templates/catalog/merge_taxa.html:254
+msgid "Subspecies Author"
+msgstr "Subspecies Author"
+
+#: templates/catalog/merge_taxa.html:83 templates/catalog/merge_taxa.html:260
+msgid "Variety"
+msgstr "Variety"
+
+#: templates/catalog/merge_taxa.html:89 templates/catalog/merge_taxa.html:266
+msgid "Variety Author"
+msgstr "Variety Author"
+
+#: templates/catalog/merge_taxa.html:95 templates/catalog/merge_taxa.html:272
+msgid "Form"
+msgstr "Form"
+
+#: templates/catalog/merge_taxa.html:101 templates/catalog/merge_taxa.html:278
+msgid "Form Author"
+msgstr "Form Author"
+
+#: templates/catalog/merge_taxa.html:107 templates/catalog/merge_taxa.html:284
+msgid "Habit"
+msgstr "Habit"
+
+#: templates/catalog/merge_taxa.html:113 templates/catalog/merge_taxa.html:290
+msgid "Life cycle"
+msgstr "Life cycle"
+
+#: templates/catalog/merge_taxa.html:119 templates/catalog/merge_taxa.html:296
+msgid "Origin"
+msgstr "Origin"
+
+#: templates/catalog/merge_taxa.html:125 templates/catalog/merge_taxa.html:302
+msgid "In Argentina"
+msgstr "In Argentina"
+
+#: templates/catalog/merge_taxa.html:131 templates/catalog/merge_taxa.html:308
+msgid "In Bolivia"
+msgstr "In Bolivia"
+
+#: templates/catalog/merge_taxa.html:137 templates/catalog/merge_taxa.html:314
+msgid "In Peru"
+msgstr "In Peru"
+
+#: templates/catalog/merge_taxa.html:143 templates/catalog/merge_taxa.html:320
+msgid "Maximum Height"
+msgstr "Maximum Height"
+
+#: templates/catalog/merge_taxa.html:149 templates/catalog/merge_taxa.html:326
+msgid "Minimum Height"
+msgstr "Minimum Height"
+
+#: templates/catalog/merge_taxa.html:155 templates/catalog/merge_taxa.html:332
+msgid "Notes"
+msgstr "Notes"
+
+#: templates/catalog/merge_taxa.html:161 templates/catalog/merge_taxa.html:338
+msgid "Publication"
+msgstr "Publication"
+
+#: templates/catalog/merge_taxa.html:167 templates/catalog/merge_taxa.html:344
+msgid "Volume"
+msgstr "Volume"
+
+#: templates/catalog/merge_taxa.html:173 templates/catalog/merge_taxa.html:350
+msgid "Pages"
+msgstr "Pages"
+
+#: templates/catalog/merge_taxa.html:179 templates/catalog/merge_taxa.html:356
+msgid "Type ID"
+msgstr "Type ID"
+
+#: templates/catalog/merge_taxa.html:185 templates/catalog/merge_taxa.html:362
+msgid "Common Names"
+msgstr "Common Names"
+
+#: templates/catalog/merge_taxa.html:195 templates/catalog/merge_taxa.html:372
+msgid "Synonyms"
+msgstr "Synonyms"
+
+#: templates/catalog/merge_taxa.html:205 templates/catalog/merge_taxa.html:382
+msgid "Regional Distribution"
+msgstr "Regional Distribution"
+
+#: templates/catalog/update_binnacle.html:11
+#: templates/catalog/update_catalog.html:9
+#: templates/catalog/update_taxa.html:12
+#, python-format
+msgid "Update %(title)s"
+msgstr "Update %(title)s"
+
+#: templates/catalog/update_taxa.html:21
+#, python-format
+msgid "Are you sure? Species %(name)s"
+msgstr "Are you sure you want to delete the species %(name)s?"
+
+#: templates/digitalization/control_vouchers.html:5
+msgid "Voucher Validation"
+msgstr "Voucher Validation"
+
+#: templates/digitalization/control_vouchers.html:47
+#: templates/digitalization/mark_vouchers.html:165
+msgctxt "spaced"
+msgid "No State"
+msgstr "&nbsp;No State&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;"
+
+#: templates/digitalization/control_vouchers.html:48
+#: templates/digitalization/mark_vouchers.html:166
+msgctxt "spaced"
+msgid "Found"
+msgstr ""
+"&nbsp;Found&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;"
+
+#: templates/digitalization/control_vouchers.html:49
+#: templates/digitalization/mark_vouchers.html:167
+msgctxt "spaced"
+msgid "Not Found"
+msgstr "&nbsp;Not Found&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;"
+
+#: templates/digitalization/control_vouchers.html:50
+#: templates/digitalization/mark_vouchers.html:168
+msgctxt "spaced"
+msgid "Borrowed"
+msgstr "&nbsp;Borrowed&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;"
+
+#: templates/digitalization/control_vouchers.html:51
+#: templates/digitalization/mark_vouchers.html:169
+msgctxt "spaced"
+msgid "In Curatorship"
+msgstr "&nbsp;In Curatorship&nbsp;"
+
+#: templates/digitalization/control_vouchers.html:132
+#: templates/digitalization/mark_vouchers.html:206
+#: templates/digitalization/validate_vouchers.html:195
+msgid "Filter State"
+msgstr "Filter State"
+
+#: templates/digitalization/control_vouchers.html:133
+#: templates/digitalization/mark_vouchers.html:207
+#: templates/digitalization/validate_vouchers.html:196
+msgid "All"
+msgstr "All"
+
+#: templates/digitalization/control_vouchers.html:134
+#: templates/digitalization/mark_vouchers.html:208
+#: templates/digitalization/mark_vouchers.html:339
+#: templates/digitalization/validate_vouchers.html:197
+#: templates/digitalization/validate_vouchers.html:397
+msgid "Found"
+msgstr "Found"
+
+#: templates/digitalization/control_vouchers.html:135
+#: templates/digitalization/mark_vouchers.html:209
+#: templates/digitalization/mark_vouchers.html:338
+#: templates/digitalization/validate_vouchers.html:198
+#: templates/digitalization/validate_vouchers.html:396
+msgid "No State"
+msgstr "No State"
+
+#: templates/digitalization/control_vouchers.html:136
+#: templates/digitalization/mark_vouchers.html:210
+#: templates/digitalization/mark_vouchers.html:340
+#: templates/digitalization/validate_vouchers.html:199
+#: templates/digitalization/validate_vouchers.html:398
+msgid "Not Found"
+msgstr "Not Found"
+
+#: templates/digitalization/control_vouchers.html:137
+#: templates/digitalization/mark_vouchers.html:211
+#: templates/digitalization/validate_vouchers.html:200
+msgid "Borrowed"
+msgstr "Borrowed"
+
+#: templates/digitalization/control_vouchers.html:138
+#: templates/digitalization/mark_vouchers.html:212
+#: templates/digitalization/validate_vouchers.html:201
+msgid "Lost"
+msgstr "Lost"
+
+#: templates/digitalization/control_vouchers.html:139
+#: templates/digitalization/mark_vouchers.html:213
+#: templates/digitalization/validate_vouchers.html:202
+msgid "Found And Borrowed"
+msgstr "Found And Borrowed"
+
+#: templates/digitalization/control_vouchers.html:140
+#: templates/digitalization/mark_vouchers.html:214
+#: templates/digitalization/validate_vouchers.html:203
+msgid "In Curatorship"
+msgstr "In Curatorship"
+
+#: templates/digitalization/control_vouchers.html:141
+#: templates/digitalization/mark_vouchers.html:215
+#: templates/digitalization/mark_vouchers.html:341
+#: templates/digitalization/validate_vouchers.html:204
+#: templates/digitalization/validate_vouchers.html:399
+msgid "Digitalized"
+msgstr "Digitalized"
+
+#: templates/digitalization/control_vouchers.html:191
+msgid "Voucher Digitalization"
+msgstr "Voucher Digitalization"
+
+#: templates/digitalization/control_vouchers.html:196
+msgid "Voucher table"
+msgstr "Voucher table"
+
+#: templates/digitalization/control_vouchers.html:203
+#: templates/digitalization/mark_vouchers.html:362
+#: templates/digitalization/validate_vouchers.html:419
+#: templates/digitalization/validate_vouchers.html:422
+msgid "State"
+msgstr "State"
+
+#: templates/digitalization/control_vouchers.html:204
+msgid "Processing date"
+msgstr "Processing date"
+
+#: templates/digitalization/control_vouchers.html:205
+#: templates/digitalization/load_priority_vouchers_file.html:313
+#: templates/digitalization/qr_generator.html:154
+msgid "Herbarium"
+msgstr "Herbarium"
+
+#: templates/digitalization/control_vouchers.html:206
+msgid "Biodata ID"
+msgstr "Biodata ID"
+
+#: templates/digitalization/control_vouchers.html:207
+#: templates/digitalization/mark_vouchers.html:363
+#: templates/digitalization/validate_vouchers.html:420
+msgid "Herbarium ID"
+msgstr "Herbarium ID"
+
+#: templates/digitalization/control_vouchers.html:208
+#: templates/digitalization/mark_vouchers.html:364
+#: templates/digitalization/validate_vouchers.html:421
+msgid "Species Name"
+msgstr "Species Name"
+
+#: templates/digitalization/control_vouchers.html:209
+#: templates/digitalization/mark_vouchers.html:365
+#: templates/digitalization/template_list_priority_voucher.html:41
+#: templates/digitalization/update_voucher.html:85
+msgid "Collected by"
+msgstr "Collected by"
+
+#: templates/digitalization/control_vouchers.html:210
+#: templates/digitalization/mark_vouchers.html:366
+#: templates/digitalization/template_list_priority_voucher.html:42
+#: templates/digitalization/update_voucher.html:79
+#: templates/digitalization/validate_vouchers.html:423
+msgid "Collection Number"
+msgstr "Collection Number"
+
+#: templates/digitalization/control_vouchers.html:211
+#: templates/digitalization/mark_vouchers.html:367
+#: templates/digitalization/update_voucher.html:97
+#: templates/digitalization/update_voucher.html:159
+#: templates/digitalization/validate_vouchers.html:424
+msgid "Locality"
+msgstr "Locality"
+
+#: templates/digitalization/gallery_image.html:34 templates/form_base.html:13
+#: templates/form_base.html:16
+msgid "Preview"
+msgstr "Preview"
+
+#: templates/digitalization/gallery_image.html:89
+msgid "Text found in image:"
+msgstr "Text found in image:"
+
+#: templates/digitalization/gallery_image.html:115
+#: templates/digitalization/gallery_images.html:88
+#: templates/digitalization/species_gallery.html:5
+#: templates/digitalization/species_gallery.html:114
+msgid "Photo Gallery"
+msgstr "Photo Gallery"
+
+#: templates/digitalization/gallery_image.html:130
+#: templates/digitalization/load_priority_vouchers_file.html:288
+msgid "Load"
+msgstr "Load"
+
+#: templates/digitalization/gallery_image.html:133
+msgid "Photo"
+msgstr "Photo"
+
+#: templates/digitalization/gallery_images.html:108
+msgid "Gallery Images"
+msgstr "Gallery Images"
+
+#: templates/digitalization/load_priority_vouchers_file.html:126
+msgid "Print"
+msgstr "Print"
+
+#: templates/digitalization/load_priority_vouchers_file.html:147
+msgid "Duplicated register on file"
+msgstr "Duplicated register on file"
+
+#: templates/digitalization/load_priority_vouchers_file.html:153
+msgid "Duplicated register on the database"
+msgstr "Duplicated register on the database"
+
+#: templates/digitalization/load_priority_vouchers_file.html:159
+msgid ""
+"There are register in which the species name does not match with the "
+"catalogue"
+msgstr ""
+"There are register in which the species name does not match with the "
+"catalogue"
+
+#: templates/digitalization/load_priority_vouchers_file.html:165
+msgid "Import Error"
+msgstr "Import Error"
+
+#: templates/digitalization/load_priority_vouchers_file.html:171
+msgid ""
+"An unexpected error has happened, please contact the admin before closing "
+"this window"
+msgstr ""
+"An unexpected error has happened, please contact the admin before closing "
+"this window"
+
+#: templates/digitalization/load_priority_vouchers_file.html:281
+msgid "Load Excel"
+msgstr "Load Excel"
+
+#: templates/digitalization/load_priority_vouchers_file.html:292
+msgid "Download Vouchers"
+msgstr "Download Vouchers"
+
+#: templates/digitalization/load_priority_vouchers_file.html:306
+msgid "Files Table"
+msgstr "Files Table"
+
+#: templates/digitalization/load_priority_vouchers_file.html:314
+msgid "Date"
+msgstr "Date"
+
+#: templates/digitalization/load_priority_vouchers_file.html:315
+msgid "User"
+msgstr "User"
+
+#: templates/digitalization/load_priority_vouchers_file.html:316
+msgid "File"
+msgstr "File"
+
+#: templates/digitalization/mark_vouchers.html:71
+msgid "Upload"
+msgstr "Upload"
+
+#: templates/digitalization/mark_vouchers.html:97
+msgid "Finished"
+msgstr "Finished"
+
+#: templates/digitalization/mark_vouchers.html:100
+msgid "Digitize"
+msgstr "Digitize"
+
+#: templates/digitalization/mark_vouchers.html:101
+msgid "Finish"
+msgstr "Finish"
+
+#: templates/digitalization/mark_vouchers.html:131
+#: templates/digitalization/template_list_priority_voucher.html:34
+#: templates/digitalization/template_qr.html:43
+#: templates/digitalization/validate_vouchers.html:99
+#, python-format
+msgid "Session %(pageId)s"
+msgstr "Session %(pageId)s"
+
+#: templates/digitalization/mark_vouchers.html:216
+#: templates/digitalization/validate_vouchers.html:205
+msgid "Pending"
+msgstr "Pending"
+
+#: templates/digitalization/mark_vouchers.html:295
+msgid "Are you sure? Session"
+msgstr ""
+"Are you sure you want to end the session? (you will not be able to continue "
+"marking these records)."
+
+#: templates/digitalization/mark_vouchers.html:323
+#: templates/digitalization/validate_vouchers.html:371
+#: templates/sidebar.html:78
+msgid "Specimens Digitalization"
+msgstr "Specimens Digitalization"
+
+#: templates/digitalization/mark_vouchers.html:328
+#: templates/digitalization/validate_vouchers.html:386
+msgid "Page Table"
+msgstr "Page Table"
+
+#: templates/digitalization/mark_vouchers.html:335
+#: templates/digitalization/qr_generator.html:153
+#: templates/digitalization/validate_vouchers.html:393
+msgid "Session"
+msgstr "Session"
+
+#: templates/digitalization/mark_vouchers.html:342
+msgid "Color Profile"
+msgstr "Color Profile"
+
+#: templates/digitalization/mark_vouchers.html:343
+#: templates/digitalization/validate_vouchers.html:400
+msgid "URL"
+msgstr "URL"
+
+#: templates/digitalization/mark_vouchers.html:376
+#, python-format
+msgid "Updated yesterday at %(time)s"
+msgstr "Updated yesterday at %(time)s"
+
+#: templates/digitalization/new_licence.html:6
+#: templates/digitalization/species_gallery.html:133
+msgid "Licence"
+msgstr "Licence"
+
+#: templates/digitalization/new_licence.html:10
+msgid "Image licence"
+msgstr "Image licence"
+
+#: templates/digitalization/new_licence.html:19
+msgid "Add"
+msgstr "Add"
+
+#: templates/digitalization/qr_generator.html:53
+msgid "Yes"
+msgstr "Yes"
+
+#: templates/digitalization/qr_generator.html:53
+msgid "No"
+msgstr "No"
+
+#: templates/digitalization/qr_generator.html:61
+msgid "Print list"
+msgstr "Print list"
+
+#: templates/digitalization/qr_generator.html:72
+msgid "Print QRs"
+msgstr "Print QRs"
+
+#: templates/digitalization/qr_generator.html:116 templates/sidebar.html:70
+msgid "QR Codes Generation"
+msgstr "QR Codes Generation"
+
+#: templates/digitalization/qr_generator.html:121
+msgid "Enter the QR code quantity"
+msgstr ""
+"Enter the number of QR code pages you want to generate today (35 QR's / page)"
+
+#: templates/digitalization/qr_generator.html:123
+msgid "Generate"
+msgstr "Generate"
+
+#: templates/digitalization/qr_generator.html:130
+msgid "There are no records available to generate QR codes"
+msgstr "There are no records available to generate QR codes."
+
+#: templates/digitalization/qr_generator.html:132
+msgid "All sessions must be finished to generate a new one"
+msgstr "All sessions must be finished to generate a new one."
+
+#: templates/digitalization/qr_generator.html:134
+msgid "Unidentified error, please contact the administrator"
+msgstr "Unidentified error, please contact the administrator."
+
+#: templates/digitalization/qr_generator.html:137
+msgid "QR codes were generated correctly"
+msgstr "QR codes were generated correctly."
+
+#: templates/digitalization/qr_generator.html:141
+msgid "QR Code History"
+msgstr "QR Code History"
+
+#: templates/digitalization/qr_generator.html:146
+msgid "Generated page table"
+msgstr "Generated page table"
+
+#: templates/digitalization/qr_generator.html:157
+msgid "QR quantity"
+msgstr "QR quantity"
+
+#: templates/digitalization/qr_generator.html:159
+msgid "List"
+msgstr "List"
+
+#: templates/digitalization/qr_generator.html:160
+msgid "QRs"
+msgstr "QRs"
+
+#: templates/digitalization/species_gallery.html:131
+msgid "Specimen"
+msgstr "Specimen"
+
+#: templates/digitalization/species_gallery.html:132
+msgid "Taken by"
+msgstr "Taken by"
+
+#: templates/digitalization/species_gallery.html:134
+msgid "Upload by"
+msgstr "Upload by"
+
+#: templates/digitalization/species_gallery.html:135
+msgid "Upload at"
+msgstr "Upload at"
+
+#: templates/digitalization/species_gallery.html:159
+msgid "Not assigned"
+msgstr "Not assigned"
+
+#: templates/digitalization/species_gallery.html:166
+msgid "Not reported"
+msgstr "Not reported"
+
+#: templates/digitalization/species_gallery.html:190
+#, python-format
+msgid "Are you sure? image %(image)s"
+msgstr "Are you sure you want to delete the image %(image)s?"
+
+#: templates/digitalization/template_list_priority_voucher.html:7
+#: templates/digitalization/template_qr.html:7
+msgid "QR Codes"
+msgstr "QR Codes"
+
+#: templates/digitalization/template_list_priority_voucher.html:34
+msgid "Prioritized Voucher List"
+msgstr "Prioritized Voucher List"
+
+#: templates/digitalization/template_list_priority_voucher.html:34
+#: templates/digitalization/template_qr.html:43
+#, python-format
+msgid "Date: %(date)s"
+msgstr "Date: %(date)s"
+
+#: templates/digitalization/template_list_priority_voucher.html:38
+msgid "Herbarium Code"
+msgstr "Herbarium Code"
+
+#: templates/digitalization/template_list_priority_voucher.html:39
+#: templates/digitalization/update_voucher.html:91
+msgid "Species"
+msgstr "Species"
+
+#: templates/digitalization/template_qr.html:43
+msgid "QR List"
+msgstr "QR List"
+
+#: templates/digitalization/template_qr.html:57
+#, python-format
+msgid "Document date: %(date)s"
+msgstr "Document date: %(date)s"
+
+#: templates/digitalization/update_voucher.html:55
+msgid "Digitalization: Voucher"
+msgstr "Digitalization: Voucher"
+
+#: templates/digitalization/update_voucher.html:60
+msgid "Update Voucher"
+msgstr "Update Voucher"
+
+#: templates/digitalization/update_voucher.html:67
+msgid "Catalogue Number"
+msgstr "Catalogue Number"
+
+#: templates/digitalization/update_voucher.html:73
+msgid "Herbarium Database ID"
+msgstr "Herbarium Database ID"
+
+#: templates/digitalization/update_voucher.html:103
+msgid "Altitude"
+msgstr "Altitude"
+
+#: templates/digitalization/update_voucher.html:109
+msgid "Collection Date"
+msgstr "Collection Date"
+
+#: templates/digitalization/update_voucher.html:115
+msgid "Identified by"
+msgstr "Identified by"
+
+#: templates/digitalization/update_voucher.html:121
+msgid "Identified Date"
+msgstr "Identified Date"
+
+#: templates/digitalization/update_voucher.html:127
+msgid "Observations"
+msgstr "Observations"
+
+#: templates/digitalization/update_voucher.html:133
+msgid "Priority"
+msgstr "Priority"
+
+#: templates/digitalization/update_voucher.html:140
+#: templates/digitalization/validate_vouchers.html:425
+msgid "Image"
+msgstr "Image"
+
+#: templates/digitalization/update_voucher.html:147
+#: templates/digitalization/update_voucher.html:164
+msgid "Latitude"
+msgstr "Latitude"
+
+#: templates/digitalization/update_voucher.html:153
+#: templates/digitalization/update_voucher.html:165
+msgid "Longitude"
+msgstr "Longitude"
+
+#: templates/digitalization/validate_vouchers.html:6
+msgid "Specimen Digitalization"
+msgstr "Specimen Digitalization"
+
+#: templates/digitalization/validate_vouchers.html:69
+msgid "Review"
+msgstr "Review"
+
+#: templates/digitalization/validate_vouchers.html:77
+msgid "This session is not over yet"
+msgstr "This session is not over yet."
+
+#: templates/digitalization/validate_vouchers.html:159
+#: templates/digitalization/validate_vouchers.html:232
+msgid "Download CR3"
+msgstr "Download CR3"
+
+#: templates/digitalization/validate_vouchers.html:161
+msgid "No Image"
+msgstr "No Image"
+
+#: templates/digitalization/validate_vouchers.html:162
+msgid "Upload image"
+msgstr "Upload image"
+
+#: templates/digitalization/validate_vouchers.html:176
+msgid "Download Original JPG"
+msgstr "Download Original JPG"
+
+#: templates/digitalization/validate_vouchers.html:177
+msgid "Download Public JPG"
+msgstr "Download Public JPG"
+
+#: templates/digitalization/validate_vouchers.html:266
+#, python-format
+msgid "Found %(found)s images to process. Do you wish to continue?"
+msgstr "Found %(found)s images to process. Do you wish to continue?"
+
+#: templates/digitalization/validate_vouchers.html:269
+msgid "If you decide to proceed, this window should remain open"
+msgstr "If you decide to proceed, this window should remain open."
+
+#: templates/digitalization/validate_vouchers.html:287
+msgid "An error occurred, please close this window and try again later"
+msgstr "An error occurred, please close this window and try again later"
+
+#: templates/digitalization/validate_vouchers.html:324
+#: templates/digitalization/validate_vouchers.html:345
+msgid ""
+"An unexpected error occurred, please contact the administrator before "
+"closing this window"
+msgstr ""
+"An unexpected error occurred, please contact the administrator before "
+"closing this window."
+
+#: templates/digitalization/validate_vouchers.html:376
+msgid "Process pending images"
+msgstr "Process pending images"
+
+#: templates/digitalization/validate_vouchers.html:456
+#: templates/digitalization/validate_vouchers.html:472
+msgid "Close"
+msgstr "Close"
+
+#: templates/digitalization/validate_vouchers.html:465
+msgid "Pending image processing"
+msgstr "Pending image processing"
+
+#: templates/digitalization/validate_vouchers.html:471
+msgid "Continue"
+msgstr "Continue"
+
+#: templates/footer.html:4
+msgid "IEB Complete Name"
+msgstr "Institute of Ecology and Biodiversity"
+
+#: templates/index.html:24
+msgid "Scanned QRs"
+msgstr "Scanned QRs"
+
+#: templates/index.html:48
+msgid "Generated QRs"
+msgstr "Generated QRs"
+
+#: templates/index.html:111
+msgid "Pending Specimens"
+msgstr "Pending Specimens"
+
+#: templates/index.html:115
+msgid "Scanned Specimens"
+msgstr "Scanned Specimens"
+
+#: templates/index.html:125
+msgid "Processing Specimens"
+msgstr "Processing Specimens"
+
+#: templates/index.html:133
+msgid "Herbarium Digitalization"
+msgstr "Herbarium Digitalization"
+
+#: templates/index.html:134
+msgid "Digitization indicators"
+msgstr "Digitization indicators"
+
+#: templates/index.html:139
+msgid "Generated QR Quantity"
+msgstr "Generated QR Quantity"
+
+#: templates/navegation.html:14 templates/registration/preference.html:14
+msgid "Preference"
+msgstr "Preference"
+
+#: templates/navegation.html:17
+msgid "Admin Django Page"
+msgstr "Admin Django Page"
+
+#: templates/registration/preference.html:30
+msgid "Save Changes"
+msgstr "Save Changes"
+
+#: templates/registration/preference.html:39
+msgid "Are you sure?"
+msgstr "Are you sure?"
+
+#: templates/registration/preference.html:42
+msgid "Are you sure you want to save changes?"
+msgstr "Are you sure you want to save changes?"
+
+#: templates/sidebar.html:56
+msgid "Home"
+msgstr "Home"
+
+#: templates/sidebar.html:62
+msgid "Load Prioritized Specimens"
+msgstr "Load Prioritized Specimens"
+
+#: templates/sidebar.html:86
+msgid "Digitalization Control"
+msgstr "Digitalization Control"
+
+#: templates/sidebar.html:94
+msgid "Specimens Validation"
+msgstr "Specimens Validation"
+
+#: templates/sidebar.html:111
+msgid "Synonym"
+msgstr "Synonym"
+
+#: templates/sidebar.html:112
+msgid "Common Name"
+msgstr "Common Name"
+
+#: templates/sidebar.html:121
+msgid "Upload to Gallery"
+msgstr "Upload to Gallery"
+
+#: templates/sidebar.html:127
+msgid "Download current version"
+msgstr "Download current version"
+
+#: templates/sidebar.html:136
+msgid "Test"
+msgstr "Test"
+
+#: intranet/settings.py:149
+msgid "Spanish"
+msgstr "Spanish"
+
+#: intranet/settings.py:150
+msgid "English"
+msgstr "English"
+
+#: intranet/settings.py:251
+msgid "Digital Herbarium API"
+msgstr "Digital Herbarium API"
+
+#: intranet/settings.py:252
+msgid "API description"
+msgstr "Catalogue of Vascular Plants of Chile and Digital Herbarium API"
+
+#: intranet/settings.py:258
+msgid "Mozilla Public License, version 2.0"
+msgstr "Mozilla Public License, version 2.0"
+
+#: intranet/settings.py:259
+msgid "Mozilla MPL URL"
+msgstr "https://www.mozilla.org/en-US/MPL/2.0/"
+
+#~ msgid "Currently"
+#~ msgstr "Currently"

@@ -1,5 +1,4 @@
 # -*- coding: utf-8 -*-
-import glob
 import hashlib
 import json
 import logging
@@ -7,25 +6,22 @@ import os
 import shutil
 from datetime import datetime, date
 from http import HTTPStatus
-from pathlib import Path
 from typing import Tuple, Union, Dict
 
 import numpy
 import pytz
 import qrcode
 import tablib
-from PIL import Image
 from celery.result import AsyncResult
 from django.contrib.auth.decorators import login_required
 from django.contrib.gis.geos import GEOSGeometry
 from django.core import serializers
-from django.core.files import File
 from django.core.files.base import ContentFile
 from django.db import transaction
 from django.db.models import Q, Count, CharField, Case, When, Value
 from django.db.models.functions import Cast
 from django.http import HttpResponse, HttpResponseBadRequest, HttpResponseServerError, HttpResponseRedirect, \
-    HttpResponseForbidden, HttpRequest
+    HttpResponseForbidden, HttpRequest, JsonResponse
 from django.shortcuts import render, redirect
 from django.views.decorators.csrf import csrf_exempt
 from django.views.decorators.http import require_POST, require_GET
@@ -36,11 +32,12 @@ from .forms import LoadColorProfileForm, VoucherImportedForm, GalleryImageForm, 
     GeneratedPageForm
 from .models import BiodataCode, GeneratedPage, VoucherImported, PriorityVouchersFile, VouchersView, \
     GalleryImage, BannerImage, VOUCHER_STATE
+from .serializers import PriorityVouchersSerializer, GeneratedPageSerializer, VoucherSerializer, \
+    SpeciesGallerySerializer, GallerySerializer
 from .storage_backends import PrivateMediaStorage
-from .tasks import process_pending_vouchers, upload_priority_vouchers
+from .tasks import process_pending_vouchers, upload_priority_vouchers, etiquette_picture, get_taken_by
 from .utils import render_to_pdf
-from ..api.serializers import MinimizedVoucherSerializer, CatalogViewSerializer, GeneratedPageSerializer, \
-    PriorityVouchersSerializer
+from ..catalog.serializers import CatalogViewSerializer
 
 
 class HttpResponsePreconditionFailed(HttpResponse):
@@ -76,7 +73,7 @@ def priority_vouchers_table(request):
     if search_value:
         search_query = (
                 Q(herbarium__name__icontains=search_value) |
-                Q(created_at__icontains=search_value) |
+                Q(created_at__icontains=search_value) |  # TODO: To search in same display format
                 Q(created_by__username__icontains=search_value) |
                 Q(file__icontains=search_value) |
                 Q(voucherimported__biodata_code__code=search_value)
@@ -204,10 +201,10 @@ def qr_generator(request):
                         raise ValueError("There are not vouchers left")
                     if GeneratedPage.objects.filter(
                             herbarium=generated_page.herbarium,
-                            terminated=False
+                            finished=False
                     ).count() != 0:
-                        info["type"] = "not terminated"
-                        raise RuntimeError("There are sessions not terminated")
+                        info["type"] = "not finished"
+                        raise RuntimeError("There are sessions not finished")
                     generated_page.created_by = request.user
                     generated_page.save(quantity_pages)
                     for voucher in vouchers:
@@ -240,7 +237,7 @@ def session_table_qr(request):
         2: 'created_by',
         3: 'created_at',
         4: 'qr_count_annotation',
-        5: 'terminated_annotation',
+        5: 'finished_annotation',
     }
     search_query = Q()
     search_value: str = request.GET.get("search[value]", None)
@@ -250,7 +247,7 @@ def session_table_qr(request):
                 Q(herbaium__name__icontains=search_value) |
                 Q(created_at__icontains=search_value) |
                 Q(created_by__username__icontains=search_value) |
-                Q(terminated_annotation__icontains=search_value) |
+                Q(finished_annotation__icontains=search_value) |
                 Q(biodatacode__code=search_value)
         )
         if search_value.isdigit():
@@ -299,8 +296,8 @@ def render_session_table(request: HttpRequest, sort_by_func: Dict[int, str], sea
             'biodatacode', filter=Q(biodatacode__voucher_state=7) | Q(biodatacode__voucher_state=8)
         ),
         qr_count_annotation=Count('biodatacode', filter=Q(biodatacode__qr_generated=True)),
-        terminated_annotation=Case(
-            When(terminated=True, then=Value("Sí")),
+        finished_annotation=Case(
+            When(finished=True, then=Value("Sí")),
             default=Value("No"),
             output_field=CharField(),
         ),
@@ -405,8 +402,15 @@ def mark_vouchers(request):
 @login_required
 @require_GET
 def control_vouchers(request):
+    voucher_state = int(request.GET.get('voucher_state', 2))
+    state_name = "All"
+    for voucher, name in VOUCHER_STATE:
+        if voucher == voucher_state:
+            state_name = name
+            break
     return render(request, 'digitalization/control_vouchers.html', {
-        'voucher_state': int(request.GET.get('voucher_state', 2))
+        'voucher_state': voucher_state,
+        'state_name': state_name,
     })
 
 
@@ -447,7 +451,7 @@ def vouchers_table(request, voucher_state: str):
                 Q(locality__icontains=search_value)
         )
     return paginated_table(
-        request, entries, MinimizedVoucherSerializer,
+        request, entries, VoucherSerializer,
         sort_by_func, "voucher imported", search_query
     )
 
@@ -481,7 +485,7 @@ def get_vouchers_to_validate(request, page_id, voucher_state):
         5: "locality",
     }
     return paginated_table(
-        request, biodata_codes, MinimizedVoucherSerializer,
+        request, biodata_codes, VoucherSerializer,
         sort_by_func, "biodata code", search_query
     )
 
@@ -554,7 +558,7 @@ def terminate_session(request):
             code.qr_generated = False
             code.page = None
             code.save()
-        page.terminated = True
+        page.finished = True
         page.save()
         data = {'result': 'OK'}
     except Exception as e:
@@ -569,39 +573,6 @@ def validate_vouchers(request):
     generated_pages = GeneratedPage.objects.filter(herbarium__herbariummember__user__id=request.user.id).order_by(
         '-created_at')
     return render(request, 'digitalization/validate_vouchers.html', {'generated_pages': generated_pages})
-
-
-@require_POST
-def upload_gallery(request):
-    if request.method == 'POST':
-        image = request.FILES['image']
-        image_content = ContentFile(image.read())
-        species, response = get_species(request.POST["scientific_name"])
-        if response is not None:
-            return response
-        logging.debug("Uploading gallery image for {}".format(species.scientific_name))
-        candid_hash = hashlib.sha256(image_content.read()).hexdigest()
-        image_content.seek(0)
-        prev_gallery = GalleryImage.objects.filter(scientific_name=species[0])
-        for prev_image in prev_gallery:
-            prev_hash = hashlib.sha256(ContentFile(prev_image.image.read()).read()).hexdigest()
-            if candid_hash == prev_hash:
-                return HttpResponsePreconditionFailed("Image already saved and associated with species")
-        parameters = {
-            "upload_at": datetime.now(),
-            "scientific_name": species[0],
-            "upload_by": request.user,
-        }
-        if "licence" in request.POST:
-            parameters["licence"] = request.POST["licence"]
-        if "taken_by" in request.POST:
-            parameters["taken_by"] = request.POST["taken_by"]
-        gallery_image = GalleryImage(**parameters)
-        gallery_image.image.save(image.name, image_content)
-        gallery_image.save()
-        return HttpResponse(json.dumps({'result': 'ok'}), content_type="application/json")
-    else:
-        return HttpResponse({'result': 'error'}, status=400)
 
 
 def get_species(scientific_name_full: str) -> Tuple[Union[Species, None], Union[HttpResponse, None]]:
@@ -638,98 +609,102 @@ def upload_banner(request):
 
 
 @login_required
-def modify_gallery_image(request):
-    return render(request, 'digitalization/modify_gallery_image.html')
+def gallery_images(request):
+    return render(request, 'digitalization/gallery_images.html')
 
 
 @login_required
+@require_GET
 def gallery_table(request):
     search_value = request.GET.get("search[value]", None)
     search_query = Q()
     if search_value:
         search_query = (
-                Q(division__icontains=search_value) |
-                Q(class_name__icontains=search_value) |
-                Q(order__icontains=search_value) |
-                Q(family__icontains=search_value) |
+                Q(division__name__icontains=search_value) |
+                Q(class_name__name__icontains=search_value) |
+                Q(order__name__icontains=search_value) |
+                Q(family__name__icontains=search_value) |
                 Q(scientific_name_full__icontains=search_value) |
                 Q(updated_at__icontains=search_value)
         )
 
     sort_by_func = {
-        0: "division",
-        1: "class_name",
-        2: "order",
-        3: "family",
+        0: "division__name",
+        1: "class_name__name",
+        2: "order__name",
+        3: "family__name",
         4: "scientific_name_full",
-        5: "updated_at",
+        5: "gallery_images_annotation",
+        6: "updated_at",
     }
-    entries = CatalogView.objects.all()
+    entries = Species.objects.all().annotate(
+        gallery_images_annotation=Count('galleryimage')
+    )
 
     return paginated_table(
         request, entries,
-        CatalogViewSerializer, sort_by_func,
-        "catalog", search_query
+        SpeciesGallerySerializer, sort_by_func,
+        "species", search_query
     )
 
 
 @login_required
-def modify_gallery(request, species_id):
-    specie = Species.objects.filter(id=species_id).first()
-    gallery = GalleryImage.objects.filter(scientific_name=specie)
-    return render(request, 'digitalization/modify_gallery.html', {
-        'species': specie,
-        'gallery': gallery,
+def species_gallery(request, species_id: int):
+    species = Species.objects.get(pk=species_id)
+    gallery = GalleryImage.objects.filter(scientific_name=species)
+    return render(request, 'digitalization/species_gallery.html', {
+        'species': species,
+        'gallery': [GallerySerializer(image).data for image in gallery],
     })
 
 
 @login_required
-def gallery_image(request, gallery_id):
-    gallery = GalleryImage.objects.filter(id=gallery_id).first()
-    catalog_id = gallery.scientific_name.id
+def new_gallery_image(request, species_id: int) -> HttpResponse:
+    species = Species.objects.get(pk=species_id)
+    form = GalleryImageForm(instance=None)
+    if request.method == "POST":
+        form = GalleryImageForm(request.POST, request.FILES)
+        if form.is_valid():
+            gallery = form.save(commit=False)
+            gallery.upload_by = request.user
+            gallery.scientific_name = species
+            gallery.save()
+            gallery.generate_thumbnail()
+            logging.debug("Added new image gallery {}".format(gallery))
+            return redirect('species_gallery', species_id=species_id)
+        else:
+            logging.warning("Form is not valid: {}".format(form.errors), exc_info=True)
+    return render(request, 'digitalization/gallery_image.html', {
+        'form': form,
+        'species': species,
+    })
+
+
+@login_required
+def modify_gallery_image(request, gallery_id):
+    gallery = GalleryImage.objects.get(pk=gallery_id)
+    species = gallery.scientific_name
     form = GalleryImageForm(instance=gallery)
     if request.method == "POST":
         form = GalleryImageForm(request.POST, request.FILES, instance=gallery)
         if form.is_valid():
             gallery = form.save()
+            gallery.generate_thumbnail()
             logging.debug("Gallery modified {}".format(gallery))
-            return redirect('modify_gallery', catalog_id=catalog_id)
+            return redirect('species_gallery', species_id=species.id)
         else:
-            logging.warning("Form is not valid: {}".format(form.errors))
+            logging.warning("Form is not valid: {}".format(form.errors), exc_info=True)
     return render(request, 'digitalization/gallery_image.html', {
         'form': form,
-        'specie': gallery.scientific_name,
+        'species': species,
         'gallery': gallery,
     })
 
 
 @login_required
-def new_gallery_image(request, catalog_id):
-    specie = Species.objects.filter(id=catalog_id).first()
-    form = GalleryImageForm(instance=None)
-    form.fields["scientific_name"].initial = specie
-    if request.method == "POST":
-        form = GalleryImageForm(request.POST, request.FILES)
-        if form.is_valid():
-            form.scientific_name = specie
-            gallery = form.save(commit=False)
-            gallery.upload_by = request.user
-            gallery.save()
-            logging.debug("Added new image gallery {}".format(gallery))
-            return redirect('modify_gallery', catalog_id=catalog_id)
-        else:
-            logging.warning("Form is not valid: {}".format(form.errors))
-    return render(request, 'digitalization/gallery_image.html', {
-        'form': form,
-        'specie': specie,
-        'gallery': None,
-    })
-
-
-@login_required
-def delete_gallery_image(request, gallery_id):
-    image = GalleryImage.objects.filter(id=gallery_id).first()
-    catalog_id = image.scientific_name.id
+def delete_gallery_image(request, gallery_id: int) -> HttpResponse:
+    image = GalleryImage.objects.get(pk=gallery_id)
+    species = image.scientific_name.id
     logging.info("Deleting {} image".format(image.image.name))
     try:
         image.image.delete()
@@ -738,7 +713,7 @@ def delete_gallery_image(request, gallery_id):
         logging.error(e, exc_info=True)
     logging.info("Deleting {} model".format(image))
     image.delete()
-    return redirect('modify_gallery', catalog_id=catalog_id)
+    return redirect('species_gallery', species_id=species)
 
 
 @login_required
@@ -778,6 +753,29 @@ def upload_raw_image(request):
     else:
         return HttpResponseBadRequest("Wrong Http Method")
     return HttpResponse(json.dumps(data), content_type="application/json")
+
+
+@login_required
+def upload_temporal_image(request) -> HttpResponse:
+    try:
+        temporal_image = request.FILES["image"]
+        image_content = ContentFile(temporal_image.read())
+        private_storage = PrivateMediaStorage()
+        saved_temporal = private_storage.save(f"temporal/{temporal_image.name}", image_content)
+        return JsonResponse({
+            "temporal_image": saved_temporal,
+            "image_url": private_storage.url(saved_temporal),
+        })
+    except Exception as e:
+        logging.error(f"Error uploading temporal file: {e}", exc_info=True)
+        return HttpResponseServerError()
+
+
+@require_GET
+@login_required
+def extract_taken_by(request: HttpRequest, image_file: str) -> HttpResponse:
+    task_id = get_taken_by.delay(f"temporal/{image_file}")
+    return HttpResponse(task_id)
 
 
 @require_GET
@@ -902,30 +900,8 @@ def update_voucher(request, voucher_id):
                 voucher.point_public = GEOSGeometry(
                     'POINT(' + str(decimal_longitude_public) + ' ' + str(decimal_latitude_public) + ')', srid=4326)
                 voucher.save()
-                if voucher.image:
-                    filename = ""  # generate_etiquette(id)
-                    voucher_image = Image.open(filename)
-                    path = Path(filename)
-                    with path.open(mode='rb') as f:
-                        voucher.image_public = File(f, name=filename)
-                        voucher.save()
-                    filename_60 = filename.replace(".jpg", "_resized_60.jpg")
-                    voucher_image.save(filename_60, quality=50)
-                    path = Path(filename_60)
-                    with path.open(mode='rb') as f:
-                        voucher.image_public_resized_60 = File(f, name=filename_60)
-                        voucher.save()
-                    filename_10 = filename.replace(".jpg", "_resized_10.jpg")
-                    voucher_image.save(filename_10, quality=20)
-                    path = Path(filename_10)
-                    with path.open(mode='rb') as f:
-                        voucher.image_public_resized_10 = File(f, name=filename_10)
-                        voucher.save()
-                    os.remove(filename.replace("_public.jpg", ".jpg"))
-                    os.remove(filename)
-                    os.remove(filename_60)
-                    os.remove(filename_10)
-
+                if voucher.image and voucher.biodata_code.voucher_state == 7:
+                    etiquette_picture.delay(int(voucher.pk))
             return redirect('control_vouchers')
     else:
         form = VoucherImportedForm(instance=voucher)

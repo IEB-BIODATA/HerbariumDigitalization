@@ -1,9 +1,10 @@
 {% load static %}
+{% load i18n %}
 <!DOCTYPE html>
 <html lang="es">
     <head>
         <meta charset="utf-8">
-        <title>Códigos QR</title>
+        <title>{% translate "QR Codes" %}</title>
         <style type="text/css">
             @page {
                 size: {{ pagesize }};
@@ -38,22 +39,22 @@
     </head>
     <body>
         <div id="headerContent">
-            {%block page_head%}
-                Lista de QRs - Sesión: {{ page_id }} - Fecha: {{ page_date }}
-            {%endblock%}
+            {% block page_head %}
+                {% translate "QR List" %} - {% blocktranslate with pageId=page_id %}Session {{ pageId }}{% endblocktranslate %} - {% blocktranslate with date=page_date %}Date: {{ date }}{% endblocktranslate %}
+            {% endblock %}
         </div>
         <table>
             {% for code, print_code in codes_list %}
                 {% if forloop.first %}<tr>{% endif %}
-                <td style="padding-top: 10px;"><img src="tmp/qr/{{code}}.jpg" width="80px"/><br style="line-height: 0%;"/><p style="{% if code|length >= 17 %} padding-left: -6px {% else %} padding-left: 0px {% endif %};padding-top: -10px;font-size:9px;">{{print_code}}</p></td>
+                <td style="padding-top: 10px;"><img src="tmp/qr/{{code}}.jpg" width="80px"/><br style="line-height: 0%;"/><p style="{% if code|length >= 17 %} padding-left: -6px {% else %} padding-left: 0px {% endif %};padding-top: -10px;font-size:9px;">{{ print_code }}</p></td>
                 {% if forloop.counter|divisibleby:col %}</tr>{% endif %}
             {% endfor %}
         </table>
         <div id="footerContent">
-            {%block page_foot%}
+            {% block page_foot %}
                 Page <pdf:pagenumber>
-            {%endblock%}
-            Fecha Documento: {{ page_date }}
+            {% endblock %}
+            {% blocktranslate with date=page_date %}Document date: {{ date }}{% endblocktranslate %}
         </div>
         <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js" integrity="sha384-geWF76RCwLtnZ8qwWowPQNguL3RmwHVBC9FhGdlKrxdiJJigb/j/68SIy3Te4Bkz" crossorigin="anonymous"></script>
     </body>

@@ -1,0 +1,222 @@
+# SOME DESCRIPTIVE TITLE.
+# Copyright (C) YEAR THE PACKAGE'S COPYRIGHT HOLDER
+# This file is distributed under the same license as the PACKAGE package.
+# FIRST AUTHOR <EMAIL@ADDRESS>, YEAR.
+#
+#, fuzzy
+msgid ""
+msgstr ""
+"Project-Id-Version: PACKAGE VERSION\n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2023-12-12 09:41-0300\n"
+"PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
+"Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
+"Language-Team: LANGUAGE <LL@li.org>\n"
+"Language: \n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=2; plural=(n != 1);\n"
+
+#: apps/catalog/forms.py:17 apps/catalog/forms.py:36 apps/catalog/forms.py:55
+#: apps/catalog/forms.py:74 apps/catalog/forms.py:93 apps/catalog/forms.py:338
+#: apps/catalog/views.py:240 apps/catalog/views.py:287
+#: apps/catalog/views.py:333 apps/catalog/views.py:380
+#: apps/catalog/views.py:427 apps/catalog/views.py:755
+msgid "Name"
+msgstr "Name"
+
+#: apps/catalog/forms.py:18 apps/catalog/views.py:241
+msgid "Kingdom"
+msgstr "Kingdom"
+
+#: apps/catalog/forms.py:37 apps/catalog/views.py:238 apps/catalog/views.py:265
+#: apps/catalog/views.py:273 apps/catalog/views.py:288
+msgid "Division"
+msgstr "Division"
+
+#: apps/catalog/forms.py:56 apps/catalog/views.py:285 apps/catalog/views.py:312
+#: apps/catalog/views.py:320 apps/catalog/views.py:335
+msgid "Class"
+msgstr "Class"
+
+#: apps/catalog/forms.py:75 apps/catalog/views.py:332 apps/catalog/views.py:359
+#: apps/catalog/views.py:367 apps/catalog/views.py:382
+msgid "Order"
+msgstr "Order"
+
+#: apps/catalog/forms.py:94 apps/catalog/views.py:379 apps/catalog/views.py:406
+#: apps/catalog/views.py:414 apps/catalog/views.py:429
+msgid "Family"
+msgstr "Family"
+
+#: apps/catalog/forms.py:114
+msgid "Type"
+msgstr "Type"
+
+#: apps/catalog/forms.py:115
+msgid "Modelo"
+msgstr "Modelo"
+
+#: apps/catalog/forms.py:116
+msgid "Description"
+msgstr "Description"
+
+#: apps/catalog/forms.py:117
+msgid "Note"
+msgstr "Note"
+
+#: apps/catalog/forms.py:147 apps/catalog/forms.py:303
+#: apps/catalog/views.py:426 apps/catalog/views.py:453
+#: apps/catalog/views.py:461
+msgid "Genus"
+msgstr "Genus"
+
+#: apps/catalog/forms.py:148 apps/catalog/forms.py:304
+msgid "Specific Epithet"
+msgstr "Specific Epithet"
+
+#: apps/catalog/forms.py:149 apps/catalog/forms.py:305
+msgid "Author"
+msgstr "Author"
+
+#: apps/catalog/forms.py:150 apps/catalog/forms.py:306
+msgid "Subspecies"
+msgstr "Subspecies"
+
+#: apps/catalog/forms.py:151 apps/catalog/forms.py:307
+msgid "Subspecies Author"
+msgstr "Subspecies Author"
+
+#: apps/catalog/forms.py:152 apps/catalog/forms.py:308
+msgid "Variety"
+msgstr "Variety"
+
+#: apps/catalog/forms.py:153 apps/catalog/forms.py:309
+msgid "Variety Author"
+msgstr "Variety Author"
+
+#: apps/catalog/forms.py:154 apps/catalog/forms.py:310
+msgid "Form"
+msgstr "Form"
+
+#: apps/catalog/forms.py:155 apps/catalog/forms.py:311
+msgid "Form Author"
+msgstr "Form Author"
+
+#: apps/catalog/forms.py:156
+msgid "Habit"
+msgstr "Habit"
+
+#: apps/catalog/forms.py:157
+msgid "Life form"
+msgstr "Life form"
+
+#: apps/catalog/forms.py:158
+msgid "Life Cycle"
+msgstr "Life Cycle"
+
+#: apps/catalog/forms.py:159
+msgid "Origin"
+msgstr "Origin"
+
+#: apps/catalog/forms.py:160
+msgid "In Argentina"
+msgstr "In Argentina"
+
+#: apps/catalog/forms.py:161
+msgid "In Bolivia"
+msgstr "In Bolivia"
+
+#: apps/catalog/forms.py:162
+msgid "In Peru"
+msgstr "In Peru"
+
+#: apps/catalog/forms.py:163
+msgid "Maximum Height"
+msgstr "Maximum Height"
+
+#: apps/catalog/forms.py:164
+msgid "Minimum Height"
+msgstr "Minimum Height"
+
+#: apps/catalog/forms.py:165
+msgid "Notes"
+msgstr "Notes"
+
+#: apps/catalog/forms.py:166
+msgid "Publication"
+msgstr "Publication"
+
+#: apps/catalog/forms.py:167
+msgid "Volume"
+msgstr "Volume"
+
+#: apps/catalog/forms.py:168
+msgid "Pages"
+msgstr "Pages"
+
+#: apps/catalog/forms.py:169
+msgid "Type ID"
+msgstr "Type ID"
+
+#: apps/catalog/forms.py:170
+msgid "Common Names"
+msgstr "Common Names"
+
+#: apps/catalog/forms.py:171 apps/catalog/views.py:646
+msgid "Synonyms"
+msgstr "Synonyms"
+
+#: apps/catalog/forms.py:172
+msgid "Region Distribution"
+msgstr "Region Distribution"
+
+#: apps/catalog/forms.py:173
+msgid "Conservation State"
+msgstr "Conservation State"
+
+#: apps/catalog/forms.py:174
+msgid "Determined?"
+msgstr "Determined?"
+
+#: apps/catalog/forms.py:175
+msgid "MMA ID"
+msgstr "MMA ID"
+
+#: apps/catalog/forms.py:300
+msgid "Scientific Name"
+msgstr "Scientific Name"
+
+#: apps/catalog/forms.py:301 apps/catalog/views.py:647
+msgid "Complete Scientific Name"
+msgstr "Complete Scientific Name"
+
+#: apps/catalog/forms.py:302
+msgid "Database Scientific Name"
+msgstr "Database Scientific Name"
+
+#: apps/catalog/models.py:194
+msgid "Cycles"
+msgstr "Cycles"
+
+#: apps/catalog/models.py:271
+msgid "Habits"
+msgstr "Habits"
+
+#: apps/catalog/utils.py:17 apps/catalog/utils.py:21
+msgid " or "
+msgstr " or "
+
+#: apps/catalog/views.py:649 apps/catalog/views.py:757
+msgid "Species"
+msgstr "Species"
+
+#: apps/catalog/views.py:673 apps/catalog/views.py:681
+msgid "Synonymy"
+msgstr "Synonymy"
+
+#: apps/catalog/views.py:754 apps/catalog/views.py:781
+#: apps/catalog/views.py:789
+msgid "Common Name"
+msgstr "Common Name"

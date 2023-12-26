@@ -1,5 +1,7 @@
 {% extends "base.html" %}
 {% load static %}
+{% load i18n %}
+{% get_current_language as LANGUAGE_CODE %}
 {% block css %}
     <style>
         select {
@@ -10,11 +12,12 @@
 {% block javascript %}
     <script type="text/javascript">
         const csrfToken = '{% csrf_token %}';
+        let language = getTableLanguage("{{ LANGUAGE_CODE }}");
         $(document).ready(function() {
             $('#PagesTable').DataTable({
                 serverSide: true,
                 processing: true,
-                language: languageTable.spanish,
+                language: language,
                 ajax: {
                     url: '{% url "session_table" %}',
                     type: 'GET',
@@ -36,7 +39,7 @@
                         render: (data, type) => {
                             let date = new Date(data);
                             if (type === 'display' || type === 'search'){
-                                return dateFormat(date)
+                                return dateFormat(date, "{{ LANGUAGE_CODE }}");
                             } else if (type === 'sort')
                                 return date.toISOString();
                             else
@@ -65,18 +68,20 @@
                         orderable: false,
                         render: (data, type, row) => {
                             if (data === null){
+                                let uploadMsg = "{% translate 'Upload' %}"
                                 return `
                                 <form id="fileForm${row.id}" action="" method="post" enctype="multipart/form-data">
                                     ${csrfToken}
                                     <input type="file" id="file${row.id}" style="display: none;" onchange="loadFile(${row.id}); return false;" accept=".dcp"/>
-                                    <input type="button" value="Subir..." onclick="document.getElementById('file${row.id}').click();" />
+                                    <input type="button" value="${uploadMsg}..." onclick="document.getElementById('file${row.id}').click();" />
                                     <input id="generated_page_id" name="generated_page_id" type="hidden" value="${row.id}">
                                 </form>
                                 `;
                             } else {
+                                const downloadMsg = "{% translate 'Download' %}";
                                 return `
                                 <div id='file_link_${row.id}'>
-                                    <a href="${data}">Descargar</a>
+                                    <a href="${data}">${downloadMsg}</a>
                                 </div>
                                 `;
                             }
@@ -88,21 +93,24 @@
                         orderable: false,
                         render: (data, type, row) => {
                             let color_profile;
-                            if (row.terminated){
-                                color_profile = "<b>Terminada</b>";
+                            if (row.finished){
+                                const finishedMsg = "{% translate 'Finished' %}"
+                                color_profile = `<b>${finishedMsg}</b>`;
                             } else {
-                                let digitalize_class;
-                                let terminate_class;
+                                const digitizeMsg = "{% translate 'Digitize' %}"
+                                const finishMsg = "{% translate 'Finish' %}"
+                                let digitizeClass;
+                                let finishClass;
                                 if (data === null){
-                                    digitalize_class = `class="btn btn-secondary"  style="pointer-events: none;cursor: default;"`
-                                    terminate_class = digitalize_class;
+                                    digitizeClass = `class="btn btn-secondary"  style="pointer-events: none;cursor: default;"`
+                                    finishClass = digitizeClass;
                                 } else {
-                                    digitalize_class = `class="btn btn-primary" onclick="getVouchers(${row.id}, -1, '${row.name}'); return false;"`;
-                                    terminate_class = `class="btn btn-danger" onclick="terminateSession(${row.id}); return false;"`;
+                                    digitizeClass = `class="btn btn-primary" onclick="getVouchers(${row.id}, -1, '${row.name}'); return false;"`;
+                                    finishClass = `class="btn btn-danger" onclick="terminateSession(${row.id}); return false;"`;
                                 }
                                 color_profile = `
-                                <a id="digitalized_link_${row.id}" href="#" ${digitalize_class}>Digitalizar</a>
-                                <a id="terminated_link_${row.id}" href="#" ${terminate_class}>Terminar</a>
+                                <a id="digitalized_link_${row.id}" href="#" ${digitizeClass}>${digitizeMsg}</a>
+                                <a id="finished_link_${row.id}" href="#" ${finishClass}>${finishMsg}</a>
                                 `;
                             }
                             return `
@@ -120,7 +128,10 @@
             $("#overlay").fadeIn(300);
             const voucherCard = $('#VouchersCard')
             voucherCard.hide();
-            $('#pageName')[0].innerHTML = ` <b>Sesión ${pageId}:</b> <i>${pageName}</i>`;
+            const sessionPage = "{% blocktranslate with pageId=0 %}Session {{ pageId }}{% endblocktranslate %}".replace(
+                "0", pageId
+            );
+            $('#pageName')[0].innerHTML = ` <b>${sessionPage}:</b> <i>${pageName}</i>`;
             url = "{% url 'get_vouchers_to_validate' page_id=0 voucher_state=-1 %}"
                 .replace("0", pageId)
                 .replace("-1", voucherState);
@@ -131,7 +142,7 @@
             vouchersTable.DataTable({
                 serverSide: true,
                 processing: true,
-                language: languageTable.spanish,
+                language: language,
                 ajax: {
                     url: url,
                     type: 'GET',
@@ -151,13 +162,18 @@
                                     selected = 'selected="selected"';
                                 values.push(`value="${i}" ${selected}`);
                             }
+                            const noState = "{% translate 'No State' context 'spaced' %}";
+                            const found = "{% translate 'Found' context 'spaced' %}";
+                            const notFound = "{% translate 'Not Found' context 'spaced' %}";
+                            const borrowed = "{% translate 'Borrowed' context 'spaced' %}";
+                            const inCuratorship = "{% translate 'In Curatorship' context 'spaced' %}";
                             return `
                             <select id="voucherClassFound${data.id}" class="${getStateClass(data.voucher_state)} custom-select custom-select-sm form-control form-control-sm" onchange="setState(${data.id}, this.value);">
-                                <option ${values[0]}>&nbsp;Sin Estado&nbsp;&nbsp;&nbsp;&nbsp;</option>
-                                <option ${values[1]}>&nbsp;Encontrado&nbsp;&nbsp;&nbsp;&nbsp;</option>
-                                <option ${values[2]}>&nbsp;No Encontrado&nbsp;</option>
-                                <option ${values[3]}>&nbsp;En Préstamo&nbsp;&nbsp;&nbsp;</option>
-                                <option ${values[6]}>&nbsp;En curatoria&nbsp;&nbsp;</option>
+                                <option ${values[0]}>${noState}</option>
+                                <option ${values[1]}>${found}</option>
+                                <option ${values[2]}>${notFound}</option>
+                                <option ${values[3]}>${borrowed}</option>
+                                <option ${values[6]}>${inCuratorship}</option>
                             </select>
                             `;
                         },
@@ -187,19 +203,31 @@
                     },
                 ],
             });
+            const filterState = "{% translate 'Filter State' %}";
+            const all = "{% translate 'All' %}";
+            const found = "{% translate 'Found' %}";
+            const noState = "{% translate 'No State' %}";
+            const notFound = "{% translate 'Not Found' %}";
+            const borrowed = "{% translate 'Borrowed' %}";
+            const lost = "{% translate 'Lost' %}";
+            const foundAndBorrowed = "{% translate 'Found And Borrowed' %}";
+            const inCuratorship = "{% translate 'In Curatorship' %}";
+            const digitalized = "{% translate 'Digitalized' %}";
+            const pending = "{% translate 'Pending' %}";
             $('#VouchersTable_length').append(`
-            <label class="p-3">Filtrar Estado
+            <label class="p-3">
+                ${filterState}
                 <select id="voucherState" name="VouchersTable_length" aria-controls="VouchersTable" class="custom-select custom-select-sm form-control form-control-sm" onchange="getVouchers(${pageId}, this.value);">
-                    <option value="-1">Todos</option>
-                    <option value="1">Encontrado</option>
-                    <option value="0">Sin Estado</option>
-                    <option value="2">No Encontrado</option>
-                    <option value="3">En Préstamo</option>
-                    <option value="4">Extraviado</option>
-                    <option value="5">En Préstado Encontrado</option>
-                    <option value="6">En curatoria</option>
-                    <option value="7">Digitalizado</option>
-                    <option value="8">Pendiente</option>
+                    <option value="-1">${all}</option>
+                    <option value="1">${found}</option>
+                    <option value="0">${noState}</option>
+                    <option value="2">${notFound}</option>
+                    <option value="3">${borrowed}</option>
+                    <option value="4">${lost}</option>
+                    <option value="5">${foundAndBorrowed}</option>
+                    <option value="6">${inCuratorship}</option>
+                    <option value="7">${digitalized}</option>
+                    <option value="8">${pending}</option>
                 </select>
             </label>
             `);
@@ -264,7 +292,7 @@
 
         function terminateSession(pageId){
             $("#overlay").fadeIn(300);
-            let confirmation = confirm("¿Está seguro que desea terminar la sesión? (no podrá continuar marcando estos registros).");
+            let confirmation = confirm("{% translate 'Are you sure? Session' %}");
             if (confirmation) {
                 $.ajax({
                     url: '{% url "terminate_session" %}',
@@ -292,26 +320,27 @@
     </script>
 {% endblock %}
 {% block content %}
-    <h1>Digitalización de Especímenes</h1>
+    <h1>{% translate "Specimens Digitalization" %}</h1>
     <!-- DataTables Example -->
     <div class="card mb-3">
         <div class="card-header">
             <i class="fas fa-table"></i>
-            Tabla de Páginas</div>
+            {% translate "Page Table" %}
+        </div>
         <div class="card-body">
             <div class="table-responsive">
                 <table class="table table-bordered" id="PagesTable" width="100%" cellspacing="0">
                     <thead>
                     <tr>
-                        <th>Sesión</th>
-                        <th>Creado por</th>
-                        <th>Fecha creación</th>
-                        <th>Sin Estado</th>
-                        <th>Encontrados</th>
-                        <th>No Encontrados</th>
-                        <th>Digitalizados</th>
-                        <th>Perfil de Color</th>
-                        <th>Link</th>
+                        <th>{% translate "Session" %}</th>
+                        <th>{% translate "Created by" %}</th>
+                        <th>{% translate "Created at" %}</th>
+                        <th>{% translate "No State" %}</th>
+                        <th>{% translate "Found" %}</th>
+                        <th>{% translate "Not Found" %}</th>
+                        <th>{% translate "Digitalized" %}</th>
+                        <th>{% translate "Color Profile" %}</th>
+                        <th>{% translate "URL" %}</th>
                     </tr>
                     </thead>
                     <tbody>
@@ -330,12 +359,12 @@
                 <table class="table table-bordered" id="VouchersTable" width="100%" cellspacing="0">
                     <thead>
                     <tr>
-                        <th>Estado</th>
-                        <th>ID Herbario</th>
-                        <th>Nombre Especie</th>
-                        <th>Colectado por</th>
-                        <th>Número de Colecta</th>
-                        <th>Ubicación</th>
+                        <th>{% translate "State" %}</th>
+                        <th>{% translate "Herbarium ID" %}</th>
+                        <th>{% translate "Species Name" %}</th>
+                        <th>{% translate "Collected by" %}</th>
+                        <th>{% translate "Collection Number" %}</th>
+                        <th>{% translate "Locality" %}</th>
                     </tr>
                     </thead>
                     <tbody>
@@ -344,6 +373,6 @@
                 </table>
             </div>
         </div>
-        <div class="card-footer small text-muted">Updated yesterday at 11:59 PM</div>
+        <div class="card-footer small text-muted">{% blocktranslate with time='11:59 PM' %}Updated yesterday at {{ time }}{% endblocktranslate %}</div>
     </div>
 {% endblock %}

@@ -26,22 +26,64 @@ class Migration(migrations.Migration):
         migrations.RunSQL(
             """
             CREATE MATERIALIZED VIEW finder_view AS
-            SELECT id, 'species' AS type, scientific_name AS name, determined FROM catalog_species
+            SELECT id,
+                   'species'       AS type,
+                   scientific_name AS name,
+                   scientific_name AS name_es,
+                   scientific_name AS name_en,
+                   determined
+            FROM catalog_species
             UNION ALL
-            SELECT id, 'synonymy' AS type, scientific_name AS name, FALSE AS determined FROM catalog_synonymy
+            SELECT id,
+                   'synonymy'      AS type,
+                   scientific_name AS name,
+                   scientific_name AS name_es,
+                   scientific_name AS name_en,
+                   FALSE           AS determined
+            FROM catalog_synonymy
             UNION ALL
-            SELECT id, 'family' AS type, name, FALSE AS determined FROM catalog_family
+            SELECT id,
+                   'family'        AS type,
+                   name            AS name,
+                   name            AS name_es,
+                   name            AS name_en,
+                   FALSE           AS determined
+            FROM catalog_family
             UNION ALL
-            SELECT id, 'genus' AS type, name, FALSE AS determined FROM catalog_genus
+            SELECT id,
+                   'genus'         AS type,
+                   name            AS name,
+                   name            AS name_es,
+                   name            AS name_en,
+                   FALSE           AS determined
+            FROM catalog_genus
             UNION ALL
-            SELECT id, 'common_name' AS type, name, FALSE AS determined FROM catalog_commonname
+            SELECT id,
+                   'common_name'   AS type,
+                   name,
+                   name_es,
+                   name_en,
+                   FALSE           AS determined
+            FROM catalog_commonname
             ORDER BY type, name;
             """
         ),
         migrations.RunSQL(
             """
-            CREATE INDEX finder_view_trgm_id
-                ON finder_view USING gin(name gin_trgm_ops);
+            CREATE UNIQUE INDEX finder_view_id
+                ON finder_view (id, type);
+            """
+        ),
+        migrations.RunSQL(
+            """
+            CREATE INDEX finder_view_trgm_es_id
+                ON finder_view USING gin(name_es gin_trgm_ops);
+            """
+        ),
+        migrations.RunSQL(
+            """
+            CREATE INDEX finder_view_trgm_en_id
+                ON finder_view USING gin(name_en gin_trgm_ops);
             """
         ),
     ]

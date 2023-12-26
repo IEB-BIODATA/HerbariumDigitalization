@@ -1,9 +1,12 @@
 {% extends "base.html" %}
 {% load static %}
+{% load i18n %}
+{% get_current_language as LANGUAGE_CODE %}
 {% load roles %}
 {% block javascript %}
     <script type="text/javascript">
         const tempSearchBar = document.getElementById('temp-search-bar');
+        let language = getTableLanguage("{{ LANGUAGE_CODE }}");
 
         tempSearchBar.addEventListener('input', function () {
             if (tempSearchBar.value.length > 3) {
@@ -20,13 +23,13 @@
             $('#CatalogTable').DataTable({
                 serverSide: true,
                 processing: true,
-                language: languageTable.spanish,
+                language: language,
                 ajax: {
                     url: "{% url 'gallery_table' %}",
                     type: 'GET',
                     dataSrc: 'data',
                 },
-                order: [[5, 'desc']],
+                order: [[6, 'desc']],
                 columnDefs: [
                     {
                         targets: 0,
@@ -51,21 +54,24 @@
                             if (type === 'search'){
                                 return data;
                             } else {
-                                const to_modify_gallery = "{% url 'modify_gallery' species_id=0 %}".replace(
+                                const urlSpecies = "{% url 'species_gallery' species_id=0 %}".replace(
                                     "0", row["id"]
                                 );
-                                console.log(to_modify_gallery);
-                                return `<a href="${to_modify_gallery}">${data}</a>`;
+                                return `<a href="${urlSpecies}">${data}</a>`;
                             }
                         }
                     },
                     {
                         targets: 5,
+                        data: 'gallery_images',
+                    },
+                    {
+                        targets: 6,
                         data: 'updated_at',
                         render: (data, type) => {
                             let date = new Date(data);
                             if (type === 'display' || type === 'search'){
-                                return dateFormat(date);
+                                return dateFormat(date, "{{ LANGUAGE_CODE }}");
                             } else if (type === 'sort'){
                                 return date.toISOString();
                             } else {
@@ -79,13 +85,13 @@
     </script>
 {% endblock %}
 {% block content %}
-    <h1>Galería de Fotografías</h1>
+    <h1>{% translate "Photo Gallery" %}</h1>
     <div class="card mb-3">
         <div class="card-body">
             <div class="row" id="TemporalSearch">
                 <div class="col-sm-12 col-md-6"></div>
                 <div class="col-sm-12 col-md-6" style="text-align: right;">
-                    <label>Buscar:
+                    <label>{% translate "Search" %}:
                         <input id="temp-search-bar" type="search" class="form-control form-control-sm" style="display: inline-block;box-sizing: border-box;width: auto;">
                     </label>
                 </div>
@@ -93,14 +99,15 @@
             <div class="table-responsive">
                 <table class="table table-bordered" id="CatalogTable" style="width: 100%" cellspacing="0">
                     <thead>
-                    <tr>
-                        <th>División</th>
-                        <th>Clase</th>
-                        <th>order</th>
-                        <th>Familia</th>
-                        <th>Nombre Científico Completo</th>
-                        <th>Última Actualización</th>
-                    </tr>
+                        <tr>
+                            <th>{% translate "Division" %}</th>
+                            <th>{% translate "Class" %}</th>
+                            <th>{% translate "Order" %}</th>
+                            <th>{% translate "Family" %}</th>
+                            <th>{% translate "Complete Scientific Name" %}</th>
+                            <th>{% translate "Gallery Images" %}</th>
+                            <th>{% translate "Updated at" %}</th>
+                        </tr>
                     </thead>
                     <tbody>
                     <!-- To be populated -->
@@ -109,7 +116,7 @@
                                 <div class="d-flex justify-content-center">
                                     <button type="button" class="btn btn-info" onclick="loadTable()">
                                         <i class="fas fa-fw fa-sync"></i>
-                                        Cargar tabla
+                                        {% translate "Load table" %}
                                     </button>
                                 </div>
                             </td>

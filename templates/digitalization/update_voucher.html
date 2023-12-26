@@ -1,181 +1,168 @@
 {% extends "base.html" %}
 {% load static %}
+{% load i18n %}
+{% load leaflet_tags %}
 {% block css %}
-    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.3/dist/leaflet.css" integrity="sha256-kLaT2GOSpHechhsozzB+flnD+zUyjE2LlfWPgU04xyI=" crossorigin="" />
+    {% leaflet_css %}
+    <style>
+        .leaflet-container {
+            width:  auto;
+            height: 400px;
+        }
+    </style>
 {% endblock %}
 {% block javascript %}
-    <script src="https://unpkg.com/leaflet@1.9.3/dist/leaflet.js" integrity="sha256-WBkoXOwTeyKclOHuWtc+i2uENFpDZ9YPdf5Hf+D7ewM=" crossorigin=""></script>
-    <script>
-        // Creating map options
-        var mapOptions = {
-            center: [{{form.instance.decimal_latitude|stringformat:".6f"}}, {{form.instance.decimal_longitude|stringformat:".6f"}}],
-            zoom: 15
-        }
+    {% leaflet_js %}
+    <script type="text/javascript">
+        function showCoordinates(map, options) {
+            let center = {
+                latitude: {{ form.instance.decimal_latitude|stringformat:".6f" }},
+                longitude: {{ form.instance.decimal_longitude|stringformat:".6f" }},
+            }
+            map.setView([center.latitude, center.longitude], 15, options);
+            let lat, lng;
+            map.addEventListener('mousemove', function(event) {
+                lat = event.latlng.lat;
+                lng = event.latlng.lng;
+                $('#lat').text(lat);
+                $('#lng').text(lng);
+            });
+            map.addEventListener('click', function(event) {
+                lat = event.latlng.lat;
+                lng = event.latlng.lng;
+                $('#id_decimal_latitude').val(lat);
+                $('#id_decimal_longitude').val(lng);
+            });
+            let iconOptions = {
+                iconUrl: "{% static 'images/dot.png' %}",
+                iconSize: [15, 15]
+            }
+            // Creating a custom icon
 
-        // Creating a map object
-        var map = new L.map('map', mapOptions);
+            const customIcon = L.icon(iconOptions);
 
-        var lat, lng;
-
-        map.addEventListener('mousemove', function(ev) {
-            lat = ev.latlng.lat;
-            lng = ev.latlng.lng;
-            $('#lat').text(lat);
-            $('#lng').text(lng);
-        });
-
-
-        map.addEventListener('click', function(ev) {
-            lat = ev.latlng.lat;
-            lng = ev.latlng.lng;
-            $('#id_decimal_latitude').val(lat);
-            $('#id_decimal_longitude').val(lng);
-        });
-        // Creating a Layer object
-        var layer = new L.TileLayer('http://{s}.google.com/vt/lyrs=s,h&x={x}&y={y}&z={z}',{
-            maxZoom: 20,
-            subdomains:['mt0','mt1','mt2','mt3']
-        });
-
-        // Adding layer to the map
-        map.addLayer(layer);
-
-        // Icon options
-        var iconOptions = {
-            iconUrl: "{% static 'images/dot.png' %}",
-            iconSize: [15, 15]
-        }
-        // Creating a custom icon
-        var customIcon = L.icon(iconOptions);
-
-        // Creating a Marker
-        var markerOptions = {
-            clickable: false,
-            draggable: false,
-            icon: customIcon
-        }
-        var locations = [
-            [{{form.instance.decimal_latitude|stringformat:".6f"}}, {{form.instance.decimal_longitude|stringformat:".6f"}}]
-        ];
-
-        for (var i = 0; i < locations.length; i++) {
-            marker = new L.marker([locations[i][0], locations[i][1]],markerOptions)
-                .addTo(map);
+            // Creating a Marker
+            const markerOptions = {
+                clickable: false,
+                draggable: false,
+                icon: customIcon
+            };
+            new L.marker([center.latitude, center.longitude], markerOptions).addTo(map);
         }
     </script>
 {% endblock %}
 {% block content %}
-    <h1>Digitalización: Voucher</h1>
+    <h1>{% translate "Digitalization: Voucher" %}</h1>
     <!-- DataTables Example -->
     <div class="card mb-3">
         <div class="card-header">
             <i class="fas fa-table"></i>
-            Actualizar Voucher
+            {% translate "Update Voucher" %}
         </div>
         <div class="card-body">
             <div class="table-responsive">
-                <form action="/digitalization/update_voucher/{{id}}/" method="post" class="form-horizontal">
+                <form action="{% url 'update_voucher' voucher_id=id %}" method="post" class="form-horizontal">
                     {% csrf_token %}
                     <div class="form-group row">
-                        <label class="col-sm-2 col-form-label">Número de Catálogo</label>
+                        <label class="col-sm-2 col-form-label">{% translate "Catalogue Number" %}</label>
                         <div class="col-sm-10">
                             {{ form.catalog_number }}
                         </div>
                     </div>
                     <div class="form-group row">
-                        <label class="col-sm-2 col-form-label">ID Base Dato herbario</label>
+                        <label class="col-sm-2 col-form-label">{% translate "Herbarium Database ID" %}</label>
                         <div class="col-sm-10">
                             {{ form.other_catalog_numbers }}
                         </div>
                     </div>
                     <div class="form-group row">
-                        <label class="col-sm-2 col-form-label">Número de Colecta</label>
+                        <label class="col-sm-2 col-form-label">{% translate "Collection Number" %}</label>
                         <div class="col-sm-10">
                             {{ form.record_number }}
                         </div>
                     </div>
                     <div class="form-group row">
-                        <label class="col-sm-2 col-form-label">Colectado por</label>
+                        <label class="col-sm-2 col-form-label">{% translate "Collected by" %}</label>
                         <div class="col-sm-10">
                             {{ form.recorded_by }}
                         </div>
                     </div>
                     <div class="form-group row">
-                        <label class="col-sm-2 col-form-label">Especie</label>
+                        <label class="col-sm-2 col-form-label">{% translate "Species" %}</label>
                         <div class="col-sm-10">
                             {{ form.scientific_name }}
                         </div>
                     </div>
                     <div class="form-group row">
-                        <label class="col-sm-2 col-form-label">Ubicación</label>
+                        <label class="col-sm-2 col-form-label">{% translate "Locality" %}</label>
                         <div class="col-sm-10">
                             {{ form.locality }}
                         </div>
                     </div>
                     <div class="form-group row">
-                        <label class="col-sm-2 col-form-label">Altura</label>
+                        <label class="col-sm-2 col-form-label">{% translate "Altitude" %}</label>
                         <div class="col-sm-10">
                             {{ form.verbatim_elevation }}
                         </div>
                     </div>
                     <div class="form-group row">
-                        <label class="col-sm-2 col-form-label">Fecha de Colecta</label>
+                        <label class="col-sm-2 col-form-label">{% translate "Collection Date" %}</label>
                         <div class="col-sm-10">
                             {{ form.georeferenced_date }}
                         </div>
                     </div>
                     <div class="form-group row">
-                        <label class="col-sm-2 col-form-label">Determinado por</label>
+                        <label class="col-sm-2 col-form-label">{% translate "Identified by" %}</label>
                         <div class="col-sm-10">
                             {{ form.identified_by }}
                         </div>
                     </div>
                     <div class="form-group row">
-                        <label class="col-sm-2 col-form-label">Fecha de Determinación</label>
+                        <label class="col-sm-2 col-form-label">{% translate "Identified Date" %}</label>
                         <div class="col-sm-10">
                             {{ form.identified_date }}
                         </div>
                     </div>
                     <div class="form-group row">
-                        <label class="col-sm-2 col-form-label">Observaciones</label>
+                        <label class="col-sm-2 col-form-label">{% translate "Observations" %}</label>
                         <div class="col-sm-10">
                             {{ form.organism_remarks }}
                         </div>
                     </div>
                     <div class="form-group row">
-                        <label class="col-sm-2 col-form-label">Prioridad</label>
+                        <label class="col-sm-2 col-form-label">{% translate "Priority" %}</label>
                         <div class="col-sm-10">
                             {{ form.priority }}
                         </div>
                     </div>
                     {% if form.instance.image %}
                         <div class="form-group row">
-                            <label class="col-sm-2 form-check-label">Imagen</label>
+                            <label class="col-sm-2 form-check-label">{% translate "Image" %}</label>
                             <div class="col-sm-10">
                                 <a href="{{ form.instance.image.url }}" target="_blank"><img src="{{ form.instance.image_resized_60.url }}" width="400px"/></a>
                             </div>
                         </div>
                     {% endif %}
                     <div class="form-group row">
-                        <label class="col-sm-2 col-form-label">Latitud</label>
+                        <label class="col-sm-2 col-form-label">{% translate "Latitude" %}</label>
                         <div class="col-sm-10">
                             {{ form.decimal_latitude }}
                         </div>
                     </div>
                     <div class="form-group row">
-                        <label class="col-sm-2 col-form-label">Logitud</label>
+                        <label class="col-sm-2 col-form-label">{% translate "Longitude" %}</label>
                         <div class="col-sm-10">
                             {{ form.decimal_longitude }}
                         </div>
                     </div>
                     <div class="form-group row">
-                        <label class="col-sm-2 col-form-label">Ubicación</label>
+                        <label class="col-sm-2 col-form-label">{% translate "Locality" %}</label>
                         <div class="col-sm-8">
-                            <div id = "map" style = "width: auto; height: 400px"></div>
+                            {% leaflet_map "map" callback="showCoordinates" %}
                         </div>
                         <div class="col-sm-2">
-                            <span>Latitud: <p id="lat"></p></span>
-                            <span>Longitud: <p id="lng"></p></span>
+                            <span>{% translate "Latitude" %}: <p id="lat"></p></span>
+                            <span>{% translate "Longitude" %}: <p id="lng"></p></span>
                         </div>
                     </div>
                     {% if form.errors %}
@@ -189,8 +176,8 @@
                     {% endif %}
                     <div class="form-group row">
                         <div class="col-sm-10">
-                            <input type="submit" class="btn btn-primary" value="Guardar">
-                            <a href="{% url 'control_vouchers' %}" class="btn btn-danger">Cancelar</a>
+                            <input type="submit" class="btn btn-primary" value="{% translate 'Save' %}">
+                            <a href="{% url 'control_vouchers' %}" class="btn btn-danger">{% translate "Cancel" %}</a>
                         </div>
                     </div>
                 </form>

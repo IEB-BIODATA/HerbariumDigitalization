@@ -16,33 +16,34 @@ Including another URLconf
 from django.urls import re_path
 
 from . import views
-from .views import FinderApiView, MenuApiView, SpeciesDetails, GalleryList, BannerSpecie, \
-    GeoSpeciesListApiView, GeoSpecimensListApiView
-from .views import SynonymyDetails, DivisionList, ClassList, OrderList, SpecimensList
-from .views import FamilyList, SpeciesListApiView
-from .views import DistributionList, ImagesList, ImagesFilterApiView
-from .views import ImageDetails, InfoApi, RegionList
+from .views import InfoApi, DivisionList, ClassList, OrderList, FamilyList, GenusList
+from .views import PlantHabitList, EnvHabitList, StatusList, CycleList, RegionList, ConservationStateList, \
+    CommonNameList
+from .views import MenuApiView, FinderApiView, SpeciesListApiView, SpeciesDetails, SynonymyDetails, DistributionList, \
+    SpecimensList, SpecimenDetails
 
 urlpatterns = [
+    re_path(r'^info/$', InfoApi.as_view()),
     re_path(r'^divisions/$', DivisionList.as_view()),
     re_path(r'^classes/$', ClassList.as_view()),
     re_path(r'^orders/$', OrderList.as_view()),
     re_path(r'^families/$', FamilyList.as_view()),
+    re_path(r'^genus/$', GenusList.as_view()),
+    re_path(r'^plant_habit/$', PlantHabitList.as_view()),
+    re_path(r'^env_habit/$', EnvHabitList.as_view()),
+    re_path(r'^status/$', StatusList.as_view()),
+    re_path(r'^cycles/$', CycleList.as_view()),
     re_path(r'^regions/$', RegionList.as_view()),
+    re_path(r'^conservation_states/$', ConservationStateList.as_view()),
+    re_path(r'^common_names/$', CommonNameList.as_view()),
+    re_path(r'^menu/$', MenuApiView.as_view()),
+    re_path(r'^finder/(?P<text>[\w ]+)/$', FinderApiView.as_view()),
+    re_path(r'^species_list/$', SpeciesListApiView.as_view()),
     re_path(r'^species/(?P<pk>\d+)/$', SpeciesDetails.as_view()),
     re_path(r'^synonymy/(?P<pk>\d+)/$', SynonymyDetails.as_view()),
-    re_path(r'^specimens/$', SpecimensList.as_view()),
-    re_path(r'^finder/(?P<text>[\w ]+)/$', FinderApiView.as_view()),
-    re_path(r'^geo_species/$', GeoSpeciesListApiView.as_view()),
-    re_path(r'^geo_specimens/$', GeoSpecimensListApiView.as_view()),
-    re_path(r'^menu/$', MenuApiView.as_view()),
-    re_path(r'^species_list/$', SpeciesListApiView.as_view()),
     re_path(r'^distribution/(?P<species_id>\d+)/$', DistributionList.as_view()),
-    re_path(r'^images/(?P<species_id>\d+)/$', ImagesList.as_view()),
-    re_path(r'^gallery/(?P<species_id>\d+)/$', GalleryList.as_view()),
-    re_path(r'^images_filter/$', ImagesFilterApiView.as_view()),
-    re_path(r'^image/(?P<pk>\d+)/$', ImageDetails.as_view()),
-    re_path(r'^info/$', InfoApi.as_view()),
-    re_path(r'^banner/(?P<specie_id>\d+)/$', BannerSpecie.as_view()),
+    re_path(r'^specimens_list/$', SpecimensList.as_view()),
+    re_path(r'^specimen/(?P<pk>\d+)/$', SpecimenDetails.as_view()),
+    # re_path(r'^banner/(?P<specie_id>\d+)/$', BannerSpecie.as_view()),
     re_path(r'^names/$', views.get_names),
 ]

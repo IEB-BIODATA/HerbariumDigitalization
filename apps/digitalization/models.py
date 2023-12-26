@@ -2,15 +2,13 @@
 # from django.db import models
 from __future__ import annotations
 
+import celery
 import logging
 import math
-from typing import BinaryIO, Union, Any, Tuple, Callable, Dict, List
-
-import celery
 import numpy as np
 import pandas as pd
 import pytz
-from apps.catalog.models import Species, TAXONOMIC_RANK
+from PIL import Image
 from django.conf import settings
 from django.contrib.auth.models import User
 from django.contrib.gis.db import models
@@ -22,21 +20,24 @@ from django.db.models import Q
 from django.db.models.signals import post_delete, pre_save
 from django.dispatch import receiver
 from django.forms import CharField
+from django.utils.translation import gettext_lazy as _
+from typing import BinaryIO, Union, Any, Tuple, Callable, Dict, List
 
+from apps.catalog.models import Species, TAXONOMIC_RANK
 from intranet.utils import CatalogQuerySet
 from .storage_backends import PublicMediaStorage, PrivateMediaStorage
 from .validators import validate_file_size
 
 VOUCHER_STATE = (
-    (0, 'Sin Estado'),
-    (1, 'Encontrado'),
-    (2, 'No Encontrado'),
-    (3, 'En Préstamo'),
-    (4, 'Extraviado'),
-    (5, 'En Préstado Encontrado'),
-    (6, 'En curatoria'),
-    (7, 'Digitalizado'),
-    (8, 'Pendiente'),
+    (0, _('No State')),
+    (1, _('Found')),
+    (2, _('Not Found')),
+    (3, _('Borrowed')),
+    (4, _('Lost')),
+    (5, _('Found And Borrowed')),
+    (6, _('In Curatorship')),
+    (7, _('Digitalized')),
+    (8, _('Pending')),
 )
 
 DCW_SQL = {
@@ -73,7 +74,7 @@ class Herbarium(models.Model):
         return "%s " % self.name
 
     def natural_key(self) -> Tuple[Any, CharField]:
-        return self.id, self.name
+        return self.pk, self.name
 
 
 class ColorProfileFile(models.Model):
@@ -94,7 +95,7 @@ class ColorProfileFile(models.Model):
 class GeneratedPage(models.Model):
     name = models.CharField(max_length=300)
     herbarium = models.ForeignKey(Herbarium, on_delete=models.CASCADE)
-    terminated = models.BooleanField(default=False)
+    finished = models.BooleanField(default=False)
     color_profile = models.ForeignKey(ColorProfileFile, on_delete=models.SET_NULL, blank=True, null=True)
     created_at = models.DateTimeField(auto_now_add=True, blank=True, null=True, editable=False)
     created_by = models.ForeignKey(User, on_delete=models.PROTECT)
@@ -104,30 +105,30 @@ class GeneratedPage(models.Model):
 
     @property
     def total(self):
-        return BiodataCode.objects.filter(page__id=self.id).count()
+        return BiodataCode.objects.filter(page__id=self.pk).count()
 
     @property
     def stateless_count(self):
-        return BiodataCode.objects.filter(page__id=self.id, voucher_state=0).count()
+        return BiodataCode.objects.filter(page__id=self.pk, voucher_state=0).count()
 
     @property
     def found_count(self):
-        return BiodataCode.objects.filter(page__id=self.id, voucher_state=1).count()
+        return BiodataCode.objects.filter(page__id=self.pk, voucher_state=1).count()
 
     @property
     def not_found_count(self):
-        return BiodataCode.objects.filter(page__id=self.id, voucher_state=2).count()
+        return BiodataCode.objects.filter(page__id=self.pk, voucher_state=2).count()
 
     @property
     def digitalized(self):
         return BiodataCode.objects.filter(
-            Q(page__id=self.id) & (Q(voucher_state=7) | Q(voucher_state=8))
+            Q(page__id=self.pk) & (Q(voucher_state=7) | Q(voucher_state=8))
         ).count()
 
     @property
     def qr_count(self):
         return BiodataCode.objects.filter(
-            Q(page__id=self.id) & Q(qr_generated=True)
+            Q(page__id=self.pk) & Q(qr_generated=True)
         ).count()
 
     def save(
@@ -143,7 +144,7 @@ class GeneratedPage(models.Model):
                 ).strftime('%d-%m-%Y %H:%M')
             )
         except AttributeError:
-            logging.debug(f"Cannot define name for session ({self.id})")
+            logging.debug(f"Cannot define name for session ({self.pk})")
         return super().save(
             force_insert=force_insert,
             force_update=force_update,
@@ -158,7 +159,7 @@ class GeneratedPage(models.Model):
         return "%s " % self.name
 
     def natural_key(self) -> Tuple[Any, CharField]:
-        return self.id, self.name
+        return self.pk, self.name
 
 
 class BiodataCode(models.Model):
@@ -181,7 +182,7 @@ class BiodataCode(models.Model):
         return "%s " % self.code
 
     def natural_key(self) -> Tuple[Any, CharField]:
-        return self.id, self.code
+        return self.pk, self.code
 
 
 class HerbariumMember(models.Model):
@@ -289,14 +290,14 @@ class VoucherImported(models.Model):
 
     def generate_etiquette(self):
         if self.biodata_code.voucher_state == 7:
-            logging.debug("Regenerating public image ({})".format(self.id))
+            logging.debug("Regenerating public image ({})".format(self.pk))
             self.biodata_code.voucher_state = 8
             self.biodata_code.save()
             self.save()
-            celery.current_app.send_task('etiquette_picture', (self.id,))
+            celery.current_app.send_task('etiquette_picture', (self.pk,))
             return
         else:
-            logging.debug("Voucher not digitalized, skipping ({})".format(self.id))
+            logging.debug("Voucher not digitalized, skipping ({})".format(self.pk))
             return
 
     def image_voucher_thumb_url(self):
@@ -357,7 +358,7 @@ class VoucherImported(models.Model):
             file_info
         )
         logging.info("Voucher {}: Saving {} with name {}".format(
-            self.id, image_variable, image_name
+            self.pk, image_variable, image_name
         ))
         getattr(self, image_variable).save(image_name, image_content, save=True)
         return
@@ -472,6 +473,8 @@ class Licence(models.Model):
 class GalleryImage(models.Model):
     scientific_name = models.ForeignKey(Species, on_delete=models.CASCADE)
     image = models.ImageField(upload_to="gallery", storage=PublicMediaStorage())
+    thumbnail = models.ImageField(upload_to="gallery", storage=PublicMediaStorage(), null=True)
+    aspect_ratio = models.FloatField(null=True, blank=True)
     specimen = models.ForeignKey(BiodataCode, on_delete=models.SET_NULL, blank=True, null=True)
     taken_by = models.CharField(max_length=300, blank=True, null=True)
     licence = models.ForeignKey(
@@ -483,12 +486,16 @@ class GalleryImage(models.Model):
     upload_by = models.ForeignKey(User, on_delete=models.PROTECT, default=1, editable=False)
     upload_at = models.DateTimeField(auto_now_add=True, blank=True, null=True, editable=False)
 
+    def generate_thumbnail(self) -> None:
+        celery.current_app.send_task('generate_thumbnail', (self.pk,))
+        return
+
 
 class BannerImage(models.Model):
     specie = models.OneToOneField(Species, on_delete=models.CASCADE)
     banner = models.ImageField(upload_to="banners", storage=PublicMediaStorage())
     image = models.ForeignKey(VoucherImported, on_delete=models.CASCADE)
-    updated_at= models.DateTimeField(auto_now=True)
+    updated_at = models.DateTimeField(auto_now=True)
 
 
 class Areas(models.Model):
@@ -595,8 +602,6 @@ class VouchersView(models.Model):
          JOIN digitalization_priorityvouchersfile voucherfile ON voucher.vouchers_file_id = voucherfile.id
          JOIN digitalization_biodatacode biodatacode ON voucher.biodata_code_id = biodatacode.id
          JOIN catalog_species species ON voucher.scientific_name_id = species.id;
-
-    ALTER MATERIALIZED VIEW vouchers_view OWNER TO <POSTGRES_USER>;
 
     CREATE UNIQUE INDEX vouchers_view_id_idx
         ON vouchers_view (id);

@@ -1,5 +1,7 @@
 from django import forms
-
+from django.shortcuts import render
+from django.template.loader import get_template, render_to_string
+from django.utils.translation import gettext_lazy as _
 from .models import Herbarium
 from .models import PriorityVouchersFile, ColorProfileFile, GeneratedPage
 from .models import VoucherImported, GalleryImage, Licence
@@ -103,27 +105,32 @@ class VoucherImportedForm(forms.ModelForm):
 
 
 class GalleryImageForm(forms.ModelForm):
-
     def __init__(self, *args, **kwargs):
         super(GalleryImageForm, self).__init__(*args, **kwargs)
         self.fields['licence'].choices = list(
-            self.fields['licence'].choices) + [("", "(Añadir nueva licencia)")]
+            self.fields['licence'].choices) + [("", _("(Add new licence)"))]
 
     class Meta:
         model = GalleryImage
         fields = (
-            'scientific_name',
             'image',
             'taken_by',
             'licence',
             'specimen',
         )
+
+        labels = {
+            'image': _('Image'),
+            'taken_by': _('Taken by'),
+            'licence': _('Licence'),
+            'specimen': _('Specimen'),
+        }
+
         widgets = {
-            'scientific_name': forms.TextInput(attrs={'class': "form-control", 'readonly': 'true'}),
-            'image': forms.FileInput(attrs={'class': "form-control"}),
-            'taken_by': forms.TextInput(attrs={'class': "form-control"}),
-            'licence': forms.Select(attrs={'class': "form-control"}),
-            'specimen': forms.TextInput(attrs={'class': "form-control"}),
+            'image': forms.FileInput(attrs={'class': 'form-control'}),
+            'taken_by': forms.TextInput(attrs={'class': 'form-control'}),
+            'licence': forms.Select(attrs={'class': 'form-control'}),
+            'specimen': forms.TextInput(attrs={'class': 'form-control'}),
         }
 
 
@@ -136,6 +143,13 @@ class LicenceForm(forms.ModelForm):
             'link',
             'short_name',
         }
+
+        labels = {
+            'name': _('Name'),
+            'link': _('Source (URL)'),
+            'short_name': _('Short Name'),
+        }
+
         widgets = {
             'name': forms.TextInput(attrs={'class': "form-control"}),
             'link': forms.TextInput(attrs={'class': "form-control"}),

@@ -1,12 +1,15 @@
 {% extends "base.html" %}
 {% load static %}
+{% load i18n %}
+{% get_current_language as LANGUAGE_CODE %}
 {% block javascript %}
     <script type="text/javascript">
+        let language = getTableLanguage("{{ LANGUAGE_CODE }}");
         $(document).ready(function() {
             $('#dataTable').DataTable({
                 serverSide: true,
                 processing: true,
-                language: languageTable.spanish,
+                language: language,
                 ajax: {
                     url: '{% url "session_table_qr" %}',
                     type: 'GET',
@@ -32,7 +35,7 @@
                         render: (data, type) => {
                             let date = new Date(data);
                             if (type === 'display' || type === 'search'){
-                                return dateFormat(date)
+                                return dateFormat(date, "{{ LANGUAGE_CODE }}");
                             } else if (type === 'sort')
                                 return date.toISOString();
                             else
@@ -45,9 +48,9 @@
                     },
                     {
                         targets: 5,
-                        data: 'terminated',
+                        data: 'finished',
                         render: (data) => {
-                            return data ? "Sí" : "No";
+                            return data ? "{% translate 'Yes' %}" : "{% translate 'No' %}";
                         }
                     },
                     {
@@ -55,8 +58,9 @@
                         data: 'id',
                         orderable: false,
                         render: (data) => {
+                            const printMsg = "{% translate 'Print list' %}";
                             return `
-                            <a class="btn btn-primary text-nowrap" href="#" onclick="printPageList(${data}); return false;">Imprimir Lista</a>
+                            <a class="btn btn-primary text-nowrap" href="#" onclick="printPageList(${data}); return false;">${printMsg}</a>
                             `;
                         }
                     },
@@ -65,8 +69,9 @@
                         data: 'id',
                         orderable: false,
                         render: (data) => {
+                            const printMsg = "{% translate 'Print QRs' %}"
                             return `
-                            <a class="btn btn-primary text-nowrap" href="#" onclick="printQRPage(${data}); return false;">Imprimir QRS</a>
+                            <a class="btn btn-primary text-nowrap" href="#" onclick="printQRPage(${data}); return false;">${printMsg}</a>
                             `;
                         }
                     },
@@ -108,50 +113,51 @@
     </script>
 {% endblock %}
 {% block content %}
-    <h1>Generación de Códigos QR</h1>
+    <h1>{% translate "QR Codes Generation" %}</h1>
     <form action="{% url 'qr_generator' %}" method="post">
         {% csrf_token %}
         <div class="form-group">
             {{ form.herbarium }}
-            <label for="quantity_pages_label">Ingrese la cantidad de páginas de códigos QR que desea generar el día de hoy (35 qr's / página):</label>
+            <label for="quantity_pages_label">{% translate "Enter the QR code quantity" %}:</label>
             <input class="form-control" type="number" value="1" name="quantity_pages" min="1" max="10" required>
-            <button type="submit" class="btn btn-primary">Generar</button>
+            <button type="submit" class="btn btn-primary">{% translate "Generate" %}</button>
         </div>
     </form>
     {% if info %}
         <div class="alert {% if info.state == 'ok' %} alert-success {% elif info.state == 'error' %} alert-danger {% endif %}" role="alert">
             {% if info.state == 'error' %}
                 {% if info.type == 'no data' %}
-                    <p>No hay registros disponibles para generar códigos QR.</p>
-                {% elif info.type == 'not terminated' %}
-                    <p>Deben estar todas las sesiones terminadas para generar una nueva.</p>
+                    <p>{% translate "There are no records available to generate QR codes" %}</p>
+                {% elif info.type == 'not finished' %}
+                    <p>{% translate "All sessions must be finished to generate a new one" %}</p>
                 {% else %}
-                    <p>Error no identificado, favor contactar al administrador</p>
+                    <p>{% translate "Unidentified error, please contact the administrator" %}</p>
                 {% endif %}
             {% elif info.state == 'ok' %}
-                <p>Se generaron los códigos QR correctamente</p>
+                <p>{% translate "QR codes were generated correctly" %}</p>
             {% endif %}
         </div>
     {% endif %}
-    <h1>Histórico de Códigos QR</h1>
+    <h1>{% translate "QR Code History" %}</h1>
     <!-- DataTables Example -->
     <div class="card mb-3">
         <div class="card-header">
             <i class="fas fa-table"></i>
-            Tabla de páginas generadas</div>
+            {% translate "Generated page table" %}
+        </div>
         <div class="card-body">
             <div class="table-responsive">
                 <table class="table table-bordered" id="dataTable" width="100%" cellspacing="0">
                     <thead>
                     <tr>
-                        <th>Sesión</th>
-                        <th>Herbario</th>
-                        <th>Creado por</th>
-                        <th>Fecha creación</th>
-                        <th>Cantidad QRs</th>
-                        <th>¿Terminada?</th>
-                        <th>Lista</th>
-                        <th>QRs</th>
+                        <th>{% translate "Session" %}</th>
+                        <th>{% translate "Herbarium" %}</th>
+                        <th>{% translate "Created by" %}</th>
+                        <th>{% translate "Created at" %}</th>
+                        <th>{% translate "QR quantity" %}Cantidad QRs</th>
+                        <th>{% translate "Determined?" %}</th>
+                        <th>{% translate "List" %}</th>
+                        <th>{% translate "QRs" %}</th>
                     </tr>
                     </thead>
                     <tbody>

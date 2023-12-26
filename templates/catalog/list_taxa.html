@@ -1,7 +1,10 @@
 {% extends "base.html" %}
 {% load static %}
+{% load i18n %}
+{% get_current_language as LANGUAGE_CODE %}
 {% block javascript %}
     <script type="text/javascript">
+        let language = getTableLanguage("{{ LANGUAGE_CODE }}");
         const tempSearchBar = document.getElementById('temp-search-bar');
 
         tempSearchBar.addEventListener('input', function () {
@@ -19,7 +22,7 @@
             $('#CatalogTable').DataTable({
                 serverSide: true,
                 processing: true,
-                language: languageTable.spanish,
+                language: language,
                 ajax: {
                     url: "{% url 'taxa_table' %}",
                     type: 'GET',
@@ -57,7 +60,7 @@
                         render: (data, type) => {
                             let date = new Date(data);
                             if (type === 'display' || type === 'search'){
-                                return dateFormat(date);
+                                return dateFormat(date, "{{ LANGUAGE_CODE }}");
                             } else if (type === 'sort'){
                                 return date.toISOString();
                             } else {
@@ -71,7 +74,7 @@
                         render: (data, type) => {
                             let date = new Date(data);
                             if (type === 'display' || type === 'search'){
-                                return dateFormat(date);
+                                return dateFormat(date, "{{ LANGUAGE_CODE }}");
                             } else if (type === 'sort'){
                                 return date.toISOString();
                             } else {
@@ -92,10 +95,12 @@
                         orderable: false,
                         data: 'id',
                         render: (data) => {
+                            const editMsg = "{% translate 'Edit' %}"
+                            const mergeMsg = "{% translate 'Merge' %}"
                             const linkUpdate = "{% url 'update_taxa' species_id=0 %}";
                             const linkMerge = "{% url 'select_taxa' species_id=0 %}";
-                            let actions = `<a href="${linkUpdate}" style="white-space: nowrap"><i class="fas fa-fw fa-edit text-primary"></i> Editar</a><br/>` +
-                            `<a href="${linkMerge}" style="white-space: nowrap"><i class="fas fa-sharp fa-solid fa-compress text-primary"></i> Unir</a>`;
+                            let actions = `<a href="${linkUpdate}" style="white-space: nowrap"><i class="fas fa-fw fa-edit text-primary"></i> ${editMsg}</a><br/>` +
+                            `<a href="${linkMerge}" style="white-space: nowrap"><i class="fas fa-sharp fa-solid fa-compress text-primary"></i> ${mergeMsg}</a>`;
                             return actions.replaceAll("0", data);
                         }
                     },
@@ -151,24 +156,25 @@
     </script>
 {% endblock %}
 {% block content %}
-    <h1>Catálogo</h1>
+    <h1>{% translate "Catalogue" %}</h1>
     <div class="card mb-3">
         <div class="row">
             <div class="col-3">
-                <a class="btn btn-primary" href="{% url 'create_taxa' %}">Nuevo</a>
+                <a class="btn btn-primary" href="{% url 'create_taxa' %}">{% translate "New" %}</a>
             </div>
             <div class="col-3 offset-md-6">
-                <a class="btn btn-primary" href="#" onclick="download_xlsx()">Descargar</a>
+                <a class="btn btn-primary" href="#" onclick="download_xlsx()">{% translate "Download" %}</a>
             </div>
         </div>
         <div class="card-header">
             <i class="fas fa-table"></i>
-            Catálogo</div>
+            {% translate "Catalogue" %}
+        </div>
         <div class="card-body">
             <div class="row" id="TemporalSearch">
                 <div class="col-sm-12 col-md-6"></div>
                 <div class="col-sm-12 col-md-6" style="text-align: right;">
-                    <label>Buscar:
+                    <label>{% translate "Search" %}:
                         <input id="temp-search-bar" type="search" class="form-control form-control-sm" style="display: inline-block;box-sizing: border-box;width: auto;">
                     </label>
                 </div>
@@ -177,17 +183,17 @@
                 <table class="table table-bordered" id="CatalogTable" width="100%" cellspacing="0">
                     <thead>
                     <tr>
-                        <th>División</th>
-                        <th>Clase</th>
-                        <th>Orden</th>
-                        <th>Familia</th>
-                        <th>Nombre Científico Completo</th>
-                        <th>Creado Por</th>
-                        <th>Fecha de Creación</th>
-                        <th>Última Actualización</th>
-                        <th>Status</th>
-                        <th>¿Terminal?</th>
-                        <th>Acción</th>
+                        <th>{% translate "Division" %}</th>
+                        <th>{% translate "Class" %}</th>
+                        <th>{% translate "Order" %}</th>
+                        <th>{% translate "Family" %}</th>
+                        <th>{% translate "Complete Scientific Name" %}</th>
+                        <th>{% translate "Created by" %}</th>
+                        <th>{% translate "Created at" %}</th>
+                        <th>{% translate "Updated at" %}</th>
+                        <th>{% translate "Status" %}</th>
+                        <th>{% translate "Determined?" %}</th>
+                        <th>{% translate "Action" %}</th>
                     </tr>
                     </thead>
                     <tbody>
@@ -197,7 +203,7 @@
                                 <div class="d-flex justify-content-center">
                                     <button type="button" class="btn btn-info" onclick="loadTable()">
                                         <i class="fas fa-fw fa-sync"></i>
-                                        Cargar tabla
+                                        {% translate "Load table" %}
                                     </button>
                                 </div>
                             </td>

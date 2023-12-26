@@ -1,4 +1,5 @@
 {% load static %}
+{% load i18n %}
 {% load roles %}
 {% block javascript %}
     <script type="text/javascript">
@@ -7,7 +8,7 @@
                 $("#overlay").fadeIn(300);
             });
             $.ajax({
-                url: '/digitalization/download_catalog',
+                url: "{% url 'download_catalog' %}",
                 type: 'GET',
                 xhrFields: {
                     // make sure the response knows we're expecting a binary type in return.
@@ -52,83 +53,87 @@
 <li class="nav-item active">
     <a class="nav-link" href="/">
         <i class="fas fa-fw fa-home"></i>
-        <span>Inicio</span></a>
+        <span>{% translate "Home" %}</span></a>
 </li>
 {% if request.user|has_group:"Collection Researcher" %}
     <li class="nav-item">
         <a class="nav-link" href="{% url 'load_priority_vouchers_file' %}">
             <i class="fas fa-fw fa-file-excel"></i>
-            <span>Cargar Especímenes Priorizados</span></a>
+            <span>{% translate "Load Prioritized Specimens" %}</span>
+        </a>
     </li>
 {% endif %}
 {% if request.user|has_group:"Curator" %}
     <li class="nav-item ">
         <a class="nav-link" href="{% url 'qr_generator' %}">
             <i class="fas fa-fw fa-qrcode"></i>
-            <span>Generación de Códigos QR</span></a>
+            <span>{% translate "QR Codes Generation" %}</span>
+        </a>
     </li>
 {% endif %}
 {% if request.user|has_group:"Digitizer" %}
     <li class="nav-item">
         <a class="nav-link" href="{% url 'mark_vouchers' %}">
             <i class="fas fa-fw fa-camera"></i>
-            <span>Digitalización de Especímenes</span></a>
+            <span>{% translate "Specimens Digitalization" %}</span>
+        </a>
     </li>
 {% endif %}
 {% if request.user|has_group:"Control" %}
     <li class="nav-item">
         <a class="nav-link" href="{% url 'control_vouchers' %}">
             <i class="fas fa-fw fa-search"></i>
-            <span>Control de Digitalización</span></a>
+            <span>{% translate "Digitalization Control" %}</span>
+        </a>
     </li>
 {% endif %}
 {% if request.user|has_group:"Curator" %}
     <li class="nav-item ">
         <a class="nav-link" href="{% url 'validate_vouchers' %}">
             <i class="fas fa-fw fa-check"></i>
-            <span>Validación de Especímenes</span>
+            <span>{% translate "Specimens Validation" %}</span>
         </a>
     </li>
 {% endif %}
 <li class="nav-item dropdown">
     <a class="nav-link dropdown-toggle" href="#" id="pagesDropdown" role="button" data-toggle="dropdown" aria-haspopup="true" data-bs-toggle="dropdown" aria-expanded="false">
         <i class="fas fa-fw fa-leaf"></i>
-        <span>Catálogo</span>
+        <span>{% translate "Catalogue" %}</span>
     </a>
     <div class="dropdown-menu" aria-labelledby="pagesDropdown">
         {% if request.user|has_group:"Catalog" %}
-            <a class="dropdown-item" href="{% url 'list_division' %}">División</a>
-            <a class="dropdown-item" href="{% url 'list_class' %}">Clase</a>
-            <a class="dropdown-item" href="{% url 'list_order' %}">Orden</a>
-            <a class="dropdown-item" href="{% url 'list_family' %}">Familia</a>
-            <a class="dropdown-item" href="{% url 'list_genus' %}">Género</a>
-            <a class="dropdown-item" href="{% url 'list_taxa' %}">Taxón</a>
-            <a class="dropdown-item" href="{% url 'list_synonymy' %}">Sinónimo</a>
-            <a class="dropdown-item" href="{% url 'list_common_name' %}">Nombre Común</a>
+            <a class="dropdown-item" href="{% url 'list_division' %}">{% translate "Division" %}</a>
+            <a class="dropdown-item" href="{% url 'list_class' %}">{% translate "Class" %}</a>
+            <a class="dropdown-item" href="{% url 'list_order' %}">{% translate "Order" %}</a>
+            <a class="dropdown-item" href="{% url 'list_family' %}">{% translate "Family" %}</a>
+            <a class="dropdown-item" href="{% url 'list_genus' %}">{% translate "Genus" %}</a>
+            <a class="dropdown-item" href="{% url 'list_taxa' %}">{% translate "Taxon" %}</a>
+            <a class="dropdown-item" href="{% url 'list_synonymy' %}">{% translate "Synonym" %}</a>
+            <a class="dropdown-item" href="{% url 'list_common_name' %}">{% translate "Common Name" %}</a>
         {% endif %}
-        <a class="dropdown-item" href="{% url 'list_binnacle' %}">Bitácora de Cambios</a>
+        <a class="dropdown-item" href="{% url 'list_binnacle' %}">{% translate "Change Log" %}</a>
     </div>
 </li>
 {% if request.user|has_group:"Catalog" %}
     <li class="nav-item">
-        <a class="nav-link" href="{% url 'modify_gallery_image' %}">
+        <a class="nav-link" href="{% url 'gallery_images' %}">
             <i class="fas fa-fw fa-images"></i>
-            <span>Subir a Galeria</span>
+            <span>{% translate "Upload to Gallery" %}</span>
         </a>
     </li>
     <li class="nav-item">
         <a class="nav-link" href="#" onclick="download_catalog()">
             <i class="fas fa-fw fa-download"></i>
-            <span>Descargar actual versión</span>
+            <span>{% translate "Download current version" %}</span>
         </a>
     </li>
 {% endif %}
 <!-- For test new task -->
 {% if request.user|has_group:"Test" %}
-<li class="nav-item">
-    <a class="nav-link" href="{% url 'test_view' %}">
-        <i class="fas fa-fw fa-check"></i>
-        <span>Pruebas</span>
-    </a>
-</li>
+    <li class="nav-item">
+        <a class="nav-link" href="{% url 'test_view' %}">
+            <i class="fas fa-fw fa-check"></i>
+            <span>{% translate "Test" %}</span>
+        </a>
+    </li>
 {% endif %}

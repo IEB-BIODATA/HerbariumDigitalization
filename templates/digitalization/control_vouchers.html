@@ -1,7 +1,11 @@
 {% extends "base.html" %}
 {% load static %}
+{% load i18n %}
+{% get_current_language as LANGUAGE_CODE %}
+{% block title %}{% translate "Voucher Validation" %} ({{ state_name }}){% endblock %}
 {% block javascript %}
     <script type="text/javascript">
+        let language = getTableLanguage("{{ LANGUAGE_CODE }}");
         $(document).ready(function() {
             const voucher_state = parseInt("{{ voucher_state }}");
             let values = [];
@@ -20,7 +24,7 @@
             $('#VouchersTable').DataTable({
                 serverSide: true,
                 processing: true,
-                language: languageTable.spanish,
+                language: language,
                 order: [[5, 'asc'], [4, 'asc']],
                 ajax: {
                     url: '{% url "vouchers_table" voucher_state=voucher_state %}',
@@ -40,13 +44,18 @@
                                         selected = 'selected="selected"';
                                     values.push(`value="${i}" ${selected}`);
                                 }
+                                const noState = "{% translate 'No State' context 'spaced' %}";
+                                const found = "{% translate 'Found' context 'spaced' %}";
+                                const notFound = "{% translate 'Not Found' context 'spaced' %}";
+                                const borrowed = "{% translate 'Borrowed' context 'spaced' %}";
+                                const inCuratorship = "{% translate 'In Curatorship' context 'spaced' %}";
                                 return `
                                 <select id="voucherClassFound${data.id}" class="${getStateClass(data.voucher_state)} custom-select custom-select-sm form-control form-control-sm" onchange="setState(${data.id}, this.value);" style="width: 150px;">
-                                    <option ${values[0]}>&nbsp;Sin Estado&nbsp;&nbsp;&nbsp;&nbsp;</option>
-                                    <option ${values[1]}>&nbsp;Encontrado&nbsp;&nbsp;&nbsp;&nbsp;</option>
-                                    <option ${values[2]}>&nbsp;No Encontrado&nbsp;</option>
-                                    <option ${values[3]}>&nbsp;En Préstamo&nbsp;&nbsp;&nbsp;</option>
-                                    <option ${values[6]}>&nbsp;En curatoria&nbsp;&nbsp;</option>
+                                    <option ${values[0]}>${noState}</option>
+                                    <option ${values[1]}>${found}</option>
+                                    <option ${values[2]}>${notFound}</option>
+                                    <option ${values[3]}>${borrowed}</option>
+                                    <option ${values[6]}>${inCuratorship}</option>
                                 </select>
                                 `;
                             },
@@ -57,7 +66,7 @@
                         render: (data, type) => {
                             let date = new Date(data);
                             if (type === 'display' || type === 'search'){
-                                return dateFormat(date)
+                                return dateFormat(date, "{{ LANGUAGE_CODE }}");
                             } else if (type === 'sort')
                                 return date.toISOString();
                             else
@@ -106,11 +115,12 @@
                             const url = "{% url 'update_voucher' voucher_id=0 %}".replace(
                                 "0", data
                             );
+                            const editMsg = "{% translate 'Edit' %}"
                             return `
                             <div width="10%">
                                 <a href="${url}" style="white-space: nowrap;">
                                     <i class="fas fa-fw fa-edit text-primary"></i>
-                                    Editar
+                                    ${editMsg}
                                 </a>
                             </div>
                             `;
@@ -119,19 +129,30 @@
                 ]
             });
             const thisUrl = "{% url 'control_vouchers' %}";
+            const filterState = "{% translate 'Filter State' %}";
+            const all = "{% translate 'All' %}";
+            const found = "{% translate 'Found' %}";
+            const noState = "{% translate 'No State' %}";
+            const notFound = "{% translate 'Not Found' %}";
+            const borrowed = "{% translate 'Borrowed' %}";
+            const lost = "{% translate 'Lost' %}";
+            const foundAndBorrowed = "{% translate 'Found And Borrowed' %}";
+            const inCuratorship = "{% translate 'In Curatorship' %}";
+            const digitalized = "{% translate 'Digitalized' %}";
             $('#VouchersTable_length').append(`
-            <label class="p-3">Filtrar Estado
+            <label class="p-3">
+                ${filterState}
                 <form action="${thisUrl}" style="display: inline-block;">
                     <select id="voucher_state" name="voucher_state" class="custom-select custom-select-sm form-control form-control-sm" onchange="this.form.submit()">
-                        <option ${values[9]}>Todos</option>
-                        <option ${values[1]}>Encontrado</option>
-                        <option ${values[0]}>Sin Estado</option>
-                        <option ${values[2]}>No Encontrado</option>
-                        <option ${values[3]}>En Préstamo</option>
-                        <option ${values[4]}>Extraviado</option>
-                        <option ${values[5]}>En Préstado Encontrado</option>
-                        <option ${values[6]}>En curatoria</option>
-                        <option ${values[7]}>Digitalizado</option>
+                        <option ${values[9]}>${all}</option>
+                        <option ${values[1]}>${found}</option>
+                        <option ${values[0]}>${noState}</option>
+                        <option ${values[2]}>${notFound}</option>
+                        <option ${values[3]}>${borrowed}</option>
+                        <option ${values[4]}>${lost}</option>
+                        <option ${values[5]}>${foundAndBorrowed}</option>
+                        <option ${values[6]}>${inCuratorship}</option>
+                        <option ${values[7]}>${digitalized}</option>
                     </select>
                 </form>
             </label>
@@ -167,27 +188,28 @@
     </script>
 {% endblock %}
 {% block content %}
-    <h1>Digitalización de Vouchers</h1>
+    <h1>{% translate "Voucher Digitalization" %}</h1>
     <!-- DataTables Example -->
     <div class="card mb-3">
         <div class="card-header">
             <i class="fas fa-table"></i>
-            Tabla de Vouchers</div>
+            {% translate "Voucher table" %}
+        </div>
         <div class="card-body">
             <div class="table-responsive" id="vouchers-content">
                 <table class="table table-bordered" id="VouchersTable" width="100%" cellspacing="0">
                     <thead>
                     <tr>
-                        <th>Estado</th>
-                        <th>Fecha Proceso</th>
-                        <th>Herbario</th>
-                        <th>ID Biodata</th>
-                        <th>ID Herbario</th>
-                        <th>Nombre Especie</th>
-                        <th>Colectado por</th>
-                        <th>Numero de Colecta</th>
-                        <th>Ubicación</th>
-                        <th>Acción</th>
+                        <th>{% translate "State" %}</th>
+                        <th>{% translate "Processing date" %}</th>
+                        <th>{% translate "Herbarium" %}</th>
+                        <th>{% translate "Biodata ID" %}</th>
+                        <th>{% translate "Herbarium ID" %}</th>
+                        <th>{% translate "Species Name" %}</th>
+                        <th>{% translate "Collected by" %}</th>
+                        <th>{% translate "Collection Number" %}</th>
+                        <th>{% translate "Locality" %}</th>
+                        <th>{% translate "Action" %}</th>
                     </tr>
                     </thead>
                     <tbody>

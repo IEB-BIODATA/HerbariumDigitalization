@@ -1,6 +1,7 @@
 FROM herbarium-digitalization
 
 RUN apt-get install -y \
+    tesseract-ocr \
     wget \
     rawtherapee \
     ffmpeg \

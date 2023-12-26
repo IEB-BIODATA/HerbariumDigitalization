@@ -1,16 +1,20 @@
 {% extends "base.html" %}
 {% load static %}
+{% load i18n %}
+{% get_current_language as LANGUAGE_CODE %}
 {% load roles %}
+{% block title %}{{ block.super }}: {% translate "Specimen Digitalization" %}{% endblock %}
 {% block javascript %}
     <script type="text/javascript">
         const csrfToken = "{{ csrf_token }}";
         const myModal = document.getElementById('myModal');
         const postProcessingModal = new bootstrap.Modal('#postprocessingModal');
+        let language = getTableLanguage("{{ LANGUAGE_CODE }}");
         $(document).ready(function() {
             $('#PagesTable').DataTable({
                 serverSide: true,
                 processing: true,
-                language: languageTable.spanish,
+                language: language,
                 ajax: {
                     url: '{% url "session_table" %}',
                     type: 'GET',
@@ -32,7 +36,7 @@
                         render: (data, type) => {
                             let date = new Date(data);
                             if (type === 'display' || type === 'search'){
-                                return dateFormat(date)
+                                return dateFormat(date, "{{ LANGUAGE_CODE }}");
                             } else if (type === 'sort')
                                 return date.toISOString();
                             else
@@ -61,15 +65,17 @@
                         orderable: false,
                         render: (data, type, row) => {
                             let content;
-                            if (row.terminated){
+                            if (row.finished){
+                                const reviewMsg = "{% translate 'Review' %}";
                                 let complement;
                                 if (data === null)
                                     complement = `class="btn btn-secondary" style="pointer-events: none;cursor: default;"`;
                                 else
                                     complement = `class="btn btn-primary" onclick="getVouchers(${row.id},-1,'${row.name}'); return false;"`;
-                                content = `<a id="digitalized_link_${row.id}" href="#" ${complement}>Revisar</a>`;
+                                content = `<a id="digitalized_link_${row.id}" href="#" ${complement}>${reviewMsg}</a>`;
                             } else {
-                                content = `<p>Esta sesión aún no termina.</p>`;
+                                const warningMsg = "{% translate 'This session is not over yet' %}";
+                                content = `<p>${warningMsg}</p>`;
                             }
                             return `
                             <div id="td_link_${row.id}" class="d-grid">
@@ -90,7 +96,10 @@
             $("#overlay").fadeIn(300);
             const voucherCard = $('#VouchersCard');
             voucherCard.hide();
-            $('#pageName')[0].innerHTML = ` <b>Sesión ${pageId}:</b> <i>${pageName}</i>`;
+            const sessionPage = "{% blocktranslate with pageId=0 %}Session {{ pageId }}{% endblocktranslate %}".replace(
+                "0", pageId
+            );
+            $('#pageName')[0].innerHTML = ` <b>${sessionPage}:</b> <i>${pageName}</i>`;
             url = "{% url 'get_vouchers_to_validate' page_id=0 voucher_state=-1 %}"
                 .replace("0", pageId)
                 .replace("-1", voucherState);
@@ -101,7 +110,7 @@
             vouchersTable.DataTable({
                 serverSide: true,
                 processing: true,
-                language: languageTable.spanish,
+                language: language,
                 ajax: {
                     url: url,
                     type: 'GET',
@@ -145,42 +154,69 @@
                         data: 'id',
                         orderable: false,
                         render: (data, type, row) => {
-                            let j = 0;
                             let image;
                             let download;
+                            const downloadMsg = "{% translate 'Download CR3' %}";
                             if (row.image_voucher_thumb_url === "#"){
-                                image = "(Sin Imagen)";
-                                download = `<form id="fileForm${data}" action="" method="post" enctype="multipart/form-data">` +
-                                    `<input type="file" id="file${data}" style="display: none;" onchange="loadFile(${data}, {pageId: ${pageId}, voucherState: ${voucherState}}); return false;" accept=".CR3"/>` +
-                                    `<input type="button" value="Subir imagen..." onclick="document.getElementById('file${data}').click();" />` +
-                                    `<input id="generatedPageId" name="generatedPageId" type="hidden" value="${data}">` +
-                                    `</form>`;
+                                image = "({% translate 'No Image' %})";
+                                const uploadImageMsg = "{% translate 'Upload image' %}";
+                                download = `
+                                    <form id="fileForm${data}" action="" method="post" enctype="multipart/form-data">
+                                        <input type="file" id="file${data}" style="display: none;" onchange="loadFile(${data}, {pageId: ${pageId}, voucherState: ${voucherState}}); return false;" accept=".CR3"/>
+                                        <input type="button" value="${uploadImageMsg}..." onclick="document.getElementById('file${data}').click();" />
+                                        <input id="generatedPageId" name="generatedPageId" type="hidden" value="${data}">
+                                    </form>
+                                `;
                                 if (row.image_voucher_cr3_raw_url === "#")
-                                    download += `<div id='fileLink${data}'>Download CR3</div>`;
+                                    download += `<div id='fileLink${data}'>${downloadMsg}</div>`;
                                 else
-                                    download += `<a href="${row.image_voucher_cr3_raw_url}" target=_"blank">Download CR3</a>`;
+                                    download += `<a href="${row.image_voucher_cr3_raw_url}" target=_"blank">${downloadMsg}</a>`;
                             } else {
                                 image = `<div class="gallery-box wow fadeInDown"><div data-bs-toggle="modal" data-bs-target="#myModal" data-bs-src="${row.image_voucher_url}"><img width="200px" src="${row.image_voucher_thumb_url}" data-bs-target="#myCarousel"></div>`;
-                                download = `<a href="${row.image_voucher_jpg_raw_url}" target=_"blank">Download JPG Original</a><br/><a href="${row.image_voucher_jpg_raw_url_public}" target=_"blank">Download JPG Público</a><br/><a href="${row.image_voucher_cr3_raw_url}" target=_"blank">Download CR3</a>`;
+                                const downloadOriginalMsg = "{% translate 'Download Original JPG' %}";
+                                const downloadPublicMsg = "{% translate 'Download Public JPG' %}";
+                                download = `
+                                    <a href="${row.image_voucher_jpg_raw_url}" target=_"blank">
+                                        ${downloadOriginalMsg}
+                                    </a><br/>
+                                    <a href="${row.image_voucher_jpg_raw_url_public}" target=_"blank">
+                                        ${downloadPublicMsg}
+                                    </a><br/>
+                                    <a href="${row.image_voucher_cr3_raw_url}" target=_"blank">
+                                        ${downloadMsg}
+                                    </a>
+                                `;
                             }
                             return image + download;
                         }
                     }
                 ],
             });
+            const filterState = "{% translate 'Filter State' %}";
+            const all = "{% translate 'All' %}";
+            const found = "{% translate 'Found' %}";
+            const noState = "{% translate 'No State' %}";
+            const notFound = "{% translate 'Not Found' %}";
+            const borrowed = "{% translate 'Borrowed' %}";
+            const lost = "{% translate 'Lost' %}";
+            const foundAndBorrowed = "{% translate 'Found And Borrowed' %}";
+            const inCuratorship = "{% translate 'In Curatorship' %}";
+            const digitalized = "{% translate 'Digitalized' %}";
+            const pending = "{% translate 'Pending' %}";
             $('#VouchersTable_length').append(`
-            <label class="p-3">Filtrar Estado
+            <label class="p-3">
+                ${filterState}
                 <select id="voucherState" name="VouchersTable_length" aria-controls="VouchersTable" class="custom-select custom-select-sm form-control form-control-sm" onchange="getVouchers(${pageId}, this.value);">
-                    <option value="-1">Todos</option>
-                    <option value="1">Encontrado</option>
-                    <option value="0">Sin Estado</option>
-                    <option value="2">No Encontrado</option>
-                    <option value="3">En Préstamo</option>
-                    <option value="4">Extraviado</option>
-                    <option value="5">En Préstado Encontrado</option>
-                    <option value="6">Extraviado Encontrado</option>
-                    <option value="7">Digitalizado</option>
-                    <option value="8">Pendiente</option>
+                    <option value="-1">${all}</option>
+                    <option value="1">${found}</option>
+                    <option value="0">${noState}</option>
+                    <option value="2">${notFound}</option>
+                    <option value="3">${borrowed}</option>
+                    <option value="4">${lost}</option>
+                    <option value="5">${foundAndBorrowed}</option>
+                    <option value="6">${inCuratorship}</option>
+                    <option value="7">${digitalized}</option>
+                    <option value="8">${pending}</option>
                 </select>
             </label>
             `);
@@ -193,6 +229,7 @@
             voucherState: -1
         }){
             $("#overlay").fadeIn(300);
+            const downloadMsg = "{% translate 'Download CR3' %}";
             const fileLink = $(`#fileLink${voucherId}`);
             const fileData = $(`#file${voucherId}`).prop("files")[0];
             const data = new FormData($(`#fileForm${voucherId}`).get(0));
@@ -204,7 +241,7 @@
                 type: "POST",
                 success : response => {
                     if(response.result === 'ok'){
-                        url=`<a href="${response.file_url}">Download CR3</a>`;
+                        url=`<a href="${response.file_url}">${downloadMsg}</a>`;
                         fileLink.empty();
                         fileLink.append(url);
                         getVouchers(context.pageId, context.voucherState);
@@ -226,15 +263,19 @@
                 success: function(response) {
                     console.debug(response);
                     const postBody = document.getElementById('postBody');
+                    const foundMsg = "{% blocktranslate with found=0%}Found {{ found }} images to process. Do you wish to continue?{% endblocktranslate %}".replace(
+                        "0", response.count
+                    );
+                    const warningMsg = "{% translate 'If you decide to proceed, this window should remain open' %}"
                     let pendingInput = "";
                     for (const voucher of response.vouchers){
                         pendingInput += `<input type="hidden" name="pending_image" value="${voucher}">`;
                     }
                     postBody.innerHTML = `
-                    <h6>Se encontraron ${response.count} imágenes por procesar. ¿Desea continuar?</h6>
+                    <h6>${foundMsg}</h6>
                     ${pendingInput}
                     <div id="progressDom"></div>
-                    <p style="display: flex; justify-content: end;">*<i>Si procede, esta ventana deberá permanecer abierta</i></p>
+                    <p style="display: flex; justify-content: end;">*<i>${warningMsg}</i></p>
                     `;
                     document.getElementById('continuePostprocessing').disabled = false;
                     document.getElementById('continuePostprocessing').style.display = "";
@@ -243,9 +284,10 @@
                 error: function(error) {
                     console.error(error);
                     const postBody = document.getElementById('postBody');
+                    const errorMsg = "{% translate 'An error occurred, please close this window and try again later' %}";
                     postBody.innerHTML = `
                     <div class="alert alert-block alert-danger">
-                        <h6>Ocurrió un error, favor cerrar esta ventana e intentar más tarde</h>
+                        <h6>${errorMsg}</h>
                         <input type="hidden" name="pending_image" value="">
                     </div>
                     `;
@@ -279,9 +321,10 @@
                 error: function (error){
                     console.error(error);
                     const postBody = document.getElementById('postBody');
+                    const errorMsg = "{% translate 'An unexpected error occurred, please contact the administrator before closing this window' %}";
                     postBody.innerHTML = `
                     <div class="alert alert-danger">
-                        <h6>Ocurrió un error, favor cerrar esta ventana e intentar más tarde</h6>
+                        <h6>${errorMsg}</h6>
                         <input type="hidden" name="pending_image" value="">
                     </div>
                     `;
@@ -299,6 +342,7 @@
             );
             const logFileDefault = "{% static 'assets/processed' %}";
             const progressDOM = document.getElementById("progressDom");
+            const errorMsg = "{% translate 'An unexpected error occurred, please contact the administrator before closing this window' %}";
             updateProgress({
                 taskId: taskId,
                 progressUrl: progressUrl,
@@ -308,7 +352,7 @@
                 logFileDefault: logFileDefault,
                 onErrorMessage: () => {
                     return `
-                    <h6>Ocurrió un error inesperado, favor contactar al administrador antes de cerrar esta ventana</h6>
+                    <h6>${errorMsg}</h6>
                     `;
                 },
                 successCallback: () => {
@@ -324,12 +368,12 @@
     </script>
 {% endblock %}
     {% block content %}
-    <h1>Digitalización de Especímenes</h1>
+    <h1>{% translate "Specimens Digitalization" %}</h1>
     <!-- DataTables Example -->
     <div class="card mb-3">
         <div class="row">
             <div class="col-3">
-                <a class="btn btn-primary" href="#" onclick="openProcessPendingImages()" {% if request.user|has_group:"Test" %} style="visibility: hidden;"{% endif %}>Procesar imagenes pendientes</a>
+                <a class="btn btn-primary" href="#" onclick="openProcessPendingImages()">{% translate "Process pending images" %}</a>
             </div>
         </div>
         <div class="row">
@@ -339,20 +383,21 @@
         </div>
         <div class="card-header">
             <i class="fas fa-table"></i>
-            Tabla de Páginas</div>
+            {% translate "Page Table" %}
+        </div>
         <div class="card-body">
             <div class="table-responsive">
                 <table class="table table-bordered" id="PagesTable" width="100%" cellspacing="0">
                     <thead>
                     <tr>
-                        <th>Sesión</th>
-                        <th>Creado por</th>
-                        <th>Fecha creación</th>
-                        <th>Sin Estado</th>
-                        <th>Encontrados</th>
-                        <th>No Encontrados</th>
-                        <th>Digitalizados</th>
-                        <th>Link</th>
+                        <th>{% translate "Session" %}</th>
+                        <th>{% translate "Created by" %}</th>
+                        <th>{% translate "Created at" %}</th>
+                        <th>{% translate "No State" %}</th>
+                        <th>{% translate "Found" %}</th>
+                        <th>{% translate "Not Found" %}</th>
+                        <th>{% translate "Digitalized" %}</th>
+                        <th>{% translate "URL" %}</th>
                     </tr>
                     </thead>
                     <tbody>
@@ -371,13 +416,13 @@
                 <table class="table table-bordered" id="VouchersTable" width="100%" cellspacing="0">
                     <thead>
                     <tr>
-                        <th>Estado</th>
-                        <th>ID Herbario</th>
-                        <th>Nombre Especie</th>
-                        <th>Colectado por</th>
-                        <th>Número de Colecta</th>
-                        <th>Ubicación</th>
-                        <th>Imagen</th>
+                        <th>{% translate "State" %}</th>
+                        <th>{% translate "Herbarium ID" %}</th>
+                        <th>{% translate "Species Name" %}</th>
+                        <th>{% translate "State" %}</th>
+                        <th>{% translate "Collection Number" %}</th>
+                        <th>{% translate "Locality" %}</th>
+                        <th>{% translate "Image" %}</th>
                     </tr>
                     </thead>
                     <tbody>
@@ -408,7 +453,7 @@
 
                 </div>
                 <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cerrar</button>
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">{% translate "Close" %}</button>
                 </div>
             </div>
         </div>
@@ -417,14 +462,14 @@
         <div class="modal-dialog modal-xl">
             <div class="modal-content">
                 <div class="modal-header">
-                    <h5 class="modal-title">Procesamiento de imágenes pendientes</h5>
+                    <h5 class="modal-title">{% translate "Pending image processing" %}</h5>
                 </div>
                 <div id="postBody" class="modal-body">
                     <input type="hidden" name="pending-images" value="">
                 </div>
                 <div class="modal-footer">
-                    <button id="continuePostprocessing" type="button" class="btn btn-primary" style="display: none;" onclick="processPendingImages()">Continuar</button>
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cerrar</button>
+                    <button id="continuePostprocessing" type="button" class="btn btn-primary" style="display: none;" onclick="processPendingImages()">{% translate "Continue" %}</button>
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">{% translate "Close" %}</button>
                 </div>
             </div>
         </div>
