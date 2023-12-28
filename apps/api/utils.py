@@ -8,7 +8,7 @@ from modeltranslation.utils import get_language
 from rest_framework.request import Request
 
 from apps.catalog.models import ATTRIBUTES, TAXONOMIC_RANK, CatalogQuerySet
-from apps.digitalization.models import Areas
+from apps.digitalization.models import Area
 
 
 def filter_query_set(queryset: CatalogQuerySet, request: Request) -> CatalogQuerySet:
@@ -38,7 +38,7 @@ def filter_query_set(queryset: CatalogQuerySet, request: Request) -> CatalogQuer
 def filter_by_geo(request: HttpRequest, point_query_name: str) -> Q:
     query = Q()
     for area in request.GET.getlist("area", None):
-        areas_model = Areas.objects.get(pk=area)
+        areas_model = Area.objects.get(pk=area)
         query = query | Q(**{point_query_name: areas_model.geometry})
     for geometry in request.GET.getlist("geometry", None):
         query = query | Q(**{point_query_name: geometry})

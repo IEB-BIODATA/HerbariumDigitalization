@@ -281,7 +281,10 @@ LEAFLET_CONFIG = {
         'draw': {
             'css': 'https://cdnjs.cloudflare.com/ajax/libs/leaflet.draw/1.0.4/leaflet.draw.css',
             'js': 'https://cdnjs.cloudflare.com/ajax/libs/leaflet.draw/1.0.4/leaflet.draw.js',
-        }
+        },
+        'forms': {
+            'auto-include': True,
+        },
     }
 }
 

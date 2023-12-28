@@ -1,6 +1,6 @@
 from modeltranslation.translator import register, TranslationOptions
 
-from .models import Herbarium, GeneratedPage, Licence, Areas
+from .models import Herbarium, GeneratedPage, Licence, Area, ProtectedArea, TemporalArea
 
 
 @register(Herbarium)
@@ -18,6 +18,16 @@ class LicenceTranslationOptions(TranslationOptions):
     fields = ('name',)
 
 
-@register(Areas)
+@register(Area)
 class AreasTranslationOptions(TranslationOptions):
     fields = ('name',)
+
+
+@register(ProtectedArea)
+class ProtectedAreaOptions(TranslationOptions):
+    fields = ('category',)
+
+
+@register(TemporalArea)
+class TemporalAreaTranslationOptions(TranslationOptions):
+    pass

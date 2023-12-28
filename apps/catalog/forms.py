@@ -1,8 +1,10 @@
 from django import forms
 from django.core.exceptions import ValidationError
 from django.utils.translation import gettext_lazy as _
+from leaflet.forms.widgets import LeafletWidget
 
-from .models import Division, ClassName, Order, Family, Genus, Species, Synonymy, Binnacle, CommonName
+from .models import Division, ClassName, Order, Family, Genus, Species, Synonymy, Binnacle, CommonName, Region
+from ..home.forms import GeographicFieldForm
 
 
 class DivisionForm(forms.ModelForm):
@@ -12,11 +14,6 @@ class DivisionForm(forms.ModelForm):
             'name',
             'kingdom',
         )
-
-        labels = {
-            'name': _('Name'),
-            'kingdom': _('Kingdom'),
-        }
 
         widgets = {
             'name': forms.TextInput(attrs={'required': True, 'class': "form-control"}),
@@ -32,11 +29,6 @@ class ClassForm(forms.ModelForm):
             'division',
         )
 
-        labels = {
-            'name': _('Name'),
-            'division': _('Division'),
-        }
-
         widgets = {
             'name': forms.TextInput(attrs={'required': True, 'class': "form-control"}),
             'division': forms.Select(attrs={'required': True, 'class': "form-control"}),
@@ -50,11 +42,6 @@ class OrderForm(forms.ModelForm):
             'name',
             'class_name',
         )
-
-        labels = {
-            'name': _('Name'),
-            'class_name': _('Class'),
-        }
 
         widgets = {
             'name': forms.TextInput(attrs={'required': True, 'class': "form-control"}),
@@ -70,11 +57,6 @@ class FamilyForm(forms.ModelForm):
             'order',
         )
 
-        labels = {
-            'name': _('Name'),
-            'order': _('Order'),
-        }
-
         widgets = {
             'name': forms.TextInput(attrs={'required': True, 'class': "form-control"}),
             'order': forms.Select(attrs={'required': True, 'class': "form-control"}),
@@ -88,11 +70,6 @@ class GenusForm(forms.ModelForm):
             'name',
             'family',
         )
-
-        labels = {
-            'name': _('Name'),
-            'family': _('Family'),
-        }
 
         widgets = {
             'name': forms.TextInput(attrs={'required': True, 'class': "form-control"}),
@@ -143,38 +120,6 @@ class SpeciesForm(forms.ModelForm):
             'conservation_state', 'determined', 'id_mma',
         )
 
-        labels = {
-            'genus': _('Genus'),
-            'specific_epithet': _('Specific Epithet'),
-            'scientific_name_authorship': _('Author'),
-            'subspecies': _('Subspecies'),
-            'ssp_authorship': _('Subspecies Author'),
-            'variety': _('Variety'),
-            'variety_authorship': _('Variety Author'),
-            'form': _('Form'),
-            'form_authorship': _('Form Author'),
-            'plant_habit': _('Habit'),
-            'env_habit': _('Life form'),
-            'cycle': _('Life Cycle'),
-            'status': _('Origin'),
-            'in_argentina': _('In Argentina'),
-            'in_bolivia': _('In Bolivia'),
-            'in_peru': _('In Peru'),
-            'maximum_height': _('Maximum Height'),
-            'minimum_height': _('Minimum Height'),
-            'notes': _('Notes'),
-            'publication': _('Publication'),
-            'volume': _('Volume'),
-            'pages': _('Pages'),
-            'type_id': _('Type ID'),
-            'common_names': _('Common Names'),
-            'synonyms': _('Synonyms'),
-            'region': _('Region Distribution'),
-            'conservation_state': _('Conservation State'),
-            'determined': _('Determined?'),
-            'id_mma': _('MMA ID'),
-        }
-
         widgets = {
             'id_taxa': forms.HiddenInput(),
             'genus': forms.Select(attrs={'class': "form-control"}),
@@ -224,57 +169,57 @@ class SpeciesForm(forms.ModelForm):
         }
 
     def clean_genus(self):
-        genus = self.cleaned_data["genus"]
+        genus = self.cleaned_data['genus']
         if genus is None:
-            raise ValidationError("Género es requerido")
+            raise ValidationError(_('Genus is required'))
         return genus
 
     def clean_specific_epithet(self):
-        specific_epithet = self.cleaned_data["specific_epithet"]
+        specific_epithet = self.cleaned_data['specific_epithet']
         if specific_epithet is None:
-            raise ValidationError("Epíteto es requerido")
+            raise ValidationError(_('Epithet is required'))
         return specific_epithet
 
     def clean_ssp_authorship(self):
-        subspecies_authors = self.cleaned_data["ssp_authorship"]
-        if "specific_epithet" in self.cleaned_data:
-            specific_epithet = self.cleaned_data["specific_epithet"]
+        subspecies_authors = self.cleaned_data['ssp_authorship']
+        if 'specific_epithet' in self.cleaned_data:
+            specific_epithet = self.cleaned_data['specific_epithet']
         else:
             return subspecies_authors
-        subspecies = self.cleaned_data["subspecies"]
+        subspecies = self.cleaned_data['subspecies']
         if subspecies is not None and subspecies_authors is None and not (
                 specific_epithet == subspecies
         ):
-            raise ValidationError("Completar autor(es) de subspecies")
+            raise ValidationError(_('Subspecies authorship is required'))
         return subspecies_authors
 
     def clean_variety_authorship(self):
-        variety_authors = self.cleaned_data["variety_authorship"]
-        if "specific_epithet" in self.cleaned_data:
-            specific_epithet = self.cleaned_data["specific_epithet"]
+        variety_authors = self.cleaned_data['variety_authorship']
+        if 'specific_epithet' in self.cleaned_data:
+            specific_epithet = self.cleaned_data['specific_epithet']
         else:
             return variety_authors
-        subspecies = self.cleaned_data["subspecies"]
-        variety = self.cleaned_data["variety"]
+        subspecies = self.cleaned_data['subspecies']
+        variety = self.cleaned_data['variety']
         if variety is not None and variety_authors is None and not (
                 specific_epithet == variety or subspecies == variety
         ):
-            raise ValidationError("Completar autor(es) de variedad")
+            raise ValidationError(_('Variety authorship is required'))
         return variety_authors
 
     def clean_form_authorship(self):
-        form_authors = self.cleaned_data["form_authorship"]
-        if "specific_epithet" in self.cleaned_data:
-            specific_epithet = self.cleaned_data["specific_epithet"]
+        form_authors = self.cleaned_data['form_authorship']
+        if 'specific_epithet' in self.cleaned_data:
+            specific_epithet = self.cleaned_data['specific_epithet']
         else:
             return form_authors
-        subspecies = self.cleaned_data["subspecies"]
-        variety = self.cleaned_data["variety"]
-        form = self.cleaned_data["form"]
+        subspecies = self.cleaned_data['subspecies']
+        variety = self.cleaned_data['variety']
+        form = self.cleaned_data['form']
         if form is not None and form_authors is None and not (
                 specific_epithet == form or subspecies == form or variety == form
         ):
-            raise ValidationError("Completar autor(es) de forma")
+            raise ValidationError(_('Form authorship is required'))
         return form_authors
 
 
@@ -295,21 +240,6 @@ class SynonymyForm(forms.ModelForm):
             'form',
             'form_authorship',
         )
-
-        labels = {
-            'scientific_name': _('Scientific Name'),
-            'scientific_name_full': _('Complete Scientific Name'),
-            'scientific_name_db': _('Database Scientific Name'),
-            'genus': _('Genus'),
-            'specific_epithet': _('Specific Epithet'),
-            'scientific_name_authorship': _('Author'),
-            'subspecies': _('Subspecies'),
-            'ssp_authorship': _('Subspecies Author'),
-            'variety': _('Variety'),
-            'variety_authorship': _('Variety Author'),
-            'form': _('Form'),
-            'form_authorship': _('Form Author'),
-        }
 
         widgets = {
             'scientific_name': forms.HiddenInput(),
@@ -334,10 +264,12 @@ class CommonNameForm(forms.ModelForm):
             'name',
         )
 
-        labels = {
-            'name': _('Name'),
-        }
-
         widgets = {
             'name': forms.TextInput(attrs={'required': True, 'class': "form-control"}),
         }
+
+
+class RegionForm(GeographicFieldForm):
+    class Meta:
+        model = Region
+        fields = '__all__'
