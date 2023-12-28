@@ -558,7 +558,7 @@ msgstr "Fotografía"
 
 #: templates/digitalization/gallery_images.html:108
 msgid "Gallery Images"
-msgstr ""
+msgstr "Imágenes de Galería"
 
 #: templates/digitalization/load_priority_vouchers_file.html:126
 msgid "Print"

@@ -20,13 +20,12 @@ from urllib.parse import urlparse, parse_qs, urlencode
 from apps.catalog.models import Species, Synonymy, Family, Division, ClassName, Order, Status, Genus, \
     Region, ConservationState, PlantHabit, EnvironmentalHabit, Cycle, FinderView, CommonName
 from apps.digitalization.models import VoucherImported, BannerImage
-from intranet.utils import get_geometry
+from intranet.utils import get_geometry_post
 from .serializers import SpeciesFinderSerializer, \
     SynonymyFinderSerializer, DivisionSerializer, ClassSerializer, OrderSerializer, \
     FamilySerializer, DistributionSerializer, \
     FinderSerializer, GenusSerializer, CommonNameSerializer, \
-    SpeciesDetailsSerializer, SynonymyDetailsSerializer, SpecimenDetailSerializer, SpecimenFinderSerializer, \
-    TaxonomicApiSerializer
+    SpeciesDetailsSerializer, SynonymyDetailsSerializer, SpecimenDetailSerializer, SpecimenFinderSerializer
 from .utils import filter_query_set, OpenAPIKingdom, OpenAPIClass, OpenAPIOrder, OpenAPIFamily, OpenAPIGenus, \
     OpenAPISpecies, OpenAPIPlantHabit, OpenAPIEnvHabit, OpenAPIStatus, OpenAPICycle, OpenAPIRegion, OpenAPIConservation, \
     OpenAPICommonName, OpenAPISearch, OpenAPIDivision, OpenAPIHerbarium, OpenApiPaginated, OpenAPILang, filter_by_geo, \
@@ -329,7 +328,7 @@ class POSTRedirect(APIView):
         },
     )
     def post(self, request, *args, **kwargs):
-        geometry = get_geometry(request)[0]
+        geometry = get_geometry_post(request)[0]
         area = register_temporal_geometry(geometry)
         original_url = request.get_full_path()
         parsed_url = urlparse(original_url)

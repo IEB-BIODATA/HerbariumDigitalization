@@ -1,17 +1,30 @@
 from __future__ import annotations
+
 import logging
 import os
 import tempfile
 from abc import ABC, abstractmethod
-from typing import Dict, List
-
 from django.contrib.gis.gdal import DataSource
-from django.contrib.gis.geos import GEOSGeometry
+from django.contrib.gis.geos import GEOSGeometry, Point, LineString, LinearRing, Polygon, MultiPoint, MultiLineString, \
+    MultiPolygon, GeometryCollection
+from django.core.files.uploadedfile import UploadedFile
 from django.core.paginator import Paginator
 from django.db import models
 from django.db.models import Q, QuerySet
 from django.http import HttpRequest, JsonResponse
 from rest_framework.serializers import SerializerMetaclass
+from typing import Dict, List, Tuple
+
+GEOM_TYPE = {
+    0: Point,
+    1: LineString,
+    2: LinearRing,
+    3: Polygon,
+    4: MultiPoint,
+    5: MultiLineString,
+    6: MultiPolygon,
+    7: GeometryCollection,
+}
 
 
 class CatalogQuerySet(models.QuerySet, ABC):
@@ -93,14 +106,53 @@ def paginated_table(
     })
 
 
-def get_geometry(request: HttpRequest) -> GEOSGeometry:
+def get_geometry_post(request: HttpRequest) -> GEOSGeometry:
     kml_file = request.data.get("file")
-    file_extension = os.path.splitext(kml_file.name)[1]
+    return get_geometry(kml_file)
+
+
+def get_geometry(file: UploadedFile) -> GEOSGeometry:
+    file_extension = os.path.splitext(file.name)[1]
     with tempfile.NamedTemporaryFile(delete=True, suffix=file_extension) as temp_file:
-        kml_data = kml_file.read()
+        kml_data = file.read()
         temp_file.write(kml_data)
         temp_file.seek(0)
         data_source = DataSource(temp_file.name)
         layer = data_source[0]
         kml_geometry = layer.get_geoms(True)
-    return kml_geometry
+        if len(kml_geometry) > 1:
+            logging.warning(f"File has {len(kml_geometry)} layers, using first one only")
+        geometry = kml_geometry[0]
+    if geometry.hasz:
+        logging.debug(f"Stripping z dimension of {geometry.geom_type}")
+        geometry = strip_z_dimension(geometry)
+    return geometry
+
+
+def strip_z_dimension(geometry: GEOSGeometry) -> GEOSGeometry:
+    if geometry.num_geom > 1:
+        geoms = list()
+        for geom in geometry:
+            geoms.append(__strip_z_dimension_coord__(geom))
+        return GEOM_TYPE[geometry.geom_typeid](*geoms)
+    else:
+        return __strip_z_dimension_coord__(geometry)
+
+
+def __strip_z_dimension_coord__(geometry: GEOSGeometry) -> GEOSGeometry:
+    if geometry.geom_typeid == 3:
+        rings = list()
+        for linear_ring in geometry:
+            rings.append(__strip_z_dimension_coord__(linear_ring))
+        return Polygon(*rings)
+    else:
+        return GEOM_TYPE[geometry.geom_typeid](
+            list(map(__strip_z__, geometry.coords)),
+            srid=geometry.srid
+        )
+
+
+def __strip_z__(coordinate: Tuple[float, float, float]) -> Tuple[float, float]:
+    if abs(coordinate[2] - 1e-6) < 0:
+        logging.warning(f"{coordinate[2]} is not a zero Z coordinate")
+    return coordinate[0], coordinate[1]

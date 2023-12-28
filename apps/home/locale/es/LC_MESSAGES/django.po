@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2023-11-24 21:28-0300\n"
+"POT-Creation-Date: 2023-12-28 11:07-0300\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -18,42 +18,62 @@ msgstr ""
 "Content-Transfer-Encoding: 8bit\n"
 "Plural-Forms: nplurals=2; plural=(n != 1);\n"
 
-#: apps/home/forms.py:20
+#: apps/home/forms.py:24
 msgid "Language"
 msgstr "Idioma"
 
-#: apps/home/forms.py:21
+#: apps/home/forms.py:25
 msgid "Theme"
 msgstr "Tema"
 
-#: apps/home/forms.py:33
+#: apps/home/forms.py:37
 msgid "Old Password"
 msgstr "Antigua Contraseña"
 
-#: apps/home/forms.py:38
+#: apps/home/forms.py:42
 msgid "New Password"
 msgstr "Nueva Contraseña"
 
-#: apps/home/forms.py:43
+#: apps/home/forms.py:47
 msgid "Validate Password"
 msgstr "Confirmar Contraseña"
 
-#: apps/home/forms.py:62
+#: apps/home/forms.py:66
 msgid "User Name"
 msgstr "Nombre de usuario"
 
-#: apps/home/forms.py:63
+#: apps/home/forms.py:67
 msgid "First Name"
 msgstr "Nombres"
 
-#: apps/home/forms.py:64
+#: apps/home/forms.py:68
 msgid "Last Name"
 msgstr "Apellidos"
 
-#: apps/home/forms.py:65
+#: apps/home/forms.py:69
 msgid "Email"
 msgstr "Email"
+
+#: apps/home/forms.py:100
+msgid "Geometry File"
+msgstr "Archivo de Geometría"
+
+#: apps/home/forms.py:101
+msgid "Geometry"
+msgstr "Geometría"
+
+#: apps/home/forms.py:122
+msgid "Geometry is required"
+msgstr "Geometría es requerido"
 
 #: apps/home/models.py:7
 msgid "Light"
 msgstr "Claro"
+
+#: apps/home/models.py:17
+msgid "Profile"
+msgstr "Perfil"
+
+#: apps/home/models.py:18
+msgid "Profiles"
+msgstr "Perfiles"
