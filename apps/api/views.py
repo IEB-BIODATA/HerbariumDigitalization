@@ -25,7 +25,8 @@ from .serializers import SpeciesFinderSerializer, \
     SynonymyFinderSerializer, DivisionSerializer, ClassSerializer, OrderSerializer, \
     FamilySerializer, DistributionSerializer, \
     FinderSerializer, GenusSerializer, CommonNameSerializer, \
-    SpeciesDetailsSerializer, SynonymyDetailsSerializer, SpecimenDetailSerializer, SpecimenFinderSerializer
+    SpeciesDetailsSerializer, SynonymyDetailsSerializer, SpecimenDetailSerializer, SpecimenFinderSerializer, \
+    RegionDetailsSerializer
 from .utils import filter_query_set, OpenAPIKingdom, OpenAPIClass, OpenAPIOrder, OpenAPIFamily, OpenAPIGenus, \
     OpenAPISpecies, OpenAPIPlantHabit, OpenAPIEnvHabit, OpenAPIStatus, OpenAPICycle, OpenAPIRegion, OpenAPIConservation, \
     OpenAPICommonName, OpenAPISearch, OpenAPIDivision, OpenAPIHerbarium, OpenApiPaginated, OpenAPILang, filter_by_geo, \
@@ -303,6 +304,20 @@ class FinderApiView(ListAPIView):
         if category is not None and category.lower() != "all":
             filters["type"] = category.lower()
         return super().get_queryset().filter(**filters)
+
+
+class RegionDetails(RetrieveAPIView):
+    queryset = Region.objects.all()
+    serializer_class = RegionDetailsSerializer
+
+    @extend_schema(parameters=[
+        OpenAPILang(),
+    ])
+    def get(self, request, *args, **kwargs):
+        default_language = get_language()
+        lang = request.query_params.get("lang", default_language)
+        activate(lang)
+        return super(RegionDetails, self).get(request, *args, **kwargs)
 
 
 class POSTRedirect(APIView):
