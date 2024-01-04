@@ -848,7 +848,7 @@ def vouchers_download(request):
         ]
         logging.debug("Filtering voucher according to state")
         species = VouchersView.objects.values_list(*headers).filter(
-            Q(voucher_state=1) | Q(voucher_state=7) | Q(voucher_state=8)
+            Q(voucher_state=1) | Q(voucher_state=3) | Q(voucher_state=4) | Q(voucher_state=7) | Q(voucher_state=8)
         ).order_by('id')
         databook = tablib.Databook()
         data_set = tablib.Dataset(*species, headers=headers, title='Vouchers')
