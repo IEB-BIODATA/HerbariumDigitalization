@@ -1,5 +1,4 @@
 # -*- coding: utf-8 -*-
-# from django.db import models
 from __future__ import annotations
 
 import celery
@@ -8,7 +7,6 @@ import math
 import numpy as np
 import pandas as pd
 import pytz
-from PIL import Image
 from django.conf import settings
 from django.contrib.auth.models import User
 from django.contrib.gis.db import models
@@ -40,6 +38,22 @@ VOUCHER_STATE = (
     (8, _('Pending')),
 )
 
+DESIGNATION_TYPES = (
+    (0, _('Protected Area')),
+    (1, _('Private Conservation')),
+    (2, _('Other Designations')),
+)
+
+IUCN_CATEGORIES = (
+    ('Ia', _('strict nature reserve')),
+    ('Ib', _('wilderness area')),
+    ('II', _('national park')),
+    ('III', _('natural monument or feature')),
+    ('IV', _('habitat or species management area')),
+    ('V', _('protected landscape or seascape')),
+    ('VI', _('protected area with sustainable use of natural resources')),
+)
+
 DCW_SQL = {
     "catalogNumber": "catalog_number",
     "recordNumber": "record_number",
@@ -60,12 +74,15 @@ DCW_SQL = {
 
 
 class Herbarium(models.Model):
-    name = models.CharField(max_length=300, blank=False, null=False)
-    collection_code = models.CharField(max_length=6, blank=False, null=False)
-    institution_code = models.CharField(max_length=10, blank=True, null=True)
+    name = models.CharField(verbose_name=_("Name"), max_length=300, blank=False, null=False)
+    collection_code = models.CharField(verbose_name=_("Collection Code"), max_length=6, blank=False, null=False,
+                                       help_text=_("No more than %d letters") % 6)
+    institution_code = models.CharField(verbose_name=_("Institution Code"), max_length=10, blank=True, null=True,
+                                        help_text=_("No more than %d letters") % 10)
 
     class Meta:
-        verbose_name_plural = "Herbariums"
+        verbose_name = _("Herbarium")
+        verbose_name_plural = _("Herbariums")
 
     def __unicode__(self):
         return self.name
@@ -79,11 +96,13 @@ class Herbarium(models.Model):
 
 class ColorProfileFile(models.Model):
     file = models.FileField(
-        upload_to='uploads/color_profile/', validators=[validate_file_size],
+        verbose_name=_("File"),
+        upload_to='uploads/color_profile/',
+        validators=[validate_file_size],
         blank=False, null=False
     )
-    created_at = models.DateTimeField(blank=True, null=True, editable=False)
-    created_by = models.ForeignKey(User, on_delete=models.PROTECT, blank=True, null=True)
+    created_at = models.DateTimeField(verbose_name=_("Created at"), blank=True, null=True, editable=False)
+    created_by = models.ForeignKey(User, verbose_name=_("Created by"), on_delete=models.PROTECT, blank=True, null=True)
 
     def __unicode__(self):
         return self.file.name
@@ -91,17 +110,22 @@ class ColorProfileFile(models.Model):
     def __str__(self):
         return "%s " % self.file.name
 
+    class Meta:
+        verbose_name = _("Color Profile File")
+        verbose_name_plural = _("Color Profile Files")
+
 
 class GeneratedPage(models.Model):
-    name = models.CharField(max_length=300)
-    herbarium = models.ForeignKey(Herbarium, on_delete=models.CASCADE)
-    finished = models.BooleanField(default=False)
-    color_profile = models.ForeignKey(ColorProfileFile, on_delete=models.SET_NULL, blank=True, null=True)
-    created_at = models.DateTimeField(auto_now_add=True, blank=True, null=True, editable=False)
-    created_by = models.ForeignKey(User, on_delete=models.PROTECT)
+    name = models.CharField(verbose_name=_("Name"), max_length=300)
+    herbarium = models.ForeignKey(Herbarium, verbose_name=_("Herbarium"), on_delete=models.CASCADE)
+    finished = models.BooleanField(verbose_name=_("Finished?"), default=False)
+    color_profile = models.ForeignKey(ColorProfileFile, verbose_name=_("Color Profile File"), on_delete=models.SET_NULL, blank=True, null=True)
+    created_at = models.DateTimeField(verbose_name=_("Created at"), auto_now_add=True, blank=True, null=True, editable=False)
+    created_by = models.ForeignKey(User, verbose_name=_("Created by"), on_delete=models.PROTECT)
 
     class Meta:
-        verbose_name_plural = "Generated Pages"
+        verbose_name = _("Generated Page")
+        verbose_name_plural = _("Generated Pages")
 
     @property
     def total(self):
@@ -163,17 +187,18 @@ class GeneratedPage(models.Model):
 
 
 class BiodataCode(models.Model):
-    herbarium = models.ForeignKey(Herbarium, on_delete=models.CASCADE)
-    code = models.CharField(max_length=30, blank=False, null=False, unique=True)
-    catalog_number = models.IntegerField(blank=True, null=True)
-    created_at = models.DateTimeField(blank=True, null=True, editable=False)
-    created_by = models.ForeignKey(User, on_delete=models.PROTECT)
-    qr_generated = models.BooleanField(default=False)
-    page = models.ForeignKey(GeneratedPage, on_delete=models.CASCADE, blank=True, null=True)
-    voucher_state = models.IntegerField(choices=VOUCHER_STATE, default=0)
+    herbarium = models.ForeignKey(Herbarium, verbose_name=_("Herbarium"), on_delete=models.CASCADE)
+    code = models.CharField(verbose_name=_("Code"), max_length=30, blank=False, null=False, unique=True)
+    catalog_number = models.IntegerField(verbose_name=_("Catalog Number"), blank=True, null=True)
+    created_at = models.DateTimeField(verbose_name=_("Created at"), blank=True, null=True, editable=False)
+    created_by = models.ForeignKey(User, verbose_name=_("Created by"), on_delete=models.PROTECT)
+    qr_generated = models.BooleanField(verbose_name=_("Generated QR?"), default=False)
+    page = models.ForeignKey(GeneratedPage, verbose_name=_("Page"), on_delete=models.CASCADE, blank=True, null=True)
+    voucher_state = models.IntegerField(verbose_name=_("Voucher State"), choices=VOUCHER_STATE, default=0)
 
     class Meta:
-        verbose_name_plural = "BIODATA Codes"
+        verbose_name = _("BIODATA Code")
+        verbose_name_plural = _("BIODATA Codes")
 
     def __unicode__(self):
         return self.code
@@ -186,19 +211,28 @@ class BiodataCode(models.Model):
 
 
 class HerbariumMember(models.Model):
-    user = models.OneToOneField(User, unique=True, on_delete=models.CASCADE)
-    herbarium = models.ManyToManyField(Herbarium, blank=False)
+    user = models.OneToOneField(User, verbose_name=_("User"), unique=True, on_delete=models.CASCADE)
+    herbarium = models.ManyToManyField(Herbarium, verbose_name=_("Herbarium"), blank=False)
+
+    class Meta:
+        verbose_name = _('Herbarium')
+        verbose_name_plural = _('Herbariums')
 
 
 class PriorityVouchersFile(models.Model):
-    herbarium = models.ForeignKey(Herbarium, on_delete=models.CASCADE, blank=True, null=True)
-    file = models.FileField(upload_to='uploads/priority_vouchers/', validators=[validate_file_size], blank=False,
-                            null=False)
-    created_at = models.DateTimeField(blank=True, null=True, editable=False)
-    created_by = models.ForeignKey(User, on_delete=models.PROTECT, blank=True, null=True)
+    herbarium = models.ForeignKey(Herbarium, verbose_name=_("Herbarium"), on_delete=models.CASCADE, blank=True, null=True)
+    file = models.FileField(
+        verbose_name=_("File"),
+        upload_to='uploads/priority_vouchers/',
+        validators=[validate_file_size],
+        blank=False, null=False
+    )
+    created_at = models.DateTimeField(verbose_name=_("Created at"), blank=True, null=True, editable=False)
+    created_by = models.ForeignKey(User,verbose_name=_("Created by"),  on_delete=models.PROTECT, blank=True, null=True)
 
     class Meta:
-        verbose_name_plural = "Priority Vouchers Files"
+        verbose_name = _("Priority Vouchers File")
+        verbose_name_plural = _("Priority Vouchers Files")
 
     def __unicode__(self):
         return self.file.name
@@ -254,39 +288,50 @@ class VoucherImportedQuerySet(CatalogQuerySet):
 
 
 class VoucherImported(models.Model):
-    vouchers_file = models.ForeignKey(PriorityVouchersFile, on_delete=models.CASCADE, blank=True, null=True)
-    biodata_code = models.ForeignKey(BiodataCode, on_delete=models.CASCADE, blank=True, null=True)
-    herbarium = models.ForeignKey(Herbarium, on_delete=models.CASCADE, blank=True, null=True)
-    other_catalog_numbers = models.CharField(max_length=13, blank=True, null=True)
-    catalog_number = models.IntegerField(blank=True, null=True)
-    recorded_by = models.CharField(max_length=300, blank=True, null=True)
-    record_number = models.CharField(max_length=13, blank=True, null=True)
-    organism_remarks = models.CharField(max_length=300, blank=True, null=True)
-    scientific_name = models.ForeignKey(Species, on_delete=models.CASCADE, blank=True, null=True)
-    locality = models.CharField(max_length=300, blank=True, null=True)
-    verbatim_elevation = models.IntegerField(blank=True, null=True)
-    georeferenced_date = models.DateTimeField(blank=True, null=True)
-    decimal_latitude = models.FloatField(blank=True, null=True)
-    decimal_longitude = models.FloatField(blank=True, null=True)
-    identified_by = models.CharField(max_length=100, blank=True, null=True)
-    identified_date = models.CharField(max_length=100, blank=True, null=True)
-    image = models.ImageField(storage=PrivateMediaStorage(), blank=True, null=True)
-    image_resized_10 = models.ImageField(storage=PrivateMediaStorage(), blank=True, null=True)
-    image_resized_60 = models.ImageField(storage=PrivateMediaStorage(), blank=True, null=True)
-    image_public = models.ImageField(storage=PublicMediaStorage(), blank=True, null=True)
-    image_public_resized_10 = models.ImageField(storage=PublicMediaStorage(), blank=True, null=True)
-    image_public_resized_60 = models.ImageField(storage=PublicMediaStorage(), blank=True, null=True)
-    image_raw = models.ImageField(storage=PrivateMediaStorage(), blank=True, null=True)
-    point = models.PointField(null=True, blank=True, )
-    decimal_latitude_public = models.FloatField(blank=True, null=True)
-    decimal_longitude_public = models.FloatField(blank=True, null=True)
-    point_public = models.PointField(null=True, blank=True, )
-    priority = models.IntegerField(blank=True, null=True, default=3)
+    vouchers_file = models.ForeignKey(PriorityVouchersFile, verbose_name=_("Priority Vouchers File"),
+                                      on_delete=models.CASCADE, blank=True, null=True)
+    biodata_code = models.ForeignKey(BiodataCode, verbose_name=_("BIODATA Code"), on_delete=models.CASCADE,
+                                     blank=True, null=True)
+    herbarium = models.ForeignKey(Herbarium, verbose_name=_("Herbarium"), on_delete=models.CASCADE,
+                                  blank=True, null=True)
+    other_catalog_numbers = models.CharField(verbose_name=_("Other Catalog Numbers"), max_length=13,
+                                             blank=True, null=True)
+    catalog_number = models.IntegerField(verbose_name=_("Catalog Number"), blank=True, null=True)
+    recorded_by = models.CharField(verbose_name=_("Recorded by"), max_length=300, blank=True, null=True)
+    record_number = models.CharField(verbose_name=_("Record Number"), max_length=13, blank=True, null=True)
+    organism_remarks = models.CharField(verbose_name=_("Observations"), max_length=300, blank=True, null=True)
+    scientific_name = models.ForeignKey(Species, verbose_name=_("Species"), on_delete=models.CASCADE, blank=True,
+                                        null=True)
+    locality = models.CharField(verbose_name=_("Locality"), max_length=300, blank=True, null=True)
+    verbatim_elevation = models.IntegerField(verbose_name=_("Altitude"), blank=True, null=True)
+    georeferenced_date = models.DateTimeField(verbose_name=_("Georeferenced Date"), blank=True, null=True)
+    decimal_latitude = models.FloatField(verbose_name=_("Latitude"), blank=True, null=True)
+    decimal_longitude = models.FloatField(verbose_name=_("Longitude"), blank=True, null=True)
+    identified_by = models.CharField(verbose_name=_("Identified by"), max_length=100, blank=True, null=True)
+    identified_date = models.CharField(verbose_name=_("Identified Date"), max_length=100, blank=True, null=True)
+    identified_date = models.CharField(verbose_name=_("Identified Date"), max_length=100, blank=True, null=True)
+    image = models.ImageField(verbose_name=_("Image"), storage=PrivateMediaStorage(), blank=True, null=True)
+    image_resized_10 = models.ImageField(verbose_name=_("%d Times Smaller Image Scale") % 10,
+                                         storage=PrivateMediaStorage(), blank=True, null=True)
+    image_resized_60 = models.ImageField(verbose_name=_("%d Times Smaller Image Scale") % 60,
+                                         storage=PrivateMediaStorage(), blank=True, null=True)
+    image_public = models.ImageField(verbose_name=_("Public Image"), storage=PublicMediaStorage(), blank=True, null=True)
+    image_public_resized_10 = models.ImageField(verbose_name=_("%d Times Smaller Public Image Scale") % 10,
+                                                storage=PublicMediaStorage(), blank=True, null=True)
+    image_public_resized_60 = models.ImageField(verbose_name=_("%d Times Smaller Public Image Scale") % 60,
+                                                storage=PublicMediaStorage(), blank=True, null=True)
+    image_raw = models.ImageField(verbose_name=_("Raw Image"), storage=PrivateMediaStorage(), blank=True, null=True)
+    point = models.PointField(verbose_name=_("Point"), null=True, blank=True, )
+    decimal_latitude_public = models.FloatField(verbose_name=_("Public Latitude"), blank=True, null=True)
+    decimal_longitude_public = models.FloatField(verbose_name=_("Public Longitude"), blank=True, null=True)
+    point_public = models.PointField(verbose_name=_("Public Point"), null=True, blank=True, )
+    priority = models.IntegerField(verbose_name=_("Priority"), blank=True, null=True, default=3)
 
     objects = VoucherImportedQuerySet.as_manager()
 
     class Meta:
-        verbose_name_plural = "Vouchers"
+        verbose_name = _("Voucher")
+        verbose_name_plural = _("Vouchers")
 
     def generate_etiquette(self):
         if self.biodata_code.voucher_state == 7:
@@ -458,10 +503,11 @@ class VoucherImported(models.Model):
 
 
 class Licence(models.Model):
-    name = models.CharField(max_length=300, null=True)
-    link = models.CharField(max_length=300, blank=True, null=True)
-    short_name = models.CharField(max_length=20, null=True)
-    added_by = models.ForeignKey(User, on_delete=models.SET_NULL, default=1, editable=False, null=True)
+    name = models.CharField(verbose_name=_("Name"), max_length=300, null=True)
+    link = models.CharField(verbose_name=_("Link"), max_length=300, blank=True, null=True)
+    short_name = models.CharField(verbose_name=_("Short Name"), max_length=20, null=True)
+    added_by = models.ForeignKey(User, verbose_name=_("Added by"), on_delete=models.SET_NULL, default=1, editable=False,
+                                 null=True)
 
     def __unicode__(self):
         return self.name
@@ -471,20 +517,21 @@ class Licence(models.Model):
 
 
 class GalleryImage(models.Model):
-    scientific_name = models.ForeignKey(Species, on_delete=models.CASCADE)
-    image = models.ImageField(upload_to="gallery", storage=PublicMediaStorage())
-    thumbnail = models.ImageField(upload_to="gallery", storage=PublicMediaStorage(), null=True)
-    aspect_ratio = models.FloatField(null=True, blank=True)
-    specimen = models.ForeignKey(BiodataCode, on_delete=models.SET_NULL, blank=True, null=True)
-    taken_by = models.CharField(max_length=300, blank=True, null=True)
+    scientific_name = models.ForeignKey(Species, verbose_name=_("Species"), on_delete=models.CASCADE)
+    image = models.ImageField(verbose_name=_("Image"), upload_to="gallery", storage=PublicMediaStorage())
+    thumbnail = models.ImageField(verbose_name=_("Thumbnail"), upload_to="gallery", storage=PublicMediaStorage(), null=True)
+    aspect_ratio = models.FloatField(verbose_name=_("Aspect Ratio"), null=True, blank=True)
+    specimen = models.ForeignKey(BiodataCode, verbose_name=_("Specimen"), on_delete=models.SET_NULL, blank=True, null=True)
+    taken_by = models.CharField(verbose_name=_("Taken by"), max_length=300, blank=True, null=True)
     licence = models.ForeignKey(
         Licence,
+        verbose_name=_("Licence"),
         on_delete=models.SET_NULL,
         null=True,
         default=Licence.objects.filter(id=1).first().pk
     )
-    upload_by = models.ForeignKey(User, on_delete=models.PROTECT, default=1, editable=False)
-    upload_at = models.DateTimeField(auto_now_add=True, blank=True, null=True, editable=False)
+    upload_by = models.ForeignKey(User, verbose_name=_("Upload by"), on_delete=models.PROTECT, default=1, editable=False)
+    upload_at = models.DateTimeField(verbose_name=_("Upload at"), auto_now_add=True, blank=True, null=True, editable=False)
 
     def generate_thumbnail(self) -> None:
         celery.current_app.send_task('generate_thumbnail', (self.pk,))
@@ -492,20 +539,43 @@ class GalleryImage(models.Model):
 
 
 class BannerImage(models.Model):
-    specie = models.OneToOneField(Species, on_delete=models.CASCADE)
-    banner = models.ImageField(upload_to="banners", storage=PublicMediaStorage())
-    image = models.ForeignKey(VoucherImported, on_delete=models.CASCADE)
-    updated_at = models.DateTimeField(auto_now=True)
+    species = models.OneToOneField(Species, verbose_name=_("Species"), on_delete=models.CASCADE)
+    banner = models.ImageField(verbose_name=_("Banner"), upload_to="banners", storage=PublicMediaStorage())
+    image = models.ForeignKey(VoucherImported, verbose_name=_("Image"), on_delete=models.CASCADE)
+    updated_at = models.DateTimeField(verbose_name=_("Updated at"), auto_now=True)
 
 
-class Areas(models.Model):
-    name = models.CharField(max_length=300, null=True)
-    temporal = models.BooleanField(default=False)
-    protected_area = models.BooleanField(default=False)
-    geometry = GeometryField(dim=3)
-    created_at = models.DateTimeField(auto_now=True, blank=True, null=True, editable=False)
-    created_by = models.ForeignKey(User, on_delete=models.PROTECT, blank=True, null=True)
-    updated_at = models.DateTimeField(auto_now=True)
+class Area(models.Model):
+    name = models.CharField(verbose_name=_("Name"), max_length=300, null=True)
+    geometry = GeometryField(verbose_name=_("Geometry"), dim=2)
+    created_at = models.DateTimeField(verbose_name=_("Created at"), auto_now=True, blank=True, null=True,
+                                      editable=False)
+    created_by = models.ForeignKey(User, verbose_name=_("Created by"), on_delete=models.PROTECT, blank=True, null=True)
+    updated_at = models.DateTimeField(verbose_name=_("Updated at"), auto_now=True)
+
+    class Meta:
+        verbose_name = _("Area")
+        verbose_name_plural = _("Areas")
+
+
+class ProtectedArea(Area):
+    mma_code = models.CharField(verbose_name=_("MMA Code"), max_length=100, null=True)
+    designation_type = models.IntegerField(verbose_name=_("Designation Type"), choices=DESIGNATION_TYPES, default=0)
+    category = models.CharField(verbose_name=_("Category"), max_length=100, null=True)
+    iucn_management_category = models.CharField(verbose_name=_("IUCN Management Category"), max_length=5,
+                                                choices=IUCN_CATEGORIES, null=True)
+
+    class Meta:
+        verbose_name = _("Protected Area")
+        verbose_name_plural = _("Protected Areas")
+
+
+class TemporalArea(Area):
+    access = models.IntegerField(verbose_name=_("Access"), default=0)
+
+    class Meta:
+        verbose_name = _("Temporal Area")
+        verbose_name_plural = _("Temporal Areas")
 
 
 @receiver(post_delete, sender=PriorityVouchersFile)
