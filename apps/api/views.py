@@ -510,6 +510,13 @@ class SpecimensList(QueryList, POSTRedirect):
                 Q(image_public__isnull=False)
             )
         query = query & filter_by_geo(self.request, "point__within")
+        regions = self.request.GET.getlist("region", [])
+        if len(regions) > 0:
+            region_query = Q()
+            for pk in regions:
+                region = Region.objects.get(pk=pk)
+                region_query = region_query | Q(point__within=region.geometry)
+            query = query & region_query
         return queryset.filter(query).order_by(
             "scientific_name__genus__family__name",
             "scientific_name__genus__name",
