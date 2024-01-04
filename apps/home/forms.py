@@ -102,6 +102,7 @@ class GeographicFieldForm(forms.ModelForm):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
+        # TODO: instance on new items
         self.initial['geometry_selection'] = kwargs['instance'].geometry
         return
 
