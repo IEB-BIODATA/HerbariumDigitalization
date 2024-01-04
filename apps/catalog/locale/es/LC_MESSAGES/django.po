@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2023-12-28 11:07-0300\n"
+"POT-Creation-Date: 2024-01-04 17:31-0300\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -18,41 +18,49 @@ msgstr ""
 "Content-Transfer-Encoding: 8bit\n"
 "Plural-Forms: nplurals=2; plural=(n != 1);\n"
 
-#: apps/catalog/forms.py:91
+#: apps/catalog/forms.py:92
 msgid "Type"
 msgstr "Tipo"
 
-#: apps/catalog/forms.py:92
+#: apps/catalog/forms.py:93
 msgid "Modelo"
 msgstr "Modelo"
 
-#: apps/catalog/forms.py:93
+#: apps/catalog/forms.py:94
 msgid "Description"
 msgstr "Descripción"
 
-#: apps/catalog/forms.py:94
+#: apps/catalog/forms.py:95
 msgid "Note"
 msgstr "Nota"
 
-#: apps/catalog/forms.py:174
+#: apps/catalog/forms.py:175
 msgid "Genus is required"
 msgstr "Género es requerido"
 
-#: apps/catalog/forms.py:180
+#: apps/catalog/forms.py:181
 msgid "Epithet is required"
 msgstr "Epíteto es requerido"
 
-#: apps/catalog/forms.py:193
+#: apps/catalog/forms.py:194
 msgid "Subspecies authorship is required"
 msgstr "Completar autor(es) de subspecies"
 
-#: apps/catalog/forms.py:207
+#: apps/catalog/forms.py:208
 msgid "Variety authorship is required"
 msgstr "Completar autor(es) de variedad"
 
-#: apps/catalog/forms.py:222
+#: apps/catalog/forms.py:223
 msgid "Form authorship is required"
 msgstr "Completar autor(es) de forma"
+
+#: apps/catalog/forms.py:269
+msgid "Spanish name"
+msgstr "Nombre en español"
+
+#: apps/catalog/forms.py:270
+msgid "English name"
+msgstr "Nombre en inglés"
 
 #: apps/catalog/models.py:147 apps/catalog/models.py:401
 #: apps/catalog/models.py:444 apps/catalog/models.py:489

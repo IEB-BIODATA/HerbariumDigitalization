@@ -58,20 +58,21 @@ class ConservationStateSerializer(AttributeSerializer):
 
 class TaxonomicSerializer(CommonSerializer):
     created_by = ReadOnlyField(source='created_by.username')
+
     class Meta:
         model = TaxonomicModel
         fields = CommonSerializer.Meta.fields + ['created_by', 'created_at', 'updated_at', ]
         abstract = True
 
 
-class CommonNameSerializer(AttributeSerializer):
+class CommonNameSerializer(TaxonomicSerializer):
     species = SerializerMethodField()
 
     class Meta:
         model = CommonName
-        fields = AttributeSerializer.Meta.fields + ['name', 'species',]
+        fields = TaxonomicSerializer.Meta.fields + ['name', 'species', ]
 
-    def get_species(self, obj):
+    def get_species(self, obj: CommonName) -> str:
         species = obj.species_set.all()
         return "\t".join([specie.scientific_name for specie in species])
 
