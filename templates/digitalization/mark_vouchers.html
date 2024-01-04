@@ -166,6 +166,7 @@
                             const found = "{% translate 'Found' context 'spaced' %}";
                             const notFound = "{% translate 'Not Found' context 'spaced' %}";
                             const borrowed = "{% translate 'Borrowed' context 'spaced' %}";
+                            const lost = "{% translate 'Lost' context 'spaced' %}";
                             const inCuratorship = "{% translate 'In Curatorship' context 'spaced' %}";
                             return `
                             <select id="voucherClassFound${data.id}" class="${getStateClass(data.voucher_state)} custom-select custom-select-sm form-control form-control-sm" onchange="setState(${data.id}, this.value);">
@@ -173,6 +174,7 @@
                                 <option ${values[1]}>${found}</option>
                                 <option ${values[2]}>${notFound}</option>
                                 <option ${values[3]}>${borrowed}</option>
+                                <option ${values[4]}>${lost}</option>
                                 <option ${values[6]}>${inCuratorship}</option>
                             </select>
                             `;

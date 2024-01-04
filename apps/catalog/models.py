@@ -3,13 +3,13 @@ from __future__ import annotations
 import logging
 from abc import abstractmethod, ABC
 from copy import deepcopy
-from typing import List, Dict, Tuple, Any
-
 from django.contrib.auth.models import User
+from django.contrib.gis.db.models import GeometryField
 from django.db import connection
 from django.db import models
 from django.db.models import Q
-from django.utils.translation import gettext_lazy as _
+from django.utils.translation import gettext_lazy as _, pgettext_lazy
+from typing import List, Dict, Tuple
 
 from intranet.utils import CatalogQuerySet
 
@@ -143,16 +143,23 @@ class TaxonomicQuerySet(CatalogQuerySet, ABC):
         return self.filter(self.model.get_query_name(text))
 
 
+class AttributeModel(models.Model):
+    name = models.CharField(verbose_name=_("Name"), max_length=300, blank=True, null=True)
+    created_at = models.DateTimeField(verbose_name=_("Created at"), auto_now_add=True, blank=True, null=True,
+                                      editable=False)
+    updated_at = models.DateTimeField(verbose_name=_("Updated at"), auto_now=True)
+    created_by = models.ForeignKey(User, verbose_name=_("Created by"), on_delete=models.PROTECT, default=1,
+                                   editable=False)
+
+    class Meta:
+        abstract = True
+
+
 class StatusQuerySet(AttributeQuerySet):
     __attribute_name__ = "status"
 
 
-class Status(models.Model):
-    name = models.CharField(max_length=300, blank=True, null=True)
-    created_at = models.DateTimeField(auto_now_add=True, blank=True, null=True, editable=False)
-    updated_at = models.DateTimeField(auto_now=True)
-    created_by = models.ForeignKey(User, on_delete=models.PROTECT, default=1, editable=False)
-
+class Status(AttributeModel):
     objects = StatusQuerySet.as_manager()
 
     def __unicode__(self):
@@ -165,7 +172,8 @@ class Status(models.Model):
         return "Status::%s" % self.name
 
     class Meta:
-        verbose_name_plural = "Status"
+        verbose_name = _("Origin")
+        verbose_name_plural = _("Origins")
         ordering = ['name']
 
 
@@ -173,12 +181,7 @@ class CycleQuerySet(AttributeQuerySet):
     __attribute_name__ = "cycle"
 
 
-class Cycle(models.Model):
-    name = models.CharField(max_length=100, blank=True, null=True)
-    created_at = models.DateTimeField(auto_now_add=True, blank=True, null=True, editable=False)
-    updated_at = models.DateTimeField(auto_now=True)
-    created_by = models.ForeignKey(User, on_delete=models.PROTECT, default=1, editable=False)
-
+class Cycle(AttributeModel):
     objects = CycleQuerySet.as_manager()
 
     def __unicode__(self):
@@ -191,6 +194,7 @@ class Cycle(models.Model):
         return "Cycle::%s" % self.name
 
     class Meta:
+        verbose_name = _("Cycle")
         verbose_name_plural = _("Cycles")
         ordering = ['name']
 
@@ -199,12 +203,7 @@ class PlantHabitQuerySet(AttributeQuerySet):
     __attribute_name__ = "plant_habit"
 
 
-class PlantHabit(models.Model):
-    name = models.CharField(max_length=100, blank=True, null=True)
-    created_at = models.DateTimeField(auto_now_add=True, blank=True, null=True, editable=False)
-    updated_at = models.DateTimeField(auto_now=True)
-    created_by = models.ForeignKey(User, on_delete=models.PROTECT, default=1, editable=False)
-
+class PlantHabit(AttributeModel):
     objects = PlantHabitQuerySet.as_manager()
 
     def __unicode__(self):
@@ -217,7 +216,8 @@ class PlantHabit(models.Model):
         return "Plant Habit::%s" % self.name
 
     class Meta:
-        verbose_name_plural = "Plant Habits"
+        verbose_name = _("Plant Habit")
+        verbose_name_plural = _("Plant Habits")
         ordering = ['name']
 
 
@@ -225,12 +225,7 @@ class EnvironmentalHabitQuerySet(AttributeQuerySet):
     __attribute_name__ = "env_habit"
 
 
-class EnvironmentalHabit(models.Model):
-    name = models.CharField(max_length=100, blank=True, null=True)
-    created_at = models.DateTimeField(auto_now_add=True, blank=True, null=True, editable=False)
-    updated_at = models.DateTimeField(auto_now=True)
-    created_by = models.ForeignKey(User, on_delete=models.PROTECT, default=1, editable=False)
-
+class EnvironmentalHabit(AttributeModel):
     objects = EnvironmentalHabitQuerySet.as_manager()
 
     def __unicode__(self):
@@ -243,17 +238,14 @@ class EnvironmentalHabit(models.Model):
         return "Environmental Habit::%s" % self.__str__()
 
     class Meta:
-        verbose_name_plural = "Environmental Habits"
+        verbose_name = _("Environmental Habit")
+        verbose_name_plural = _("Environmental Habits")
         ordering = ['name']
 
 
-class Habit(models.Model):
+class Habit(AttributeModel):
     plant_habit = models.ForeignKey(PlantHabit, on_delete=models.CASCADE)
     env_habit = models.ForeignKey(EnvironmentalHabit, on_delete=models.CASCADE)
-    name = models.CharField(max_length=200, blank=True, null=True)
-    created_at = models.DateTimeField(auto_now_add=True, blank=True, null=True, editable=False)
-    updated_at = models.DateTimeField(auto_now=True)
-    created_by = models.ForeignKey(User, on_delete=models.PROTECT, default=1, editable=False)
 
     def __unicode__(self):
         return u"%s" % self.__str__()
@@ -287,13 +279,11 @@ class RegionQuerySet(AttributeQuerySet):
         return self.filter(key__in=[region.region_key for region in regions]).distinct()
 
 
-class Region(models.Model):
-    name = models.CharField(max_length=300, blank=True, null=True)
-    key = models.CharField(max_length=3, blank=True, null=True)
-    order = models.IntegerField(blank=True, null=True, db_column="order")
-    created_at = models.DateTimeField(auto_now_add=True, blank=True, null=True, editable=False)
-    updated_at = models.DateTimeField(auto_now=True)
-    created_by = models.ForeignKey(User, on_delete=models.PROTECT, default=1, editable=False)
+class Region(AttributeModel):
+    key = models.CharField(verbose_name=_("Key"), max_length=3, blank=True, null=True)
+    order = models.IntegerField(verbose_name=pgettext_lazy("ordering", "Order"), blank=True, null=True,
+                                db_column="order")
+    geometry = GeometryField(verbose_name=_("Geometry"), dim=2, blank=True, null=True)
 
     objects = RegionQuerySet.as_manager()
 
@@ -307,7 +297,8 @@ class Region(models.Model):
         return "Region::%s" % self.name
 
     class Meta:
-        verbose_name_plural = "Regions"
+        verbose_name = _('Region')
+        verbose_name_plural = _("Regions")
         ordering = ['order']
 
 
@@ -315,13 +306,9 @@ class ConservationStateQuerySet(AttributeQuerySet):
     __attribute_name__ = "conservation_state"
 
 
-class ConservationState(models.Model):
-    name = models.CharField(max_length=300, blank=True, null=True)
-    key = models.CharField(max_length=3, blank=True, null=True)
-    order = models.IntegerField(blank=True, null=True, db_column="order")
-    created_at = models.DateTimeField(auto_now_add=True, blank=True, null=True, editable=False)
-    updated_at = models.DateTimeField(auto_now=True)
-    created_by = models.ForeignKey(User, on_delete=models.PROTECT, default=1, editable=False)
+class ConservationState(AttributeModel):
+    key = models.CharField(verbose_name=_("Key"), max_length=3, blank=True, null=True)
+    order = models.IntegerField(verbose_name=pgettext_lazy("ordering", "Order"), blank=True, null=True, db_column="order")
 
     objects = ConservationStateQuerySet.as_manager()
 
@@ -335,14 +322,15 @@ class ConservationState(models.Model):
         return "Conservation State::%s" % self.name
 
     class Meta:
-        verbose_name_plural = "Conservation States"
+        verbose_name = _("Conservation State")
+        verbose_name_plural = _("Conservation States")
         ordering = ['order']
 
 
 class TaxonomicModel(models.Model):
-    created_at = models.DateTimeField(auto_now_add=True, blank=True, null=True, editable=False)
-    updated_at = models.DateTimeField(auto_now=True)
-    created_by = models.ForeignKey(User, on_delete=models.PROTECT, default=1, editable=False)
+    created_at = models.DateTimeField(verbose_name=_("Created at"), auto_now_add=True, blank=True, null=True, editable=False)
+    updated_at = models.DateTimeField(verbose_name=_("Updated at"), auto_now=True)
+    created_by = models.ForeignKey(User, verbose_name=_("Created by"), on_delete=models.PROTECT, default=1, editable=False)
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -410,7 +398,7 @@ class KingdomQuerySet(TaxonomicQuerySet):
 
 
 class Kingdom(TaxonomicModel):
-    name = models.CharField(max_length=300, blank=True, null=True)
+    name = models.CharField(verbose_name=_("Name"), max_length=300, blank=True, null=True)
 
     objects = KingdomQuerySet.as_manager()
 
@@ -443,7 +431,8 @@ class Kingdom(TaxonomicModel):
         return TaxonomicModel.get_created_by_query(search)
 
     class Meta:
-        verbose_name_plural = "Kingdoms"
+        verbose_name = _("Kingdom")
+        verbose_name_plural = _("Kingdoms")
         ordering = ['name']
 
 
@@ -452,8 +441,8 @@ class DivisionQuerySet(TaxonomicQuerySet):
 
 
 class Division(TaxonomicModel):
-    name = models.CharField(max_length=300, blank=True, null=True)
-    kingdom = models.ForeignKey(Kingdom, on_delete=models.CASCADE, blank=True, null=True, help_text="Reino")
+    name = models.CharField(verbose_name=_("Name"), max_length=300, blank=True, null=True)
+    kingdom = models.ForeignKey(Kingdom, verbose_name=_("Kingdom"), on_delete=models.CASCADE, blank=True, null=True, help_text="Reino")
 
     objects = DivisionQuerySet.as_manager()
 
@@ -487,7 +476,8 @@ class Division(TaxonomicModel):
         return TaxonomicModel.get_created_by_query(search)
 
     class Meta:
-        verbose_name_plural = "Divisions"
+        verbose_name_plural = _("Division")
+        verbose_name_plural = _("Divisions")
         ordering = ['name']
 
 
@@ -496,8 +486,8 @@ class ClassQuerySet(TaxonomicQuerySet):
 
 
 class ClassName(TaxonomicModel):
-    name = models.CharField(max_length=300, blank=True, null=True)
-    division = models.ForeignKey(Division, on_delete=models.CASCADE, blank=True, null=True)
+    name = models.CharField(verbose_name=_("Name"), max_length=300, blank=True, null=True)
+    division = models.ForeignKey(Division, verbose_name=_("Division"), on_delete=models.CASCADE, blank=True, null=True)
 
     objects = ClassQuerySet.as_manager()
 
@@ -532,7 +522,8 @@ class ClassName(TaxonomicModel):
 
     class Meta:
         db_table = "catalog_class_name"
-        verbose_name_plural = "Classes"
+        verbose_name = _("Class")
+        verbose_name_plural = _("Classes")
         ordering = ['name']
         default_related_name = "class_name"
 
@@ -542,8 +533,8 @@ class OrderQuerySet(TaxonomicQuerySet):
 
 
 class Order(TaxonomicModel):
-    name = models.CharField(max_length=300, blank=True, null=True)
-    class_name = models.ForeignKey(ClassName, on_delete=models.CASCADE, blank=True, null=True, help_text="Clase")
+    name = models.CharField(verbose_name=_("Name"), max_length=300, blank=True, null=True)
+    class_name = models.ForeignKey(ClassName, verbose_name=_("Class Name"), on_delete=models.CASCADE, blank=True, null=True, help_text="Clase")
 
     objects = OrderQuerySet.as_manager()
 
@@ -577,7 +568,8 @@ class Order(TaxonomicModel):
         return TaxonomicModel.get_created_by_query(search)
 
     class Meta:
-        verbose_name_plural = "Orders"
+        verbose_name = _("Order")
+        verbose_name_plural = _("Orders")
         ordering = ['name']
 
 
@@ -586,9 +578,9 @@ class FamilyQuerySet(TaxonomicQuerySet):
 
 
 class Family(TaxonomicModel):
-    name = models.CharField(max_length=300, blank=True, null=True)
+    name = models.CharField(verbose_name=_("Name"), max_length=300, blank=True, null=True)
     order = models.ForeignKey(
-        Order, on_delete=models.CASCADE, blank=True,
+        Order, verbose_name=_("Order"), on_delete=models.CASCADE, blank=True,
         null=True, help_text="order", db_column="order"
     )
 
@@ -645,7 +637,8 @@ class Family(TaxonomicModel):
         )
 
     class Meta:
-        verbose_name_plural = "Familys"
+        verbose_name = _("Family")
+        verbose_name_plural = _("Families")
         ordering = ['name']
 
 
@@ -654,8 +647,8 @@ class GenusQuerySet(TaxonomicQuerySet):
 
 
 class Genus(TaxonomicModel):
-    name = models.CharField(max_length=300, blank=True, null=True)
-    family = models.ForeignKey(Family, on_delete=models.CASCADE, blank=True, null=True, help_text="Familia")
+    name = models.CharField(verbose_name=_("Name"), max_length=300, blank=True, null=True)
+    family = models.ForeignKey(Family, verbose_name=_("Family"), on_delete=models.CASCADE, blank=True, null=True, help_text="Familia")
 
     objects = GenusQuerySet.as_manager()
 
@@ -718,23 +711,24 @@ class Genus(TaxonomicModel):
         )
 
     class Meta:
-        verbose_name_plural = "Genus"
+        verbose_name = _("Genus")
+        verbose_name_plural = _("Genera")
         ordering = ['name']
 
 
 class ScientificName(TaxonomicModel):
-    scientific_name = models.CharField(max_length=300, blank=True, null=True)
-    scientific_name_db = models.CharField(max_length=300, blank=True, null=True)
-    scientific_name_full = models.CharField(max_length=800, blank=True, null=True)
-    genus = models.CharField(max_length=300, blank=True, null=True)
-    specific_epithet = models.CharField(max_length=300, blank=True, null=True, help_text="EpitetoEspecifico")
-    scientific_name_authorship = models.CharField(max_length=500, blank=True, null=True, help_text="AutoresSp")
-    subspecies = models.CharField(max_length=300, blank=True, null=True)
-    ssp_authorship = models.CharField(max_length=500, blank=True, null=True)
-    variety = models.CharField(max_length=300, blank=True, null=True)
-    variety_authorship = models.CharField(max_length=500, blank=True, null=True)
-    form = models.CharField(max_length=300, blank=True, null=True)
-    form_authorship = models.CharField(max_length=500, blank=True, null=True)
+    scientific_name = models.CharField(verbose_name=_("Scientific Name"), max_length=300, blank=True, null=True)
+    scientific_name_db = models.CharField(verbose_name=_("Scientific Name Database"), max_length=300, blank=True, null=True)
+    scientific_name_full = models.CharField(verbose_name=_("Complete Scientific Name"), max_length=800, blank=True, null=True)
+    genus = models.CharField(verbose_name=_("Genus"), max_length=300, blank=True, null=True)
+    specific_epithet = models.CharField(verbose_name=_("Specific Epithet"), max_length=300, blank=True, null=True, help_text="EpitetoEspecifico")
+    scientific_name_authorship = models.CharField(verbose_name=_("Scientific Name Authorship"), max_length=500, blank=True, null=True, help_text="AutoresSp")
+    subspecies = models.CharField(verbose_name=_("Subspecies"), max_length=300, blank=True, null=True)
+    ssp_authorship = models.CharField(verbose_name=_("Subspecies Authorship"), max_length=500, blank=True, null=True)
+    variety = models.CharField(verbose_name=_("Variety"), max_length=300, blank=True, null=True)
+    variety_authorship = models.CharField(verbose_name=_("Variety Authorship"), max_length=500, blank=True, null=True)
+    form = models.CharField(verbose_name=pgettext_lazy("taxonomic", "Form"), max_length=300, blank=True, null=True)
+    form_authorship = models.CharField(verbose_name=_("Form Authorship"), max_length=500, blank=True, null=True)
 
     def __hash__(self):
         return super().__hash__()
@@ -851,7 +845,8 @@ class Synonymy(ScientificName):
         )
 
     class Meta:
-        verbose_name_plural = "Synonyms"
+        verbose_name = _("Synonym")
+        verbose_name_plural = _("Synonyms")
         ordering = ['scientific_name']
 
 
@@ -860,7 +855,7 @@ class CommonNameQuerySet(AttributeQuerySet):
 
 
 class CommonName(TaxonomicModel):
-    name = models.CharField(max_length=300, blank=True, null=True)
+    name = models.CharField(verbose_name=_("Name"), max_length=300, blank=True, null=True)
 
     objects = CommonNameQuerySet.as_manager()
 
@@ -892,7 +887,8 @@ class CommonName(TaxonomicModel):
         return TaxonomicModel.get_created_by_query(search)
 
     class Meta:
-        verbose_name_plural = "Common Names"
+        verbose_name = _("Common Name")
+        verbose_name_plural = _("Common Names")
         ordering = ['name']
 
 
@@ -920,30 +916,33 @@ class Species(ScientificName):
         "id_taxa_origin": "id del taxón de origen",
     }
 
-    id_taxa = models.IntegerField(blank=True, null=True, help_text="")
-    genus = models.ForeignKey(Genus, on_delete=models.CASCADE, blank=True, null=True, help_text="Género")
-    common_names = models.ManyToManyField(CommonName, blank=True)
-    in_argentina = models.BooleanField(default=False)
-    in_bolivia = models.BooleanField(default=False)
-    in_peru = models.BooleanField(default=False)
-    plant_habit = models.ManyToManyField(PlantHabit, blank=True, db_column="plant_habit")
-    env_habit = models.ManyToManyField(EnvironmentalHabit, blank=True, db_column="environmental_habit")
-    cycle = models.ManyToManyField(Cycle, blank=True, db_column="cycle")
-    status = models.ForeignKey(Status, on_delete=models.CASCADE, blank=True, null=True)
-    minimum_height = models.IntegerField(blank=True, null=True)
-    maximum_height = models.IntegerField(blank=True, null=True)
-    notes = models.CharField(max_length=1000, blank=True, null=True)
-    type_id = models.CharField(max_length=300, blank=True, null=True)
-    publication = models.CharField(max_length=300, blank=True, null=True)
-    volume = models.CharField(max_length=300, blank=True, null=True)
-    pages = models.CharField(max_length=300, blank=True, null=True)
-    year = models.IntegerField(blank=True, null=True)
-    synonyms = models.ManyToManyField(Synonymy, blank=True)
-    region = models.ManyToManyField(Region, blank=True, db_column="region")
-    id_mma = models.IntegerField(blank=True, null=True, help_text="")
-    conservation_state = models.ManyToManyField(ConservationState, blank=True)
-    determined = models.BooleanField(default=False)
-    id_taxa_origin = models.IntegerField(blank=True, null=True, help_text="")
+    id_taxa = models.IntegerField(verbose_name=_("ID Taxa"), blank=True, null=True, help_text="")
+    genus = models.ForeignKey(Genus, verbose_name=_("Genus"), on_delete=models.CASCADE, blank=True, null=True,
+                              help_text=_("Genus"))
+    common_names = models.ManyToManyField(CommonName, verbose_name=_("Common names"), blank=True)
+    in_argentina = models.BooleanField(verbose_name=_("In Argentina"), default=False)
+    in_bolivia = models.BooleanField(verbose_name=_("In Bolivia"), default=False)
+    in_peru = models.BooleanField(verbose_name=_("In Peru"), default=False)
+    plant_habit = models.ManyToManyField(PlantHabit, verbose_name=_("Habit"), blank=True, db_column="plant_habit")
+    env_habit = models.ManyToManyField(EnvironmentalHabit, verbose_name=_("Life Form"), blank=True,
+                                       db_column="environmental_habit")
+    cycle = models.ManyToManyField(Cycle, verbose_name=_("Cycle"), blank=True, db_column="cycle")
+    status = models.ForeignKey(Status, verbose_name=_("Origin"),  on_delete=models.CASCADE, blank=True, null=True)
+    minimum_height = models.IntegerField(verbose_name=_("Minimum Height"), blank=True, null=True)
+    maximum_height = models.IntegerField(verbose_name=_("Maximum Height"), blank=True, null=True)
+    notes = models.CharField(verbose_name=_("Notes"), max_length=1000, blank=True, null=True)
+    type_id = models.CharField(verbose_name=_("Type ID"), max_length=300, blank=True, null=True)
+    publication = models.CharField(verbose_name=_("Publication"), max_length=300, blank=True, null=True)
+    volume = models.CharField(verbose_name=_("Volume"), max_length=300, blank=True, null=True)
+    pages = models.CharField(verbose_name=_("Pages"), max_length=300, blank=True, null=True)
+    year = models.IntegerField(verbose_name=_("Year"), blank=True, null=True)
+    synonyms = models.ManyToManyField(Synonymy, verbose_name=_("Synonyms"), blank=True)
+    region = models.ManyToManyField(Region, verbose_name=_("Regions"), blank=True, db_column="region")
+    id_mma = models.IntegerField(verbose_name=_("MMA ID"), blank=True, null=True,
+                                 help_text=_("ID of the species platform of the MMA"))
+    conservation_state = models.ManyToManyField(ConservationState, verbose_name=_("Conservation State"), blank=True)
+    determined = models.BooleanField(verbose_name=_("Determined?"), default=False)
+    id_taxa_origin = models.IntegerField(verbose_name=_("ID Taxa of Origin"), blank=True, null=True, help_text="")
 
     objects = SpeciesQuerySet.as_manager()
 
@@ -1032,7 +1031,8 @@ class Species(ScientificName):
         )
 
     class Meta:
-        verbose_name_plural = "Species"
+        verbose_name = _("Species")
+        verbose_name_plural = pgettext_lazy("plural", "Species")
         ordering = ['scientific_name']
 
 

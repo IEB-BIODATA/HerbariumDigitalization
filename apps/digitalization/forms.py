@@ -1,10 +1,10 @@
 from django import forms
-from django.shortcuts import render
-from django.template.loader import get_template, render_to_string
 from django.utils.translation import gettext_lazy as _
-from .models import Herbarium
+
+from .models import Herbarium, ProtectedArea
 from .models import PriorityVouchersFile, ColorProfileFile, GeneratedPage
 from .models import VoucherImported, GalleryImage, Licence
+from ..home.forms import GeographicFieldForm
 
 
 class PriorityVoucherForm(forms.ModelForm):
@@ -119,13 +119,6 @@ class GalleryImageForm(forms.ModelForm):
             'specimen',
         )
 
-        labels = {
-            'image': _('Image'),
-            'taken_by': _('Taken by'),
-            'licence': _('Licence'),
-            'specimen': _('Specimen'),
-        }
-
         widgets = {
             'image': forms.FileInput(attrs={'class': 'form-control'}),
             'taken_by': forms.TextInput(attrs={'class': 'form-control'}),
@@ -144,14 +137,15 @@ class LicenceForm(forms.ModelForm):
             'short_name',
         }
 
-        labels = {
-            'name': _('Name'),
-            'link': _('Source (URL)'),
-            'short_name': _('Short Name'),
-        }
-
         widgets = {
             'name': forms.TextInput(attrs={'class': "form-control"}),
             'link': forms.TextInput(attrs={'class': "form-control"}),
             'short_name': forms.TextInput(attrs={'class': "form-control"}),
         }
+
+
+class ProtectedAreaForm(GeographicFieldForm):
+
+    class Meta:
+        model = ProtectedArea
+        fields = '__all__'

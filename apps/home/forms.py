@@ -3,8 +3,12 @@ import logging
 from django import forms
 from django.contrib.auth.models import User
 from django.core.exceptions import ValidationError
+from django.contrib.gis import forms as gis_forms
 from django.utils.translation import gettext_lazy as _
+from leaflet.forms.widgets import LeafletWidget
+
 from apps.home.models import Profile
+from intranet.utils import get_geometry
 
 
 class ProfileForm(forms.ModelForm):
@@ -90,3 +94,33 @@ class UserForm(forms.ModelForm):
         if new_password != retry_password:
             raise ValidationError("Password must match")
         return retry_password
+
+
+class GeographicFieldForm(forms.ModelForm):
+    geometry_file = forms.FileField(label=_('Geometry File'), required=False)
+    geometry_selection = gis_forms.GeometryField(label=_('Geometry'), widget=LeafletWidget, required=False)
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.initial['geometry_selection'] = kwargs['instance'].geometry
+        return
+
+    def save(self, commit=True):
+        model = super().save(commit)
+        geometry_file = self.cleaned_data['geometry_file']
+        if geometry_file is not None:
+            model.geometry = get_geometry(geometry_file)
+        else:
+            geometry_selection = self.cleaned_data['geometry_selection']
+            model.geometry = geometry_selection
+        return model
+
+    def clean_geometry_selection(self):
+        geometry_file = self.cleaned_data.get('geometry_file', None)
+        geometry_selection = self.cleaned_data['geometry_selection']
+        if geometry_file is None and geometry_selection is None:
+            raise ValidationError(_('Geometry is required'))
+        return geometry_selection
+
+    class Meta:
+        abstract = True
