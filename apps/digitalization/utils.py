@@ -22,7 +22,7 @@ from django.core.files.storage import Storage
 from django.template.loader import get_template
 from xhtml2pdf import pisa
 
-from apps.digitalization.models import Areas
+from apps.digitalization.models import TemporalArea
 
 
 class TaskProcessLogger(logging.Logger):
@@ -1018,9 +1018,8 @@ def render_to_pdf(template_src, context_dict):
 
 
 def register_temporal_geometry(geometry: GEOSGeometry) -> int:
-    areas = Areas(
+    areas = TemporalArea(
         name=f"temp_{uuid.uuid4().hex}",
-        temporal=True,
         geometry=geometry,
         created_by=User.objects.get(pk=1)
     )

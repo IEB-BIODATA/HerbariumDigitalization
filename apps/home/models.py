@@ -12,3 +12,7 @@ class Profile(models.Model):
     user = models.OneToOneField(User, on_delete=models.PROTECT)
     language = models.CharField(choices=settings.LANGUAGES, max_length=5, default="es", blank=False, null=True)
     theme = models.CharField(choices=THEMES, max_length=16, default="light", null=True, blank=True)
+
+    class Meta:
+        verbose_name = _('Profile')
+        verbose_name_plural = _('Profiles')

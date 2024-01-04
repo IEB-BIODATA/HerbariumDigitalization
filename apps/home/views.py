@@ -64,7 +64,6 @@ def preference(request):
     user = User.objects.get(pk=request.user.pk)
     profile = Profile.objects.get(user=user)
     if request.method == "POST":
-        logging.debug("On it")
         user_form = UserForm(request.POST, instance=user)
         profile_form = ProfileForm(request.POST, instance=profile)
         if user_form.is_valid() and profile_form.is_valid():
@@ -92,7 +91,7 @@ def preference(request):
 
 @login_required()
 def test_view(request):
-    return redirect("index")
+    return render(request, "test.html")
 
 
 class ProfileLanguageMiddleware:

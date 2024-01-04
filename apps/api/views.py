@@ -20,13 +20,13 @@ from urllib.parse import urlparse, parse_qs, urlencode
 from apps.catalog.models import Species, Synonymy, Family, Division, ClassName, Order, Status, Genus, \
     Region, ConservationState, PlantHabit, EnvironmentalHabit, Cycle, FinderView, CommonName
 from apps.digitalization.models import VoucherImported, BannerImage
-from intranet.utils import get_geometry
+from intranet.utils import get_geometry_post
 from .serializers import SpeciesFinderSerializer, \
     SynonymyFinderSerializer, DivisionSerializer, ClassSerializer, OrderSerializer, \
     FamilySerializer, DistributionSerializer, \
     FinderSerializer, GenusSerializer, CommonNameSerializer, \
     SpeciesDetailsSerializer, SynonymyDetailsSerializer, SpecimenDetailSerializer, SpecimenFinderSerializer, \
-    TaxonomicApiSerializer
+    RegionDetailsSerializer
 from .utils import filter_query_set, OpenAPIKingdom, OpenAPIClass, OpenAPIOrder, OpenAPIFamily, OpenAPIGenus, \
     OpenAPISpecies, OpenAPIPlantHabit, OpenAPIEnvHabit, OpenAPIStatus, OpenAPICycle, OpenAPIRegion, OpenAPIConservation, \
     OpenAPICommonName, OpenAPISearch, OpenAPIDivision, OpenAPIHerbarium, OpenApiPaginated, OpenAPILang, filter_by_geo, \
@@ -306,6 +306,20 @@ class FinderApiView(ListAPIView):
         return super().get_queryset().filter(**filters)
 
 
+class RegionDetails(RetrieveAPIView):
+    queryset = Region.objects.all()
+    serializer_class = RegionDetailsSerializer
+
+    @extend_schema(parameters=[
+        OpenAPILang(),
+    ])
+    def get(self, request, *args, **kwargs):
+        default_language = get_language()
+        lang = request.query_params.get("lang", default_language)
+        activate(lang)
+        return super(RegionDetails, self).get(request, *args, **kwargs)
+
+
 class POSTRedirect(APIView):
 
     @extend_schema(
@@ -329,7 +343,7 @@ class POSTRedirect(APIView):
         },
     )
     def post(self, request, *args, **kwargs):
-        geometry = get_geometry(request)[0]
+        geometry = get_geometry_post(request)[0]
         area = register_temporal_geometry(geometry)
         original_url = request.get_full_path()
         parsed_url = urlparse(original_url)
@@ -496,6 +510,13 @@ class SpecimensList(QueryList, POSTRedirect):
                 Q(image_public__isnull=False)
             )
         query = query & filter_by_geo(self.request, "point__within")
+        regions = self.request.GET.getlist("region", [])
+        if len(regions) > 0:
+            region_query = Q()
+            for pk in regions:
+                region = Region.objects.get(pk=pk)
+                region_query = region_query | Q(point__within=region.geometry)
+            query = query & region_query
         return queryset.filter(query).order_by(
             "scientific_name__genus__family__name",
             "scientific_name__genus__name",

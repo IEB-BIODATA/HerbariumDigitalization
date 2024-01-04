@@ -6,10 +6,16 @@ from rest_framework.serializers import HyperlinkedModelSerializer, ModelSerializ
 from typing import Union, List, Dict
 
 from apps.catalog.models import Species, Family, Genus, Synonymy, Division, ClassName, Order, CommonName, \
-    TaxonomicModel, FinderView, ScientificName
+    TaxonomicModel, FinderView, ScientificName, Region
 from apps.catalog.serializers import CommonSerializer, RegionSerializer
 from apps.catalog.utils import get_habit, get_conservation_state
 from apps.digitalization.models import VoucherImported, GalleryImage, Licence
+
+
+class RegionDetailsSerializer(RegionSerializer):
+    class Meta:
+        model = Region
+        fields = RegionSerializer.Meta.fields + ['geometry']
 
 
 class TaxonomicApiSerializer(CommonSerializer):
