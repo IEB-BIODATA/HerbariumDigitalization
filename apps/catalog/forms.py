@@ -2,6 +2,7 @@ from django import forms
 from django.core.exceptions import ValidationError
 from django.utils.translation import gettext_lazy as _
 from leaflet.forms.widgets import LeafletWidget
+from modeltranslation.forms import TranslationModelForm
 
 from .models import Division, ClassName, Order, Family, Genus, Species, Synonymy, Binnacle, CommonName, Region
 from ..home.forms import GeographicFieldForm
@@ -261,11 +262,17 @@ class CommonNameForm(forms.ModelForm):
     class Meta:
         model = CommonName
         fields = (
-            'name',
+            'name_es', 'name_en'
         )
 
+        labels = {
+            'name_es': _('Spanish name'),
+            'name_en': _('English name')
+        }
+
         widgets = {
-            'name': forms.TextInput(attrs={'required': True, 'class': "form-control"}),
+            'name_es': forms.TextInput(attrs={'required': True, 'class': "form-control"}),
+            'name_en': forms.TextInput(attrs={'required': True, 'class': "form-control"}),
         }
 
 
