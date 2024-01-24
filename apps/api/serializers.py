@@ -2,14 +2,19 @@ from django.conf import settings
 from django.db.models import Q
 from drf_spectacular.utils import extend_schema_field
 from rest_framework.serializers import HyperlinkedModelSerializer, ModelSerializer, CharField, ReadOnlyField, \
-    SerializerMethodField
+    SerializerMethodField, Serializer
 from typing import Union, List, Dict
 
 from apps.catalog.models import Species, Family, Genus, Synonymy, Division, ClassName, Order, CommonName, \
-    TaxonomicModel, FinderView, ScientificName, Region
+    TaxonomicModel, FinderView, ScientificName, Region, Kingdom
 from apps.catalog.serializers import CommonSerializer, RegionSerializer
 from apps.catalog.utils import get_habit, get_conservation_state
 from apps.digitalization.models import VoucherImported, GalleryImage, Licence
+
+
+class MinimumSerializer(Serializer):
+    def to_representation(self, instance):
+        return str(instance.id), str(instance.name)
 
 
 class RegionDetailsSerializer(RegionSerializer):
@@ -28,6 +33,13 @@ class TaxonomicApiSerializer(CommonSerializer):
 class CommonNameSerializer(TaxonomicApiSerializer):
     class Meta:
         model = CommonName
+        fields = TaxonomicApiSerializer.Meta.fields
+        read_only_fields = fields
+
+
+class KingdomSerializer(TaxonomicApiSerializer):
+    class Meta:
+        model = Kingdom
         fields = TaxonomicApiSerializer.Meta.fields
         read_only_fields = fields
 

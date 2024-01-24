@@ -283,6 +283,18 @@ class VoucherImportedQuerySet(CatalogQuerySet):
         logging.debug(f"Voucher Imported: {query} and got {queryset}")
         return queryset
 
+    def filter_geometry_in(self, geometries: List[str]) -> CatalogQuerySet:
+        queryset = self
+        for geometry in geometries:
+            queryset = self.filter(point__within=geometry).distinct()
+        logging.debug(f"Voucher Imported: geometry and got {queryset}")
+        return queryset
+
+    def filter_geometry(self, geometry) -> CatalogQuerySet:
+        queryset = self.filter(point__within=geometry).distinct()
+        logging.debug(f"Voucher Imported: geometry and got {queryset}")
+        return queryset
+
     def search(self, text: str) -> CatalogQuerySet:
         return self.filter(scientific_name__scientific_name__icontains=text)
 
