@@ -1,3 +1,7 @@
+import logging
+
+from time import time
+
 from django.conf import settings
 from django.db.models import Q
 from django.http import HttpRequest
@@ -12,6 +16,7 @@ from apps.digitalization.models import Area
 
 
 def filter_query_set(queryset: CatalogQuerySet, request: Request) -> CatalogQuerySet:
+    start = time()
     default_language = get_language()
     lang = request.query_params.get("lang", default_language)
     activate(lang)
@@ -32,6 +37,8 @@ def filter_query_set(queryset: CatalogQuerySet, request: Request) -> CatalogQuer
     search = request.query_params.get("search")
     if search:
         queryset = queryset.search(search)
+    queryset = queryset.filter_geometry_in(request.query_params.getlist("geometry", []))
+    logging.debug(f"Filtering {queryset.model} took {(time() - start):.2f} seconds")
     return queryset
 
 

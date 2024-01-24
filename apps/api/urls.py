@@ -19,7 +19,7 @@ from . import views
 from .views import InfoApi, DivisionList, ClassList, OrderList, FamilyList, GenusList
 from .views import PlantHabitList, EnvHabitList, StatusList, CycleList, RegionList, ConservationStateList, \
     CommonNameList
-from .views import MenuApiView, FinderApiView, RegionDetails, SpeciesListApiView, SpeciesDetails, \
+from .views import MenuApiView, NameApiView, FinderApiView, RegionDetails, SpeciesListApiView, SpeciesDetails, \
     SynonymyDetails, DistributionList, SpecimensList, SpecimenDetails
 
 urlpatterns = [
@@ -37,6 +37,7 @@ urlpatterns = [
     re_path(r'^conservation_states/$', ConservationStateList.as_view()),
     re_path(r'^common_names/$', CommonNameList.as_view()),
     re_path(r'^menu/$', MenuApiView.as_view()),
+    re_path(r'^names/$', NameApiView.as_view()),
     re_path(r'^finder/(?P<text>[\w ]+)/$', FinderApiView.as_view()),
     re_path(r'^region/(?P<pk>\d+)/$', RegionDetails.as_view()),
     re_path(r'^species_list/$', SpeciesListApiView.as_view()),
@@ -47,5 +48,4 @@ urlpatterns = [
     re_path(r'^specimens_list/$', SpecimensList.as_view()),
     re_path(r'^specimen/(?P<pk>\d+)/$', SpecimenDetails.as_view()),
     # re_path(r'^banner/(?P<specie_id>\d+)/$', BannerSpecie.as_view()),
-    re_path(r'^names/$', views.get_names),
 ]
