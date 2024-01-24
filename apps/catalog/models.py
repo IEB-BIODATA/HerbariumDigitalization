@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+from time import time_ns
+
 import logging
 from abc import abstractmethod, ABC
 from copy import deepcopy
@@ -37,6 +39,7 @@ class AttributeQuerySet(CatalogQuerySet, ABC):
         return self.filter(query).distinct()
 
     def filter_query_in(self, **parameters: Dict[str, List[str]]) -> AttributeQuerySet:
+        start = time_ns()
         query = Q()
         for query_key, parameter in parameters.items():
             if query_key == self.__attribute_name__:
@@ -44,31 +47,52 @@ class AttributeQuerySet(CatalogQuerySet, ABC):
             query &= Q(**{f"species__{query_key}__in": parameter})
         queryset = self.filter(query).distinct()
         logging.debug(f"{self.__attribute_name__}: {query} and got {queryset}")
+        logging.debug(f"Filtering {self.__attribute_name__} took {(time_ns() - start) / 1e6:.2f} milliseconds")
         return queryset
 
     def filter_query(self, **parameters: Dict[str, List[str]]) -> AttributeQuerySet:
+        start = time_ns()
         query = Q()
         for query_key, parameter in parameters.items():
             query_name = f"species__{query_key}" if query_key != self.__attribute_name__ else "pk"
             query &= Q(**{query_name: parameter})
         queryset = self.filter(query).distinct()
         logging.debug(f"{self.__attribute_name__}: {query} and got {queryset}")
+        logging.debug(f"Filtering {self.__attribute_name__} took {(time_ns() - start) / 1e6:.2f} milliseconds")
         return queryset
 
     def filter_taxonomy_in(self, **parameters: Dict[str: List[str]]) -> AttributeQuerySet:
         return self.filter_taxonomy(_in=True, **parameters)
 
     def filter_taxonomy(self, _in: bool = False, **parameters: Dict[str: List[str]]) -> AttributeQuerySet:
+        start = time_ns()
         query = Q()
         with_in = "__in" if _in else ""
         for taxonomic_rank, parameter in parameters.items():
-            rank_index = TAXONOMIC_RANK.index(taxonomic_rank)
-            query_name = "__".join(list(reversed(TAXONOMIC_RANK))[1:-rank_index])
-            logging.debug(f"{self.__attribute_name__}: Species from {query_name}{with_in}: {parameter}")
-            species = Species.objects.select_related(query_name).filter(**{f"{query_name}{with_in}": parameter})
-            query &= Q(**{f"{self.species_filter()}__in": species})
+            logging.debug(f"{self.__attribute_name__}: Species from {taxonomic_rank}: {parameter}")
+            species = CatalogView.objects.filter(**{f"{taxonomic_rank}_id{with_in}": parameter})
+            query &= Q(**{f"{self.species_filter()}__in": Species.objects.filter(pk__in=species)})
         queryset = self.filter_for_species(query)
         logging.debug(f"{self.__attribute_name__}: {query} and got {queryset}")
+        logging.debug(f"Filtering {self.__attribute_name__} took {(time_ns() - start) / 1e6:.2f} milliseconds")
+        return queryset
+    
+    def filter_geometry_in(self, geometries: List[str]) -> AttributeQuerySet:
+        start = time_ns()
+        query = Q()
+        for geometry in geometries:
+            query |= Q(species__voucherimported__point__within=geometry)
+        queryset = self.filter(query)
+        logging.debug(f"{self.__attribute_name__}: {query} and got {queryset}")
+        logging.debug(f"Filtering {self.__attribute_name__} took {(time_ns() - start) / 1e6:.2f} milliseconds")
+        return queryset 
+    
+    def filter_geometry(self, geometry) -> AttributeQuerySet:
+        start = time_ns()
+        query = Q(species__voucherimported__point__within=geometry)
+        queryset = self.filter(query)
+        logging.debug(f"{self.__attribute_name__}: {query} and got {queryset}")
+        logging.debug(f"Filtering {self.__attribute_name__} took {(time_ns() - start) / 1e6:.2f} milliseconds")
         return queryset
 
     def search(self, text: str) -> AttributeQuerySet:
@@ -84,6 +108,7 @@ class TaxonomicQuerySet(CatalogQuerySet, ABC):
         return
 
     def filter_query_in(self, **parameters: Dict[str, List[str]]) -> TaxonomicQuerySet:
+        start = time_ns()
         query = Q()
         rank_index = TAXONOMIC_RANK.index(self.__rank_name__)
         for query_key, parameter in parameters.items():
@@ -93,9 +118,11 @@ class TaxonomicQuerySet(CatalogQuerySet, ABC):
             query &= Q(**{f"{query_name}{query_key}__in": parameter})
         queryset = self.filter(query).distinct()
         logging.debug(f"{self.__rank_name__}: {query} and got {queryset}")
+        logging.debug(f"Filtering {self.__rank_name__} took {(time_ns() - start) / 1e6:.2f} milliseconds")
         return queryset
 
     def filter_query(self, **parameters: Dict[str, List[str]]) -> TaxonomicQuerySet:
+        start = time_ns()
         query = Q()
         rank_index = TAXONOMIC_RANK.index(self.__rank_name__)
         for query_key, parameter in parameters.items():
@@ -105,6 +132,7 @@ class TaxonomicQuerySet(CatalogQuerySet, ABC):
             query &= Q(**{f"{query_name}{query_key}": parameter})
         queryset = self.filter(query).distinct()
         logging.debug(f"{self.__rank_name__}: {query} and got {queryset}")
+        logging.debug(f"Filtering {self.__rank_name__} took {(time_ns() - start) / 1e6:.2f} milliseconds")
         return queryset
 
     def get_taxonomic_query(self, taxonomic_rank: str, with_in: bool = False) -> str:
@@ -121,6 +149,7 @@ class TaxonomicQuerySet(CatalogQuerySet, ABC):
             return "__".join(reversed(TAXONOMIC_RANK[rank_index: self.___rank_index__])) + str_in
 
     def filter_taxonomy_in(self, **parameters: Dict[str: List[str]]) -> TaxonomicQuerySet:
+        start = time_ns()
         query = Q()
         for taxonomic_rank, parameter in parameters.items():
             try:
@@ -129,14 +158,43 @@ class TaxonomicQuerySet(CatalogQuerySet, ABC):
                 continue
         queryset = self.filter(query).distinct()
         logging.debug(f"{self.__rank_name__}: {query} and got {queryset}")
+        logging.debug(f"Filtering {self.__rank_name__} took {(time_ns() - start) / 1e6:.2f} milliseconds")
         return queryset
 
     def filter_taxonomy(self, **parameters: Dict[str: List[str]]) -> TaxonomicQuerySet:
+        start = time_ns()
         query = Q()
         for taxonomic_rank, parameter in parameters.items():
             query &= Q(**{self.get_taxonomic_query(taxonomic_rank): parameter})
         queryset = self.filter(query).distinct()
         logging.debug(f"{self.__rank_name__}: {query} and got {queryset}")
+        logging.debug(f"Filtering {self.__rank_name__} took {(time_ns() - start) / 1e6:.2f} milliseconds")
+        return queryset
+
+    def filter_geometry_in(self, geometries: List[str]) -> TaxonomicQuerySet:
+        start = time_ns()
+        rank_index = TAXONOMIC_RANK.index(self.__rank_name__)
+        query_name = "__".join(TAXONOMIC_RANK[rank_index + 1:])
+        if query_name != "":
+            query_name = f"{query_name}__"
+        query = Q()
+        for geometry in geometries:
+            query |= Q(**{f"{query_name}voucherimported__point__within": geometry})
+        queryset = self.filter(query).distinct()
+        logging.debug(f"{self.__rank_name__}: {query} and got {queryset}")
+        logging.debug(f"Filtering {self.__rank_name__} took {(time_ns() - start) / 1e6:.2f} milliseconds")
+        return queryset
+
+    def filter_geometry(self, geometry) -> TaxonomicQuerySet:
+        start = time_ns()
+        rank_index = TAXONOMIC_RANK.index(self.__rank_name__)
+        query_name = "__".join(TAXONOMIC_RANK[rank_index + 1:])
+        if query_name != "":
+            query_name = f"{query_name}__"
+        query = Q(**{f"{query_name}voucherimported__point__within": geometry})
+        queryset = self.filter(query).distinct()
+        logging.debug(f"{self.__rank_name__}: {query} and got {queryset}")
+        logging.debug(f"Filtering {self.__rank_name__} took {(time_ns() - start) / 1e6:.2f} milliseconds")
         return queryset
 
     def search(self, text: str) -> TaxonomicQuerySet:
@@ -270,13 +328,23 @@ class Habit(AttributeModel):
 class RegionQuerySet(AttributeQuerySet):
     __attribute_name__ = "region"
 
-    @staticmethod
-    def species_filter():
-        return "species_id"
+    def filter_geometry_in(self, geometries: List[str]) -> TaxonomicQuerySet:
+        start = time_ns()
+        query = Q()
+        for geometry in geometries:
+            query |= Q(geometry__intersects=geometry)
+        queryset = self.filter(query).distinct()
+        logging.debug(f"{self.__attribute_name__}: {query} and got {queryset}")
+        logging.debug(f"Filtering {self.__attribute_name__} took {(time_ns() - start) / 1e6:.2f} milliseconds")
+        return queryset
 
-    def filter_for_species(self, query: Q) -> AttributeQuerySet:
-        regions = RegionDistributionView.objects.filter(query).distinct()
-        return self.filter(key__in=[region.region_key for region in regions]).distinct()
+    def filter_geometry(self, geometry) -> TaxonomicQuerySet:
+        start = time_ns()
+        query = Q(geometry__intersects=geometry)
+        queryset = self.filter(query).distinct()
+        logging.debug(f"{self.__attribute_name__}: {query} and got {queryset}")
+        logging.debug(f"Filtering {self.__attribute_name__} took {(time_ns() - start) / 1e6:.2f} milliseconds")
+        return queryset
 
 
 class Region(AttributeModel):
@@ -1141,11 +1209,17 @@ class CatalogView(TaxonomicModel):
     CREATE MATERIALIZED VIEW catalog_view AS
     SELECT species.id,
            species.id_taxa,
+           kingdom.id      AS kingdom_id,
            kingdom.name    AS kingdom,
+           division.id     AS division_id,
            division.name   AS division,
+           class.id        AS class_name_id,
            class.name      AS class_name,
+           "order".id      AS order_id,
            "order".name    AS "order",
+           family.id       AS family_id,
            family.name     AS family,
+           genus.id        AS genus_id,
            genus.name      AS genus,
            species.scientific_name,
            species.scientific_name_full,
@@ -1160,7 +1234,7 @@ class CatalogView(TaxonomicModel):
            species.in_argentina,
            species.in_bolivia,
            species.in_peru,
-           status.name     AS status
+           status.name     AS status,
            status.name_es  AS status_es,
            status.name_en  AS status_en,
            species.minimum_height,
@@ -1191,11 +1265,17 @@ class CatalogView(TaxonomicModel):
     """
     id = models.IntegerField(primary_key=True, blank=False, null=False, help_text="")
     id_taxa = models.IntegerField(blank=False, null=False, help_text="")
+    kingdom_id = models.IntegerField(blank=False, null=False, help_text="")
     kingdom = models.CharField(max_length=300, blank=True, null=True)
+    division_id = models.IntegerField(blank=False, null=False, help_text="")
     division = models.CharField(max_length=300, blank=True, null=True)
+    class_name_id = models.IntegerField(blank=False, null=False, help_text="")
     class_name = models.CharField(max_length=300, blank=True, null=True)
+    order_id = models.IntegerField(blank=False, null=False, help_text="")
     order = models.CharField(max_length=300, blank=True, null=True, db_column="order")
+    family_id = models.IntegerField(blank=False, null=False, help_text="")
     family = models.CharField(max_length=300, blank=True, null=True)
+    genus_id = models.IntegerField(blank=False, null=False, help_text="")
     genus = models.CharField(max_length=300, blank=True, null=True)
     scientific_name = models.CharField(max_length=500, blank=True, null=True, help_text="sp")
     scientific_name_full = models.CharField(max_length=800, blank=True, null=True, help_text="spCompleto")
