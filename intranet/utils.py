@@ -46,6 +46,14 @@ class CatalogQuerySet(models.QuerySet, ABC):
         pass
 
     @abstractmethod
+    def filter_geometry_in(self, geometries: List[str]) -> CatalogQuerySet:
+        pass
+
+    @abstractmethod
+    def filter_geometry(self, geometry: str) -> CatalogQuerySet:
+        pass
+
+    @abstractmethod
     def search(self, text: str) -> CatalogQuerySet:
         pass
 

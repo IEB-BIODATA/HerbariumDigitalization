@@ -18,7 +18,7 @@ from rest_framework.views import APIView
 from urllib.parse import urlparse, parse_qs, urlencode
 
 from apps.catalog.models import Species, Synonymy, Family, Division, ClassName, Order, Status, Genus, \
-    Region, ConservationState, PlantHabit, EnvironmentalHabit, Cycle, FinderView, CommonName
+    Region, ConservationState, PlantHabit, EnvironmentalHabit, Cycle, FinderView, CommonName, Kingdom
 from apps.digitalization.models import VoucherImported, BannerImage
 from intranet.utils import get_geometry_post
 from .serializers import SpeciesFinderSerializer, \
@@ -26,7 +26,7 @@ from .serializers import SpeciesFinderSerializer, \
     FamilySerializer, DistributionSerializer, \
     FinderSerializer, GenusSerializer, CommonNameSerializer, \
     SpeciesDetailsSerializer, SynonymyDetailsSerializer, SpecimenDetailSerializer, SpecimenFinderSerializer, \
-    RegionDetailsSerializer
+    RegionDetailsSerializer, KingdomSerializer, MinimumSerializer
 from .utils import filter_query_set, OpenAPIKingdom, OpenAPIClass, OpenAPIOrder, OpenAPIFamily, OpenAPIGenus, \
     OpenAPISpecies, OpenAPIPlantHabit, OpenAPIEnvHabit, OpenAPIStatus, OpenAPICycle, OpenAPIRegion, OpenAPIConservation, \
     OpenAPICommonName, OpenAPISearch, OpenAPIDivision, OpenAPIHerbarium, OpenApiPaginated, OpenAPILang, filter_by_geo, \
@@ -202,6 +202,7 @@ class CommonNameList(QueryList):
     queryset = CommonName.objects.all()
 
 
+# TODO: Filter by GEOMETRY
 class MenuApiView(ObjectMultipleModelAPIView):
     pagination_class = None
 
@@ -226,6 +227,11 @@ class MenuApiView(ObjectMultipleModelAPIView):
                 "label": "family",
                 "queryset": Family.objects.all(),
                 "serializer_class": FamilySerializer
+            },
+            {
+                "label": "genus",
+                "queryset": Genus.objects.all(),
+                "serializer_class": GenusSerializer
             },
             {
                 "label": "plant_habit",
@@ -274,6 +280,97 @@ class MenuApiView(ObjectMultipleModelAPIView):
     ], responses={
         ('200', 'application/json'): OpenApiResponse(
             description='All available options of each menu filter. Used on the main page',
+        ),
+    })
+    def get(self, request, *args, **kwargs):
+        return super().get(request, *args, **kwargs)
+
+
+class NameApiView(ObjectMultipleModelAPIView):
+    """
+    Retrieve the names of the taxonomies or attributes associated to its unique id
+    """
+    pagination_class = None
+
+    def get_querylist(self):
+        base_querylist = [
+            {
+                "label": "kingdom",
+                "queryset": Kingdom.objects.all(),
+            },
+            {
+                "label": "division",
+                "queryset": Division.objects.all(),
+            },
+            {
+                "label": "class_name",
+                "queryset": ClassName.objects.all(),
+            },
+            {
+                "label": "order",
+                "queryset": Order.objects.all(),
+            },
+            {
+                "label": "family",
+                "queryset": Family.objects.all(),
+            },
+            {
+                "label": "genus",
+                "queryset": Genus.objects.all(),
+            },
+            {
+                "label": "plant_habit",
+                "queryset": PlantHabit.objects.all(),
+            },
+            {
+                "label": "env_habit",
+                "queryset": EnvironmentalHabit.objects.all(),
+            },
+            {
+                "label": "status",
+                "queryset": Status.objects.all(),
+            },
+            {
+                "label": "cycle",
+                "queryset": Cycle.objects.all(),
+            },
+            {
+                "label": "region",
+                "queryset": Region.objects.all(),
+            },
+            {
+                "label": "conservation_state",
+                "queryset": ConservationState.objects.all(),
+            },
+        ]
+        querylist = list()
+        for a_model in base_querylist:
+            label = a_model["label"]
+            asking_for = self.request.query_params.getlist(label)
+            if len(asking_for) > 0:
+                a_queryset = a_model["queryset"].filter(id__in=self.request.query_params.getlist(label))
+                if a_queryset.count() > 0:
+                    logging.info(label)
+                    logging.debug(a_queryset)
+                    querylist.append({
+                        "label": label,
+                        "queryset": a_queryset,
+                        "serializer_class": MinimumSerializer,
+                    })
+        return querylist
+
+    def add_to_results(self, data, label, results):
+        results[label] = dict(data)
+        return results
+
+    @extend_schema(parameters=[
+        OpenAPIKingdom(), OpenAPIDivision(), OpenAPIClass(), OpenAPIOrder(),
+        OpenAPIFamily(), OpenAPIGenus(), OpenAPISpecies(),
+        OpenAPIPlantHabit(), OpenAPIEnvHabit(), OpenAPIStatus(), OpenAPICycle(),
+        OpenAPIRegion(), OpenAPIConservation(), OpenAPICommonName(), OpenAPILang(),
+    ], responses={
+        ('200', 'application/json'): OpenApiResponse(
+            description='Names of the parameter using its unique id',
         ),
     })
     def get(self, request, *args, **kwargs):
@@ -578,25 +675,3 @@ class BannerSpecie(APIView):
                 specie_id
             )
         })
-
-
-def get_names(request):
-    logging.debug(request.GET)
-    taxonomy_models = {
-        'genus': Genus,
-        'family': Family,
-    }
-    info = dict()
-    for name, model in taxonomy_models.items():
-        request_list = request.GET.getlist(name)
-        if request_list is not None:
-            info[name] = dict()
-            for m in request_list:
-                logging.debug(name)
-                logging.debug(model)
-                try:
-                    info[name][m] = model.objects.get(pk=m).name
-                except model.DoesNotExist:
-                    info[name][m] = None
-                logging.debug(info)
-    return JsonResponse(info)
