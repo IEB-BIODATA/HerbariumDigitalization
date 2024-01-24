@@ -47,7 +47,9 @@ class AttributeQuerySet(CatalogQuerySet, ABC):
             query &= Q(**{f"species__{query_key}__in": parameter})
         queryset = self.filter(query).distinct()
         logging.debug(f"{self.__attribute_name__}: {query} and got {queryset}")
-        logging.debug(f"Filtering {self.__attribute_name__} took {(time_ns() - start) / 1e6:.2f} milliseconds")
+        logging.debug(
+            f"Filtering {self.__attribute_name__} using attributes took {(time_ns() - start) / 1e6:.2f} milliseconds"
+        )
         return queryset
 
     def filter_query(self, **parameters: Dict[str, List[str]]) -> AttributeQuerySet:
@@ -58,7 +60,9 @@ class AttributeQuerySet(CatalogQuerySet, ABC):
             query &= Q(**{query_name: parameter})
         queryset = self.filter(query).distinct()
         logging.debug(f"{self.__attribute_name__}: {query} and got {queryset}")
-        logging.debug(f"Filtering {self.__attribute_name__} took {(time_ns() - start) / 1e6:.2f} milliseconds")
+        logging.debug(
+            f"Filtering {self.__attribute_name__} using attributes took {(time_ns() - start) / 1e6:.2f} milliseconds"
+        )
         return queryset
 
     def filter_taxonomy_in(self, **parameters: Dict[str: List[str]]) -> AttributeQuerySet:
@@ -73,8 +77,9 @@ class AttributeQuerySet(CatalogQuerySet, ABC):
             species = CatalogView.objects.filter(**{f"{taxonomic_rank}_id{with_in}": parameter})
             query &= Q(**{f"{self.species_filter()}__in": Species.objects.filter(pk__in=species)})
         queryset = self.filter_for_species(query)
-        logging.debug(f"{self.__attribute_name__}: {query} and got {queryset}")
-        logging.debug(f"Filtering {self.__attribute_name__} took {(time_ns() - start) / 1e6:.2f} milliseconds")
+        logging.debug(
+            f"Filtering {self.__attribute_name__} using taxonomies took {(time_ns() - start) / 1e6:.2f} milliseconds"
+        )
         return queryset
     
     def filter_geometry_in(self, geometries: List[str]) -> AttributeQuerySet:
@@ -84,7 +89,9 @@ class AttributeQuerySet(CatalogQuerySet, ABC):
             query |= Q(species__voucherimported__point__within=geometry)
         queryset = self.filter(query)
         logging.debug(f"{self.__attribute_name__}: {query} and got {queryset}")
-        logging.debug(f"Filtering {self.__attribute_name__} took {(time_ns() - start) / 1e6:.2f} milliseconds")
+        logging.debug(
+            f"Filtering {self.__attribute_name__} using geometry took {(time_ns() - start) / 1e6:.2f} milliseconds"
+        )
         return queryset 
     
     def filter_geometry(self, geometry) -> AttributeQuerySet:
@@ -92,7 +99,9 @@ class AttributeQuerySet(CatalogQuerySet, ABC):
         query = Q(species__voucherimported__point__within=geometry)
         queryset = self.filter(query)
         logging.debug(f"{self.__attribute_name__}: {query} and got {queryset}")
-        logging.debug(f"Filtering {self.__attribute_name__} took {(time_ns() - start) / 1e6:.2f} milliseconds")
+        logging.debug(
+            f"Filtering {self.__attribute_name__} using geometry took {(time_ns() - start) / 1e6:.2f} milliseconds"
+        )
         return queryset
 
     def search(self, text: str) -> AttributeQuerySet:
@@ -118,7 +127,9 @@ class TaxonomicQuerySet(CatalogQuerySet, ABC):
             query &= Q(**{f"{query_name}{query_key}__in": parameter})
         queryset = self.filter(query).distinct()
         logging.debug(f"{self.__rank_name__}: {query} and got {queryset}")
-        logging.debug(f"Filtering {self.__rank_name__} took {(time_ns() - start) / 1e6:.2f} milliseconds")
+        logging.debug(
+            f"Filtering {self.__rank_name__} using attributes took {(time_ns() - start) / 1e6:.2f} milliseconds"
+        )
         return queryset
 
     def filter_query(self, **parameters: Dict[str, List[str]]) -> TaxonomicQuerySet:
@@ -132,13 +143,14 @@ class TaxonomicQuerySet(CatalogQuerySet, ABC):
             query &= Q(**{f"{query_name}{query_key}": parameter})
         queryset = self.filter(query).distinct()
         logging.debug(f"{self.__rank_name__}: {query} and got {queryset}")
-        logging.debug(f"Filtering {self.__rank_name__} took {(time_ns() - start) / 1e6:.2f} milliseconds")
+        logging.debug(
+            f"Filtering {self.__rank_name__} using attributes took {(time_ns() - start) / 1e6:.2f} milliseconds"
+        )
         return queryset
 
     def get_taxonomic_query(self, taxonomic_rank: str, with_in: bool = False) -> str:
         rank_index = TAXONOMIC_RANK.index(taxonomic_rank)
         str_in = "__in" if with_in else ""
-        logging.debug(f"My: {self.___rank_index__}, Query: {rank_index}, in: ::{str_in}")
         if self.___rank_index__ < rank_index:
             return "__".join(TAXONOMIC_RANK[self.___rank_index__ + 1: rank_index + 1]) + str_in
         elif self.___rank_index__ == rank_index:
@@ -158,7 +170,9 @@ class TaxonomicQuerySet(CatalogQuerySet, ABC):
                 continue
         queryset = self.filter(query).distinct()
         logging.debug(f"{self.__rank_name__}: {query} and got {queryset}")
-        logging.debug(f"Filtering {self.__rank_name__} took {(time_ns() - start) / 1e6:.2f} milliseconds")
+        logging.debug(
+            f"Filtering {self.__rank_name__} using taxonomies took {(time_ns() - start) / 1e6:.2f} milliseconds"
+        )
         return queryset
 
     def filter_taxonomy(self, **parameters: Dict[str: List[str]]) -> TaxonomicQuerySet:
@@ -168,7 +182,9 @@ class TaxonomicQuerySet(CatalogQuerySet, ABC):
             query &= Q(**{self.get_taxonomic_query(taxonomic_rank): parameter})
         queryset = self.filter(query).distinct()
         logging.debug(f"{self.__rank_name__}: {query} and got {queryset}")
-        logging.debug(f"Filtering {self.__rank_name__} took {(time_ns() - start) / 1e6:.2f} milliseconds")
+        logging.debug(
+            f"Filtering {self.__rank_name__} using taxonomies took {(time_ns() - start) / 1e6:.2f} milliseconds"
+        )
         return queryset
 
     def filter_geometry_in(self, geometries: List[str]) -> TaxonomicQuerySet:
@@ -182,10 +198,12 @@ class TaxonomicQuerySet(CatalogQuerySet, ABC):
             query |= Q(**{f"{query_name}voucherimported__point__within": geometry})
         queryset = self.filter(query).distinct()
         logging.debug(f"{self.__rank_name__}: {query} and got {queryset}")
-        logging.debug(f"Filtering {self.__rank_name__} took {(time_ns() - start) / 1e6:.2f} milliseconds")
+        logging.debug(
+            f"Filtering {self.__rank_name__} using geometries took {(time_ns() - start) / 1e6:.2f} milliseconds"
+        )
         return queryset
 
-    def filter_geometry(self, geometry) -> TaxonomicQuerySet:
+    def filter_geometry(self, geometry: str) -> TaxonomicQuerySet:
         start = time_ns()
         rank_index = TAXONOMIC_RANK.index(self.__rank_name__)
         query_name = "__".join(TAXONOMIC_RANK[rank_index + 1:])
@@ -194,7 +212,9 @@ class TaxonomicQuerySet(CatalogQuerySet, ABC):
         query = Q(**{f"{query_name}voucherimported__point__within": geometry})
         queryset = self.filter(query).distinct()
         logging.debug(f"{self.__rank_name__}: {query} and got {queryset}")
-        logging.debug(f"Filtering {self.__rank_name__} took {(time_ns() - start) / 1e6:.2f} milliseconds")
+        logging.debug(
+            f"Filtering {self.__rank_name__} using geometries took {(time_ns() - start) / 1e6:.2f} milliseconds"
+        )
         return queryset
 
     def search(self, text: str) -> TaxonomicQuerySet:
@@ -335,7 +355,9 @@ class RegionQuerySet(AttributeQuerySet):
             query |= Q(geometry__intersects=geometry)
         queryset = self.filter(query).distinct()
         logging.debug(f"{self.__attribute_name__}: {query} and got {queryset}")
-        logging.debug(f"Filtering {self.__attribute_name__} took {(time_ns() - start) / 1e6:.2f} milliseconds")
+        logging.debug(
+            f"Filtering {self.__attribute_name__} using geometries took {(time_ns() - start) / 1e6:.2f} milliseconds"
+        )
         return queryset
 
     def filter_geometry(self, geometry) -> TaxonomicQuerySet:
@@ -343,7 +365,9 @@ class RegionQuerySet(AttributeQuerySet):
         query = Q(geometry__intersects=geometry)
         queryset = self.filter(query).distinct()
         logging.debug(f"{self.__attribute_name__}: {query} and got {queryset}")
-        logging.debug(f"Filtering {self.__attribute_name__} took {(time_ns() - start) / 1e6:.2f} milliseconds")
+        logging.debug(
+            f"Filtering {self.__attribute_name__} using geometries took {(time_ns() - start) / 1e6:.2f} milliseconds"
+        )
         return queryset
 
 
