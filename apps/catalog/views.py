@@ -590,29 +590,26 @@ def merge_taxa(request, taxa_1: int, taxa_2: int) -> HttpResponse:
     species_2 = Species.objects.get(id=taxa_2)
     species = Species.objects.all()
     if request.method == "POST":
-        form = SpeciesForm(request.POST)
-        new_entry = __create_catalog__(form, request.user, request=request)
-        if new_entry != -1:
-            new_taxa = Species.objects.get(pk=new_entry)
-            for prev_species in [species_1, species_2]:
-                new_synonymy = Synonymy(species=prev_species)
-                new_synonymy.save(user=request.user)
-                new_taxa.synonyms.add(new_synonymy)
-                logging.info(f"Assigning voucher for {prev_species}")
-                for voucher in prev_species.voucherimported_set.all():
-                    logging.debug(f"Assigning voucher for {prev_species}")
-                    voucher.scientific_name = new_taxa
-                    voucher.save()
-                    logging.info(f"Re-generating etiquette for {voucher.biodata_code.code}")
-                    voucher.generate_etiquette()
-                Binnacle.delete_entry(prev_species, request.user)
+        form = SpeciesForm(request.POST, instance=species_2)
+        updated = __update_catalog__(form, request.user, request=request)
+        if updated:
+            new_synonymy = Synonymy(species=species_1)
+            new_synonymy.save(user=request.user)
+            species_2.synonyms.add(new_synonymy)
+            logging.info(f"Assigning voucher for {species_1}")
+            for voucher in species_1.voucherimported_set.all():
+                voucher.scientific_name = species_2
+                voucher.save()
+                logging.info(f"Re-generating etiquette for {voucher.biodata_code.code}")
+                voucher.generate_etiquette()
+            Binnacle.delete_entry(species_1, request.user)
             CatalogView.refresh_view()
             FinderView.refresh_view()
             SynonymyView.refresh_view()
             RegionDistributionView.refresh_view()
             return redirect("list_taxa")
     else:
-        form = SpeciesForm(instance=species_1)
+        form = SpeciesForm(instance=species_2)
         for relation_name, _, many_relation in MANY_RELATIONS:
             new_relations = many_relation.objects.filter(
                 Q(species=species_1) | Q(species=species_2)
