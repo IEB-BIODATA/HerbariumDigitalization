@@ -405,10 +405,12 @@
             </div>
         </div>
     </div>
-    <div class="row">
-        <div class="col-sm-12">
-            {% blocktranslate with title=rank asvar title %}New {{ title }}{% endblocktranslate %}
-            {% include 'catalog/taxa_form.html' with form=form form_title=title form_url=form_url delete_button=False %}
+    {% if taxa_2 %}
+        <div class="row">
+            <div class="col-sm-12">
+                {% blocktranslate with title=rank asvar title %}New {{ title }}{% endblocktranslate %}
+                {% include 'catalog/taxa_form.html' with form=form form_title=title form_url=form_url delete_button=False %}
+            </div>
         </div>
-    </div>
+    {% endif %}
 {% endblock %}

@@ -913,6 +913,7 @@ class Synonymy(ScientificName):
             self.scientific_name_authorship = species.scientific_name_authorship
             self.subspecies = species.subspecies
             self.ssp_authorship = species.ssp_authorship
+            self.variety = species.variety
             self.variety_authorship = species.variety_authorship
             self.form = species.form
             self.form_authorship = species.form_authorship
@@ -1093,12 +1094,21 @@ class Species(ScientificName):
     def save(self, force_insert=False, force_update=False, using=None, update_fields=None, **kwargs):
         self.__update_scientific_name__()
         if self.__prev__ is not None:
+            logging.debug(f"{self.__prev__} ({self.__prev__.pk})")
             if self.__original__ != self:
+                logging.debug(f"Original {self.__original__} ({self.__original__.pk})")
+                logging.debug(f"Current {self} ({self.pk})")
+                logging.debug(f"Original {self.__original__.scientific_name}")
+                logging.debug(f"Original {self.__original__.scientific_name_full}")
+                logging.debug(f"Current {self.scientific_name}, "
+                              f"{'Equal' if self.scientific_name == self.__original__.scientific_name else 'Not equal'}")
+                logging.debug(f"Current {self.scientific_name_full}, "
+                              f"{'Equal' if self.scientific_name_full == self.__original__.scientific_name_full else 'Not equal'}")
                 if self.__original__.scientific_name != self.scientific_name or \
                         self.__original__.scientific_name_full != self.scientific_name_full:
                     if self.__original__.scientific_name_full != self.scientific_name_full:
-                        logging.debug("Name changed")
-                        logging.debug("Listing specimen")
+                        logging.debug(f"Name changed on taxa {self.pk}")
+                        logging.debug("Listing specimen:")
                         logging.debug("\n".join([
                             specimen.biodata_code.code
                             for specimen in self.voucherimported_set.all()

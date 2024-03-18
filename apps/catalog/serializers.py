@@ -151,6 +151,7 @@ class SpeciesSerializer(TaxonomicSerializer):
     conservation_state = SerializerMethodField()
     status = ReadOnlyField(source='status.name')
     synonyms = SynonymsSerializer(required=False, many=True)
+    common_names = CommonNameSerializer(required=False, many=True)
     region = RegionSerializer(required=False, many=True)
 
     class Meta:
@@ -162,10 +163,11 @@ class SpeciesSerializer(TaxonomicSerializer):
             'variety', 'variety_authorship',
             'form', 'form_authorship',
             'habit', 'cycle', 'status',
+            'in_argentina', 'in_bolivia', 'in_peru',
             'minimum_height', 'maximum_height',
             'notes', 'type_id', 'publication',
             'volume', 'pages', 'year',
-            'synonyms', 'region', 'region',
+            'common_names', 'synonyms', 'region',
             'conservation_state', 'determined',
             'id_taxa_origin',
         ]

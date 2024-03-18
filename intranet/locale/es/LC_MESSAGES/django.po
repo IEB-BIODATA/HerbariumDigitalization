@@ -240,12 +240,12 @@ msgstr "Unir %(title)s"
 #: templates/catalog/merge_taxa.html:26
 msgid "Merge taxa info"
 msgstr ""
-"Este proceso permite unir dos taxones, creando un nuevo taxa y eliminando "
-"los dos taxones de origen. Los nombres comunes, sinónimos y distribución son "
+"Este proceso permite unir dos taxones, convirtiendo al primero en un sinónimo "
+"del segundo. Los nombres comunes, sinónimos y distribución son "
 "unificados en el nuevo taxón. Además se establece automaticamente la altura "
 "máxima y mínima entre ambos taxones. Sin embargo, es posible editar todos "
 "los cambos de este nuevo taxa, ya que lo anterior solo es una "
-"propuesta.        Todos los vouchers asociados de ambos taxones son "
+"propuesta. Todos los vouchers asociados de ambos taxones son "
 "unificados en este nuevo taxa."
 
 #: templates/catalog/merge_taxa.html:31 templates/catalog/merge_taxa.html:395
