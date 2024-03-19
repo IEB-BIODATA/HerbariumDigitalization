@@ -230,7 +230,7 @@ msgstr "Estado"
 #: templates/catalog/list_taxa.html:195
 #: templates/digitalization/qr_generator.html:158
 msgid "Determined?"
-msgstr "¿Terminada?"
+msgstr "¿Terminal?"
 
 #: templates/catalog/merge_taxa.html:25
 #, python-format
