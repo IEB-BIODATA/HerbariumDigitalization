@@ -1,3 +1,5 @@
+import os
+
 import datetime as dt
 import logging
 from typing import Type
@@ -21,6 +23,8 @@ from .models import Species, CatalogView, SynonymyView, RegionDistributionView, 
     ConservationState, FinderView
 from .serializers import DivisionSerializer, ClassSerializer, OrderSerializer, FamilySerializer, GenusSerializer, \
     CatalogViewSerializer, SpeciesSerializer, SynonymsSerializer, BinnacleSerializer, CommonNameSerializer
+from ..digitalization.storage_backends import PrivateMediaStorage
+from ..digitalization.utils import TaskProcessLogger
 
 MANY_RELATIONS = [
     ("common_names", "nombres comunes", CommonName),
@@ -616,6 +620,23 @@ def merge_taxa(request, taxa_1: int, taxa_2: int) -> HttpResponse:
             ).distinct()
             logging.debug(f"Relation {relation_name} set to {new_relations}")
             form.initial[relation_name] = [new_relation.id for new_relation in new_relations]
+        if species_1.minimum_height is not None:
+            if species_2.minimum_height is None:
+                form.initial["minimum_height"] = species_1.minimum_height
+            else:
+                form.initial["minimum_height"] = min(species_1.minimum_height, species_2.minimum_height)
+        if species_1.maximum_height is not None:
+            if species_2.maximum_height is None:
+                form.initial["maximum_height"] = species_1.maximum_height
+            else:
+                form.initial["maximum_height"] = min(species_1.maximum_height, species_2.maximum_height)
+        form.initial["in_argentina"] = species_1.in_argentina or species_2.in_argentina
+        form.initial["in_bolivia"] = species_1.in_bolivia or species_2.in_bolivia
+        form.initial["in_peru"] = species_1.in_peru or species_2.in_peru
+        if species_1.determined:
+            form.initial["determined"] = True
+        if species_2.id_mma is None and species_1.id_mma is None:
+            form.initial["id_mma"] = species_1.id_mma
     return render(request, "catalog/merge_taxa.html", {
         "form": form,
         "taxa_1": SpeciesSerializer(
@@ -797,3 +818,35 @@ def delete_common_name(request, common_name_id):
     except Exception as e:
         logging.error(e, exc_info=True)
         return HttpResponseServerError
+
+
+@login_required
+def reload_scientific_name(request):
+    os.makedirs("scientific_name_log", exist_ok=True)
+    logger = TaskProcessLogger("Reload scientific Name", "scientific_name_log")
+    logger.info("Reloading Scientific Name")
+    for species in list(Species.objects.all()) + list(Synonymy.objects.all()):
+        prev = (
+            species.scientific_name_full,
+            species.scientific_name_db,
+            species.scientific_name
+        )
+        species.__update_scientific_name__()
+        if species.scientific_name_full != prev[0]:
+            logger.debug(f"({species.pk}) Scientific Name Full changes:")
+            logger.debug(species.scientific_name_full)
+            logger.debug(prev[0])
+        if species.scientific_name_db != prev[1]:
+            logger.debug(f"({species.pk}) Scientific Name DB:")
+            logger.debug(species.scientific_name_db)
+            logger.debug(prev[1])
+        if species.scientific_name != prev[2]:
+            logger.debug(f"({species.pk}) Scientific Name changes:")
+            logger.debug(species.scientific_name)
+            logger.debug(prev[2])
+        species.save(force_update=True)
+    logger.close()
+    logger.save_file(PrivateMediaStorage(), "reload_scientific_name.log")
+    import shutil
+    shutil.rmtree("scientific_name_log")
+    return redirect("index")

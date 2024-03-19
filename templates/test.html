@@ -2,9 +2,14 @@
 {% load static %}
 {% load hosts %}
 {% block content %}
-    <form action="http://api.localhost:8000/specimens_list/?division=1&plant_habit=3" method="post" enctype="multipart/form-data">
-        <label for="file">Select a file to upload:</label>
-        <input type="file" name="file" id="file">
-        <input type="submit" value="Upload File">
+    {% if false %}
+        <form action="http://api.localhost:8000/specimens_list/?division=1&plant_habit=3" method="post" enctype="multipart/form-data">
+            <label for="file">Select a file to upload:</label>
+            <input type="file" name="file" id="file">
+            <input type="submit" value="Upload File">
+        </form>
+    {% endif %}
+    <form action="{% url 'reload_scientific_name' %}" method="get">
+        <input type="submit">
     </form>
 {% endblock %}
