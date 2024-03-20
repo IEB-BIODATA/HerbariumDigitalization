@@ -629,7 +629,7 @@ def merge_taxa(request, taxa_1: int, taxa_2: int) -> HttpResponse:
             if species_2.maximum_height is None:
                 form.initial["maximum_height"] = species_1.maximum_height
             else:
-                form.initial["maximum_height"] = min(species_1.maximum_height, species_2.maximum_height)
+                form.initial["maximum_height"] = max(species_1.maximum_height, species_2.maximum_height)
         form.initial["in_argentina"] = species_1.in_argentina or species_2.in_argentina
         form.initial["in_bolivia"] = species_1.in_bolivia or species_2.in_bolivia
         form.initial["in_peru"] = species_1.in_peru or species_2.in_peru
