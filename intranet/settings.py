@@ -79,7 +79,7 @@ MIDDLEWARE = [
 
 ROOT_URLCONF = 'intranet.main_urls'
 ROOT_HOSTCONF = 'intranet.hosts'
-DEFAULT_HOST = 'digitalization'
+DEFAULT_HOST = 'digitalization-dev'
 
 TEMPLATES = [
     {
