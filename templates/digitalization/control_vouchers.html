@@ -50,16 +50,20 @@
                                 const borrowed = "{% translate 'Borrowed' context 'spaced' %}";
                                 const lost = "{% translate 'Lost' context 'spaced' %}";
                                 const inCuratorship = "{% translate 'In Curatorship' context 'spaced' %}";
-                                return `
-                                <select id="voucherClassFound${data.id}" class="${getStateClass(data.voucher_state)} custom-select custom-select-sm form-control form-control-sm" onchange="setState(${data.id}, this.value);" style="width: 150px;">
-                                    <option ${values[0]}>${noState}</option>
-                                    <option ${values[1]}>${found}</option>
-                                    <option ${values[2]}>${notFound}</option>
-                                    <option ${values[3]}>${borrowed}</option>
-                                    <option ${values[4]}>${lost}</option>
-                                    <option ${values[6]}>${inCuratorship}</option>
-                                </select>
-                                `;
+                                const digitalized = "{% translate 'Digitalized' context 'spaced' %}";
+                                if (data.voucher_state === 7)
+                                    return `<div class="${getStateClass(data.voucher_state)} form-control form-control-sm" style="width: 150px;">${digitalized}</div>`;
+                                else
+                                    return `
+                                    <select id="voucherClassFound${data.id}" class="${getStateClass(data.voucher_state)} custom-select custom-select-sm form-control form-control-sm" onchange="setState(${data.id}, this.value);" style="width: 150px;">
+                                        <option ${values[0]}>${noState}</option>
+                                        <option ${values[1]}>${found}</option>
+                                        <option ${values[2]}>${notFound}</option>
+                                        <option ${values[3]}>${borrowed}</option>
+                                        <option ${values[4]}>${lost}</option>
+                                        <option ${values[6]}>${inCuratorship}</option>
+                                    </select>
+                                    `;
                             },
                     },
                     {

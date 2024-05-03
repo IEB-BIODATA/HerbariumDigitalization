@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2024-01-04 12:37-0300\n"
+"POT-Creation-Date: 2024-05-03 15:22-0400\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -61,7 +61,7 @@ msgid "Log out"
 msgstr "Log out"
 
 #: templates/catalog/create_catalog.html:9
-#: templates/catalog/merge_taxa.html:410
+#: templates/catalog/merge_taxa.html:412
 #, python-format
 msgid "New %(title)s"
 msgstr "New %(title)s"
@@ -79,8 +79,8 @@ msgstr "Save"
 msgid "Nothing selected"
 msgstr "Nothing selected"
 
-#: templates/catalog/create_taxa.html:10 templates/catalog/merge_taxa.html:24
-#: templates/catalog/merge_taxa.html:47 templates/catalog/merge_taxa.html:223
+#: templates/catalog/create_taxa.html:10 templates/catalog/merge_taxa.html:25
+#: templates/catalog/merge_taxa.html:48 templates/catalog/merge_taxa.html:224
 #: templates/catalog/update_taxa.html:10 templates/sidebar.html:110
 msgid "Taxon"
 msgstr "Taxon"
@@ -145,7 +145,7 @@ msgstr "Updated at"
 
 #: templates/catalog/list_binnacle.html:106
 #: templates/catalog/list_catalog.html:140 templates/catalog/list_taxa.html:196
-#: templates/digitalization/control_vouchers.html:214
+#: templates/digitalization/control_vouchers.html:219
 msgid "Action"
 msgstr "Action"
 
@@ -181,7 +181,7 @@ msgid "Delete"
 msgstr "Delete"
 
 #: templates/catalog/list_taxa.html:98
-#: templates/digitalization/control_vouchers.html:120
+#: templates/digitalization/control_vouchers.html:125
 #: templates/digitalization/gallery_image.html:131
 msgid "Edit"
 msgstr "Edit"
@@ -232,123 +232,123 @@ msgstr "Status"
 msgid "Determined?"
 msgstr "Determined?"
 
-#: templates/catalog/merge_taxa.html:25
+#: templates/catalog/merge_taxa.html:26
 #, python-format
 msgid "Merge %(title)s"
 msgstr "Merge %(title)s"
 
-#: templates/catalog/merge_taxa.html:26
+#: templates/catalog/merge_taxa.html:27
 msgid "Merge taxa info"
 msgstr ""
 "This process allows two taxa to be joined, turning the first one in a "
-"synonym of the second. Common names, synonyms and distribution "
-"are unified in the new taxon. Furthermore, the maximum and minimum height "
-"between both taxa is automatically established. However, it is possible to "
-"edit all the changes of this new taxa, since the above is only a proposal. "
-"All associated vouchers of both taxa are unified in this new taxa."
+"synonym of the second. Common names, synonyms and distribution are unified "
+"in the new taxon. Furthermore, the maximum and minimum height between both "
+"taxa is automatically established. However, it is possible to edit all the "
+"changes of this new taxa, since the above is only a proposal. All associated "
+"vouchers of both taxa are unified in this new taxa."
 
-#: templates/catalog/merge_taxa.html:31 templates/catalog/merge_taxa.html:395
+#: templates/catalog/merge_taxa.html:32 templates/catalog/merge_taxa.html:396
 msgid "Select taxon to join"
 msgstr "Select taxon to join"
 
-#: templates/catalog/merge_taxa.html:53 templates/catalog/merge_taxa.html:230
+#: templates/catalog/merge_taxa.html:54 templates/catalog/merge_taxa.html:231
 #: templates/sidebar.html:109
 msgid "Genus"
 msgstr "Genus"
 
-#: templates/catalog/merge_taxa.html:59 templates/catalog/merge_taxa.html:236
+#: templates/catalog/merge_taxa.html:60 templates/catalog/merge_taxa.html:237
 msgid "Specific Epithet"
 msgstr "Specific Epithet"
 
-#: templates/catalog/merge_taxa.html:65 templates/catalog/merge_taxa.html:242
+#: templates/catalog/merge_taxa.html:66 templates/catalog/merge_taxa.html:243
 msgid "Author"
 msgstr "Author"
 
-#: templates/catalog/merge_taxa.html:71 templates/catalog/merge_taxa.html:248
+#: templates/catalog/merge_taxa.html:72 templates/catalog/merge_taxa.html:249
 msgid "Subspecies"
 msgstr "Subspecies"
 
-#: templates/catalog/merge_taxa.html:77 templates/catalog/merge_taxa.html:254
+#: templates/catalog/merge_taxa.html:78 templates/catalog/merge_taxa.html:255
 msgid "Subspecies Author"
 msgstr "Subspecies Author"
 
-#: templates/catalog/merge_taxa.html:83 templates/catalog/merge_taxa.html:260
+#: templates/catalog/merge_taxa.html:84 templates/catalog/merge_taxa.html:261
 msgid "Variety"
 msgstr "Variety"
 
-#: templates/catalog/merge_taxa.html:89 templates/catalog/merge_taxa.html:266
+#: templates/catalog/merge_taxa.html:90 templates/catalog/merge_taxa.html:267
 msgid "Variety Author"
 msgstr "Variety Author"
 
-#: templates/catalog/merge_taxa.html:95 templates/catalog/merge_taxa.html:272
+#: templates/catalog/merge_taxa.html:96 templates/catalog/merge_taxa.html:273
 msgid "Form"
 msgstr "Form"
 
-#: templates/catalog/merge_taxa.html:101 templates/catalog/merge_taxa.html:278
+#: templates/catalog/merge_taxa.html:102 templates/catalog/merge_taxa.html:279
 msgid "Form Author"
 msgstr "Form Author"
 
-#: templates/catalog/merge_taxa.html:107 templates/catalog/merge_taxa.html:284
+#: templates/catalog/merge_taxa.html:108 templates/catalog/merge_taxa.html:285
 msgid "Habit"
 msgstr "Habit"
 
-#: templates/catalog/merge_taxa.html:113 templates/catalog/merge_taxa.html:290
+#: templates/catalog/merge_taxa.html:114 templates/catalog/merge_taxa.html:291
 msgid "Life cycle"
 msgstr "Life cycle"
 
-#: templates/catalog/merge_taxa.html:119 templates/catalog/merge_taxa.html:296
+#: templates/catalog/merge_taxa.html:120 templates/catalog/merge_taxa.html:297
 msgid "Origin"
 msgstr "Origin"
 
-#: templates/catalog/merge_taxa.html:125 templates/catalog/merge_taxa.html:302
+#: templates/catalog/merge_taxa.html:126 templates/catalog/merge_taxa.html:303
 msgid "In Argentina"
 msgstr "In Argentina"
 
-#: templates/catalog/merge_taxa.html:131 templates/catalog/merge_taxa.html:308
+#: templates/catalog/merge_taxa.html:132 templates/catalog/merge_taxa.html:309
 msgid "In Bolivia"
 msgstr "In Bolivia"
 
-#: templates/catalog/merge_taxa.html:137 templates/catalog/merge_taxa.html:314
+#: templates/catalog/merge_taxa.html:138 templates/catalog/merge_taxa.html:315
 msgid "In Peru"
 msgstr "In Peru"
 
-#: templates/catalog/merge_taxa.html:143 templates/catalog/merge_taxa.html:320
+#: templates/catalog/merge_taxa.html:144 templates/catalog/merge_taxa.html:321
 msgid "Maximum Height"
 msgstr "Maximum Height"
 
-#: templates/catalog/merge_taxa.html:149 templates/catalog/merge_taxa.html:326
+#: templates/catalog/merge_taxa.html:150 templates/catalog/merge_taxa.html:327
 msgid "Minimum Height"
 msgstr "Minimum Height"
 
-#: templates/catalog/merge_taxa.html:155 templates/catalog/merge_taxa.html:332
+#: templates/catalog/merge_taxa.html:156 templates/catalog/merge_taxa.html:333
 msgid "Notes"
 msgstr "Notes"
 
-#: templates/catalog/merge_taxa.html:161 templates/catalog/merge_taxa.html:338
+#: templates/catalog/merge_taxa.html:162 templates/catalog/merge_taxa.html:339
 msgid "Publication"
 msgstr "Publication"
 
-#: templates/catalog/merge_taxa.html:167 templates/catalog/merge_taxa.html:344
+#: templates/catalog/merge_taxa.html:168 templates/catalog/merge_taxa.html:345
 msgid "Volume"
 msgstr "Volume"
 
-#: templates/catalog/merge_taxa.html:173 templates/catalog/merge_taxa.html:350
+#: templates/catalog/merge_taxa.html:174 templates/catalog/merge_taxa.html:351
 msgid "Pages"
 msgstr "Pages"
 
-#: templates/catalog/merge_taxa.html:179 templates/catalog/merge_taxa.html:356
+#: templates/catalog/merge_taxa.html:180 templates/catalog/merge_taxa.html:357
 msgid "Type ID"
 msgstr "Type ID"
 
-#: templates/catalog/merge_taxa.html:185 templates/catalog/merge_taxa.html:362
+#: templates/catalog/merge_taxa.html:186 templates/catalog/merge_taxa.html:363
 msgid "Common Names"
 msgstr "Common Names"
 
-#: templates/catalog/merge_taxa.html:195 templates/catalog/merge_taxa.html:372
+#: templates/catalog/merge_taxa.html:196 templates/catalog/merge_taxa.html:373
 msgid "Synonyms"
 msgstr "Synonyms"
 
-#: templates/catalog/merge_taxa.html:205 templates/catalog/merge_taxa.html:382
+#: templates/catalog/merge_taxa.html:206 templates/catalog/merge_taxa.html:383
 msgid "Regional Distribution"
 msgstr "Regional Distribution"
 
@@ -397,7 +397,8 @@ msgstr "&nbsp;Borrowed&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;"
 #: templates/digitalization/mark_vouchers.html:169
 msgctxt "spaced"
 msgid "Lost"
-msgstr "&nbsp;Lost&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;"
+msgstr ""
+"&nbsp;Lost&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;"
 
 #: templates/digitalization/control_vouchers.html:52
 #: templates/digitalization/mark_vouchers.html:170
@@ -405,19 +406,25 @@ msgctxt "spaced"
 msgid "In Curatorship"
 msgstr "&nbsp;In Curatorship&nbsp;"
 
-#: templates/digitalization/control_vouchers.html:134
+#: templates/digitalization/control_vouchers.html:55
+#| msgid "Digitalized"
+msgctxt "spaced"
+msgid "Digitalized"
+msgstr "&nbsp;Digitalized&nbsp;&nbsp;&nbsp;&nbsp;"
+
+#: templates/digitalization/control_vouchers.html:139
 #: templates/digitalization/mark_vouchers.html:208
 #: templates/digitalization/validate_vouchers.html:195
 msgid "Filter State"
 msgstr "Filter State"
 
-#: templates/digitalization/control_vouchers.html:135
+#: templates/digitalization/control_vouchers.html:140
 #: templates/digitalization/mark_vouchers.html:209
 #: templates/digitalization/validate_vouchers.html:196
 msgid "All"
 msgstr "All"
 
-#: templates/digitalization/control_vouchers.html:136
+#: templates/digitalization/control_vouchers.html:141
 #: templates/digitalization/mark_vouchers.html:210
 #: templates/digitalization/mark_vouchers.html:341
 #: templates/digitalization/validate_vouchers.html:197
@@ -425,7 +432,7 @@ msgstr "All"
 msgid "Found"
 msgstr "Found"
 
-#: templates/digitalization/control_vouchers.html:137
+#: templates/digitalization/control_vouchers.html:142
 #: templates/digitalization/mark_vouchers.html:211
 #: templates/digitalization/mark_vouchers.html:340
 #: templates/digitalization/validate_vouchers.html:198
@@ -433,7 +440,7 @@ msgstr "Found"
 msgid "No State"
 msgstr "No State"
 
-#: templates/digitalization/control_vouchers.html:138
+#: templates/digitalization/control_vouchers.html:143
 #: templates/digitalization/mark_vouchers.html:212
 #: templates/digitalization/mark_vouchers.html:342
 #: templates/digitalization/validate_vouchers.html:199
@@ -441,31 +448,31 @@ msgstr "No State"
 msgid "Not Found"
 msgstr "Not Found"
 
-#: templates/digitalization/control_vouchers.html:139
+#: templates/digitalization/control_vouchers.html:144
 #: templates/digitalization/mark_vouchers.html:213
 #: templates/digitalization/validate_vouchers.html:200
 msgid "Borrowed"
 msgstr "Borrowed"
 
-#: templates/digitalization/control_vouchers.html:140
+#: templates/digitalization/control_vouchers.html:145
 #: templates/digitalization/mark_vouchers.html:214
 #: templates/digitalization/validate_vouchers.html:201
 msgid "Lost"
 msgstr "Lost"
 
-#: templates/digitalization/control_vouchers.html:141
+#: templates/digitalization/control_vouchers.html:146
 #: templates/digitalization/mark_vouchers.html:215
 #: templates/digitalization/validate_vouchers.html:202
 msgid "Found And Borrowed"
 msgstr "Found And Borrowed"
 
-#: templates/digitalization/control_vouchers.html:142
+#: templates/digitalization/control_vouchers.html:147
 #: templates/digitalization/mark_vouchers.html:216
 #: templates/digitalization/validate_vouchers.html:203
 msgid "In Curatorship"
 msgstr "In Curatorship"
 
-#: templates/digitalization/control_vouchers.html:143
+#: templates/digitalization/control_vouchers.html:148
 #: templates/digitalization/mark_vouchers.html:217
 #: templates/digitalization/mark_vouchers.html:343
 #: templates/digitalization/validate_vouchers.html:204
@@ -473,55 +480,55 @@ msgstr "In Curatorship"
 msgid "Digitalized"
 msgstr "Digitalized"
 
-#: templates/digitalization/control_vouchers.html:193
+#: templates/digitalization/control_vouchers.html:198
 msgid "Voucher Digitalization"
 msgstr "Voucher Digitalization"
 
-#: templates/digitalization/control_vouchers.html:198
+#: templates/digitalization/control_vouchers.html:203
 msgid "Voucher table"
 msgstr "Voucher table"
 
-#: templates/digitalization/control_vouchers.html:205
+#: templates/digitalization/control_vouchers.html:210
 #: templates/digitalization/mark_vouchers.html:364
 #: templates/digitalization/validate_vouchers.html:419
 #: templates/digitalization/validate_vouchers.html:422
 msgid "State"
 msgstr "State"
 
-#: templates/digitalization/control_vouchers.html:206
+#: templates/digitalization/control_vouchers.html:211
 msgid "Processing date"
 msgstr "Processing date"
 
-#: templates/digitalization/control_vouchers.html:207
+#: templates/digitalization/control_vouchers.html:212
 #: templates/digitalization/load_priority_vouchers_file.html:313
 #: templates/digitalization/qr_generator.html:154
 msgid "Herbarium"
 msgstr "Herbarium"
 
-#: templates/digitalization/control_vouchers.html:208
+#: templates/digitalization/control_vouchers.html:213
 msgid "Biodata ID"
 msgstr "Biodata ID"
 
-#: templates/digitalization/control_vouchers.html:209
+#: templates/digitalization/control_vouchers.html:214
 #: templates/digitalization/mark_vouchers.html:365
 #: templates/digitalization/validate_vouchers.html:420
 msgid "Herbarium ID"
 msgstr "Herbarium ID"
 
-#: templates/digitalization/control_vouchers.html:210
+#: templates/digitalization/control_vouchers.html:215
 #: templates/digitalization/mark_vouchers.html:366
 #: templates/digitalization/validate_vouchers.html:421
 msgid "Species Name"
 msgstr "Species Name"
 
-#: templates/digitalization/control_vouchers.html:211
+#: templates/digitalization/control_vouchers.html:216
 #: templates/digitalization/mark_vouchers.html:367
 #: templates/digitalization/template_list_priority_voucher.html:41
 #: templates/digitalization/update_voucher.html:85
 msgid "Collected by"
 msgstr "Collected by"
 
-#: templates/digitalization/control_vouchers.html:212
+#: templates/digitalization/control_vouchers.html:217
 #: templates/digitalization/mark_vouchers.html:368
 #: templates/digitalization/template_list_priority_voucher.html:42
 #: templates/digitalization/update_voucher.html:79
@@ -529,7 +536,7 @@ msgstr "Collected by"
 msgid "Collection Number"
 msgstr "Collection Number"
 
-#: templates/digitalization/control_vouchers.html:213
+#: templates/digitalization/control_vouchers.html:218
 #: templates/digitalization/mark_vouchers.html:369
 #: templates/digitalization/update_voucher.html:97
 #: templates/digitalization/update_voucher.html:159
