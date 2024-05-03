@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2023-12-28 11:07-0300\n"
+"POT-Creation-Date: 2024-05-03 15:22-0400\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -58,7 +58,7 @@ msgstr "Digitalizado"
 msgid "Pending"
 msgstr "Pendiente"
 
-#: apps/digitalization/models.py:42 apps/digitalization/models.py:569
+#: apps/digitalization/models.py:42 apps/digitalization/models.py:581
 msgid "Protected Area"
 msgstr "Área Protegida"
 
@@ -99,7 +99,7 @@ msgid "protected area with sustainable use of natural resources"
 msgstr "área protegida con uso sostenible de los recursos naturales"
 
 #: apps/digitalization/models.py:77 apps/digitalization/models.py:119
-#: apps/digitalization/models.py:506 apps/digitalization/models.py:549
+#: apps/digitalization/models.py:518 apps/digitalization/models.py:561
 msgid "Name"
 msgstr "Nombre"
 
@@ -119,7 +119,7 @@ msgstr "Código de Institución"
 #: apps/digitalization/models.py:84 apps/digitalization/models.py:120
 #: apps/digitalization/models.py:190 apps/digitalization/models.py:215
 #: apps/digitalization/models.py:218 apps/digitalization/models.py:223
-#: apps/digitalization/models.py:295
+#: apps/digitalization/models.py:307
 msgid "Herbarium"
 msgstr "Herbario"
 
@@ -133,13 +133,13 @@ msgstr "Archivo"
 
 #: apps/digitalization/models.py:104 apps/digitalization/models.py:123
 #: apps/digitalization/models.py:193 apps/digitalization/models.py:230
-#: apps/digitalization/models.py:551
+#: apps/digitalization/models.py:563
 msgid "Created at"
 msgstr "Creado el"
 
 #: apps/digitalization/models.py:105 apps/digitalization/models.py:124
 #: apps/digitalization/models.py:194 apps/digitalization/models.py:231
-#: apps/digitalization/models.py:553
+#: apps/digitalization/models.py:565
 msgid "Created by"
 msgstr "Creado por"
 
@@ -167,7 +167,7 @@ msgstr "Páginas Generadas"
 msgid "Code"
 msgstr "Código"
 
-#: apps/digitalization/models.py:192 apps/digitalization/models.py:299
+#: apps/digitalization/models.py:192 apps/digitalization/models.py:311
 msgid "Catalog Number"
 msgstr "Número de Catálogo"
 
@@ -183,7 +183,7 @@ msgstr "Página"
 msgid "Voucher State"
 msgstr "Estado de digitalización"
 
-#: apps/digitalization/models.py:200 apps/digitalization/models.py:293
+#: apps/digitalization/models.py:200 apps/digitalization/models.py:305
 msgid "BIODATA Code"
 msgstr "Código BIODATA"
 
@@ -195,7 +195,7 @@ msgstr "Códigos BIODATA"
 msgid "User"
 msgstr "Usuario"
 
-#: apps/digitalization/models.py:234 apps/digitalization/models.py:291
+#: apps/digitalization/models.py:234 apps/digitalization/models.py:303
 msgid "Priority Vouchers File"
 msgstr "Archivo de Prioridad de Vouchers"
 
@@ -203,194 +203,194 @@ msgstr "Archivo de Prioridad de Vouchers"
 msgid "Priority Vouchers Files"
 msgstr "Archivos de Prioridad de Vouchers"
 
-#: apps/digitalization/models.py:297
+#: apps/digitalization/models.py:309
 msgid "Other Catalog Numbers"
 msgstr "Otro Número de Catálogo"
 
-#: apps/digitalization/models.py:300
+#: apps/digitalization/models.py:312
 msgid "Recorded by"
 msgstr "Registrado por"
 
-#: apps/digitalization/models.py:301
+#: apps/digitalization/models.py:313
 msgid "Record Number"
 msgstr "Número de registro"
 
-#: apps/digitalization/models.py:302
+#: apps/digitalization/models.py:314
 msgid "Observations"
 msgstr "Observaciones"
 
-#: apps/digitalization/models.py:303 apps/digitalization/models.py:520
-#: apps/digitalization/models.py:542
+#: apps/digitalization/models.py:315 apps/digitalization/models.py:532
+#: apps/digitalization/models.py:554
 msgid "Species"
 msgstr "Especie"
 
-#: apps/digitalization/models.py:305
+#: apps/digitalization/models.py:317
 msgid "Locality"
 msgstr "Ubicación"
 
-#: apps/digitalization/models.py:306
+#: apps/digitalization/models.py:318
 msgid "Altitude"
 msgstr "Altura"
 
-#: apps/digitalization/models.py:307
+#: apps/digitalization/models.py:319
 msgid "Georeferenced Date"
 msgstr "Fecha de Georeferenciación"
 
-#: apps/digitalization/models.py:308
+#: apps/digitalization/models.py:320
 msgid "Latitude"
 msgstr "Latitud"
 
-#: apps/digitalization/models.py:309
+#: apps/digitalization/models.py:321
 msgid "Longitude"
 msgstr "Longitud"
 
-#: apps/digitalization/models.py:310
+#: apps/digitalization/models.py:322
 msgid "Identified by"
 msgstr "Identificado por"
 
-#: apps/digitalization/models.py:311 apps/digitalization/models.py:312
+#: apps/digitalization/models.py:323 apps/digitalization/models.py:324
 msgid "Identified Date"
 msgstr "Fecha de identificación"
 
-#: apps/digitalization/models.py:313 apps/digitalization/models.py:521
-#: apps/digitalization/models.py:544
+#: apps/digitalization/models.py:325 apps/digitalization/models.py:533
+#: apps/digitalization/models.py:556
 msgid "Image"
 msgstr "Imagen"
 
-#: apps/digitalization/models.py:314 apps/digitalization/models.py:316
+#: apps/digitalization/models.py:326 apps/digitalization/models.py:328
 #, python-format
 msgid "%d Times Smaller Image Scale"
 msgstr "Escala de imagen %d veces más pequeña"
 
-#: apps/digitalization/models.py:318
+#: apps/digitalization/models.py:330
 msgid "Public Image"
 msgstr "Imagen pública"
 
-#: apps/digitalization/models.py:319 apps/digitalization/models.py:321
+#: apps/digitalization/models.py:331 apps/digitalization/models.py:333
 #, python-format
 msgid "%d Times Smaller Public Image Scale"
 msgstr "Escala de imagen pública %d veces más pequeña"
 
-#: apps/digitalization/models.py:323
+#: apps/digitalization/models.py:335
 msgid "Raw Image"
 msgstr "Imagen Cruda"
 
-#: apps/digitalization/models.py:324
+#: apps/digitalization/models.py:336
 msgid "Point"
 msgstr "Punto"
 
-#: apps/digitalization/models.py:325
+#: apps/digitalization/models.py:337
 msgid "Public Latitude"
 msgstr "Latitud Pública"
 
-#: apps/digitalization/models.py:326
+#: apps/digitalization/models.py:338
 msgid "Public Longitude"
 msgstr "Longitud Pública"
 
-#: apps/digitalization/models.py:327
+#: apps/digitalization/models.py:339
 msgid "Public Point"
 msgstr "Punto Público"
 
-#: apps/digitalization/models.py:328
+#: apps/digitalization/models.py:340
 msgid "Priority"
 msgstr "Prioridad"
 
-#: apps/digitalization/models.py:333
+#: apps/digitalization/models.py:345
 msgid "Voucher"
 msgstr "Voucher"
 
-#: apps/digitalization/models.py:334
+#: apps/digitalization/models.py:346
 msgid "Vouchers"
 msgstr "Vouchers"
 
-#: apps/digitalization/models.py:507
+#: apps/digitalization/models.py:519
 msgid "Link"
 msgstr "Enlace"
 
-#: apps/digitalization/models.py:508
+#: apps/digitalization/models.py:520
 msgid "Short Name"
 msgstr "Nombre Corto"
 
-#: apps/digitalization/models.py:509
+#: apps/digitalization/models.py:521
 msgid "Added by"
 msgstr "Añadida por"
 
-#: apps/digitalization/models.py:522
+#: apps/digitalization/models.py:534
 msgid "Thumbnail"
 msgstr "Vista Previa"
 
-#: apps/digitalization/models.py:523
+#: apps/digitalization/models.py:535
 msgid "Aspect Ratio"
 msgstr "Relación de Aspecto"
 
-#: apps/digitalization/models.py:524
+#: apps/digitalization/models.py:536
 msgid "Specimen"
 msgstr "Espécimen"
 
-#: apps/digitalization/models.py:525
+#: apps/digitalization/models.py:537
 msgid "Taken by"
 msgstr "Tomada por"
 
-#: apps/digitalization/models.py:528
+#: apps/digitalization/models.py:540
 msgid "Licence"
 msgstr "Licencia"
 
-#: apps/digitalization/models.py:533
+#: apps/digitalization/models.py:545
 msgid "Upload by"
 msgstr "Subida por"
 
-#: apps/digitalization/models.py:534
+#: apps/digitalization/models.py:546
 msgid "Upload at"
 msgstr "Subida el"
 
-#: apps/digitalization/models.py:543
+#: apps/digitalization/models.py:555
 msgid "Banner"
 msgstr "Pancarta"
 
-#: apps/digitalization/models.py:545 apps/digitalization/models.py:554
+#: apps/digitalization/models.py:557 apps/digitalization/models.py:566
 msgid "Updated at"
 msgstr "Actualizada el"
 
-#: apps/digitalization/models.py:550
+#: apps/digitalization/models.py:562
 msgid "Geometry"
 msgstr "Geometría"
 
-#: apps/digitalization/models.py:557
+#: apps/digitalization/models.py:569
 msgid "Area"
 msgstr "Área"
 
-#: apps/digitalization/models.py:558
+#: apps/digitalization/models.py:570
 msgid "Areas"
 msgstr "Áreas"
 
-#: apps/digitalization/models.py:562
+#: apps/digitalization/models.py:574
 msgid "MMA Code"
 msgstr "Código MMA"
 
-#: apps/digitalization/models.py:563
+#: apps/digitalization/models.py:575
 msgid "Designation Type"
 msgstr "Tipo de designación"
 
-#: apps/digitalization/models.py:564
+#: apps/digitalization/models.py:576
 msgid "Category"
 msgstr "Categoría"
 
-#: apps/digitalization/models.py:565
+#: apps/digitalization/models.py:577
 msgid "IUCN Management Category"
 msgstr "Categoría de áreas protegidas de la UICN"
 
-#: apps/digitalization/models.py:570
+#: apps/digitalization/models.py:582
 msgid "Protected Areas"
 msgstr "Áreas Protegidas"
 
-#: apps/digitalization/models.py:574
+#: apps/digitalization/models.py:586
 msgid "Access"
 msgstr "Accesos"
 
-#: apps/digitalization/models.py:577
+#: apps/digitalization/models.py:589
 msgid "Temporal Area"
 msgstr "Área Temporal"
 
-#: apps/digitalization/models.py:578
+#: apps/digitalization/models.py:590
 msgid "Temporal Areas"
 msgstr "Áreas Temporales"

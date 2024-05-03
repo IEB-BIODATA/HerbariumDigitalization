@@ -3,7 +3,8 @@
 {% load i18n %}
 {% block javascript %}
     <script type="text/javascript">
-        $.fn.selectpicker.Constructor.DEFAULTS.noneSelectedText = "{% translate 'Nothing selected' %}";
+        $.fn.selectpicker.Constructor.DEFAULTS.noneSelectedText = "{% translate 'Nothing selected' %}"
+        $.fn.selectpicker.Constructor.DEFAULTS.liveSearch = true;
         document.addEventListener("DOMContentLoaded", function() {
             const selectField = document.getElementById("select-taxon");
             const form = document.getElementById("taxon-form");
@@ -30,7 +31,7 @@
                 <form id="taxon-form" action="{% url 'merge_taxa' taxa_1=taxa_1.id taxa_2=0 %}" method="get" class="form-horizontal">
                     {% translate "Select taxon to join" %} <b>{{ taxa_1.scientific_name}}</b>:<br>
                     <select id="select-taxon" class="selectpicker">
-                        <option value="0"></option>
+                        <option value="0"></option>c
                         {% for taxa in species %}
                             <option value="{{ taxa.id }}">{{ taxa.scientific_name }}</option>
                         {% endfor %}
@@ -405,10 +406,12 @@
             </div>
         </div>
     </div>
-    <div class="row">
-        <div class="col-sm-12">
-            {% blocktranslate with title=rank asvar title %}New {{ title }}{% endblocktranslate %}
-            {% include 'catalog/taxa_form.html' with form=form form_title=title form_url=form_url delete_button=False %}
+    {% if taxa_2 %}
+        <div class="row">
+            <div class="col-sm-12">
+                {% blocktranslate with title=rank asvar title %}New {{ title }}{% endblocktranslate %}
+                {% include 'catalog/taxa_form.html' with form=form form_title=title form_url=form_url delete_button=False %}
+            </div>
         </div>
-    </div>
+    {% endif %}
 {% endblock %}
