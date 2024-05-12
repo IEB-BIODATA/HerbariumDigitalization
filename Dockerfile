@@ -33,7 +33,7 @@ STOPSIGNAL SIGTERM
 
 ENV PYTHONPATH=/app:$PYTHONPATH
 
-RUN ./manage.py compilemessages
+RUN python manage.py compilemessages
 
 ENTRYPOINT [ \
     "gunicorn", "intranet.wsgi:application", \
