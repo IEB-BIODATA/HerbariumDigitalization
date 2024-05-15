@@ -105,16 +105,16 @@
         const myBarChart = new Chart(ctx2, {
             type: 'bar',
             data: {
-                labels: ["CONC", "ULS"],
+                labels: [{% for herbarium in herbariums %}"{{ herbarium }}", {% endfor %}],
                 datasets: [
                     {
                         label: "{% translate 'Pending Specimens' %}",
                         backgroundColor: "#007bff",
-                        data: [{{ stand_by_conc }}, {{ stand_by_uls }}]
+                        data: [{% for herbarium in stands %}{{ herbarium }}, {% endfor %}]
                     }, {
                         label: "{% translate 'Scanned Specimens' %}",
                         backgroundColor: "#28a745",
-                        data: [{{ digitalized_conc }}, {{ digitalized_uls }}]
+                        data: [{% for herbarium in digitalized %}{{ herbarium }}, {% endfor %}]
                     }
                 ]
             },
