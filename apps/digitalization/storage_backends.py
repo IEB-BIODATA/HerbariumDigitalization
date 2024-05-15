@@ -2,17 +2,30 @@ from django.conf import settings
 from storages.backends.s3boto3 import S3Boto3Storage
 
 
-class StaticStorage(S3Boto3Storage):
+class CustomDomainStorage(S3Boto3Storage):
+    custom_domain = False
+
+    def url(self, name, parameters=None, expire=None, http_method=None) -> str:
+        if self.custom_domain:
+            return "http{}:/{}/{}".format(
+                "s" if settings.USE_SSL else "",
+                self.custom_domain,
+                name
+            )
+        return super().url(name, parameters, expire, http_method)
+
+
+class StaticStorage(CustomDomainStorage):
     if settings.DEBUG:
         location = settings.STATICFILES_DIRS
     else:
         location = settings.AWS_STATIC_LOCATION
-        default_acl = 'public-read'
+        custom_domain = settings.STATIC_URL
 
 
-class PublicMediaStorage(S3Boto3Storage):
+class PublicMediaStorage(CustomDomainStorage):
     location = settings.AWS_PUBLIC_MEDIA_LOCATION
-    default_acl = 'public-read'
+    custom_domain = settings.MEDIA_URL
     file_overwrite = False
 
 
