@@ -1,8 +1,9 @@
 import logging
 import os
+from django.conf import settings
 from django.db.models import Q, ExpressionWrapper, F, FloatField, Value, Count
 from django.db.models.functions import Length
-from django.http import JsonResponse
+from django.http import HttpRequest, HttpResponse
 from django.shortcuts import redirect
 from django.utils.translation import get_language, activate
 from drf_multiple_model.pagination import MultipleModelLimitOffsetPagination
@@ -26,7 +27,7 @@ from .serializers import SpeciesFinderSerializer, \
     FamilySerializer, DistributionSerializer, \
     FinderSerializer, GenusSerializer, CommonNameSerializer, \
     SpeciesDetailsSerializer, SynonymyDetailsSerializer, SpecimenDetailSerializer, SpecimenFinderSerializer, \
-    RegionDetailsSerializer, KingdomSerializer, MinimumSerializer
+    RegionDetailsSerializer, MinimumSerializer
 from .utils import filter_query_set, OpenAPIKingdom, OpenAPIClass, OpenAPIOrder, OpenAPIFamily, OpenAPIGenus, \
     OpenAPISpecies, OpenAPIPlantHabit, OpenAPIEnvHabit, OpenAPIStatus, OpenAPICycle, OpenAPIRegion, OpenAPIConservation, \
     OpenAPICommonName, OpenAPISearch, OpenAPIDivision, OpenAPIHerbarium, OpenApiPaginated, OpenAPILang, filter_by_geo, \
@@ -34,6 +35,14 @@ from .utils import filter_query_set, OpenAPIKingdom, OpenAPIClass, OpenAPIOrder,
 from ..catalog.serializers import PlantHabitSerializer, EnvHabitSerializer, StatusSerializer, CycleSerializer, \
     RegionSerializer, ConservationStateSerializer
 from ..digitalization.utils import register_temporal_geometry
+
+
+def index(request: HttpRequest) -> HttpResponse:
+    return HttpResponse(
+        settings.SPECTACULAR_SETTINGS["TITLE"] +
+        ": " + settings.SPECTACULAR_SETTINGS["VERSION"] +
+        "<br>" + settings.SPECTACULAR_SETTINGS["DESCRIPTION"]
+    )
 
 
 class LimitPagination(MultipleModelLimitOffsetPagination):

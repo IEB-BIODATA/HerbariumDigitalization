@@ -33,8 +33,6 @@ STOPSIGNAL SIGTERM
 
 ENV PYTHONPATH=/app:$PYTHONPATH
 
-RUN python manage.py compilemessages
-
 ENTRYPOINT [ \
     "gunicorn", "intranet.wsgi:application", \
     "--bind", "0.0.0.0:8000", \

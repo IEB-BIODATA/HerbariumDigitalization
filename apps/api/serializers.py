@@ -137,7 +137,7 @@ class SampleSerializer(HyperlinkedModelSerializer):
 
     def get_image_resized_60(self, obj: VoucherImported) -> str:
         try:
-            return obj.image_public_resized_10.url
+            return obj.image_public_resized_60.url
         except ValueError:
             return "#"
 

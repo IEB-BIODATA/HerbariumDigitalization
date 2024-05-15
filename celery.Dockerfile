@@ -1,4 +1,4 @@
-FROM 660141862495.dkr.ecr.sa-east-1.amazonaws.com/herbarium-digitalization:latest
+FROM 660141862495.dkr.ecr.sa-east-1.amazonaws.com/herbarium-digitalization:dev
 
 RUN apt-get install -y \
     wget \

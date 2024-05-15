@@ -15,14 +15,14 @@ Including another URLconf
 """
 from django.urls import re_path
 
-from . import views
-from .views import InfoApi, DivisionList, ClassList, OrderList, FamilyList, GenusList
+from .views import index, InfoApi, DivisionList, ClassList, OrderList, FamilyList, GenusList
 from .views import PlantHabitList, EnvHabitList, StatusList, CycleList, RegionList, ConservationStateList, \
     CommonNameList
 from .views import MenuApiView, NameApiView, FinderApiView, RegionDetails, SpeciesListApiView, SpeciesDetails, \
     SynonymyDetails, DistributionList, SpecimensList, SpecimenDetails
 
 urlpatterns = [
+    re_path(r'^$', index, name='index'),
     re_path(r'^info/$', InfoApi.as_view()),
     re_path(r'^divisions/$', DivisionList.as_view()),
     re_path(r'^classes/$', ClassList.as_view()),

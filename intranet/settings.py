@@ -159,24 +159,24 @@ AWS_ACCESS_KEY_ID = os.environ.get("AWS_ACCESS_KEY_ID")
 AWS_SECRET_ACCESS_KEY = os.environ.get("AWS_SECRET_ACCESS_KEY")
 AWS_STORAGE_BUCKET_NAME = os.environ.get("AWS_STORAGE_BUCKET_NAME")
 AWS_S3_REGION_NAME = os.environ.get("AWS_S3_REGION_NAME")
-AWS_S3_CUSTOM_DOMAIN = '%s.s3.%s.amazonaws.com' % (AWS_STORAGE_BUCKET_NAME, AWS_S3_REGION_NAME)
 AWS_DEFAULT_ACL = os.environ.get("AWS_DEFAULT_ACL", None)
 AWS_S3_OBJECT_PARAMETERS = {
     'CacheControl': 'max-age=86400',
 }
+USE_SSL = os.environ.get("DJANGO_USE_SSL", 'false') == 'true'
 
-
+STATICFILES_DIRS = [os.path.join(BASE_DIR, 'static')]
 if DEBUG:
     STATIC_URL = 'static/'
-    STATICFILES_DIRS = [os.path.join(BASE_DIR, 'static')]
 else:
     STATICFILES_STORAGE = 'apps.digitalization.storage_backends.StaticStorage'
-    AWS_STATIC_LOCATION = 'static/digitalization'
-    STATIC_URL = "https://%s/%s/" % (AWS_S3_CUSTOM_DOMAIN, AWS_STATIC_LOCATION)
+    AWS_STATIC_LOCATION = 'static/digitalization/'
+    STATIC_URL = os.environ.get("DIGITALIZATION_STATIC_HOST")
 
 
 AWS_PUBLIC_MEDIA_LOCATION = 'media/public'
 DEFAULT_FILE_STORAGE = 'apps.digitalization.storage_backends.PublicMediaStorage'
+MEDIA_URL = os.environ.get("IMAGE_HOST")
 
 AWS_PRIVATE_MEDIA_LOCATION = 'media/private'
 PRIVATE_FILE_STORAGE = 'apps.digitalization.storage_backends.PrivateMediaStorage'
@@ -290,8 +290,10 @@ LEAFLET_CONFIG = {
 
 LOGGING = {
     'version': 1,
+    'disable_existing_loggers': False,
     'handlers': {
         'console': {
+            'level': 'DEBUG',
             'class': 'logging.StreamHandler',
             'formatter': 'gunicorn',
         },
@@ -304,6 +306,12 @@ LOGGING = {
     },
     'root': {
         'handlers': ['console'],
-        'level': 'DEBUG' if DEBUG else 'INFO',
+        'level': 'DEBUG',
+    },
+    'loggers': {
+        'django': {
+            'handlers': ['console'],
+            'level': 'INFO',
+        },
     }
 }
