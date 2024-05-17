@@ -173,10 +173,9 @@ else:
     AWS_STATIC_LOCATION = 'static/digitalization/'
     STATIC_URL = os.environ.get("DIGITALIZATION_STATIC_HOST")
 
-
 AWS_PUBLIC_MEDIA_LOCATION = 'media/public'
 DEFAULT_FILE_STORAGE = 'apps.digitalization.storage_backends.PublicMediaStorage'
-MEDIA_URL = os.environ.get("IMAGE_HOST")
+MEDIA_URL = os.environ.get("IMAGE_HOST") + '/'
 
 AWS_PRIVATE_MEDIA_LOCATION = 'media/private'
 PRIVATE_FILE_STORAGE = 'apps.digitalization.storage_backends.PrivateMediaStorage'
@@ -308,10 +307,4 @@ LOGGING = {
         'handlers': ['console'],
         'level': 'DEBUG',
     },
-    'loggers': {
-        'django': {
-            'handlers': ['console'],
-            'level': 'INFO',
-        },
-    }
 }

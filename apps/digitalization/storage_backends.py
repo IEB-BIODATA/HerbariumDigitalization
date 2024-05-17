@@ -25,7 +25,7 @@ class StaticStorage(CustomDomainStorage):
 
 class PublicMediaStorage(CustomDomainStorage):
     location = settings.AWS_PUBLIC_MEDIA_LOCATION
-    custom_domain = settings.MEDIA_URL
+    custom_domain = settings.MEDIA_URL[0:-1]
     file_overwrite = False
 
 
