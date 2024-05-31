@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from django.conf import settings
 from time import time_ns
 
 import logging
@@ -9,7 +10,7 @@ from django.contrib.auth.models import User
 from django.contrib.gis.db.models import GeometryField
 from django.db import connection
 from django.db import models
-from django.db.models import Q
+from django.db.models import Q, Func, F
 from django.utils.translation import gettext_lazy as _, pgettext_lazy
 from typing import List, Dict, Tuple
 
@@ -420,6 +421,8 @@ class ConservationState(AttributeModel):
 
 
 class TaxonomicModel(models.Model):
+    taxa_num_id = models.BigIntegerField()
+    taxa_id = models.CharField()
     created_at = models.DateTimeField(verbose_name=_("Created at"), auto_now_add=True, blank=True, null=True, editable=False)
     updated_at = models.DateTimeField(verbose_name=_("Updated at"), auto_now=True)
     created_by = models.ForeignKey(User, verbose_name=_("Created by"), on_delete=models.PROTECT, default=1, editable=False)
@@ -465,6 +468,15 @@ class TaxonomicModel(models.Model):
             )
         if self.pk is None:
             try:
+                if self.taxa_id is None:
+                    with connection.cursor() as cursor:
+                        cursor.execute("SELECT get_taxa_id()")
+                        result = cursor.fetchone()
+                        if result:
+                            self.taxa_num_id = result[0]
+                        else:
+                            raise RuntimeError("Cannot got unique taxa id")
+                    self.taxa_id = settings.TAXA_ID_PREF + str(self.taxa_num_id)
                 super().save(
                     force_insert=force_insert,
                     force_update=force_update,
@@ -912,6 +924,8 @@ class Synonymy(ScientificName):
         super().__init__(*args, **kwargs)
         if "species" in kwargs:
             species: Species = kwargs["species"]
+            self.taxa_num_id = species.taxa_num_id
+            self.taxa_id = species.taxa_id
             self.genus = str(species.genus).capitalize()
             self.scientific_name = species.scientific_name
             self.scientific_name_db = species.scientific_name_db
@@ -962,7 +976,7 @@ class CommonNameQuerySet(AttributeQuerySet):
     __attribute_name__ = "common_names"
 
 
-class CommonName(TaxonomicModel):
+class CommonName(AttributeModel):
     name = models.CharField(verbose_name=_("Name"), max_length=300, blank=True, null=True)
 
     objects = CommonNameQuerySet.as_manager()
@@ -981,18 +995,6 @@ class CommonName(TaxonomicModel):
 
     def __repr__(self):
         return "%s" % self.name
-
-    @staticmethod
-    def get_query_name(search: str) -> Q:
-        return TaxonomicModel.get_query_name(search)
-
-    @staticmethod
-    def get_parent_query(search: str) -> Q:
-        return Q(species__scientific_name__icontains=search)
-
-    @staticmethod
-    def get_created_by_query(search: str) -> Q:
-        return TaxonomicModel.get_created_by_query(search)
 
     class Meta:
         verbose_name = _("Common Name")
@@ -1130,6 +1132,14 @@ class Species(ScientificName):
                         ]))
                         for specimen in self.voucherimported_set.all():
                             specimen.generate_etiquette()
+                        with connection.cursor() as cursor:
+                            cursor.execute("SELECT get_taxa_id()")
+                            result = cursor.fetchone()
+                            if result:
+                                self.taxa_num_id = result[0]
+                            else:
+                                raise RuntimeError("Cannot got unique taxa id")
+                        self.taxa_id = settings.TAXA_ID_PREF + str(self.taxa_num_id)
                     try:
                         self.__prev__.save(user=kwargs["user"])
                         self.synonyms.add(self.__prev__)
@@ -1258,6 +1268,8 @@ class CatalogView(TaxonomicModel):
     CREATE MATERIALIZED VIEW catalog_view AS
     SELECT species.id,
            species.id_taxa,
+           species.taxa_num_id,
+           species.taxa_id,
            kingdom.id      AS kingdom_id,
            kingdom.name    AS kingdom,
            division.id     AS division_id,
@@ -1314,6 +1326,8 @@ class CatalogView(TaxonomicModel):
     """
     id = models.IntegerField(primary_key=True, blank=False, null=False, help_text="")
     id_taxa = models.IntegerField(blank=False, null=False, help_text="")
+    taxa_num_id = models.BigIntegerField()
+    taxa_id = models.CharField()
     kingdom_id = models.IntegerField(blank=False, null=False, help_text="")
     kingdom = models.CharField(max_length=300, blank=True, null=True)
     division_id = models.IntegerField(blank=False, null=False, help_text="")
@@ -1382,6 +1396,8 @@ class SynonymyView(TaxonomicModel):
     SELECT synonymy.id,
            species.id               AS specie_id,
            species.id_taxa,
+           synonymy.taxa_num_id,
+           synonymy.taxa_id,
            species.scientific_name AS specie_scientific_name,
            species_synonymy.id      AS synonymy_id,
            synonymy.scientific_name,
@@ -1409,6 +1425,8 @@ class SynonymyView(TaxonomicModel):
     id = models.IntegerField(primary_key=True, blank=False, null=False, help_text="")
     specie_id = models.IntegerField(blank=False, null=False, help_text="")
     id_taxa = models.IntegerField(blank=False, null=False, help_text="")
+    taxa_num_id = models.BigIntegerField()
+    taxa_id = models.CharField()
     specie_scientific_name = models.CharField(max_length=500, blank=True, null=True, help_text="sp")
     synonymy_id = models.IntegerField(blank=False, null=False, help_text="")
     scientific_name = models.CharField(max_length=300, blank=True, null=True)
