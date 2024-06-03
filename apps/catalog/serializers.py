@@ -140,8 +140,10 @@ class SynonymsSerializer(TaxonomicSerializer):
         ]
 
     def get_species(self, obj):
-        species = obj.species_set.all()
-        return "\t".join([specie.scientific_name for specie in species])
+        if obj.species is not None:
+            return obj.species.scientific_name
+        else:
+            return ""
 
 
 class SpeciesSerializer(TaxonomicSerializer):
