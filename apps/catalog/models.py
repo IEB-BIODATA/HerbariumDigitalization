@@ -468,12 +468,13 @@ class TaxonomicModel(models.Model):
             )
         if self.pk is None:
             try:
-                if self.taxa_id is None:
+                if self.taxa_id is None or self.taxa_id == "":
                     with connection.cursor() as cursor:
                         cursor.execute("SELECT get_taxa_id()")
                         result = cursor.fetchone()
                         if result:
                             self.taxa_num_id = result[0]
+                            logging.debug(self.taxa_num_id)
                         else:
                             raise RuntimeError("Cannot got unique taxa id")
                     self.taxa_id = settings.TAXA_ID_PREF + str(self.taxa_num_id)
@@ -910,68 +911,6 @@ class ScientificName(TaxonomicModel):
         abstract = True
 
 
-class SynonymyQuerySet(AttributeQuerySet):
-    __attribute_name__ = "synonymy"
-
-    def search(self, text: str) -> AttributeQuerySet:
-        return self.filter(scientific_name_full__icontains=text)
-
-
-class Synonymy(ScientificName):
-    objects = SynonymyQuerySet.as_manager()
-
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-        if "species" in kwargs:
-            species: Species = kwargs["species"]
-            self.taxa_num_id = species.taxa_num_id
-            self.taxa_id = species.taxa_id
-            self.genus = str(species.genus).capitalize()
-            self.scientific_name = species.scientific_name
-            self.scientific_name_db = species.scientific_name_db
-            self.scientific_name_full = species.scientific_name_full
-            self.specific_epithet = species.specific_epithet
-            self.scientific_name_authorship = species.scientific_name_authorship
-            self.subspecies = species.subspecies
-            self.ssp_authorship = species.ssp_authorship
-            self.variety = species.variety
-            self.variety_authorship = species.variety_authorship
-            self.form = species.form
-            self.form_authorship = species.form_authorship
-
-    @staticmethod
-    def get_parent_query(search: str) -> Q:
-        return Q(species__scientific_name__icontains=search)
-
-    @staticmethod
-    def get_created_by_query(search: str) -> Q:
-        return TaxonomicModel.get_created_by_query(search)
-
-    def save(self, force_insert=False, force_update=False, using=None, update_fields=None, **kwargs):
-        if force_update:
-            return super().save(
-                force_insert=force_insert,
-                force_update=force_update,
-                using=using,
-                update_fields=update_fields,
-                **kwargs
-            )
-        self.genus = str(self.genus).capitalize()
-        self.__update_scientific_name__()
-        return super().save(
-            force_insert=force_insert,
-            force_update=force_update,
-            using=using,
-            update_fields=update_fields,
-            **kwargs
-        )
-
-    class Meta:
-        verbose_name = _("Synonym")
-        verbose_name_plural = _("Synonyms")
-        ordering = ['scientific_name']
-
-
 class CommonNameQuerySet(AttributeQuerySet):
     __attribute_name__ = "common_names"
 
@@ -1046,7 +985,6 @@ class Species(ScientificName):
     volume = models.CharField(verbose_name=_("Volume"), max_length=300, blank=True, null=True)
     pages = models.CharField(verbose_name=_("Pages"), max_length=300, blank=True, null=True)
     year = models.IntegerField(verbose_name=_("Year"), blank=True, null=True)
-    synonyms = models.ManyToManyField(Synonymy, verbose_name=_("Synonyms"), blank=True)
     region = models.ManyToManyField(Region, verbose_name=_("Regions"), blank=True, db_column="region")
     id_mma = models.IntegerField(verbose_name=_("MMA ID"), blank=True, null=True,
                                  help_text=_("ID of the species platform of the MMA"))
@@ -1141,8 +1079,8 @@ class Species(ScientificName):
                                 raise RuntimeError("Cannot got unique taxa id")
                         self.taxa_id = settings.TAXA_ID_PREF + str(self.taxa_num_id)
                     try:
+                        self.__prev__.species = self
                         self.__prev__.save(user=kwargs["user"])
-                        self.synonyms.add(self.__prev__)
                     except Exception as e:
                         logging.error("Error saving synonymy\n{}".format(e), exc_info=True)
                 if len(self.__difference__(self.__original__)) > 0:
@@ -1160,6 +1098,70 @@ class Species(ScientificName):
     class Meta:
         verbose_name = _("Species")
         verbose_name_plural = pgettext_lazy("plural", "Species")
+        ordering = ['scientific_name']
+
+
+class SynonymyQuerySet(AttributeQuerySet):
+    __attribute_name__ = "synonymy"
+
+    def search(self, text: str) -> AttributeQuerySet:
+        return self.filter(scientific_name_full__icontains=text)
+
+
+class Synonymy(ScientificName):
+    species = models.ForeignKey(Species, verbose_name=_("Species"), related_name="synonyms", on_delete=models.PROTECT, blank=True, null=True)
+
+    objects = SynonymyQuerySet.as_manager()
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        if "species" in kwargs:
+            species: Species = kwargs["species"]
+            self.taxa_num_id = species.taxa_num_id
+            self.taxa_id = species.taxa_id
+            self.genus = str(species.genus).capitalize()
+            self.scientific_name = species.scientific_name
+            self.scientific_name_db = species.scientific_name_db
+            self.scientific_name_full = species.scientific_name_full
+            self.specific_epithet = species.specific_epithet
+            self.scientific_name_authorship = species.scientific_name_authorship
+            self.subspecies = species.subspecies
+            self.ssp_authorship = species.ssp_authorship
+            self.variety = species.variety
+            self.variety_authorship = species.variety_authorship
+            self.form = species.form
+            self.form_authorship = species.form_authorship
+
+    @staticmethod
+    def get_parent_query(search: str) -> Q:
+        return Q(species__scientific_name__icontains=search)
+
+    @staticmethod
+    def get_created_by_query(search: str) -> Q:
+        return TaxonomicModel.get_created_by_query(search)
+
+    def save(self, force_insert=False, force_update=False, using=None, update_fields=None, **kwargs):
+        if force_update:
+            return super().save(
+                force_insert=force_insert,
+                force_update=force_update,
+                using=using,
+                update_fields=update_fields,
+                **kwargs
+            )
+        self.genus = str(self.genus).capitalize()
+        self.__update_scientific_name__()
+        return super().save(
+            force_insert=force_insert,
+            force_update=force_update,
+            using=using,
+            update_fields=update_fields,
+            **kwargs
+        )
+
+    class Meta:
+        verbose_name = _("Synonym")
+        verbose_name_plural = _("Synonyms")
         ordering = ['scientific_name']
 
 
@@ -1394,12 +1396,9 @@ class SynonymyView(TaxonomicModel):
     """
     CREATE MATERIALIZED VIEW synonymy_view AS
     SELECT synonymy.id,
-           species.id               AS specie_id,
+           species_id,
            species.id_taxa,
-           synonymy.taxa_num_id,
-           synonymy.taxa_id,
-           species.scientific_name AS specie_scientific_name,
-           species_synonymy.id      AS synonymy_id,
+           species.scientific_name AS species_scientific_name,
            synonymy.scientific_name,
            synonymy.scientific_name_full,
            synonymy.genus,
@@ -1415,20 +1414,18 @@ class SynonymyView(TaxonomicModel):
            synonymy.updated_at,
            "user".username          AS created_by
     FROM catalog_synonymy synonymy
-        LEFT JOIN catalog_species_synonyms species_synonymy ON species_synonymy.synonymy_id = synonymy.id
-        LEFT JOIN catalog_species species ON species_synonymy.species_id = species.id
+        LEFT JOIN catalog_species species ON synonymy.species_id = species.id
         LEFT JOIN auth_user "user" ON synonymy.created_by_id = "user".id;
 
     CREATE UNIQUE INDEX synonymy_view_id_idx
-        ON synonymy_view (synonymy_id);
+        ON synonymy_view (id);
     """
     id = models.IntegerField(primary_key=True, blank=False, null=False, help_text="")
-    specie_id = models.IntegerField(blank=False, null=False, help_text="")
+    species_id = models.IntegerField(blank=False, null=False, help_text="")
     id_taxa = models.IntegerField(blank=False, null=False, help_text="")
     taxa_num_id = models.BigIntegerField()
     taxa_id = models.CharField()
-    specie_scientific_name = models.CharField(max_length=500, blank=True, null=True, help_text="sp")
-    synonymy_id = models.IntegerField(blank=False, null=False, help_text="")
+    species_scientific_name = models.CharField(max_length=500, blank=True, null=True, help_text="sp")
     scientific_name = models.CharField(max_length=300, blank=True, null=True)
     scientific_name_full = models.CharField(max_length=800, blank=True, null=True)
     genus = models.CharField(max_length=300, blank=True, null=True)
@@ -1450,7 +1447,7 @@ class SynonymyView(TaxonomicModel):
 
     @staticmethod
     def get_parent_query(search: str) -> Q:
-        return Q(specie_scientific_name__icontains=search)
+        return Q(species_scientific_name__icontains=search)
 
     @staticmethod
     def get_created_by_query(search: str) -> Q:
