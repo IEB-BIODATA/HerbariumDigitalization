@@ -590,6 +590,27 @@ class TemporalArea(Area):
         verbose_name_plural = _("Temporal Areas")
 
 
+class PostprocessingLog(models.Model):
+    date = models.DateTimeField(verbose_name=_("Date"))
+    file = models.FileField(
+        verbose_name=_("File"),
+        upload_to='logs/',
+        storage=PrivateMediaStorage(),
+        blank=False, null=False
+    )
+    found_images = models.IntegerField(verbose_name=_("Found Images"), default=0, blank=False, null=False)
+    processed_images = models.IntegerField(verbose_name=_("Processed Images"), default=0, blank=False, null=False)
+    failed_images = models.IntegerField(verbose_name=_("Failed Images"), default=0, blank=False, null=False)
+    created_by = models.ForeignKey(
+        User, verbose_name=_("Created by"), on_delete=models.PROTECT, blank=False, null=False
+    )
+    scheduled = models.BooleanField(verbose_name=_("Scheduled"), blank=False, null=False)
+
+    class Meta:
+        verbose_name = _("Postprocessing Log")
+        verbose_name_plural = _("Postprocessing Logs")
+
+
 @receiver(post_delete, sender=PriorityVouchersFile)
 def auto_delete_file_on_delete_PriorityVouchersFile(sender, instance, **kwargs):
     if instance.file:

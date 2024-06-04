@@ -30,18 +30,34 @@ class Migration(migrations.Migration):
         ),
         migrations.RunSQL(
             """
-            DROP MATERIALIZED VIEW synonymy_view;
-            """
-        ),
-        migrations.RunSQL(
-            """
-            
+            CREATE MATERIALIZED VIEW synonymy_view AS
+            SELECT synonymy.id,
+                   species_id,
+                   species.id_taxa,
+                   species.scientific_name AS species_scientific_name,
+                   synonymy.scientific_name,
+                   synonymy.scientific_name_full,
+                   synonymy.genus,
+                   synonymy.specific_epithet,
+                   synonymy.scientific_name_authorship,
+                   synonymy.subspecies,
+                   synonymy.ssp_authorship,
+                   synonymy.variety,
+                   synonymy.variety_authorship,
+                   synonymy.form,
+                   synonymy.form_authorship,
+                   synonymy.created_at,
+                   synonymy.updated_at,
+                   "user".username          AS created_by
+            FROM catalog_synonymy synonymy
+                LEFT JOIN catalog_species species ON synonymy.species_id = species.id
+                LEFT JOIN auth_user "user" ON synonymy.created_by_id = "user".id;
             """
         ),
         migrations.RunSQL(
             """
             CREATE UNIQUE INDEX synonymy_view_id_idx
-                ON synonymy_view (synonymy_id);
+                ON synonymy_view (id);
             """
         ),
-    ]
+]

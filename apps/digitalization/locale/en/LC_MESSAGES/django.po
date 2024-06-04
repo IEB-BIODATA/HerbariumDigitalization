@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2024-05-03 15:22-0400\n"
+"POT-Creation-Date: 2024-06-03 11:27-0400\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -128,6 +128,7 @@ msgid "Herbariums"
 msgstr "Herbariums"
 
 #: apps/digitalization/models.py:99 apps/digitalization/models.py:225
+#: apps/digitalization/models.py:596
 msgid "File"
 msgstr "File"
 
@@ -394,3 +395,31 @@ msgstr "Temporal Area"
 #: apps/digitalization/models.py:590
 msgid "Temporal Areas"
 msgstr "Temporal Areas"
+
+#: apps/digitalization/models.py:594
+msgid "Date"
+msgstr "Date"
+
+#: apps/digitalization/models.py:600
+msgid "Found Images"
+msgstr "Found Images"
+
+#: apps/digitalization/models.py:601
+msgid "Processed Images"
+msgstr "Processed Images"
+
+#: apps/digitalization/models.py:602
+msgid "Failed Images"
+msgstr "Failed Images"
+
+#: apps/digitalization/models.py:603
+msgid "Scheduled"
+msgstr "Scheduled"
+
+#: apps/digitalization/models.py:606
+msgid "Postprocessing Log"
+msgstr "Postprocessing Log"
+
+#: apps/digitalization/models.py:607
+msgid "Postprocessing Logs"
+msgstr "Postprocessing Logs"
