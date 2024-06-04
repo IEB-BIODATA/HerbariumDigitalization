@@ -2,7 +2,8 @@ import os
 from rest_framework.serializers import HyperlinkedModelSerializer, CharField, ReadOnlyField, SerializerMethodField
 
 from apps.catalog.models import Species
-from apps.digitalization.models import VoucherImported, PriorityVouchersFile, GeneratedPage, BiodataCode, GalleryImage
+from apps.digitalization.models import VoucherImported, PriorityVouchersFile, GeneratedPage, BiodataCode, GalleryImage, \
+    PostprocessingLog
 
 
 class PriorityVouchersSerializer(HyperlinkedModelSerializer):
@@ -168,3 +169,23 @@ class GallerySerializer(HyperlinkedModelSerializer):
             'id', 'species', 'image', 'thumbnail', 'aspect_ratio',
             'specimen', 'taken_by', 'licence', 'upload_by', 'upload_at',
         ]
+
+
+class PostprocessingLogSerializer(HyperlinkedModelSerializer):
+    created_by = ReadOnlyField(source='created_by.username')
+    file_name = SerializerMethodField()
+    file_url = SerializerMethodField()
+
+    class Meta:
+        model = PostprocessingLog
+        fields = [
+            'id', 'date', 'file_name', 'file_url',
+            'found_images', 'processed_images', 'failed_images',
+            'scheduled', 'created_by',
+        ]
+
+    def get_file_name(self, obj):
+        return obj.file.name
+
+    def get_file_url(self, obj):
+        return obj.file.url

@@ -47,5 +47,7 @@ urlpatterns = [
     re_path(r'^get_task_log/(?P<task_id>[\w-]+)/$', views.get_task_log, name='get_task_log'),
     re_path(r'^vouchers_download$', views.vouchers_download, name='vouchers_download'),
     re_path(r'^download_catalog$', views.download_catalog, name='download_catalog'),
+    re_path(r'^postprocessing_log$', views.postprocessing_log, name='postprocessing_log'),
+    re_path(r'^postprocessing_log_table$', views.postprocessing_log_table, name='postprocessing_log_table'),
     re_path(r'^update_voucher/(?P<voucher_id>\d+)/$', views.update_voucher, name='update_voucher'),
 ]

@@ -1,0 +1,180 @@
+{% extends "base.html" %}
+{% load static %}
+{% load i18n %}
+{% get_current_language as LANGUAGE_CODE %}
+{% block title %}{% translate "Postprocessing Log" %}{% endblock %}
+{% block javascript %}
+    <script type="text/javascript">
+        const tempSearchBar = document.getElementById('temp-search-bar');
+        let language = getTableLanguage("{{ LANGUAGE_CODE }}");
+
+        tempSearchBar.addEventListener('input', function () {
+            if (tempSearchBar.value.length > 3) {
+                document.getElementById("TemporalSearch").setAttribute("style", "display: none;");
+                loadTable();
+                const searchBar = document.getElementById("CatalogTable_filter").children[0].children[0];
+                searchBar.value = tempSearchBar.value;
+                searchBar.focus();
+            }
+        })
+
+        function loadTable() {
+            document.getElementById("TemporalSearch").setAttribute("style", "display: none;");
+            $('#LogTable').DataTable({
+                serverSide: true,
+                processing: true,
+                language: language,
+                ajax: {
+                    url: '{% url "postprocessing_log_table" %}',
+                    type: 'GET',
+                    dataSrc: 'data',
+                },
+                order: [[0, 'desc']],
+                columnDefs: [
+                    {
+                        targets: 0,
+                        data: 'date',
+                        render: (data, type) => {
+                            let date = new Date(data);
+                            if (type === 'display' || type === 'search'){
+                                return dateFormat(date, "{{ LANGUAGE_CODE }}");
+                            } else if (type === 'sort'){
+                                return date.toISOString();
+                            } else {
+                                return date;
+                            }
+                        }
+                    },
+                    {
+                        targets: 1,
+                        data: 'file_url',
+                        render: (data, type, row) => {
+                            if (type === 'display'){
+                                return `
+                                    <a href="${data}" target="_blank">
+                                        ${row.file_name}
+                                    </a>
+                                `;
+                            } else {
+                                return '';
+                            }
+                        }
+                    },
+                    {
+                        targets: 2,
+                        data: 'found_images',
+                        render: (data, type) => {
+                            if (type === "display")
+                                return `<b>${data}</b>`;
+                            else
+                                return data;
+                        }
+                    },
+                    {
+                        targets: 3,
+                        data: 'processed_images',
+                        render: (data, type) => {
+                            if (type === "display")
+                                return `<b style="color:darkgreen;">${data}</b>`;
+                            else
+                                return data;
+                        }
+                    },
+                    {
+                        targets: 4,
+                        data: 'failed_images',
+                        render: (data, type) => {
+                            if (type === "display")
+                                return `<b style="color:darkred;">${data}</b>`;
+                            else
+                                return data;
+                        }
+                    },
+                    {
+                        targets: 5,
+                        data: 'scheduled',
+                        render: (data, type) => {
+                            if (type === 'display') {
+                                if (data)
+                                    return '<i class="fa-solid fa-square-check"></i>';
+                                else
+                                    return '<i class="fa-regular fa-square"></i>';
+                            } else {
+                                return data;
+                            }
+                        }
+                    },
+                    {
+                        targets: 6,
+                        data: 'created_by'
+                    },
+                    {
+                        targets: 7,
+                        orderable: false,
+                        data: 'file_url',
+                        render: (data, type) => {
+                            if (type === 'display'){
+                                return `
+                                    <a href="#">
+                                        <i class="fa-solid fa-circle-chevron-left"></i>
+                                    </a>
+                                    `;
+                            } else {
+                                return '';
+                            }
+                        }
+                    },
+                ],
+            });
+        }
+    </script>
+{% endblock %}
+{% block content %}
+    <h1>{% translate "Postprocessing Log" %}</h1>
+    <!-- DataTables Example -->
+    <div class="card mb-3">
+        <div class="card-header">
+            <i class="fas fa-table"></i>
+            {% translate "Postprocessing" %}
+        </div>
+        <div class="card-body">
+            <div class="row" id="TemporalSearch">
+                <div class="col-sm-12 col-md-6"></div>
+                <div class="col-sm-12 col-md-6" style="text-align: right;">
+                    <label>{% translate "Search" %}:
+                        <input id="temp-search-bar" type="search" class="form-control form-control-sm" style="display: inline-block;box-sizing: border-box;width: auto;">
+                    </label>
+                </div>
+            </div>
+            <div class="table-responsive" id="log-content">
+                <table class="table table-bordered" id="LogTable" width="100%" cellspacing="0">
+                    <thead>
+                    <tr>
+                        <th>{% translate "Date" %}</th>
+                        <th>{% translate "File" %}</th>
+                        <th>{% translate "Found Images" %}</th>
+                        <th>{% translate "Processed Images" %}</th>
+                        <th>{% translate "Failed Images" %}</th>
+                        <th>{% translate "Scheduled" %}</th>
+                        <th>{% translate "Created by" %}</th>
+                        <th></th>
+                    </tr>
+                    </thead>
+                    <tbody>
+                        <!-- To be populated -->
+                        <tr>
+                            <td colspan="8" >
+                                <div class="d-flex justify-content-center">
+                                    <button type="button" class="btn btn-info" onclick="loadTable()">
+                                        <i class="fas fa-fw fa-sync"></i>
+                                        {% translate "Load table" %}
+                                    </button>
+                                </div>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+{% endblock %}

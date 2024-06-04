@@ -1,4 +1,5 @@
 # SOME DESCRIPTIVE TITLE.
+# SOME DESCRIPTIVE TITLE.
 # Copyright (C) YEAR THE PACKAGE'S COPYRIGHT HOLDER
 # This file is distributed under the same license as the PACKAGE package.
 # FIRST AUTHOR <EMAIL@ADDRESS>, YEAR.
@@ -8,7 +9,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2024-05-03 15:22-0400\n"
+"POT-Creation-Date: 2024-06-03 11:27-0400\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -128,6 +129,7 @@ msgid "Herbariums"
 msgstr "Herbarios"
 
 #: apps/digitalization/models.py:99 apps/digitalization/models.py:225
+#: apps/digitalization/models.py:596
 msgid "File"
 msgstr "Archivo"
 
@@ -394,3 +396,31 @@ msgstr "Área Temporal"
 #: apps/digitalization/models.py:590
 msgid "Temporal Areas"
 msgstr "Áreas Temporales"
+
+#: apps/digitalization/models.py:594
+msgid "Date"
+msgstr "Fecha"
+
+#: apps/digitalization/models.py:600
+msgid "Found Images"
+msgstr "Imágenes Encontradas"
+
+#: apps/digitalization/models.py:601
+msgid "Processed Images"
+msgstr "Imágenes Procesadas"
+
+#: apps/digitalization/models.py:602
+msgid "Failed Images"
+msgstr "Imágenes Fallidas"
+
+#: apps/digitalization/models.py:603
+msgid "Scheduled"
+msgstr "Programada"
+
+#: apps/digitalization/models.py:606
+msgid "Postprocessing Log"
+msgstr "Registro de posprocesamiento"
+
+#: apps/digitalization/models.py:607
+msgid "Postprocessing Logs"
+msgstr "Registros de posprocesamiento"

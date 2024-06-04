@@ -31,9 +31,9 @@ from intranet.utils import paginated_table
 from .forms import LoadColorProfileForm, VoucherImportedForm, GalleryImageForm, LicenceForm, PriorityVoucherForm, \
     GeneratedPageForm
 from .models import BiodataCode, GeneratedPage, VoucherImported, PriorityVouchersFile, VouchersView, \
-    GalleryImage, BannerImage, VOUCHER_STATE
+    GalleryImage, BannerImage, VOUCHER_STATE, PostprocessingLog
 from .serializers import PriorityVouchersSerializer, GeneratedPageSerializer, VoucherSerializer, \
-    SpeciesGallerySerializer, GallerySerializer
+    SpeciesGallerySerializer, GallerySerializer, PostprocessingLogSerializer
 from .storage_backends import PrivateMediaStorage
 from .tasks import process_pending_vouchers, upload_priority_vouchers, etiquette_picture, get_taken_by
 from .utils import render_to_pdf
@@ -907,3 +907,33 @@ def update_voucher(request, voucher_id):
         form = VoucherImportedForm(instance=voucher)
 
     return render(request, 'digitalization/update_voucher.html', {'form': form, 'id': voucher_id})
+
+
+@login_required
+def postprocessing_log(request) -> HttpResponse:
+    return render(request, 'digitalization/postprocessing_log.html')
+
+
+@login_required
+def postprocessing_log_table(request) -> JsonResponse:
+    sort_by_func = {
+        0: "date",
+        1: "file",
+        2: "found_images",
+        3: "processed_images",
+        4: "failed_images",
+        5: "scheduled",
+        6: "created_by__username",
+    }
+    search_query = Q()
+    search_value = request.GET.get("search[value]", None)
+    if search_value:
+        search_query = (
+            Q(file__icontainse=search_value) |
+            Q(created_by__username__icontains=search_value)
+        )
+    entries = PostprocessingLog.objects.all()
+    return paginated_table(
+        request, entries, PostprocessingLogSerializer,
+        sort_by_func, "Postprocessing Log", search_query
+    )

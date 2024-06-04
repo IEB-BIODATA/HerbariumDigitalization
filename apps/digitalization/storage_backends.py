@@ -7,7 +7,7 @@ class CustomDomainStorage(S3Boto3Storage):
 
     def url(self, name, parameters=None, expire=None, http_method=None) -> str:
         if self.custom_domain:
-            return "http{}:/{}/{}".format(
+            return "http{}:/{}{}".format(
                 "s" if settings.USE_SSL else "",
                 self.custom_domain,
                 name

@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2024-05-03 15:22-0400\n"
+"POT-Creation-Date: 2024-06-03 11:27-0400\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -145,7 +145,7 @@ msgstr "Fecha Actualización"
 
 #: templates/catalog/list_binnacle.html:106
 #: templates/catalog/list_catalog.html:140 templates/catalog/list_taxa.html:196
-#: templates/digitalization/control_vouchers.html:219
+#: templates/digitalization/control_vouchers.html:218
 msgid "Action"
 msgstr "Acción"
 
@@ -181,7 +181,7 @@ msgid "Delete"
 msgstr "Borrar"
 
 #: templates/catalog/list_taxa.html:98
-#: templates/digitalization/control_vouchers.html:125
+#: templates/digitalization/control_vouchers.html:124
 #: templates/digitalization/gallery_image.html:131
 msgid "Edit"
 msgstr "Editar"
@@ -405,25 +405,24 @@ msgctxt "spaced"
 msgid "In Curatorship"
 msgstr "&nbsp;En curatoria&nbsp;&nbsp;"
 
-#: templates/digitalization/control_vouchers.html:55
-#| msgid "Digitalized"
+#: templates/digitalization/control_vouchers.html:53
 msgctxt "spaced"
 msgid "Digitalized"
 msgstr "&nbsp;Digitalizado&nbsp;&nbsp;"
 
-#: templates/digitalization/control_vouchers.html:139
+#: templates/digitalization/control_vouchers.html:138
 #: templates/digitalization/mark_vouchers.html:208
 #: templates/digitalization/validate_vouchers.html:195
 msgid "Filter State"
 msgstr "Filtrar Estado"
 
-#: templates/digitalization/control_vouchers.html:140
+#: templates/digitalization/control_vouchers.html:139
 #: templates/digitalization/mark_vouchers.html:209
 #: templates/digitalization/validate_vouchers.html:196
 msgid "All"
 msgstr "Todos"
 
-#: templates/digitalization/control_vouchers.html:141
+#: templates/digitalization/control_vouchers.html:140
 #: templates/digitalization/mark_vouchers.html:210
 #: templates/digitalization/mark_vouchers.html:341
 #: templates/digitalization/validate_vouchers.html:197
@@ -431,7 +430,7 @@ msgstr "Todos"
 msgid "Found"
 msgstr "Encontrado"
 
-#: templates/digitalization/control_vouchers.html:142
+#: templates/digitalization/control_vouchers.html:141
 #: templates/digitalization/mark_vouchers.html:211
 #: templates/digitalization/mark_vouchers.html:340
 #: templates/digitalization/validate_vouchers.html:198
@@ -439,7 +438,7 @@ msgstr "Encontrado"
 msgid "No State"
 msgstr "Sin Estado"
 
-#: templates/digitalization/control_vouchers.html:143
+#: templates/digitalization/control_vouchers.html:142
 #: templates/digitalization/mark_vouchers.html:212
 #: templates/digitalization/mark_vouchers.html:342
 #: templates/digitalization/validate_vouchers.html:199
@@ -447,31 +446,31 @@ msgstr "Sin Estado"
 msgid "Not Found"
 msgstr "No Encontrado"
 
-#: templates/digitalization/control_vouchers.html:144
+#: templates/digitalization/control_vouchers.html:143
 #: templates/digitalization/mark_vouchers.html:213
 #: templates/digitalization/validate_vouchers.html:200
 msgid "Borrowed"
 msgstr "En Préstamo"
 
-#: templates/digitalization/control_vouchers.html:145
+#: templates/digitalization/control_vouchers.html:144
 #: templates/digitalization/mark_vouchers.html:214
 #: templates/digitalization/validate_vouchers.html:201
 msgid "Lost"
 msgstr "Extraviado"
 
-#: templates/digitalization/control_vouchers.html:146
+#: templates/digitalization/control_vouchers.html:145
 #: templates/digitalization/mark_vouchers.html:215
 #: templates/digitalization/validate_vouchers.html:202
 msgid "Found And Borrowed"
 msgstr "En Préstado Encontrado"
 
-#: templates/digitalization/control_vouchers.html:147
+#: templates/digitalization/control_vouchers.html:146
 #: templates/digitalization/mark_vouchers.html:216
 #: templates/digitalization/validate_vouchers.html:203
 msgid "In Curatorship"
 msgstr "En curatoria"
 
-#: templates/digitalization/control_vouchers.html:148
+#: templates/digitalization/control_vouchers.html:147
 #: templates/digitalization/mark_vouchers.html:217
 #: templates/digitalization/mark_vouchers.html:343
 #: templates/digitalization/validate_vouchers.html:204
@@ -479,55 +478,55 @@ msgstr "En curatoria"
 msgid "Digitalized"
 msgstr "Digitalizado"
 
-#: templates/digitalization/control_vouchers.html:198
+#: templates/digitalization/control_vouchers.html:197
 msgid "Voucher Digitalization"
 msgstr "Digitalización de Vouchers"
 
-#: templates/digitalization/control_vouchers.html:203
+#: templates/digitalization/control_vouchers.html:202
 msgid "Voucher table"
 msgstr "Tabla de Vouchers"
 
-#: templates/digitalization/control_vouchers.html:210
+#: templates/digitalization/control_vouchers.html:209
 #: templates/digitalization/mark_vouchers.html:364
 #: templates/digitalization/validate_vouchers.html:419
 #: templates/digitalization/validate_vouchers.html:422
 msgid "State"
 msgstr "Estado"
 
-#: templates/digitalization/control_vouchers.html:211
+#: templates/digitalization/control_vouchers.html:210
 msgid "Processing date"
 msgstr "Fecha Proceso"
 
-#: templates/digitalization/control_vouchers.html:212
+#: templates/digitalization/control_vouchers.html:211
 #: templates/digitalization/load_priority_vouchers_file.html:313
 #: templates/digitalization/qr_generator.html:154
 msgid "Herbarium"
 msgstr "Herbario"
 
-#: templates/digitalization/control_vouchers.html:213
+#: templates/digitalization/control_vouchers.html:212
 msgid "Biodata ID"
 msgstr "ID Biodata"
 
-#: templates/digitalization/control_vouchers.html:214
+#: templates/digitalization/control_vouchers.html:213
 #: templates/digitalization/mark_vouchers.html:365
 #: templates/digitalization/validate_vouchers.html:420
 msgid "Herbarium ID"
 msgstr "ID Herbario"
 
-#: templates/digitalization/control_vouchers.html:215
+#: templates/digitalization/control_vouchers.html:214
 #: templates/digitalization/mark_vouchers.html:366
 #: templates/digitalization/validate_vouchers.html:421
 msgid "Species Name"
 msgstr "Nombre Especie"
 
-#: templates/digitalization/control_vouchers.html:216
+#: templates/digitalization/control_vouchers.html:215
 #: templates/digitalization/mark_vouchers.html:367
 #: templates/digitalization/template_list_priority_voucher.html:41
 #: templates/digitalization/update_voucher.html:85
 msgid "Collected by"
 msgstr "Colectado por"
 
-#: templates/digitalization/control_vouchers.html:217
+#: templates/digitalization/control_vouchers.html:216
 #: templates/digitalization/mark_vouchers.html:368
 #: templates/digitalization/template_list_priority_voucher.html:42
 #: templates/digitalization/update_voucher.html:79
@@ -535,7 +534,7 @@ msgstr "Colectado por"
 msgid "Collection Number"
 msgstr "Número de Colecta"
 
-#: templates/digitalization/control_vouchers.html:218
+#: templates/digitalization/control_vouchers.html:217
 #: templates/digitalization/mark_vouchers.html:369
 #: templates/digitalization/update_voucher.html:97
 #: templates/digitalization/update_voucher.html:159
@@ -617,6 +616,7 @@ msgid "Files Table"
 msgstr "Tabla de Archivos"
 
 #: templates/digitalization/load_priority_vouchers_file.html:314
+#: templates/digitalization/postprocessing_log.html:24
 msgid "Date"
 msgstr "Fecha"
 
@@ -706,6 +706,16 @@ msgstr "Licencia para imágenes"
 #: templates/digitalization/new_licence.html:19
 msgid "Add"
 msgstr "Añadir"
+
+#: templates/digitalization/postprocessing_log.html:5
+#: templates/digitalization/postprocessing_log.html:12
+#: templates/sidebar.html:135
+msgid "Postprocessing Log"
+msgstr "Registro de posprocesamiento"
+
+#: templates/digitalization/postprocessing_log.html:17
+msgid "Postprocessing"
+msgstr "Posprocesamiento"
 
 #: templates/digitalization/qr_generator.html:53
 msgid "Yes"
@@ -1050,7 +1060,7 @@ msgstr "Subir a Galeria"
 msgid "Download current version"
 msgstr "Descargar actual versión"
 
-#: templates/sidebar.html:136
+#: templates/sidebar.html:144
 msgid "Test"
 msgstr "Pruebas"
 
@@ -1062,18 +1072,18 @@ msgstr "Español"
 msgid "English"
 msgstr "Inglés"
 
-#: intranet/settings.py:251
+#: intranet/settings.py:252
 msgid "Digital Herbarium API"
 msgstr "API del Herbario Digital"
 
-#: intranet/settings.py:252
+#: intranet/settings.py:253
 msgid "API description"
 msgstr "API del Catálogo de Plantas Vasculares de Chile y Herbario Digital"
 
-#: intranet/settings.py:258
+#: intranet/settings.py:259
 msgid "Mozilla Public License, version 2.0"
 msgstr "Licencia pública de Mozilla, versión 2.0"
 
-#: intranet/settings.py:259
+#: intranet/settings.py:260
 msgid "Mozilla MPL URL"
 msgstr "https://www.mozilla.org/en-US/MPL/2.0/"

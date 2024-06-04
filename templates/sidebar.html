@@ -128,6 +128,14 @@
         </a>
     </li>
 {% endif %}
+{% if request.user|has_group:"Digitizer" %}
+    <li class="nav-item">
+        <a class="nav-link" href="{% url 'postprocessing_log' %}">
+            <i class="fa-solid fa-code"></i>
+            <span>{% translate "Postprocessing Log" %}</span>
+        </a>
+    </li>
+{% endif %}
 <!-- For test new task -->
 {% if request.user|has_group:"Test" %}
     <li class="nav-item">
