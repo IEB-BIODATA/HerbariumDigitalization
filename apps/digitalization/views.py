@@ -809,7 +809,10 @@ def get_pending_vouchers(request):
 @require_POST
 @login_required
 def process_pending_images(request):
-    task_id = process_pending_vouchers.delay(request.POST.getlist('pendingImages[]'))
+    task_id = process_pending_vouchers.delay(
+        request.POST.getlist('pendingImages[]'),
+        request.user.id
+    )
     return HttpResponse(task_id)
 
 
