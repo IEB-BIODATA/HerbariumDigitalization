@@ -59,6 +59,10 @@ class TaskProcessLogger(logging.Logger):
             storage.save(file_name, ContentFile(file.read()))
         return
 
+    @property
+    def file_path(self) -> str:
+        return self.__path__
+
     def close(self) -> None:
         self.__log_file__.close()
         return
