@@ -1,17 +1,17 @@
 from __future__ import annotations
 
-from django.conf import settings
-from time import time_ns
-
 import logging
 from abc import abstractmethod, ABC
 from copy import deepcopy
+from django.conf import settings
 from django.contrib.auth.models import User
 from django.contrib.gis.db.models import GeometryField
+from django.contrib.postgres.search import TrigramSimilarity
 from django.db import connection
 from django.db import models
-from django.db.models import Q, Func, F
+from django.db.models import Q
 from django.utils.translation import gettext_lazy as _, pgettext_lazy
+from time import time_ns, time
 from typing import List, Dict, Tuple
 
 from intranet.utils import CatalogQuerySet
@@ -39,65 +39,52 @@ class AttributeQuerySet(CatalogQuerySet, ABC):
     def filter_for_species(self, query: Q) -> AttributeQuerySet:
         return self.filter(query).distinct()
 
-    def filter_query_in(self, **parameters: Dict[str, List[str]]) -> AttributeQuerySet:
+    def filter_query(self, **parameters: Dict[str, List[str]]) -> AttributeQuerySet:
         start = time_ns()
         query = Q()
         for query_key, parameter in parameters.items():
             if query_key == self.__attribute_name__:
                 continue
-            query &= Q(**{f"species__{query_key}__in": parameter})
+            particular_query = Q()
+            for par in parameter:
+                if par.isdigit():
+                    particular_query |= Q(**{f"species__{query_key}": par})
+                else:
+                    particular_query |= Q(**{f"species__{query_key}__key": par})
+            query &= particular_query
         queryset = self.filter(query).distinct()
         logging.debug(f"{self.__attribute_name__}: {query} and got {queryset}")
+        logging.debug(f"Query: {queryset.query}")
         logging.debug(
             f"Filtering {self.__attribute_name__} using attributes took {(time_ns() - start) / 1e6:.2f} milliseconds"
         )
         return queryset
 
-    def filter_query(self, **parameters: Dict[str, List[str]]) -> AttributeQuerySet:
+    def filter_taxonomy(self, **parameters: Dict[str: List[str]]) -> AttributeQuerySet:
         start = time_ns()
         query = Q()
-        for query_key, parameter in parameters.items():
-            query_name = f"species__{query_key}" if query_key != self.__attribute_name__ else "pk"
-            query &= Q(**{query_name: parameter})
-        queryset = self.filter(query).distinct()
-        logging.debug(f"{self.__attribute_name__}: {query} and got {queryset}")
-        logging.debug(
-            f"Filtering {self.__attribute_name__} using attributes took {(time_ns() - start) / 1e6:.2f} milliseconds"
-        )
-        return queryset
-
-    def filter_taxonomy_in(self, **parameters: Dict[str: List[str]]) -> AttributeQuerySet:
-        return self.filter_taxonomy(_in=True, **parameters)
-
-    def filter_taxonomy(self, _in: bool = False, **parameters: Dict[str: List[str]]) -> AttributeQuerySet:
-        start = time_ns()
-        query = Q()
-        with_in = "__in" if _in else ""
         for taxonomic_rank, parameter in parameters.items():
-            logging.debug(f"{self.__attribute_name__}: Species from {taxonomic_rank}: {parameter}")
-            species = CatalogView.objects.filter(**{f"{taxonomic_rank}_id{with_in}": parameter})
+            clean_parameters = list()
+            for par in parameter:
+                if par.isdigit():
+                    clean_parameters.append(par)
+                else:
+                    clean_parameters.append(get_fuzzy_taxa(taxonomic_rank, par))
+            logging.debug(f"{self.__attribute_name__}: Species from {taxonomic_rank}: {clean_parameters}")
+            species = CatalogView.objects.filter(**{f"{taxonomic_rank}_id__in": clean_parameters})
             query &= Q(**{f"{self.species_filter()}__in": Species.objects.filter(pk__in=species)})
         queryset = self.filter_for_species(query)
         logging.debug(
             f"Filtering {self.__attribute_name__} using taxonomies took {(time_ns() - start) / 1e6:.2f} milliseconds"
         )
+        logging.debug(f"Query: {queryset.query}")
         return queryset
     
-    def filter_geometry_in(self, geometries: List[str]) -> AttributeQuerySet:
+    def filter_geometry(self, geometries: List[str]) -> AttributeQuerySet:
         start = time_ns()
         query = Q()
         for geometry in geometries:
             query |= Q(species__voucherimported__point__within=geometry)
-        queryset = self.filter(query)
-        logging.debug(f"{self.__attribute_name__}: {query} and got {queryset}")
-        logging.debug(
-            f"Filtering {self.__attribute_name__} using geometry took {(time_ns() - start) / 1e6:.2f} milliseconds"
-        )
-        return queryset 
-    
-    def filter_geometry(self, geometry) -> AttributeQuerySet:
-        start = time_ns()
-        query = Q(species__voucherimported__point__within=geometry)
         queryset = self.filter(query)
         logging.debug(f"{self.__attribute_name__}: {query} and got {queryset}")
         logging.debug(
@@ -114,24 +101,8 @@ class TaxonomicQuerySet(CatalogQuerySet, ABC):
 
     def __init__(self, model=None, query=None, using=None, hints=None):
         super(TaxonomicQuerySet, self).__init__(model, query, using, hints)
-        self.___rank_index__ = TAXONOMIC_RANK.index(self.__rank_name__)
+        self.__rank_index__ = TAXONOMIC_RANK.index(self.__rank_name__)
         return
-
-    def filter_query_in(self, **parameters: Dict[str, List[str]]) -> TaxonomicQuerySet:
-        start = time_ns()
-        query = Q()
-        rank_index = TAXONOMIC_RANK.index(self.__rank_name__)
-        for query_key, parameter in parameters.items():
-            query_name = "__".join(TAXONOMIC_RANK[rank_index + 1:])
-            if query_name != "":
-                query_name = f"{query_name}__"
-            query &= Q(**{f"{query_name}{query_key}__in": parameter})
-        queryset = self.filter(query).distinct()
-        logging.debug(f"{self.__rank_name__}: {query} and got {queryset}")
-        logging.debug(
-            f"Filtering {self.__rank_name__} using attributes took {(time_ns() - start) / 1e6:.2f} milliseconds"
-        )
-        return queryset
 
     def filter_query(self, **parameters: Dict[str, List[str]]) -> TaxonomicQuerySet:
         start = time_ns()
@@ -141,54 +112,53 @@ class TaxonomicQuerySet(CatalogQuerySet, ABC):
             query_name = "__".join(TAXONOMIC_RANK[rank_index + 1:])
             if query_name != "":
                 query_name = f"{query_name}__"
-            query &= Q(**{f"{query_name}{query_key}": parameter})
+            particular_query = Q()
+            for par in parameter:
+                if par.isdigit():
+                    particular_query |= Q(**{f"{query_name}{query_key}": par})
+                else:
+                    particular_query |= Q(**{f"{query_name}{query_key}__key": par})
+            query &= particular_query
         queryset = self.filter(query).distinct()
         logging.debug(f"{self.__rank_name__}: {query} and got {queryset}")
+        logging.debug(f"Query: {queryset.query}")
         logging.debug(
             f"Filtering {self.__rank_name__} using attributes took {(time_ns() - start) / 1e6:.2f} milliseconds"
         )
         return queryset
 
-    def get_taxonomic_query(self, taxonomic_rank: str, with_in: bool = False) -> str:
+    def get_taxonomic_query(self, taxonomic_rank: str) -> str:
         rank_index = TAXONOMIC_RANK.index(taxonomic_rank)
-        str_in = "__in" if with_in else ""
-        if self.___rank_index__ < rank_index:
-            return "__".join(TAXONOMIC_RANK[self.___rank_index__ + 1: rank_index + 1]) + str_in
-        elif self.___rank_index__ == rank_index:
-            if with_in:
-                raise RuntimeError
-            return "pk"
-        else:  # self.__rank_index__ > rank_index
-            return "__".join(reversed(TAXONOMIC_RANK[rank_index: self.___rank_index__])) + str_in
-
-    def filter_taxonomy_in(self, **parameters: Dict[str: List[str]]) -> TaxonomicQuerySet:
-        start = time_ns()
-        query = Q()
-        for taxonomic_rank, parameter in parameters.items():
-            try:
-                query &= Q(**{self.get_taxonomic_query(taxonomic_rank, with_in=True): parameter})
-            except RuntimeError:
-                continue
-        queryset = self.filter(query).distinct()
-        logging.debug(f"{self.__rank_name__}: {query} and got {queryset}")
-        logging.debug(
-            f"Filtering {self.__rank_name__} using taxonomies took {(time_ns() - start) / 1e6:.2f} milliseconds"
-        )
-        return queryset
+        if self.__rank_index__ < rank_index:
+            return "__".join(TAXONOMIC_RANK[self.__rank_index__ + 1: rank_index + 1]) + "__in"
+        elif self.__rank_index__ > rank_index:
+            return "__".join(reversed(TAXONOMIC_RANK[rank_index: self.__rank_index__])) + "__in"
+        else:
+            raise RuntimeError
 
     def filter_taxonomy(self, **parameters: Dict[str: List[str]]) -> TaxonomicQuerySet:
         start = time_ns()
         query = Q()
         for taxonomic_rank, parameter in parameters.items():
-            query &= Q(**{self.get_taxonomic_query(taxonomic_rank): parameter})
+            clean_parameters = list()
+            for par in parameter:
+                if par.isdigit():
+                    clean_parameters.append(par)
+                else:
+                    clean_parameters.append(get_fuzzy_taxa(taxonomic_rank, par))
+            try:
+                query &= Q(**{self.get_taxonomic_query(taxonomic_rank): clean_parameters})
+            except RuntimeError:
+                continue
         queryset = self.filter(query).distinct()
         logging.debug(f"{self.__rank_name__}: {query} and got {queryset}")
+        logging.debug(f"Query: {queryset.query}")
         logging.debug(
             f"Filtering {self.__rank_name__} using taxonomies took {(time_ns() - start) / 1e6:.2f} milliseconds"
         )
         return queryset
 
-    def filter_geometry_in(self, geometries: List[str]) -> TaxonomicQuerySet:
+    def filter_geometry(self, geometries: List[str]) -> TaxonomicQuerySet:
         start = time_ns()
         rank_index = TAXONOMIC_RANK.index(self.__rank_name__)
         query_name = "__".join(TAXONOMIC_RANK[rank_index + 1:])
@@ -197,20 +167,6 @@ class TaxonomicQuerySet(CatalogQuerySet, ABC):
         query = Q()
         for geometry in geometries:
             query |= Q(**{f"{query_name}voucherimported__point__within": geometry})
-        queryset = self.filter(query).distinct()
-        logging.debug(f"{self.__rank_name__}: {query} and got {queryset}")
-        logging.debug(
-            f"Filtering {self.__rank_name__} using geometries took {(time_ns() - start) / 1e6:.2f} milliseconds"
-        )
-        return queryset
-
-    def filter_geometry(self, geometry: str) -> TaxonomicQuerySet:
-        start = time_ns()
-        rank_index = TAXONOMIC_RANK.index(self.__rank_name__)
-        query_name = "__".join(TAXONOMIC_RANK[rank_index + 1:])
-        if query_name != "":
-            query_name = f"{query_name}__"
-        query = Q(**{f"{query_name}voucherimported__point__within": geometry})
         queryset = self.filter(query).distinct()
         logging.debug(f"{self.__rank_name__}: {query} and got {queryset}")
         logging.debug(
@@ -349,21 +305,34 @@ class Habit(AttributeModel):
 class RegionQuerySet(AttributeQuerySet):
     __attribute_name__ = "region"
 
-    def filter_geometry_in(self, geometries: List[str]) -> TaxonomicQuerySet:
+    def filter_taxonomy(self, **parameters: Dict[str: List[str]]) -> AttributeQuerySet:
+        start = time_ns()
+        query = Q()
+        for taxonomic_rank, parameter in parameters.items():
+            clean_parameters = list()
+            for par in parameter:
+                if par.isdigit():
+                    clean_parameters.append(par)
+                else:
+                    clean_parameters.append(get_fuzzy_taxa(taxonomic_rank, par))
+            logging.debug(f"{self.__attribute_name__}: Species from {taxonomic_rank}: {clean_parameters}")
+            species = CatalogView.objects.filter(**{f"{taxonomic_rank}_id__in": clean_parameters})
+            regions = RegionDistributionView.objects.filter(
+                Q(species_id__in=[sp.id for sp in species])
+            ).distinct('region_key')
+            query &= Q(**{f"key__in": [reg.region_key for reg in regions]})
+        queryset = self.filter_for_species(query)
+        logging.debug(
+            f"Filtering {self.__attribute_name__} using taxonomies took {(time_ns() - start) / 1e6:.2f} milliseconds"
+        )
+        logging.debug(f"Query: {queryset.query}")
+        return queryset
+
+    def filter_geometry(self, geometries: List[str]) -> TaxonomicQuerySet:
         start = time_ns()
         query = Q()
         for geometry in geometries:
             query |= Q(geometry__intersects=geometry)
-        queryset = self.filter(query).distinct()
-        logging.debug(f"{self.__attribute_name__}: {query} and got {queryset}")
-        logging.debug(
-            f"Filtering {self.__attribute_name__} using geometries took {(time_ns() - start) / 1e6:.2f} milliseconds"
-        )
-        return queryset
-
-    def filter_geometry(self, geometry) -> TaxonomicQuerySet:
-        start = time_ns()
-        query = Q(geometry__intersects=geometry)
         queryset = self.filter(query).distinct()
         logging.debug(f"{self.__attribute_name__}: {query} and got {queryset}")
         logging.debug(
@@ -397,6 +366,29 @@ class Region(AttributeModel):
 
 class ConservationStateQuerySet(AttributeQuerySet):
     __attribute_name__ = "conservation_state"
+
+    def filter_taxonomy(self, **parameters: Dict[str: List[str]]) -> AttributeQuerySet:
+        start = time_ns()
+        query = Q()
+        for taxonomic_rank, parameter in parameters.items():
+            clean_parameters = list()
+            for par in parameter:
+                if par.isdigit():
+                    clean_parameters.append(par)
+                else:
+                    clean_parameters.append(get_fuzzy_taxa(taxonomic_rank, par))
+            logging.debug(f"{self.__attribute_name__}: Species from {taxonomic_rank}: {clean_parameters}")
+            species_view = CatalogView.objects.filter(**{f"{taxonomic_rank}_id__in": clean_parameters})
+            species = Species.objects.filter(id__in=[sp.id for sp in species_view]).prefetch_related(
+                "conservation_state"
+            )
+            query &= Q(**{f"species__in": [sp.id for sp in species]})
+        queryset = self.filter_for_species(query)
+        logging.debug(
+            f"Filtering {self.__attribute_name__} using taxonomies took {(time_ns() - start) / 1e6:.2f} milliseconds"
+        )
+        logging.debug(f"Query: {queryset.query}")
+        return queryset
 
 
 class ConservationState(AttributeModel):
@@ -1565,3 +1557,35 @@ class FinderView(models.Model):
     class Meta:
         managed = False
         db_table = 'finder_view'
+
+
+RANK_MODELS = {
+    "kingdom": Kingdom,
+    "division": Division,
+    "class_name": ClassName,
+    "order": Order,
+    "family": Family,
+    "genus": Genus,
+    "species": Species,
+}
+
+
+def get_fuzzy_taxa(rank: str, search: str) -> int:
+    start = time()
+    model = RANK_MODELS[rank]
+    str_name = 'scientific_name' if rank == 'search' else 'name'
+    results = model.objects.annotate(
+        similarity=TrigramSimilarity(str_name, search)
+    ).filter(
+        similarity__gte=0.6
+    ).order_by('-similarity')
+    show_results = [
+        (getattr(result, str_name), result.similarity) for result in results
+    ]
+    logging.debug(f"Fuzzy match of {search} "
+                  f"in {rank} took {time() - start} s, "
+                  f"and got {show_results}")
+    if results.count() >= 1:
+        return results.first().pk
+    else:
+        return -1

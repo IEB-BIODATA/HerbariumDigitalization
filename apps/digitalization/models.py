@@ -243,7 +243,7 @@ class PriorityVouchersFile(models.Model):
 
 class VoucherImportedQuerySet(CatalogQuerySet):
 
-    def filter_query_in(self, **parameters: Dict[str, List[str]]) -> CatalogQuerySet:
+    def filter_query(self, **parameters: Dict[str, List[str]]) -> CatalogQuerySet:
         query = Q()
         for query_key, parameter in parameters.items():
             query &= Q(**{f"scientific_name__{query_key}__in": parameter})
@@ -259,7 +259,7 @@ class VoucherImportedQuerySet(CatalogQuerySet):
         logging.debug(f"Voucher Imported: {query} and got {queryset}")
         return queryset
 
-    def filter_taxonomy_in(self, **parameters: Dict[str: List[str]]) -> CatalogQuerySet:
+    def filter_taxonomy(self, **parameters: Dict[str: List[str]]) -> CatalogQuerySet:
         query = Q()
         for taxonomic_rank, parameter in parameters.items():
             rank_index = TAXONOMIC_RANK.index(taxonomic_rank)
@@ -283,7 +283,7 @@ class VoucherImportedQuerySet(CatalogQuerySet):
         logging.debug(f"Voucher Imported: {query} and got {queryset}")
         return queryset
 
-    def filter_geometry_in(self, geometries: List[str]) -> CatalogQuerySet:
+    def filter_geometry(self, geometries: List[str]) -> CatalogQuerySet:
         queryset = self
         for geometry in geometries:
             queryset = self.filter(point__within=geometry).distinct()

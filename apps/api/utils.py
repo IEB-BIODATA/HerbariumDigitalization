@@ -33,11 +33,11 @@ def filter_query_set(queryset: CatalogQuerySet, request: Request) -> CatalogQuer
         parameters = request.query_params.getlist(taxonomic_rank, [])
         if len(parameters) > 0:
             taxonomic_query[taxonomic_rank] = parameters.copy()
-    queryset = queryset.filter_query_in(**attribute_query).filter_taxonomy_in(**taxonomic_query)
+    queryset = queryset.filter_query(**attribute_query).filter_taxonomy(**taxonomic_query)
     search = request.query_params.get("search")
     if search:
         queryset = queryset.search(search)
-    queryset = queryset.filter_geometry_in(request.query_params.getlist("geometry", []))
+    queryset = queryset.filter_geometry(request.query_params.getlist("geometry", []))
     logging.debug(f"Filtering {queryset.model} took {(time() - start):.2f} seconds")
     return queryset
 

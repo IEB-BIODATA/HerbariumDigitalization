@@ -168,7 +168,7 @@ class SpeciesFinderSerializer(SpeciesSerializer):
 
 
 class SynonymyFinderSerializer(ScientificNameSerializer):
-    species = SerializerMethodField()
+    species = SpeciesSerializer()
     genus_name = CharField(source="genus")
 
     class Meta:
@@ -176,12 +176,6 @@ class SynonymyFinderSerializer(ScientificNameSerializer):
         fields = ScientificNameSerializer.Meta.fields + [
             'species', 'genus_name',
         ]
-
-    def get_species(self, obj: Synonymy) -> SpeciesSerializer:
-        return SpeciesSerializer(
-            instance=obj.species_set.all(),
-            many=True, context=self.context
-        ).data
 
 
 class LicenceSerializer(HyperlinkedModelSerializer):
@@ -258,19 +252,13 @@ class SpeciesDetailsSerializer(SpeciesSerializer):
 
 
 class SynonymyDetailsSerializer(SynonymyFinderSerializer):
+    species = SpeciesDetailsSerializer()
 
     class Meta:
         model = Synonymy
         fields = SynonymyFinderSerializer.Meta.fields + [
             'scientific_name_full'
         ]
-
-    def get_species(self, obj: Synonymy) -> SpeciesDetailsSerializer:
-        return SpeciesDetailsSerializer(
-            instance=obj.species_set.all(),
-            many=True,
-            context=self.context
-        ).data
 
 
 class DistributionSerializer(SampleSerializer):
