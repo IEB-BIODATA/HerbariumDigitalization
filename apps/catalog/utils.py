@@ -1,7 +1,12 @@
+import logging
+
+import time
+
+from django.contrib.postgres.search import TrigramSimilarity
 from django.utils.translation import gettext_lazy as _
 from typing import List
 
-from apps.catalog.models import Species, Habit, EnvironmentalHabit
+from apps.catalog.models import Species
 
 
 def get_habit(species: Species) -> str:
