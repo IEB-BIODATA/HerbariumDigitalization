@@ -42,7 +42,6 @@ urlpatterns = [
     re_path(r'^region/(?P<pk>\d+)/$', RegionDetails.as_view()),
     re_path(r'^species_list/$', SpeciesListApiView.as_view()),
     re_path(r'^species/(?P<pk>\d+)/$', SpeciesDetails.as_view()),
-    re_path(r'^species/(?P<pk>\d+)/$', SpeciesDetails.as_view()),
     re_path(r'^synonymy/(?P<pk>\d+)/$', SynonymyDetails.as_view()),
     re_path(r'^distribution/(?P<species_id>\d+)/$', DistributionList.as_view()),
     re_path(r'^specimens_list/$', SpecimensList.as_view()),
