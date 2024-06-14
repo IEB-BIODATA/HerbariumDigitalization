@@ -251,14 +251,6 @@ class VoucherImportedQuerySet(CatalogQuerySet):
         logging.debug(f"Voucher Imported: {query} and got {queryset}")
         return queryset
 
-    def filter_query(self, **parameters: Dict[str, List[str]]) -> CatalogQuerySet:
-        query = Q()
-        for query_key, parameter in parameters.items():
-            query &= Q(**{f"scientific_name__{query_key}": parameter})
-        queryset = self.filter(query).distinct()
-        logging.debug(f"Voucher Imported: {query} and got {queryset}")
-        return queryset
-
     def filter_taxonomy(self, **parameters: Dict[str: List[str]]) -> CatalogQuerySet:
         query = Q()
         for taxonomic_rank, parameter in parameters.items():
@@ -271,27 +263,10 @@ class VoucherImportedQuerySet(CatalogQuerySet):
         logging.debug(f"Voucher Imported: {query} and got {queryset}")
         return queryset
 
-    def filter_taxonomy(self, **parameters: Dict[str: List[str]]) -> CatalogQuerySet:
-        query = Q()
-        for taxonomic_rank, parameter in parameters.items():
-            rank_index = TAXONOMIC_RANK.index(taxonomic_rank)
-            query_name = "__".join(list(reversed(TAXONOMIC_RANK))[0:-rank_index]).replace(
-                "species", "scientific_name"
-            )
-            query &= Q(**{query_name: parameter})
-        queryset = self.filter(query).distinct()
-        logging.debug(f"Voucher Imported: {query} and got {queryset}")
-        return queryset
-
     def filter_geometry(self, geometries: List[str]) -> CatalogQuerySet:
         queryset = self
         for geometry in geometries:
             queryset = self.filter(point__within=geometry).distinct()
-        logging.debug(f"Voucher Imported: geometry and got {queryset}")
-        return queryset
-
-    def filter_geometry(self, geometry) -> CatalogQuerySet:
-        queryset = self.filter(point__within=geometry).distinct()
         logging.debug(f"Voucher Imported: geometry and got {queryset}")
         return queryset
 
