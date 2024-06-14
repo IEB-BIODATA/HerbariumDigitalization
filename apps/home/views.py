@@ -45,12 +45,14 @@ def index(request):
             herbarium__collection_code=herbarium
         ).count())
     max_total_codes = max([i['count'] for i in count_total_codes])
+    bar_max = max(stands + digitalized)
     return render(
         request,
         'index.html',
         {
             'count_total_codes': count_total_codes,
-            'y_max': max_total_codes + 10,
+            'y_max': int(max_total_codes * 1.05),
+            'bar_max': int(bar_max * 1.05),
             'count_scanned_codes': count_scanned_codes,
             'herbariums': herbariums,
             'stands': stands,

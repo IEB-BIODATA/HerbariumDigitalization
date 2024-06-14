@@ -296,3 +296,18 @@ function updateProgress(
         }
     });
 }
+
+function darkenColor(hex, darkness) {
+    // Convert hex to RGB
+    let r = parseInt(hex.substring(1, 3), 16);
+    let g = parseInt(hex.substring(3, 5), 16);
+    let b = parseInt(hex.substring(5, 7), 16);
+
+    // Darken the color
+    r = Math.max(0, r - darkness);
+    g = Math.max(0, g - darkness);
+    b = Math.max(0, b - darkness);
+
+    // Convert RGB back to hex
+    return '#' + ((r << 16) | (g << 8) | b).toString(16).padStart(6, '0');
+}
