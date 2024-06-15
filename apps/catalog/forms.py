@@ -1,8 +1,6 @@
 from django import forms
 from django.core.exceptions import ValidationError
 from django.utils.translation import gettext_lazy as _
-from leaflet.forms.widgets import LeafletWidget
-from modeltranslation.forms import TranslationModelForm
 
 from .models import Division, ClassName, Order, Family, Genus, Species, Synonymy, Binnacle, CommonName, Region
 from ..home.forms import GeographicFieldForm

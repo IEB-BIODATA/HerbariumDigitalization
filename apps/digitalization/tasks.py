@@ -353,6 +353,7 @@ def clean_storage(log_folder: str):
                     file_name = obj['Key'].replace(private_location + "/", "")
                     found = False
                     for model, field, contains, extension in [
+                        (PostprocessingLog, "file", "", ".log"),
                         (VoucherImported, "image_raw", "", ".CR3"),
                         (VoucherImported, "image_resized_10", "_resized_10", ".jpg"),
                         (VoucherImported, "image_resized_60", "_resized_60", ".jpg"),
