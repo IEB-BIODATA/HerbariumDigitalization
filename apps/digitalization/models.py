@@ -99,6 +99,7 @@ class ColorProfileFile(models.Model):
         verbose_name=_("File"),
         upload_to='uploads/color_profile/',
         validators=[validate_file_size],
+        storage=PrivateMediaStorage(),
         blank=False, null=False
     )
     created_at = models.DateTimeField(verbose_name=_("Created at"), blank=True, null=True, editable=False)
@@ -225,6 +226,7 @@ class PriorityVouchersFile(models.Model):
         verbose_name=_("File"),
         upload_to='uploads/priority_vouchers/',
         validators=[validate_file_size],
+        storage=PrivateMediaStorage(),
         blank=False, null=False
     )
     created_at = models.DateTimeField(verbose_name=_("Created at"), blank=True, null=True, editable=False)

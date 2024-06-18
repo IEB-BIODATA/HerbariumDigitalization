@@ -327,9 +327,6 @@ def clean_storage(log_folder: str):
                         (GalleryImage, "image", "", ".jpg"),
                         (GalleryImage, "thumbnail", "_thumbnail", ".jpg"),
                         (BannerImage, "banner", "", ".png"),
-                        (ColorProfileFile, "file", "", ".dcp"),
-                        (PriorityVouchersFile, "file", "", ".xls"),
-                        (PriorityVouchersFile, "file", "", ".xlsx"),
                         (VoucherImported, "image_public_resized_10", "_public_resized_10", ".jpg"),
                         (VoucherImported, "image_public_resized_60", "_public_resized_60", ".jpg"),
                         (VoucherImported, "image_public", "_public", ".jpg"),
@@ -353,6 +350,9 @@ def clean_storage(log_folder: str):
                     file_name = obj['Key'].replace(private_location + "/", "")
                     found = False
                     for model, field, contains, extension in [
+                        (ColorProfileFile, "file", "", ".dcp"),
+                        (PriorityVouchersFile, "file", "", ".xls"),
+                        (PriorityVouchersFile, "file", "", ".xlsx"),
                         (PostprocessingLog, "file", "", ".log"),
                         (VoucherImported, "image_raw", "", ".CR3"),
                         (VoucherImported, "image_resized_10", "_resized_10", ".jpg"),
@@ -392,7 +392,8 @@ def check_on_model(
         logger: logging.Logger
 ) -> bool:
     prefix = model._meta.get_field(field).upload_to
-    prefix = prefix + "/" if prefix != "" else ""
+    if prefix != "":
+        prefix = prefix if prefix.endswith("/") else prefix + "/"
     if file_name.startswith(prefix) and contains in file_name and file_name.endswith(extension):
         if model.objects.filter(**{field: file_name}).exists():
             return True
