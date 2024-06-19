@@ -167,6 +167,12 @@
                     <p>${message}</p>
                     ${errorDataBlock}
                     `;
+                case 'voucher assertion':
+                    message = "{% translate 'Voucher failed an assertion' %}"
+                    return `
+                    <p>${message}</p>
+                    ${errorDataBlock}
+                    `;
                 default:
                     message = "{% translate 'An unexpected error has happened, please contact the admin before closing this window' %}";
                     return `<h6>${message}</h6>`;

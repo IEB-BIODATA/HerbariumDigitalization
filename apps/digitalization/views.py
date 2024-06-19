@@ -136,9 +136,12 @@ def xls_error_data(request):
         'verbatimElevation', 'decimalLatitude', 'decimalLongitude',
         'georeferencedDate', 'scientificName',
     ]
-    if "similarity[0]" in data_errors.keys():
+    if any("similarity" in item for item in data_errors.keys()):
         columns = 14
         headers += ['similarity', 'scientificNameSimilarity', 'synonymySimilarity', ]
+    elif any("assertion" in item for item in data_errors.keys()):
+        columns = 12
+        headers += ['assertion', ]
     registers = int(len(data_errors) / columns)
     for idx, value in enumerate(data_errors):
         if idx >= registers:
@@ -159,11 +162,15 @@ def xls_error_data(request):
             data_errors['georeferencedDate[' + str(i) + ']'],
             data_errors['scientificName[' + str(i) + ']'],
         ]
-        if "similarity[0]" in data_errors.keys():
+        if any("similarity" in item for item in data_errors.keys()):
             datum += [
                 data_errors['similarity[' + str(i) + ']'],
                 data_errors['scientificNameSimilarity[' + str(i) + ']'],
                 data_errors['synonymySimilarity[' + str(i) + ']']
+            ]
+        elif any("assertion" in item for item in data_errors.keys()):
+            datum += [
+                data_errors['assertion[' + str(i) + ']'],
             ]
         data.append(datum)
     data = tablib.Dataset(*data, headers=headers)

@@ -373,7 +373,7 @@ def clean_storage(log_folder: str):
         for file_name, file_size in to_delete:
             try:
                 process_logger.info(f"Deleting `{file_name}` ({show_storage(file_size)})")
-                s3.delete_object(Bucket=bucket, Key=file_name)
+                # s3.delete_object(Bucket=bucket, Key=file_name)
                 total_size_save += file_size
                 process_logger.debug(f"Total size saved: {show_storage(total_size_save)}")
             except Exception as e:
@@ -519,6 +519,7 @@ def upload_priority_vouchers(self, priority_voucher: int):
     on_database = False
     missing_species = False
     code_error = False
+    voucher_assertion = False
     try:
         data = pd.read_excel(priorities.file, header=0)
         data.rename(columns=DCW_SQL, inplace=True)
@@ -526,6 +527,7 @@ def upload_priority_vouchers(self, priority_voucher: int):
         database_errors = list()
         species_errors = list()
         errors = list()
+        voucher_errors = list()
         logger.info("Checking duplications in file")
         duplicated = data[data.duplicated(["catalog_number"], keep=False)]
         logger.debug(f"Found {len(duplicated)} row duplicated")
@@ -572,9 +574,15 @@ def upload_priority_vouchers(self, priority_voucher: int):
                         species_errors.append(info)
                         missing_species = True
                         continue
-                    voucher_imported = VoucherImported.from_pandas_row(
-                        row, priorities, species=species, biodata_code=biodata_code, logger=logger
-                    )
+                    try:
+                        voucher_imported = VoucherImported.from_pandas_row(
+                            row, priorities, species=species, biodata_code=biodata_code, logger=logger
+                        )
+                    except AssertionError as e:
+                        voucher_assertion = True
+                        row["assertion"] = str(e)
+                        voucher_errors.append(row)
+                        continue
                     voucher_imported.save()
                 except Exception as e:
                     logger.error(e, exc_info=True)
@@ -601,6 +609,10 @@ def upload_priority_vouchers(self, priority_voucher: int):
                 error["type"] = "code"
                 error["data"] = pd.DataFrame(errors).rename(columns=sql_dcw).to_json()
                 raise RuntimeError("Error during import data on server, check logs for details")
+            if voucher_assertion:
+                error["type"] = "voucher assertion"
+                error["data"] = pd.DataFrame(voucher_errors).rename(columns=sql_dcw).to_json()
+                raise AssertionError("Voucher assertion failed")
         logger[1].close()
         logger[1].save_file(PrivateMediaStorage(), temp_folder + ".log")
         close_process(logger[0], self, {"step": total, "total": total, })
