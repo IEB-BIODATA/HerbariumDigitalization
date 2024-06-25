@@ -554,6 +554,40 @@ def set_state(request):
 
 
 @login_required
+@csrf_exempt
+@require_POST
+def mark_all_page_as(request):
+    if 'voucher_state' not in request.POST or 'generated_page_id' not in request.POST:
+        return HttpResponseBadRequest()
+    voucher_state = int(request.POST['voucher_state'])
+    generated_page = GeneratedPage.objects.get(pk=request.POST['generated_page_id'])
+    biodata_codes = BiodataCode.objects.filter(page=generated_page)
+    display = -1
+    for state, display in VOUCHER_STATE:
+        if state == voucher_state:
+            logging.debug(f"Setting {biodata_codes.count()} (Page {generated_page.pk}) to {display} ({voucher_state})")
+            break
+    if voucher_state in [7, 8]:
+        logging.warning(f"'{display}' ({voucher_state}) is used just by system")
+        return HttpResponseForbidden()
+    data = dict()
+    for bc in biodata_codes:
+        try:
+            bc.voucher_state = voucher_state
+            data[bc.pk] = {'result': 'OK'}
+            if voucher_state == 0:
+                bc.qr_generated = False
+            else:
+                bc.qr_generated = True
+            bc.save()
+        except Exception as e:
+            data[bc.pk] = {'result': 'Error', 'detail': str(e)}
+            logging.error(f"Error setting voucher state on {bc.pk}")
+            logging.error(e, exc_info=True)
+    return HttpResponse(json.dumps(data), content_type="application/json")
+
+
+@login_required
 @require_POST
 @csrf_exempt
 def terminate_session(request):

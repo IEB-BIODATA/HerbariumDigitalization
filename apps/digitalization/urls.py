@@ -20,6 +20,7 @@ urlpatterns = [
     re_path(r'^upload_color_profile_file$', views.upload_color_profile_file, name='upload_color_profile_file'),
     re_path(r'^mark_vouchers$', views.mark_vouchers, name='mark_vouchers'),
     re_path(r'^set_state$', views.set_state, name='set_state'),
+    re_path(r'^mark_all_page_as$', views.mark_all_page_as, name='mark_all_page_as'),
     re_path(r'^control_vouchers$', views.control_vouchers, name='control_vouchers'),
     re_path(r'^vouchers_table/(?P<voucher_state>-?\d+)$', views.vouchers_table, name='vouchers_table'),
     re_path(r'^terminate_session$', views.terminate_session, name='terminate_session'),
