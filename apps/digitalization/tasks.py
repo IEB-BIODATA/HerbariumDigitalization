@@ -373,7 +373,7 @@ def clean_storage(log_folder: str):
         for file_name, file_size in to_delete:
             try:
                 process_logger.info(f"Deleting `{file_name}` ({show_storage(file_size)})")
-                # s3.delete_object(Bucket=bucket, Key=file_name)
+                s3.delete_object(Bucket=bucket, Key=file_name)
                 total_size_save += file_size
                 process_logger.debug(f"Total size saved: {show_storage(total_size_save)}")
             except Exception as e:
