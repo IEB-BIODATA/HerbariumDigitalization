@@ -4,7 +4,7 @@ from rest_framework.fields import ReadOnlyField, SerializerMethodField
 from rest_framework.serializers import ModelSerializer
 
 from apps.catalog.models import CommonName, PlantHabit, EnvironmentalHabit, Status, Cycle, Region, ConservationState, \
-    TaxonomicModel, Genus, Family, Order, ClassName, Division, CatalogView, Synonymy, Species, Binnacle
+    TaxonomicModel, Genus, Family, Order, ClassName, Division, CatalogView, Synonymy, Species, Binnacle, TaxonRank
 from apps.catalog.utils import get_habit, get_cycle, get_conservation_state
 
 
@@ -41,6 +41,12 @@ class StatusSerializer(AttributeSerializer):
 class CycleSerializer(AttributeSerializer):
     class Meta:
         model = Cycle
+        fields = AttributeSerializer.Meta.fields
+
+
+class TaxonRankSerializer(AttributeSerializer):
+    class Meta:
+        model = TaxonRank
         fields = AttributeSerializer.Meta.fields
 
 

@@ -10,7 +10,7 @@ from django.contrib.postgres.search import TrigramSimilarity
 from django.db import connection
 from django.db import models
 from django.db.models import Q
-from django.utils.translation import gettext_lazy as _, pgettext_lazy
+from django.utils.translation import gettext_lazy as _, pgettext_lazy, pgettext
 from time import time_ns, time
 from typing import List, Dict, Tuple
 
@@ -300,6 +300,28 @@ class Habit(AttributeModel):
         constraints = [
             models.UniqueConstraint(fields=['plant_habit', 'env_habit'], name='unique habit')
         ]
+
+
+class TaxonRankQuerySet(AttributeQuerySet):
+    __attribute_name__ = "taxon_rank"
+
+
+class TaxonRank(AttributeModel):
+    objects = TaxonRankQuerySet.as_manager()
+
+    def __unicode__(self):
+        return u"%s" % self.__str__()
+
+    def __str__(self):
+        return "%s" % self.name
+
+    def __repr__(self):
+        return "Taxon Rank::%s" % self.__str__()
+
+    class Meta:
+        verbose_name = _("Taxon Rank")
+        verbose_name_plural = _("Taxon Rank")
+        ordering = ['name']
 
 
 class RegionQuerySet(AttributeQuerySet):
@@ -822,17 +844,33 @@ class Genus(TaxonomicModel):
 
 class ScientificName(TaxonomicModel):
     scientific_name = models.CharField(verbose_name=_("Scientific Name"), max_length=300, blank=True, null=True)
-    scientific_name_db = models.CharField(verbose_name=_("Scientific Name Database"), max_length=300, blank=True, null=True)
-    scientific_name_full = models.CharField(verbose_name=_("Complete Scientific Name"), max_length=800, blank=True, null=True)
+    scientific_name_db = models.CharField(
+        verbose_name=_("Scientific Name Database"), max_length=300,
+        blank=True, null=True
+    )
+    scientific_name_full = models.CharField(
+        verbose_name=_("Complete Scientific Name"), max_length=800,
+        blank=True, null=True
+    )
     genus = models.CharField(verbose_name=_("Genus"), max_length=300, blank=True, null=True)
-    specific_epithet = models.CharField(verbose_name=_("Specific Epithet"), max_length=300, blank=True, null=True, help_text="EpitetoEspecifico")
-    scientific_name_authorship = models.CharField(verbose_name=_("Scientific Name Authorship"), max_length=500, blank=True, null=True, help_text="AutoresSp")
+    specific_epithet = models.CharField(
+        verbose_name=_("Specific Epithet"), max_length=300,
+        blank=True, null=True, help_text="EpitetoEspecifico"
+    )
+    scientific_name_authorship = models.CharField(
+        verbose_name=_("Scientific Name Authorship"), max_length=500,
+        blank=True, null=True, help_text="AutoresSp"
+    )
     subspecies = models.CharField(verbose_name=_("Subspecies"), max_length=300, blank=True, null=True)
     ssp_authorship = models.CharField(verbose_name=_("Subspecies Authorship"), max_length=500, blank=True, null=True)
     variety = models.CharField(verbose_name=_("Variety"), max_length=300, blank=True, null=True)
     variety_authorship = models.CharField(verbose_name=_("Variety Authorship"), max_length=500, blank=True, null=True)
     form = models.CharField(verbose_name=pgettext_lazy("taxonomic", "Form"), max_length=300, blank=True, null=True)
     form_authorship = models.CharField(verbose_name=_("Form Authorship"), max_length=500, blank=True, null=True)
+    taxon_rank = models.ForeignKey(
+        TaxonRank, verbose_name=_("Taxon Rank"),
+        null=True, editable=False, on_delete=models.PROTECT
+    )
 
     def __hash__(self):
         return super().__hash__()
@@ -898,6 +936,18 @@ class ScientificName(TaxonomicModel):
         )
         self.scientific_name_db = self.scientific_name.upper()
         return
+
+    def save(self, *args, **kwargs):
+        if self.form is not None:
+            taxon_rank = TaxonRank.objects.get(name__iexact=pgettext("taxonomic", "form"))
+        elif self.variety is not None:
+            taxon_rank = TaxonRank.objects.get(name__iexact=pgettext("taxonomic", "variety"))
+        elif self.subspecies is not None:
+            taxon_rank = TaxonRank.objects.get(name__iexact=pgettext("taxonomic", "subspecies"))
+        else:
+            taxon_rank = TaxonRank.objects.get(name__iexact=pgettext("taxonomic", "species"))
+        self.taxon_rank = taxon_rank
+        return super().save(*args, **kwargs)
 
     class Meta:
         abstract = True

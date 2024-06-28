@@ -87,6 +87,7 @@ class FinderSerializer(ModelSerializer):
 
 class ScientificNameSerializer(TaxonomicApiSerializer):
     name = CharField(source="scientific_name", read_only=True)
+    taxon_rank = CharField(source="taxon_rank.name", read_only=True)
 
     class Meta:
         model = ScientificName
@@ -96,6 +97,7 @@ class ScientificNameSerializer(TaxonomicApiSerializer):
             'subspecies', 'ssp_authorship',
             'variety', 'variety_authorship',
             'form', 'form_authorship',
+            'taxon_rank'
         ]
         abstract = True
 
