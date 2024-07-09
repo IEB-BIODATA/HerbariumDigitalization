@@ -7,7 +7,7 @@ from typing import Union, List, Dict
 
 from apps.catalog.models import Species, Family, Genus, Synonymy, Division, ClassName, Order, CommonName, \
     TaxonomicModel, FinderView, ScientificName, Region, Kingdom
-from apps.catalog.serializers import CommonSerializer, RegionSerializer
+from apps.catalog.serializers import CommonSerializer, RegionSerializer, StatusSerializer
 from apps.catalog.utils import get_habit, get_conservation_state
 from apps.digitalization.models import VoucherImported, GalleryImage, Licence
 
@@ -110,12 +110,14 @@ class SpeciesSerializer(ScientificNameSerializer):
     family = FamilySerializer()
     order = OrderSerializer()
     habit = SerializerMethodField()
+    status = StatusSerializer()
 
     class Meta:
         model = Species
         fields = ScientificNameSerializer.Meta.fields + [
             'kingdom', 'division', 'class_name',
             'family', 'order', 'habit', 'determined',
+            'status',
         ]
 
     def get_habit(self, obj: Species) -> str:
