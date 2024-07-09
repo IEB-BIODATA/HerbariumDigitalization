@@ -85,7 +85,7 @@ class AttributeQuerySet(CatalogQuerySet, ABC):
         query = Q()
         for geometry in geometries:
             query |= Q(species__voucherimported__point__within=geometry)
-        queryset = self.filter(query)
+        queryset = self.filter(query).distinct()
         logging.debug(f"{self.__attribute_name__}: {query} and got {queryset}")
         logging.debug(
             f"Filtering {self.__attribute_name__} using geometry took {(time_ns() - start) / 1e6:.2f} milliseconds"
