@@ -105,7 +105,7 @@ class ScientificNameSerializer(TaxonomicApiSerializer):
 class SpeciesSerializer(ScientificNameSerializer):
     kingdom = ReadOnlyField(source='kingdom.name')
     division = DivisionSerializer()
-    class_name = ClassSerializer()
+    classname = ClassSerializer()
     genus = GenusSerializer()
     family = FamilySerializer()
     order = OrderSerializer()
@@ -115,7 +115,7 @@ class SpeciesSerializer(ScientificNameSerializer):
     class Meta:
         model = Species
         fields = ScientificNameSerializer.Meta.fields + [
-            'kingdom', 'division', 'class_name',
+            'kingdom', 'division', 'classname',
             'family', 'order', 'habit', 'determined',
             'status',
         ]

@@ -40,7 +40,7 @@ MANY_RELATIONS = [
 @login_required
 def catalog_download(request):
     if request.method == "GET":
-        headers1 = ["id", "id_taxa", "kingdom", "division", "class_name", "order", "family", "genus", "scientific_name",
+        headers1 = ["id", "id_taxa", "kingdom", "division", "classname", "order", "family", "genus", "scientific_name",
                     "scientific_name_full"
             , "specific_epithet", "scientific_name_authorship", "subspecies", "ssp_authorship", "variety", "variety_authorship",
                     "form", "form_authorship"
@@ -51,7 +51,7 @@ def catalog_download(request):
                     "scientific_name_full", "genus", "specific_epithet", "scientific_name_authorship"
             , "subspecies", "ssp_authorship", "variety", "variety_authorship", "form", "form_authorship"]
         headers3 = ["id", "specie_id", "id_taxa", "specie scientific_name", "region name", "region key"]
-        species = CatalogView.objects.values_list("id", "id_taxa", "kingdom", "division", "class_name", "order",
+        species = CatalogView.objects.values_list("id", "id_taxa", "kingdom", "division", "classname", "order",
                                                   "family", "genus", "scientific_name", "scientific_name_full"
                                                   , "specific_epithet", "scientific_name_authorship", "subspecies",
                                                   "ssp_authorship", "variety", "variety_authorship", "form", "form_authorship"
@@ -331,7 +331,7 @@ def list_order(request):
     return render(request, "catalog/list_catalog.html", {
         "table_url": reverse("order_table"),
         "rank_name": "name",
-        "parent_rank": "class_name",
+        "parent_rank": "classname",
         "update_rank_url": reverse("update_order", kwargs={"order_id": 0}),
         "rank_title": _("Order"),
         "rank_name_title": _("Name"),
@@ -345,7 +345,7 @@ def list_order(request):
 def order_table(request):
     sort_by_func = {
         0: "name",
-        1: "class_name__name",
+        1: "classname__name",
         2: "created_by__username",
         3: "created_at",
         4: "updated_at",
@@ -476,7 +476,7 @@ def list_taxa(request):
 def taxa_table(request):
     sort_by_func = {
         0: "division",
-        1: "class_name",
+        1: "classname",
         2: "order",
         3: "family",
         4: "scientific_name_full",
@@ -492,7 +492,7 @@ def taxa_table(request):
         sort_by_func, "species",
         add_searchable=(
                 Q(division__icontains=search_value) |
-                Q(class_name__icontains=search_value) |
+                Q(classname__icontains=search_value) |
                 Q(order__icontains=search_value) |
                 Q(family__icontains=search_value) |
                 Q(status__icontains=search_value) |
