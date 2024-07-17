@@ -93,7 +93,7 @@ class OpenAPIDivision(OpenAPIQueryParameter):
 class OpenAPIClass(OpenAPIQueryParameter):
     def __init__(self):
         super(OpenAPIClass, self).__init__(
-            name="class_name",
+            name="classname",
             description=self.__default_description__.format("classes")
         )
         return

@@ -662,7 +662,7 @@ def gallery_table(request):
     if search_value:
         search_query = (
                 Q(division__name__icontains=search_value) |
-                Q(class_name__name__icontains=search_value) |
+                Q(classname__name__icontains=search_value) |
                 Q(order__name__icontains=search_value) |
                 Q(family__name__icontains=search_value) |
                 Q(scientific_name_full__icontains=search_value) |
@@ -671,7 +671,7 @@ def gallery_table(request):
 
     sort_by_func = {
         0: "division__name",
-        1: "class_name__name",
+        1: "classname__name",
         2: "order__name",
         3: "family__name",
         4: "scientific_name_full",

@@ -319,7 +319,7 @@ class MenuApiView(ObjectMultipleModelAPIView):
                 "serializer_class": DivisionSerializer
             },
             {
-                "label": "class_name",
+                "label": "classname",
                 "queryset": ClassName.objects.all(),
                 "serializer_class": ClassSerializer
             },
@@ -408,7 +408,7 @@ class NameApiView(ObjectMultipleModelAPIView):
                 "queryset": Division.objects.all(),
             },
             {
-                "label": "class_name",
+                "label": "classname",
                 "queryset": ClassName.objects.all(),
             },
             {
