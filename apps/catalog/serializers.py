@@ -100,11 +100,11 @@ class ClassSerializer(TaxonomicSerializer):
 
 
 class OrderSerializer(TaxonomicSerializer):
-    class_name = ReadOnlyField(source='class_name.name')
+    classname = ReadOnlyField(source='classname.name')
 
     class Meta:
         model = Order
-        fields = TaxonomicSerializer.Meta.fields + ['name', 'class_name']
+        fields = TaxonomicSerializer.Meta.fields + ['name', 'classname']
 
 
 class FamilySerializer(TaxonomicSerializer):
@@ -129,7 +129,7 @@ class CatalogViewSerializer(TaxonomicSerializer):
     class Meta:
         model = CatalogView
         fields = TaxonomicSerializer.Meta.fields + [
-            'division', 'class_name', 'order', 'family',
+            'division', 'classname', 'order', 'family',
             'scientific_name_full', 'status', 'determined',
         ]
 
