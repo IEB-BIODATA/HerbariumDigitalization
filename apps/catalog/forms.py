@@ -39,12 +39,12 @@ class OrderForm(forms.ModelForm):
         model = Order
         fields = (
             'name',
-            'class_name',
+            'classname',
         )
 
         widgets = {
             'name': forms.TextInput(attrs={'required': True, 'class': "form-control"}),
-            'class_name': forms.Select(attrs={'required': True, 'class': "form-control"}),
+            'classname': forms.Select(attrs={'required': True, 'class': "form-control"}),
         }
 
 
