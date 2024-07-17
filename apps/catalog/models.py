@@ -24,7 +24,7 @@ ATTRIBUTES = [
 ]
 
 TAXONOMIC_RANK = [
-    "kingdom", "division", "class_name", "order",
+    "kingdom", "division", "classname", "order",
     "family", "genus", "species",
 ]
 
@@ -79,7 +79,7 @@ class AttributeQuerySet(CatalogQuerySet, ABC):
         )
         logging.debug(f"Query: {queryset.query}")
         return queryset
-    
+
     def filter_geometry(self, geometries: List[str]) -> AttributeQuerySet:
         start = time_ns()
         query = Q()
@@ -435,8 +435,8 @@ class ConservationState(AttributeModel):
 
 
 class TaxonomicModel(models.Model):
-    taxa_num_id = models.BigIntegerField()
-    taxa_id = models.CharField()
+    unique_taxon_id = models.BigIntegerField()
+    taxon_id = models.CharField()
     created_at = models.DateTimeField(verbose_name=_("Created at"), auto_now_add=True, blank=True, null=True, editable=False)
     updated_at = models.DateTimeField(verbose_name=_("Updated at"), auto_now=True)
     created_by = models.ForeignKey(User, verbose_name=_("Created by"), on_delete=models.PROTECT, default=1, editable=False)
@@ -482,16 +482,16 @@ class TaxonomicModel(models.Model):
             )
         if self.pk is None:
             try:
-                if self.taxa_id is None or self.taxa_id == "":
+                if self.taxon_id is None or self.taxon_id == "":
                     with connection.cursor() as cursor:
-                        cursor.execute("SELECT get_taxa_id()")
+                        cursor.execute("SELECT get_taxon_id()")
                         result = cursor.fetchone()
                         if result:
-                            self.taxa_num_id = result[0]
-                            logging.debug(self.taxa_num_id)
+                            self.unique_taxon_id = result[0]
+                            logging.debug(self.unique_taxon_id)
                         else:
                             raise RuntimeError("Cannot got unique taxa id")
-                    self.taxa_id = settings.TAXA_ID_PREF + str(self.taxa_num_id)
+                    self.taxon_id = settings.TAXA_ID_PREF + str(self.unique_taxon_id)
                 super().save(
                     force_insert=force_insert,
                     force_update=force_update,
@@ -608,7 +608,7 @@ class Division(TaxonomicModel):
 
 
 class ClassQuerySet(TaxonomicQuerySet):
-    __rank_name__ = "class_name"
+    __rank_name__ = "classname"
 
 
 class ClassName(TaxonomicModel):
@@ -647,11 +647,9 @@ class ClassName(TaxonomicModel):
         return TaxonomicModel.get_created_by_query(search)
 
     class Meta:
-        db_table = "catalog_class_name"
         verbose_name = _("Class")
         verbose_name_plural = _("Classes")
         ordering = ['name']
-        default_related_name = "class_name"
 
 
 class OrderQuerySet(TaxonomicQuerySet):
@@ -660,7 +658,7 @@ class OrderQuerySet(TaxonomicQuerySet):
 
 class Order(TaxonomicModel):
     name = models.CharField(verbose_name=_("Name"), max_length=300, blank=True, null=True)
-    class_name = models.ForeignKey(ClassName, verbose_name=_("Class Name"), on_delete=models.CASCADE, blank=True, null=True, help_text="Clase")
+    classname = models.ForeignKey(ClassName, verbose_name=_("Class Name"), on_delete=models.CASCADE, blank=True, null=True, help_text="Clase")
 
     objects = OrderQuerySet.as_manager()
 
@@ -669,7 +667,7 @@ class Order(TaxonomicModel):
 
     def __eq__(self, other):
         return super().__eq__(other) and \
-            self.class_name == other.class_name and \
+            self.classname == other.classname and \
             self.name == other.name
 
     def __unicode__(self):
@@ -679,7 +677,7 @@ class Order(TaxonomicModel):
         return "%s" % self.name
 
     def __repr__(self):
-        return "%s|Class::%s" % (self.name, self.class_name)
+        return "%s|Class::%s" % (self.name, self.classname)
 
     @staticmethod
     def get_query_name(search: str) -> Q:
@@ -687,7 +685,7 @@ class Order(TaxonomicModel):
 
     @staticmethod
     def get_parent_query(search: str) -> Q:
-        return Q(class_name__name__icontains=search)
+        return Q(classname__name__icontains=search)
 
     @staticmethod
     def get_created_by_query(search: str) -> Q:
@@ -1069,12 +1067,12 @@ class Species(ScientificName):
         return self.family.order
 
     @property
-    def class_name(self):
-        return self.order.class_name
+    def classname(self):
+        return self.order.classname
 
     @property
     def division(self):
-        return self.class_name.division
+        return self.classname.division
 
     @property
     def kingdom(self):
@@ -1113,13 +1111,13 @@ class Species(ScientificName):
                         for specimen in self.voucherimported_set.all():
                             specimen.generate_etiquette()
                         with connection.cursor() as cursor:
-                            cursor.execute("SELECT get_taxa_id()")
+                            cursor.execute("SELECT get_taxon_id()")
                             result = cursor.fetchone()
                             if result:
-                                self.taxa_num_id = result[0]
+                                self.unique_taxon_id = result[0]
                             else:
                                 raise RuntimeError("Cannot got unique taxa id")
-                        self.taxa_id = settings.TAXA_ID_PREF + str(self.taxa_num_id)
+                        self.taxon_id = settings.TAXA_ID_PREF + str(self.unique_taxon_id)
                     try:
                         self.__prev__.species = self
                         self.__prev__.save(user=kwargs["user"])
@@ -1159,8 +1157,8 @@ class Synonymy(ScientificName):
         super().__init__(*args, **kwargs)
         if "species" in kwargs:
             species: Species = kwargs["species"]
-            self.taxa_num_id = species.taxa_num_id
-            self.taxa_id = species.taxa_id
+            self.unique_taxon_id = species.unique_taxon_id
+            self.taxon_id = species.taxon_id
             self.genus = str(species.genus).capitalize()
             self.scientific_name = species.scientific_name
             self.scientific_name_db = species.scientific_name_db
@@ -1312,14 +1310,14 @@ class CatalogView(TaxonomicModel):
     CREATE MATERIALIZED VIEW catalog_view AS
     SELECT species.id,
            species.id_taxa,
-           species.taxa_num_id,
-           species.taxa_id,
+           species.unique_taxon_id,
+           species.taxon_id,
            kingdom.id      AS kingdom_id,
            kingdom.name    AS kingdom,
            division.id     AS division_id,
            division.name   AS division,
-           class.id        AS class_name_id,
-           class.name      AS class_name,
+           classname.id    AS classname_id,
+           classname.name  AS classname,
            "order".id      AS order_id,
            "order".name    AS "order",
            family.id       AS family_id,
@@ -1360,8 +1358,8 @@ class CatalogView(TaxonomicModel):
          JOIN catalog_genus genus ON species.genus_id = genus.id
          JOIN catalog_family family ON genus.family_id = family.id
          JOIN catalog_order "order" ON family."order" = "order".id
-         JOIN catalog_class_name class ON "order".class_name_id = class.id
-         JOIN catalog_division division ON class.division_id = division.id
+         JOIN catalog_classname classname ON "order".classname_id = classname.id
+         JOIN catalog_division division ON classname.division_id = division.id
          JOIN catalog_kingdom kingdom ON division.kingdom_id = kingdom.id
          LEFT JOIN catalog_status status ON species.status_id = status.id;
 
@@ -1370,14 +1368,14 @@ class CatalogView(TaxonomicModel):
     """
     id = models.IntegerField(primary_key=True, blank=False, null=False, help_text="")
     id_taxa = models.IntegerField(blank=False, null=False, help_text="")
-    taxa_num_id = models.BigIntegerField()
-    taxa_id = models.CharField()
+    unique_taxon_id = models.BigIntegerField()
+    taxon_id = models.CharField()
     kingdom_id = models.IntegerField(blank=False, null=False, help_text="")
     kingdom = models.CharField(max_length=300, blank=True, null=True)
     division_id = models.IntegerField(blank=False, null=False, help_text="")
     division = models.CharField(max_length=300, blank=True, null=True)
-    class_name_id = models.IntegerField(blank=False, null=False, help_text="")
-    class_name = models.CharField(max_length=300, blank=True, null=True)
+    classname_id = models.IntegerField(blank=False, null=False, help_text="")
+    classname = models.CharField(max_length=300, blank=True, null=True)
     order_id = models.IntegerField(blank=False, null=False, help_text="")
     order = models.CharField(max_length=300, blank=True, null=True, db_column="order")
     family_id = models.IntegerField(blank=False, null=False, help_text="")
@@ -1465,8 +1463,8 @@ class SynonymyView(TaxonomicModel):
     id = models.IntegerField(primary_key=True, blank=False, null=False, help_text="")
     species_id = models.IntegerField(blank=False, null=False, help_text="")
     id_taxa = models.IntegerField(blank=False, null=False, help_text="")
-    taxa_num_id = models.BigIntegerField()
-    taxa_id = models.CharField()
+    unique_taxon_id = models.BigIntegerField()
+    taxon_id = models.CharField()
     species_scientific_name = models.CharField(max_length=500, blank=True, null=True, help_text="sp")
     scientific_name = models.CharField(max_length=300, blank=True, null=True)
     scientific_name_full = models.CharField(max_length=800, blank=True, null=True)
@@ -1612,7 +1610,7 @@ class FinderView(models.Model):
 RANK_MODELS = {
     "kingdom": Kingdom,
     "division": Division,
-    "class_name": ClassName,
+    "classname": ClassName,
     "order": Order,
     "family": Family,
     "genus": Genus,
