@@ -82,7 +82,7 @@ class GenusSerializer(TaxonomicApiSerializer):
 class FinderSerializer(ModelSerializer):
     class Meta:
         model = FinderView
-        fields = ['id', 'type', 'name', 'determined']
+        fields = ['unique_taxon_id', 'type', 'name', 'determined']
 
 
 class ScientificNameSerializer(TaxonomicApiSerializer):

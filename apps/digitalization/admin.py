@@ -43,7 +43,6 @@ class UserAdmin(BaseUserAdmin):
         return mark_safe("<br>".join([m.name for m in obj.herbariummember.herbarium.all()]))
 
 
-
 class AreaAdmin(LeafletGeoAdmin, TranslationAdmin):
     list_display = (['id', 'name'])
 
