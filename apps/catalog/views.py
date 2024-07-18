@@ -211,7 +211,7 @@ def __update_catalog_route__(
         rank_title: str,
         identifier: int
 ) -> HttpResponse:
-    entry = model.objects.get(id=identifier)
+    entry = model.objects.get(unique_taxon_id=identifier)
     if request.method == "POST":
         form = form_class(request.POST, instance=entry)
         if __update_catalog__(form, request.user):
@@ -517,7 +517,7 @@ def create_taxa(request):
 
 @login_required
 def update_taxa(request, species_id):
-    species = Species.objects.get(id=species_id)
+    species = Species.objects.get(unique_taxon_id=species_id)
     warnings = False
     warning_text = ""
     gallery_warning = species.galleryimage_set.exists()
@@ -547,7 +547,7 @@ def update_taxa(request, species_id):
 
 
 def delete_taxa(request, species_id):
-    species = Species.objects.get(id=species_id)
+    species = Species.objects.get(unique_taxon_id=species_id)
     name = species.scientific_name_full
     try:
         logging.info("Taxa to be deleted {}:{}".format(
@@ -574,7 +574,7 @@ def delete_taxa(request, species_id):
 
 @login_required
 def select_taxa(request, species_id: int) -> HttpResponse:
-    taxa_1 = Species.objects.get(id=species_id)
+    taxa_1 = Species.objects.get(unique_taxon_id=species_id)
     species = Species.objects.all()
     form = SpeciesForm(instance=taxa_1)
     return render(request, "catalog/merge_taxa.html", {
@@ -590,8 +590,8 @@ def select_taxa(request, species_id: int) -> HttpResponse:
 
 @login_required
 def merge_taxa(request, taxa_1: int, taxa_2: int) -> HttpResponse:
-    species_1 = Species.objects.get(id=taxa_1)
-    species_2 = Species.objects.get(id=taxa_2)
+    species_1 = Species.objects.get(unique_taxon_id=taxa_1)
+    species_2 = Species.objects.get(unique_taxon_id=taxa_2)
     species = Species.objects.all()
     if request.method == "POST":
         form = SpeciesForm(request.POST, instance=species_2)
@@ -703,7 +703,7 @@ def update_synonymy(request, synonymy_id):
 
 @login_required
 def delete_synonymy(request, synonymy_id):
-    synonymy = Synonymy.objects.get(id=synonymy_id)
+    synonymy = Synonymy.objects.get(unique_taxon_id=synonymy_id)
     try:
         __delete_catalog__(synonymy, request.user)
         return redirect("list_synonymy")
@@ -764,7 +764,7 @@ def update_binnacle(request, binnacle_id):
 
 @login_required
 def list_common_name(request):
-    return render(request, "catalog/list_catalog.html", {
+    return render(request, "catalog/list_common_name.html", {
         "table_url": reverse("common_name_table"),
         "rank_name": "name",
         "parent_rank": "species",
@@ -802,11 +802,25 @@ def create_common_name(request):
 
 @login_required
 def update_common_name(request, common_name_id):
-    return __update_catalog_route__(
-        request, CommonName, CommonNameForm,
-        "common_name", _("Common Name"),
-        common_name_id
-    )
+    entry = CommonName.objects.get(id=common_name_id)
+    if request.method == "POST":
+        form = CommonNameForm(request.POST, instance=entry)
+        if __update_catalog__(form, request.user):
+            return redirect("list_common_name")
+    else:
+        form = CommonNameForm(instance=entry)
+    return render(request, "catalog/update_catalog.html", {
+        "rank_title": _("Common Name"),
+        "id": common_name_id,
+        "update_url": reverse(
+            "update_common_name",
+            kwargs={
+                "common_name_id": common_name_id
+            }
+        ),
+        "form": form,
+        "list_url": reverse("list_common_name")
+    })
 
 
 @login_required

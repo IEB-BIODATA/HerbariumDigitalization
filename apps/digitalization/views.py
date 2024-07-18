@@ -691,7 +691,7 @@ def gallery_table(request):
 
 @login_required
 def species_gallery(request, species_id: int):
-    species = Species.objects.get(pk=species_id)
+    species = Species.objects.get(unique_taxon_id=species_id)
     gallery = GalleryImage.objects.filter(scientific_name=species)
     return render(request, 'digitalization/species_gallery.html', {
         'species': species,
@@ -908,16 +908,16 @@ def download_catalog(request):
     if request.method == 'GET':
         logging.info("Generating catalog excel...")
         headers = [
-            'id', 'id taxa',
+            'unique_taxon_id', 'id taxa',
             'Family', 'Genus', 'Species',
             'Scientific Name', 'Scientific Name Full',
             'Scientific Name DB', 'Determined'
         ]
         species = Species.objects.values_list(
-            'id', 'id_taxa', 'genus__family__name', 'genus__name',
+            'unique_taxon_id', 'id_taxa', 'genus__family__name', 'genus__name',
             'specific_epithet', 'scientific_name',
             'scientific_name_full', 'scientific_name_db', 'determined'
-        ).order_by('id')
+        ).order_by('unique_taxon_id')
         databook = tablib.Databook()
         data_set = tablib.Dataset(*species, headers=headers, title='Catalog')
         databook.add_sheet(data_set)
