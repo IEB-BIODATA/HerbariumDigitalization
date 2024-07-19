@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2024-05-03 15:22-0400\n"
+"POT-Creation-Date: 2024-07-18 17:16-0400\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -18,62 +18,86 @@ msgstr ""
 "Content-Transfer-Encoding: 8bit\n"
 "Plural-Forms: nplurals=2; plural=(n != 1);\n"
 
-#: apps/home/forms.py:24
+#: apps/home/admin.py:15 apps/home/models.py:26
+msgid "Message"
+msgstr "Mensaje"
+
+#: apps/home/forms.py:25 apps/home/models.py:17
 msgid "Language"
 msgstr "Idioma"
 
-#: apps/home/forms.py:25
+#: apps/home/forms.py:26 apps/home/models.py:18
 msgid "Theme"
 msgstr "Tema"
 
-#: apps/home/forms.py:37
+#: apps/home/forms.py:38
 msgid "Old Password"
 msgstr "Antigua Contraseña"
 
-#: apps/home/forms.py:42
+#: apps/home/forms.py:43
 msgid "New Password"
 msgstr "Nueva Contraseña"
 
-#: apps/home/forms.py:47
+#: apps/home/forms.py:48
 msgid "Validate Password"
 msgstr "Confirmar Contraseña"
 
-#: apps/home/forms.py:66
+#: apps/home/forms.py:67
 msgid "User Name"
 msgstr "Nombre de usuario"
 
-#: apps/home/forms.py:67
+#: apps/home/forms.py:68
 msgid "First Name"
 msgstr "Nombres"
 
-#: apps/home/forms.py:68
+#: apps/home/forms.py:69
 msgid "Last Name"
 msgstr "Apellidos"
 
-#: apps/home/forms.py:69
+#: apps/home/forms.py:70
 msgid "Email"
 msgstr "Email"
 
-#: apps/home/forms.py:100
+#: apps/home/forms.py:101
 msgid "Geometry File"
 msgstr "Archivo de Geometría"
 
-#: apps/home/forms.py:101
+#: apps/home/forms.py:102
 msgid "Geometry"
 msgstr "Geometría"
 
-#: apps/home/forms.py:123
+#: apps/home/forms.py:124
 msgid "Geometry is required"
 msgstr "Geometría es requerido"
 
-#: apps/home/models.py:7
+#: apps/home/models.py:11
 msgid "Light"
 msgstr "Claro"
 
-#: apps/home/models.py:17
+#: apps/home/models.py:21
 msgid "Profile"
 msgstr "Perfil"
 
-#: apps/home/models.py:18
+#: apps/home/models.py:22
 msgid "Profiles"
 msgstr "Perfiles"
+
+#: apps/home/models.py:27
+msgid "Active"
+msgstr "Activo"
+
+#: apps/home/models.py:28
+msgid "Created by"
+msgstr "Creado por"
+
+#: apps/home/models.py:29
+msgid "Created at"
+msgstr "Creado el"
+
+#: apps/home/models.py:32
+msgid "Alert"
+msgstr "Alerta"
+
+#: apps/home/models.py:33
+msgid "Alerts"
+msgstr "Alertas"

@@ -41,6 +41,7 @@ from .utils import filter_query_set, OpenAPIKingdom, OpenAPIClass, OpenAPIOrder,
 from ..catalog.serializers import PlantHabitSerializer, EnvHabitSerializer, StatusSerializer, CycleSerializer, \
     RegionSerializer, ConservationStateSerializer
 from ..digitalization.utils import register_temporal_geometry
+from ..home.models import Alert
 
 
 def index(request: HttpRequest) -> HttpResponse:
@@ -65,6 +66,9 @@ class InfoApi(APIView):
         }
     )
     def get(self, request, format=None):
+        default_language = get_language()
+        lang = request.query_params.get("lang", default_language)
+        activate(lang)
         images_count = VoucherImported.objects.all().exclude(
             Q(image_public_resized_10__exact='') |
             Q(image_public_resized_10__isnull=True)
@@ -78,6 +82,12 @@ class InfoApi(APIView):
         content = {
             'images': images_count,
             'species': species_count,
+            'alerts': [
+                {
+                    "message": alert.message,
+                    "created_at": alert.created_at
+                } for alert in Alert.objects.filter(active=True)
+            ]
         }
         return Response(content)
 

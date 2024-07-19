@@ -60,6 +60,7 @@ INSTALLED_APPS = [
     'corsheaders',
     'widget_tweaks',
     'django_hosts',
+    'ckeditor',
 ]
 
 MIDDLEWARE = [
