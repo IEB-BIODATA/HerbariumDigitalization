@@ -1,4 +1,5 @@
 import logging
+from ckeditor.widgets import CKEditorWidget
 
 from django import forms
 from django.contrib.auth.models import User
@@ -7,7 +8,7 @@ from django.contrib.gis import forms as gis_forms
 from django.utils.translation import gettext_lazy as _
 from leaflet.forms.widgets import LeafletWidget
 
-from apps.home.models import Profile
+from apps.home.models import Profile, Alert
 from intranet.utils import get_geometry
 
 
@@ -125,3 +126,16 @@ class GeographicFieldForm(forms.ModelForm):
 
     class Meta:
         abstract = True
+
+
+class AlertForm(forms.ModelForm):
+    class Meta:
+        model = Alert
+        fields = (
+            'message_es',
+            'message_en',
+            'active',
+        )
+        widgets = {
+            'message': CKEditorWidget(),
+        }
