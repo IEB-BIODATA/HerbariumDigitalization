@@ -16,8 +16,13 @@
     <script type="text/javascript">
         function showCoordinates(map, options) {
             let center = {
-                latitude: {{ form.instance.decimal_latitude|stringformat:".6f" }},
-                longitude: {{ form.instance.decimal_longitude|stringformat:".6f" }},
+                {% if form.instance.decimal_latitude %}
+                    latitude: {{ form.instance.decimal_latitude|stringformat:".6f" }},
+                    longitude: {{ form.instance.decimal_longitude|stringformat:".6f" }},
+                {% else %}
+                    latitude: null,
+                    longitude: null,
+                {% endif %}
             }
             map.setView([center.latitude, center.longitude], 15, options);
             let lat, lng;

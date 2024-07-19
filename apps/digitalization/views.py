@@ -934,7 +934,10 @@ def update_voucher(request, voucher_id):
         form = VoucherImportedForm(request.POST, instance=voucher)
         if form.is_valid():
             voucher = form.save()
-            if not numpy.isnan(voucher.decimal_latitude) and not numpy.isnan(voucher.decimal_longitude):
+            if (
+                    (voucher.decimal_latitude is not None and not numpy.isnan(voucher.decimal_latitude)) and
+                    (voucher.decimal_longitude is not None and not numpy.isnan(voucher.decimal_longitude))
+            ):
                 voucher.point = GEOSGeometry(
                     'POINT(' + str(voucher.decimal_longitude) + ' ' + str(voucher.decimal_latitude) + ')', srid=4326)
                 decimal_latitude_public = VoucherImported.public_point(voucher.decimal_latitude)
@@ -943,9 +946,9 @@ def update_voucher(request, voucher_id):
                 voucher.decimal_longitude_public = decimal_longitude_public
                 voucher.point_public = GEOSGeometry(
                     'POINT(' + str(decimal_longitude_public) + ' ' + str(decimal_latitude_public) + ')', srid=4326)
-                voucher.save()
-                if voucher.image and voucher.biodata_code.voucher_state == 7:
-                    etiquette_picture.delay(int(voucher.pk))
+            voucher.save()
+            if voucher.image and voucher.biodata_code.voucher_state == 7:
+                etiquette_picture.delay(int(voucher.pk))
             return redirect('control_vouchers')
     else:
         form = VoucherImportedForm(instance=voucher)

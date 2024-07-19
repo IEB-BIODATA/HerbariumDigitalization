@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2024-06-25 12:09-0400\n"
+"POT-Creation-Date: 2024-07-18 12:31-0400\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -1092,26 +1092,26 @@ msgstr "Descargar actual versión"
 msgid "Test"
 msgstr "Pruebas"
 
-#: intranet/settings.py:149
+#: intranet/settings.py:150
 msgid "Spanish"
 msgstr "Español"
 
-#: intranet/settings.py:150
+#: intranet/settings.py:151
 msgid "English"
 msgstr "Inglés"
 
-#: intranet/settings.py:252
+#: intranet/settings.py:253
 msgid "Digital Herbarium API"
 msgstr "API del Herbario Digital"
 
-#: intranet/settings.py:253
+#: intranet/settings.py:254
 msgid "API description"
 msgstr "API del Catálogo de Plantas Vasculares de Chile y Herbario Digital"
 
-#: intranet/settings.py:259
+#: intranet/settings.py:260
 msgid "Mozilla Public License, version 2.0"
 msgstr "Licencia pública de Mozilla, versión 2.0"
 
-#: intranet/settings.py:260
+#: intranet/settings.py:261
 msgid "Mozilla MPL URL"
 msgstr "https://www.mozilla.org/en-US/MPL/2.0/"
