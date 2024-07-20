@@ -21,7 +21,7 @@ from django.forms import CharField
 from django.utils.translation import gettext_lazy as _
 from typing import BinaryIO, Union, Any, Tuple, Callable, Dict, List
 
-from apps.catalog.models import Species, TAXONOMIC_RANK
+from apps.catalog.models import Species, TAXONOMIC_RANK, RANK_MODELS, get_fuzzy_taxa
 from intranet.utils import CatalogQuerySet
 from .storage_backends import PublicMediaStorage, PrivateMediaStorage
 from .validators import validate_file_size
@@ -260,7 +260,13 @@ class VoucherImportedQuerySet(CatalogQuerySet):
             query_name = "__".join(list(reversed(TAXONOMIC_RANK))[0:-rank_index]).replace(
                 "species", "scientific_name"
             )
-            query &= Q(**{f"{query_name}__in": parameter})
+            clean_parameters = list()
+            for par in parameter:
+                if par.isdigit():
+                    clean_parameters.append(RANK_MODELS[taxonomic_rank].objects.get(unique_taxon_id=par).pk)
+                else:
+                    clean_parameters.append(get_fuzzy_taxa(taxonomic_rank, par))
+            query &= Q(**{f"{query_name}__in": clean_parameters})
         queryset = self.filter(query).distinct()
         logging.debug(f"Voucher Imported: {query} and got {queryset}")
         return queryset

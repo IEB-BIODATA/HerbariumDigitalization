@@ -7,7 +7,7 @@ from typing import Union, List, Dict
 
 from apps.catalog.models import Species, Family, Genus, Synonymy, Division, ClassName, Order, CommonName, \
     TaxonomicModel, FinderView, ScientificName, Region, Kingdom
-from apps.catalog.serializers import CommonSerializer, RegionSerializer, StatusSerializer
+from apps.catalog.serializers import RegionSerializer, StatusSerializer
 from apps.catalog.utils import get_habit, get_conservation_state
 from apps.digitalization.models import VoucherImported, GalleryImage, Licence
 
@@ -23,17 +23,17 @@ class RegionDetailsSerializer(RegionSerializer):
         fields = RegionSerializer.Meta.fields + ['geometry']
 
 
-class TaxonomicApiSerializer(CommonSerializer):
+class TaxonomicApiSerializer(ModelSerializer):
     class Meta:
         model = TaxonomicModel
-        fields = CommonSerializer.Meta.fields + ['name']
+        fields = ['taxon_id', 'unique_taxon_id', 'name']
         abstract = True
 
 
-class CommonNameSerializer(TaxonomicApiSerializer):
+class CommonNameSerializer(ModelSerializer):
     class Meta:
         model = CommonName
-        fields = TaxonomicApiSerializer.Meta.fields
+        fields = ['id', 'name']
         read_only_fields = fields
 
 
@@ -82,7 +82,7 @@ class GenusSerializer(TaxonomicApiSerializer):
 class FinderSerializer(ModelSerializer):
     class Meta:
         model = FinderView
-        fields = ['unique_taxon_id', 'type', 'name', 'determined']
+        fields = ['id', 'type', 'name', 'determined']
 
 
 class ScientificNameSerializer(TaxonomicApiSerializer):
