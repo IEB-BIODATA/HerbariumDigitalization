@@ -67,7 +67,7 @@ class AttributeQuerySet(CatalogQuerySet, ABC):
             clean_parameters = list()
             for par in parameter:
                 if par.isdigit():
-                    clean_parameters.append(par)
+                    clean_parameters.append(RANK_MODELS[taxonomic_rank].objects.get(unique_taxon_id=par).pk)
                 else:
                     clean_parameters.append(get_fuzzy_taxa(taxonomic_rank, par))
             logging.debug(f"{self.__attribute_name__}: Species from {taxonomic_rank}: {clean_parameters}")
@@ -143,7 +143,7 @@ class TaxonomicQuerySet(CatalogQuerySet, ABC):
             clean_parameters = list()
             for par in parameter:
                 if par.isdigit():
-                    clean_parameters.append(par)
+                    clean_parameters.append(RANK_MODELS[taxonomic_rank].objects.get(unique_taxon_id=par).pk)
                 else:
                     clean_parameters.append(get_fuzzy_taxa(taxonomic_rank, par))
             try:
@@ -334,7 +334,7 @@ class RegionQuerySet(AttributeQuerySet):
             clean_parameters = list()
             for par in parameter:
                 if par.isdigit():
-                    clean_parameters.append(par)
+                    clean_parameters.append(RANK_MODELS[taxonomic_rank].objects.get(unique_taxon_id=par).pk)
                 else:
                     clean_parameters.append(get_fuzzy_taxa(taxonomic_rank, par))
             logging.debug(f"{self.__attribute_name__}: Species from {taxonomic_rank}: {clean_parameters}")
@@ -396,7 +396,7 @@ class ConservationStateQuerySet(AttributeQuerySet):
             clean_parameters = list()
             for par in parameter:
                 if par.isdigit():
-                    clean_parameters.append(par)
+                    clean_parameters.append(RANK_MODELS[taxonomic_rank].objects.get(unique_taxon_id=par).pk)
                 else:
                     clean_parameters.append(get_fuzzy_taxa(taxonomic_rank, par))
             logging.debug(f"{self.__attribute_name__}: Species from {taxonomic_rank}: {clean_parameters}")
@@ -1542,7 +1542,7 @@ class RegionDistributionView(models.Model):
 class FinderView(models.Model):
     """
     CREATE MATERIALIZED VIEW finder_view AS
-    SELECT id,
+    SELECT unique_taxon_id AS id,
            'species'       AS type,
            scientific_name AS name,
            scientific_name AS name_es,
@@ -1550,7 +1550,7 @@ class FinderView(models.Model):
            determined
     FROM catalog_species
     UNION ALL
-    SELECT id,
+    SELECT unique_taxon_id AS id,
            'synonymy'      AS type,
            scientific_name AS name,
            scientific_name AS name_es,
@@ -1558,7 +1558,7 @@ class FinderView(models.Model):
            FALSE           AS determined
     FROM catalog_synonymy
     UNION ALL
-    SELECT id,
+    SELECT unique_taxon_id AS id,
            'family'        AS type,
            name            AS name,
            name            AS name_es,
@@ -1566,7 +1566,7 @@ class FinderView(models.Model):
            FALSE           AS determined
     FROM catalog_family
     UNION ALL
-    SELECT id,
+    SELECT unique_taxon_id AS id,
            'genus'         AS type,
            name            AS name,
            name            AS name_es,
