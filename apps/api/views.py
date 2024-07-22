@@ -463,7 +463,7 @@ class NameApiView(ObjectMultipleModelAPIView):
             label = a_model["label"]
             asking_for = self.request.query_params.getlist(label)
             if len(asking_for) > 0:
-                a_queryset = a_model["queryset"].filter(id__in=self.request.query_params.getlist(label))
+                a_queryset = a_model["queryset"].filter(unique_taxon_id__in=self.request.query_params.getlist(label))
                 if a_queryset.count() > 0:
                     logging.info(label)
                     logging.debug(a_queryset)
@@ -658,7 +658,8 @@ class SpeciesListApiView(FlatMultipleModelAPIView, POSTRedirect):
         return super(SpeciesListApiView, self).get(request, *args, **kwargs)
 
 
-class ScientificNameDetails(RetrieveAPIView):
+class RetrieveLangApiView(RetrieveAPIView):
+
     @extend_schema(parameters=[
         OpenAPILang(),
     ])
@@ -666,7 +667,11 @@ class ScientificNameDetails(RetrieveAPIView):
         default_language = get_language()
         lang = request.query_params.get("lang", default_language)
         activate(lang)
-        return super(ScientificNameDetails, self).get(request, *args, **kwargs)
+        return super(RetrieveLangApiView, self).get(request, *args, **kwargs)
+
+
+class ScientificNameDetails(RetrieveLangApiView):
+    lookup_field = "unique_taxon_id"
 
 
 class SpeciesDetails(ScientificNameDetails):
@@ -694,7 +699,7 @@ class DistributionList(ListAPIView):
         species_id = self.kwargs["species_id"]
         queryset = super().get_queryset()
         if species_id:
-            queryset = queryset.filter(scientific_name=species_id)
+            queryset = queryset.filter(scientific_name=Species.objects.get(unique_taxon_id=species_id))
         return queryset.order_by("id")
 
     @extend_schema(parameters=[
@@ -769,7 +774,7 @@ class SpecimensList(QueryList, POSTRedirect):
         return super().get(request, *args, **kwargs)
 
 
-class SpecimenDetails(ScientificNameDetails):
+class SpecimenDetails(RetrieveLangApiView):
     """
     Gets the information of a particular specimen
     """

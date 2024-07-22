@@ -8,15 +8,9 @@ from apps.catalog.models import CommonName, PlantHabit, EnvironmentalHabit, Stat
 from apps.catalog.utils import get_habit, get_cycle, get_conservation_state
 
 
-class CommonSerializer(ModelSerializer):
+class AttributeSerializer(ModelSerializer):
     class Meta:
-        fields = ['id', ]
-        abstract = True
-
-
-class AttributeSerializer(CommonSerializer):
-    class Meta:
-        fields = CommonSerializer.Meta.fields + ['name']
+        fields = ['id', 'name']
         abstract = True
 
 
@@ -62,21 +56,22 @@ class ConservationStateSerializer(AttributeSerializer):
         fields = AttributeSerializer.Meta.fields + ['key']
 
 
-class TaxonomicSerializer(CommonSerializer):
+class TaxonomicSerializer(ModelSerializer):
     created_by = ReadOnlyField(source='created_by.username')
 
     class Meta:
         model = TaxonomicModel
-        fields = CommonSerializer.Meta.fields + ['created_by', 'created_at', 'updated_at', ]
+        fields = ['taxon_id', 'unique_taxon_id', 'created_by', 'created_at', 'updated_at', ]
         abstract = True
 
 
-class CommonNameSerializer(TaxonomicSerializer):
+class CommonNameSerializer(AttributeSerializer):
     species = SerializerMethodField()
+    created_by = ReadOnlyField(source='created_by.username')
 
     class Meta:
         model = CommonName
-        fields = TaxonomicSerializer.Meta.fields + ['name', 'species', ]
+        fields = AttributeSerializer.Meta.fields + ['species', 'created_by', 'created_at', 'updated_at', ]
 
     def get_species(self, obj: CommonName) -> str:
         species = obj.species_set.all()

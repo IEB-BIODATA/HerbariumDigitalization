@@ -150,7 +150,7 @@ class SpeciesGallerySerializer(HyperlinkedModelSerializer):
     class Meta:
         model = Species
         fields = [
-            "id", "division", "classname", "order", "family",
+            "unique_taxon_id", "division", "classname", "order", "family",
             "scientific_name_full", "updated_at", "gallery_images"
         ]
 

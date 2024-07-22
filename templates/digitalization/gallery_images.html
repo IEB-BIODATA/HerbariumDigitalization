@@ -55,7 +55,7 @@
                                 return data;
                             } else {
                                 const urlSpecies = "{% url 'species_gallery' species_id=0 %}".replace(
-                                    "0", row["id"]
+                                    "0", row["unique_taxon_id"]
                                 );
                                 return `<a href="${urlSpecies}">${data}</a>`;
                             }
