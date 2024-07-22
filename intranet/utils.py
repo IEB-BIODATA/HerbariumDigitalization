@@ -30,15 +30,7 @@ GEOM_TYPE = {
 class CatalogQuerySet(models.QuerySet, ABC):
 
     @abstractmethod
-    def filter_query_in(self, **parameters: Dict[str, List[str]]) -> CatalogQuerySet:
-        pass
-
-    @abstractmethod
     def filter_query(self, **parameters: Dict[str, List[str]]) -> CatalogQuerySet:
-        pass
-
-    @abstractmethod
-    def filter_taxonomy_in(self, **parameters: Dict[str: List[str]]) -> CatalogQuerySet:
         pass
 
     @abstractmethod
@@ -46,11 +38,7 @@ class CatalogQuerySet(models.QuerySet, ABC):
         pass
 
     @abstractmethod
-    def filter_geometry_in(self, geometries: List[str]) -> CatalogQuerySet:
-        pass
-
-    @abstractmethod
-    def filter_geometry(self, geometry: str) -> CatalogQuerySet:
+    def filter_geometry(self, geometries: List[str]) -> CatalogQuerySet:
         pass
 
     @abstractmethod

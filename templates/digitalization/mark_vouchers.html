@@ -126,13 +126,14 @@
 
         function getVouchers(pageId, voucherState, pageName){
             $("#overlay").fadeIn(300);
+            console.debug(`Getting voucher of page ${pageId} with state ${voucherState}`);
             const voucherCard = $('#VouchersCard')
             voucherCard.hide();
             const sessionPage = "{% blocktranslate with pageId=0 %}Session {{ pageId }}{% endblocktranslate %}".replace(
                 "0", pageId
             );
             $('#pageName')[0].innerHTML = ` <b>${sessionPage}:</b> <i>${pageName}</i>`;
-            url = "{% url 'get_vouchers_to_validate' page_id=0 voucher_state=-1 %}"
+            const url = "{% url 'get_vouchers_to_validate' page_id=0 voucher_state=-1 %}"
                 .replace("0", pageId)
                 .replace("-1", voucherState);
             console.debug(`Table from ${url}`);
@@ -216,6 +217,7 @@
             const inCuratorship = "{% translate 'In Curatorship' %}";
             const digitalized = "{% translate 'Digitalized' %}";
             const pending = "{% translate 'Pending' %}";
+            const markAll = "{% translate 'Mark all as found' %}";
             $('#VouchersTable_length').append(`
             <label class="p-3">
                 ${filterState}
@@ -232,9 +234,36 @@
                     <option value="8">${pending}</option>
                 </select>
             </label>
+            <label>
+                <div class="button btn ${getStateClass(1)}" onclick="markAllAsFound(${pageId}, ${voucherState}, '${pageName}')">
+                    ${markAll}
+                </div>
+            </label>
             `);
             $(`#voucherState option[value=${voucherState}]`).attr('selected', 'selected');
             $("#overlay").fadeOut(300);
+        }
+
+        function markAllAsFound(pageId, voucherState, pageName){
+            console.debug(`Marking all voucher of page ${pageId} as found...`);
+            $("#overlay").fadeIn(300);
+            $.ajax({
+                url: '{% url "mark_all_page_as" %}',
+                type: 'POST',
+                data: {
+                    generated_page_id: pageId,
+                    voucher_state: 1,
+                },
+                success: function (response) {
+                    console.log(response);
+                },
+                error: function (error) {
+                    console.error(error);
+                }
+            }).always(function(){
+                $("#overlay").fadeOut(300);
+                getVouchers(pageId, voucherState, pageName);
+            });
         }
 
         function setState(biotadaCode, voucherState) {

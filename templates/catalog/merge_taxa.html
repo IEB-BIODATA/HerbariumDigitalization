@@ -125,19 +125,31 @@
                             <tr>
                                 <td><strong>{% translate "In Argentina" %}</strong></td>
                                 <td>
-                                    <input type="checkbox" {% if taxa_1.in_argentina %} checked {% endif %} disabled>
+                                    {% if taxa_1.in_argentina %}
+                                        <i class="fa-solid fa-square-check"></i>
+                                    {% else %}
+                                        <i class="fa-regular fa-square"></i>
+                                    {% endif %}
                                 </td>
                             </tr>
                             <tr>
                                 <td><strong>{% translate "In Bolivia" %}</strong></td>
                                 <td>
-                                    <input type="checkbox" {% if taxa_1.in_bolivia %} checked {% endif %} disabled>
+                                    {% if taxa_1.in_bolivia %}
+                                        <i class="fa-solid fa-square-check"></i>
+                                    {% else %}
+                                        <i class="fa-regular fa-square"></i>
+                                    {% endif %}
                                 </td>
                             </tr>
                             <tr>
                                 <td><strong>{% translate "In Peru" %}</strong></td>
                                 <td>
-                                    <input type="checkbox" {% if taxa_1.in_peru %} checked {% endif %} disabled>
+                                    {% if taxa_1.in_peru %}
+                                        <i class="fa-solid fa-square-check"></i>
+                                    {% else %}
+                                        <i class="fa-regular fa-square"></i>
+                                    {% endif %}
                                 </td>
                             </tr>
                             <tr>
@@ -302,19 +314,31 @@
                                 <tr>
                                     <td><strong>{% translate "In Argentina" %}</strong></td>
                                     <td>
-                                        <input type="checkbox" {% if taxa_2.in_argentina %} checked {% endif %} disabled>
+                                        {% if taxa_2.in_argentina %}
+                                            <i class="fa-solid fa-square-check"></i>
+                                        {% else %}
+                                            <i class="fa-regular fa-square"></i>
+                                        {% endif %}
                                     </td>
                                 </tr>
                                 <tr>
                                     <td><strong>{% translate "In Bolivia" %}</strong></td>
                                     <td>
-                                        <input type="checkbox" {% if taxa_2.in_bolivia %} checked {% endif %} disabled>
+                                        {% if taxa_2.in_bolivia %}
+                                            <i class="fa-solid fa-square-check"></i>
+                                        {% else %}
+                                            <i class="fa-regular fa-square"></i>
+                                        {% endif %}
                                     </td>
                                 </tr>
                                 <tr>
                                     <td><strong>{% translate "In Peru" %}</strong></td>
                                     <td>
-                                        <input type="checkbox" {% if taxa_2.in_peru %} checked {% endif %} disabled>
+                                        {% if taxa_2.in_peru %}
+                                            <i class="fa-solid fa-square-check"></i>
+                                        {% else %}
+                                            <i class="fa-regular fa-square"></i>
+                                        {% endif %}
                                     </td>
                                 </tr>
                                 <tr>

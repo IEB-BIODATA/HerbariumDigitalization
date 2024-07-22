@@ -4,19 +4,13 @@ from rest_framework.fields import ReadOnlyField, SerializerMethodField
 from rest_framework.serializers import ModelSerializer
 
 from apps.catalog.models import CommonName, PlantHabit, EnvironmentalHabit, Status, Cycle, Region, ConservationState, \
-    TaxonomicModel, Genus, Family, Order, ClassName, Division, CatalogView, Synonymy, Species, Binnacle
+    TaxonomicModel, Genus, Family, Order, ClassName, Division, CatalogView, Synonymy, Species, Binnacle, TaxonRank
 from apps.catalog.utils import get_habit, get_cycle, get_conservation_state
 
 
-class CommonSerializer(ModelSerializer):
+class AttributeSerializer(ModelSerializer):
     class Meta:
-        fields = ['id', ]
-        abstract = True
-
-
-class AttributeSerializer(CommonSerializer):
-    class Meta:
-        fields = CommonSerializer.Meta.fields + ['name']
+        fields = ['id', 'name']
         abstract = True
 
 
@@ -44,6 +38,12 @@ class CycleSerializer(AttributeSerializer):
         fields = AttributeSerializer.Meta.fields
 
 
+class TaxonRankSerializer(AttributeSerializer):
+    class Meta:
+        model = TaxonRank
+        fields = AttributeSerializer.Meta.fields
+
+
 class RegionSerializer(AttributeSerializer):
     class Meta:
         model = Region
@@ -56,21 +56,22 @@ class ConservationStateSerializer(AttributeSerializer):
         fields = AttributeSerializer.Meta.fields + ['key']
 
 
-class TaxonomicSerializer(CommonSerializer):
+class TaxonomicSerializer(ModelSerializer):
     created_by = ReadOnlyField(source='created_by.username')
 
     class Meta:
         model = TaxonomicModel
-        fields = CommonSerializer.Meta.fields + ['created_by', 'created_at', 'updated_at', ]
+        fields = ['taxon_id', 'unique_taxon_id', 'created_by', 'created_at', 'updated_at', ]
         abstract = True
 
 
-class CommonNameSerializer(TaxonomicSerializer):
+class CommonNameSerializer(AttributeSerializer):
     species = SerializerMethodField()
+    created_by = ReadOnlyField(source='created_by.username')
 
     class Meta:
         model = CommonName
-        fields = TaxonomicSerializer.Meta.fields + ['name', 'species', ]
+        fields = AttributeSerializer.Meta.fields + ['species', 'created_by', 'created_at', 'updated_at', ]
 
     def get_species(self, obj: CommonName) -> str:
         species = obj.species_set.all()
@@ -94,11 +95,11 @@ class ClassSerializer(TaxonomicSerializer):
 
 
 class OrderSerializer(TaxonomicSerializer):
-    class_name = ReadOnlyField(source='class_name.name')
+    classname = ReadOnlyField(source='classname.name')
 
     class Meta:
         model = Order
-        fields = TaxonomicSerializer.Meta.fields + ['name', 'class_name']
+        fields = TaxonomicSerializer.Meta.fields + ['name', 'classname']
 
 
 class FamilySerializer(TaxonomicSerializer):
@@ -123,7 +124,7 @@ class CatalogViewSerializer(TaxonomicSerializer):
     class Meta:
         model = CatalogView
         fields = TaxonomicSerializer.Meta.fields + [
-            'division', 'class_name', 'order', 'family',
+            'division', 'classname', 'order', 'family',
             'scientific_name_full', 'status', 'determined',
         ]
 
@@ -140,8 +141,10 @@ class SynonymsSerializer(TaxonomicSerializer):
         ]
 
     def get_species(self, obj):
-        species = obj.species_set.all()
-        return "\t".join([specie.scientific_name for specie in species])
+        if obj.species is not None:
+            return obj.species.scientific_name
+        else:
+            return ""
 
 
 class SpeciesSerializer(TaxonomicSerializer):

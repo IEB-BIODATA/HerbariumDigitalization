@@ -10,7 +10,7 @@ from django.db.models.functions import ExtractDay, ExtractMonth, ExtractYear
 from django.shortcuts import render, redirect
 from django.utils import translation
 
-from apps.digitalization.models import BiodataCode
+from apps.digitalization.models import BiodataCode, Herbarium
 from apps.home.forms import ProfileForm, UserForm
 from apps.home.models import Profile
 
@@ -33,28 +33,30 @@ def index(request):
         month=ExtractMonth('page__created_at'),
         year=ExtractYear('page__created_at'),
     ).values('day', 'month', 'year').annotate(count=Count('*')).values('day', 'month', 'year', 'count')
-    stand_by_conc = BiodataCode.objects.filter(herbarium__collection_code='CONC', voucher_state=0).count()
-    digitalized_conc = BiodataCode.objects.filter(
-        Q(voucher_state=1) | Q(voucher_state=7) | Q(voucher_state=8),
-        herbarium__collection_code='CONC'
-    ).count()
-    stand_by_uls = BiodataCode.objects.filter(herbarium__collection_code='ULS', voucher_state=0).count()
-    digitalized_uls = BiodataCode.objects.filter(
-        Q(voucher_state=1) | Q(voucher_state=7) | Q(voucher_state=8),
-        herbarium__collection_code='ULS'
-    ).count()
+    herbariums = [herbarium.collection_code for herbarium in Herbarium.objects.all()]
+    stands = []
+    digitalized = []
+    for herbarium in herbariums:
+        stands.append(BiodataCode.objects.filter(
+            herbarium__collection_code=herbarium, voucher_state=0
+        ).count())
+        digitalized.append(BiodataCode.objects.filter(
+            Q(voucher_state=1) | Q(voucher_state=7) | Q(voucher_state=8),
+            herbarium__collection_code=herbarium
+        ).count())
     max_total_codes = max([i['count'] for i in count_total_codes])
+    bar_max = max(stands + digitalized)
     return render(
         request,
         'index.html',
         {
             'count_total_codes': count_total_codes,
-            'y_max': max_total_codes + 10,
+            'y_max': int(max_total_codes * 1.05),
+            'bar_max': int(bar_max * 1.05),
             'count_scanned_codes': count_scanned_codes,
-            'stand_by_conc': stand_by_conc,
-            'digitalized_conc': digitalized_conc,
-            'stand_by_uls': stand_by_uls,
-            'digitalized_uls': digitalized_uls
+            'herbariums': herbariums,
+            'stands': stands,
+            'digitalized': digitalized,
         }
     )
 
@@ -101,8 +103,10 @@ class ProfileLanguageMiddleware:
     def __call__(self, request, *args, **kwargs):
         try:
             if request.user.is_authenticated:
-                profile = Profile.objects.get(user=request.user.pk)
-                translation.activate(profile.language)
+                profile = Profile.objects.get_or_create(user=request.user)
+                if profile[1]:
+                    profile[0].save()
+                translation.activate(profile[0].language)
             else:
                 translation.activate(settings.LANGUAGE_CODE)
                 logging.debug(f"No user, using default '{translation.get_language()}'")

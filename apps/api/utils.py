@@ -33,11 +33,14 @@ def filter_query_set(queryset: CatalogQuerySet, request: Request) -> CatalogQuer
         parameters = request.query_params.getlist(taxonomic_rank, [])
         if len(parameters) > 0:
             taxonomic_query[taxonomic_rank] = parameters.copy()
-    queryset = queryset.filter_query_in(**attribute_query).filter_taxonomy_in(**taxonomic_query)
+    if len(attribute_query) > 0 or len(taxonomic_query) > 0:
+        queryset = queryset.filter_query(**attribute_query).filter_taxonomy(**taxonomic_query)
     search = request.query_params.get("search")
     if search:
         queryset = queryset.search(search)
-    queryset = queryset.filter_geometry_in(request.query_params.getlist("geometry", []))
+    geometry_query = request.query_params.getlist("geometry", [])
+    if len(geometry_query) > 0:
+        queryset = queryset.filter_geometry(geometry_query)
     logging.debug(f"Filtering {queryset.model} took {(time() - start):.2f} seconds")
     return queryset
 
@@ -90,7 +93,7 @@ class OpenAPIDivision(OpenAPIQueryParameter):
 class OpenAPIClass(OpenAPIQueryParameter):
     def __init__(self):
         super(OpenAPIClass, self).__init__(
-            name="class_name",
+            name="classname",
             description=self.__default_description__.format("classes")
         )
         return

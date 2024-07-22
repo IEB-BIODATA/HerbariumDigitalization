@@ -1,25 +1,31 @@
+from collections import OrderedDict
+
 import logging
 import os
 from django.conf import settings
-from django.db.models import Q, ExpressionWrapper, F, FloatField, Value, Count
+from django.core.paginator import InvalidPage
+from django.db.models import Q, ExpressionWrapper, F, FloatField, Value, Count, QuerySet
 from django.db.models.functions import Length
 from django.http import HttpRequest, HttpResponse
 from django.shortcuts import redirect
 from django.utils.translation import get_language, activate
-from drf_multiple_model.pagination import MultipleModelLimitOffsetPagination
 from drf_multiple_model.views import FlatMultipleModelAPIView, ObjectMultipleModelAPIView
 from drf_spectacular.types import OpenApiTypes
 from drf_spectacular.utils import extend_schema, OpenApiParameter, OpenApiResponse
 from rest_framework import exceptions
 from rest_framework.generics import ListAPIView, RetrieveAPIView
-from rest_framework.pagination import PageNumberPagination
+from rest_framework.pagination import PageNumberPagination, LimitOffsetPagination
 from rest_framework.renderers import JSONRenderer
+from rest_framework.request import Request
 from rest_framework.response import Response
+from rest_framework.utils.urls import replace_query_param
 from rest_framework.views import APIView
+from typing import Dict, List
 from urllib.parse import urlparse, parse_qs, urlencode
 
 from apps.catalog.models import Species, Synonymy, Family, Division, ClassName, Order, Status, Genus, \
-    Region, ConservationState, PlantHabit, EnvironmentalHabit, Cycle, FinderView, CommonName, Kingdom
+    Region, ConservationState, PlantHabit, EnvironmentalHabit, Cycle, FinderView, CommonName, Kingdom, SynonymyQuerySet, \
+    SpeciesQuerySet
 from apps.digitalization.models import VoucherImported, BannerImage
 from intranet.utils import get_geometry_post
 from .serializers import SpeciesFinderSerializer, \
@@ -35,6 +41,7 @@ from .utils import filter_query_set, OpenAPIKingdom, OpenAPIClass, OpenAPIOrder,
 from ..catalog.serializers import PlantHabitSerializer, EnvHabitSerializer, StatusSerializer, CycleSerializer, \
     RegionSerializer, ConservationStateSerializer
 from ..digitalization.utils import register_temporal_geometry
+from ..home.models import Alert
 
 
 def index(request: HttpRequest) -> HttpResponse:
@@ -43,10 +50,6 @@ def index(request: HttpRequest) -> HttpResponse:
         ": " + settings.SPECTACULAR_SETTINGS["VERSION"] +
         "<br>" + settings.SPECTACULAR_SETTINGS["DESCRIPTION"]
     )
-
-
-class LimitPagination(MultipleModelLimitOffsetPagination):
-    default_limit = 10
 
 
 class InfoApi(APIView):
@@ -63,6 +66,9 @@ class InfoApi(APIView):
         }
     )
     def get(self, request, format=None):
+        default_language = get_language()
+        lang = request.query_params.get("lang", default_language)
+        activate(lang)
         images_count = VoucherImported.objects.all().exclude(
             Q(image_public_resized_10__exact='') |
             Q(image_public_resized_10__isnull=True)
@@ -76,17 +82,117 @@ class InfoApi(APIView):
         content = {
             'images': images_count,
             'species': species_count,
+            'alerts': [
+                {
+                    "message": alert.message,
+                    "created_at": alert.created_at
+                } for alert in Alert.objects.filter(active=True)
+            ]
         }
         return Response(content)
 
 
 class CustomPagination(PageNumberPagination):
     def paginate_queryset(self, queryset, request, view=None):
-        paginated = request.query_params.get('paginated', 'true')
-        if paginated.lower() == 'false':
+        if request.query_params.get('paginated', 'true').lower() == 'false':
             return None
         else:
             return super().paginate_queryset(queryset, request, view)
+
+
+class FlatMultipleModelCustomPagination(LimitOffsetPagination):
+    """
+    Subclass of Pagination to be used with FlatMultipleModelAPIView as Page Paginator.
+    """
+    default_limit = settings.REST_FRAMEWORK.get('PAGE_SIZE', 20)
+    overall_total = 0
+
+    def paginate_queryset(self, queryset: QuerySet, request: Request, view=None) -> List | None:
+        """
+        Paginate queryset as PageNumberPagination does, but compatible with FlatMultipleModelAPIView.
+
+        Parameters
+        ----------
+        queryset : QuerySet
+            Result of the query to be paginated.
+        request : Request
+            Django Rest Framework request.
+        view : APIView
+            Optional view object.
+
+        Returns
+        -------
+        List
+            A list of the result within the page.
+        """
+        if request.query_params.get('paginated', 'true').lower() == 'false':
+            return None
+        else:
+            ordered_result = sorted(getattr(request, 'ordered_result', list()), key=lambda x: x[0])
+            page_number = int(request.query_params.get("page", 1))
+            current = ordered_result[(page_number - 1) * self.default_limit:page_number * self.default_limit]
+            current_species = list(filter(lambda x: x[2] == "species", current))
+            species = len(current_species)
+            current_synonyms = list(filter(lambda x: x[2] == "synonymy", current))
+            synonyms = len(current_synonyms)
+            if isinstance(queryset, SpeciesQuerySet):
+                def get_limit(*args, **kwargs):
+                    return species
+                def get_offset(*args, **kwargs):
+                    try:
+                        return current_species[0][1]
+                    except IndexError:
+                        return 0
+            elif isinstance(queryset, SynonymyQuerySet):
+                def get_limit(*args, **kwargs):
+                    return synonyms
+                def get_offset(*args, **kwargs):
+                    try:
+                        return current_synonyms[0][1]
+                    except IndexError:
+                        return 0
+            else:
+                raise RuntimeError("Unknown queryset type")
+            self.get_limit = get_limit
+            self.get_offset = get_offset
+            logging.debug(f"Paginating {type(queryset)} with limit: {self.get_limit()} / offset: {self.get_offset()}")
+            try:
+                result = super().paginate_queryset(queryset, request, view)
+            except InvalidPage:
+                result = None
+            self.overall_total += self.count
+            return result
+
+    def format_response(self, data: Dict) -> Dict:
+        """
+        Format response to include the total number of results.
+        """
+        return OrderedDict([
+            ('overall_total', self.overall_total),
+            ('next', self.get_next_link()),
+            ('previous', self.get_previous_link()),
+            ('results', data)
+        ])
+
+    def get_next_link(self) -> str | None:
+        """
+        Get the next link for the pagination.
+        """
+        if self.offset + self.limit >= self.count:
+            return None
+        url = self.request.build_absolute_uri()
+        page_number = int(self.request.query_params.get("page", 1))
+        return replace_query_param(url, "page", page_number + 1)
+
+    def get_previous_link(self) -> str | None:
+        """
+        Get the previous link for the pagination.
+        """
+        if self.offset <= 0:
+            return None
+        url = self.request.build_absolute_uri()
+        page_number = int(self.request.query_params.get("page", 1))
+        return replace_query_param(url, "page", page_number - 1)
 
 
 class BadRequestError(exceptions.APIException):
@@ -223,7 +329,7 @@ class MenuApiView(ObjectMultipleModelAPIView):
                 "serializer_class": DivisionSerializer
             },
             {
-                "label": "class_name",
+                "label": "classname",
                 "queryset": ClassName.objects.all(),
                 "serializer_class": ClassSerializer
             },
@@ -312,7 +418,7 @@ class NameApiView(ObjectMultipleModelAPIView):
                 "queryset": Division.objects.all(),
             },
             {
-                "label": "class_name",
+                "label": "classname",
                 "queryset": ClassName.objects.all(),
             },
             {
@@ -357,7 +463,7 @@ class NameApiView(ObjectMultipleModelAPIView):
             label = a_model["label"]
             asking_for = self.request.query_params.getlist(label)
             if len(asking_for) > 0:
-                a_queryset = a_model["queryset"].filter(id__in=self.request.query_params.getlist(label))
+                a_queryset = a_model["queryset"].filter(unique_taxon_id__in=self.request.query_params.getlist(label))
                 if a_queryset.count() > 0:
                     logging.info(label)
                     logging.debug(a_queryset)
@@ -467,15 +573,17 @@ class SpeciesListApiView(FlatMultipleModelAPIView, POSTRedirect):
     and filter given on the query parameters
     """
     serializer_class = SpeciesFinderSerializer
-    sorting_fields = ['name']
-    pagination_class = LimitPagination
+    pagination_class = FlatMultipleModelCustomPagination
+    sorting_fields = ["scientific_name"]
 
-    def __init__(self, **kwargs):
+    def __init__(self, **kwargs) -> None:
         super().__init__(**kwargs)
         self.species_count = 0
         self.synonyms_count = 0
+        self.ordered_result = list()
+        return
 
-    def get_querylist(self):
+    def get_querylist(self) -> List[Dict]:
         species_filter = self.request.query_params.get("species_filter", "false").lower() == "true"
         synonyms_filter = self.request.query_params.get("synonyms_filter", "false").lower() == "true"
         image_filter = self.request.query_params.get("image_filter", "false").lower() == "true"
@@ -488,43 +596,54 @@ class SpeciesListApiView(FlatMultipleModelAPIView, POSTRedirect):
         results = list()
         if species_filter:
             logging.info(f"Getting species: {self.request.get_full_path()}")
-            queryset = filter_query_set(Species.objects.all(), self.request)
+            species_queryset = filter_query_set(Species.objects.all(), self.request)
             if image_filter:
-                queryset = queryset.annotate(
+                species_queryset = species_queryset.annotate(
                     vouchers_count=Count('voucherimported')
                 ).exclude(
                     Q(vouchers_count__isnull=True) |
                     Q(vouchers_count=0) |
                     Q(voucherimported__image_public_resized_10__exact='')
                 )
-            queryset = queryset.filter(
+            species_queryset = species_queryset.filter(
                 filter_by_geo(self.request, "voucherimported__point__within")
             ).distinct()
-            self.species_count = queryset.count()
+            self.species_count = species_queryset.count()
             results.append({
                 "label": "species",
-                "queryset": queryset,
+                "queryset": species_queryset,
                 "serializer_class": SpeciesFinderSerializer
             })
+            self.ordered_result.extend(
+                [(species.scientific_name, i, "species") for i, species in enumerate(species_queryset)]
+            )
+            logging.debug("Species count: {}".format(self.species_count))
         if synonyms_filter:
             logging.info(f"Getting synonyms: {self.request.get_full_path()}")
-            queryset = filter_query_set(Synonymy.objects.all(), self.request)
-            queryset = queryset.filter(
+            synonyms_queryset = filter_query_set(Synonymy.objects.all(), self.request)
+            synonyms_queryset = synonyms_queryset.filter(
                 filter_by_geo(self.request, "species__voucherimported__point__within")
             ).distinct()
-            self.synonyms_count = queryset.count()
+            self.synonyms_count = synonyms_queryset.count()
             results.append({
                 "label": "synonymy",
-                "queryset": queryset,
+                "queryset": synonyms_queryset,
                 "serializer_class": SynonymyFinderSerializer
             })
+            self.ordered_result.extend(
+                [(synonymous.scientific_name, i, "synonymy") for i, synonymous in enumerate(synonyms_queryset)]
+            )
+            logging.debug("Synonyms count: {}".format(self.synonyms_count))
+        self.ordered_result = sorted(self.ordered_result, key=lambda x: x[0])
         return results
 
     def list(self, request, *args, **kwargs):
+        request.ordered_result = self.ordered_result
         response = super().list(request, *args, **kwargs)
-        # Modify the response data
-        response.data['species_count'] = self.species_count
-        response.data['synonyms_count'] = self.synonyms_count
+        if self.is_paginated:
+            # Modify the response data
+            response.data['species_count'] = self.species_count
+            response.data['synonyms_count'] = self.synonyms_count
         return response
 
     @extend_schema(parameters=[
@@ -539,7 +658,8 @@ class SpeciesListApiView(FlatMultipleModelAPIView, POSTRedirect):
         return super(SpeciesListApiView, self).get(request, *args, **kwargs)
 
 
-class ScientificNameDetails(RetrieveAPIView):
+class RetrieveLangApiView(RetrieveAPIView):
+
     @extend_schema(parameters=[
         OpenAPILang(),
     ])
@@ -547,7 +667,11 @@ class ScientificNameDetails(RetrieveAPIView):
         default_language = get_language()
         lang = request.query_params.get("lang", default_language)
         activate(lang)
-        return super(ScientificNameDetails, self).get(request, *args, **kwargs)
+        return super(RetrieveLangApiView, self).get(request, *args, **kwargs)
+
+
+class ScientificNameDetails(RetrieveLangApiView):
+    lookup_field = "unique_taxon_id"
 
 
 class SpeciesDetails(ScientificNameDetails):
@@ -575,7 +699,7 @@ class DistributionList(ListAPIView):
         species_id = self.kwargs["species_id"]
         queryset = super().get_queryset()
         if species_id:
-            queryset = queryset.filter(scientific_name=species_id)
+            queryset = queryset.filter(scientific_name=Species.objects.get(unique_taxon_id=species_id))
         return queryset.order_by("id")
 
     @extend_schema(parameters=[
@@ -650,7 +774,7 @@ class SpecimensList(QueryList, POSTRedirect):
         return super().get(request, *args, **kwargs)
 
 
-class SpecimenDetails(ScientificNameDetails):
+class SpecimenDetails(RetrieveLangApiView):
     """
     Gets the information of a particular specimen
     """

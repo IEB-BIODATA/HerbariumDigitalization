@@ -7,7 +7,7 @@ from typing import Union, List, Dict
 
 from apps.catalog.models import Species, Family, Genus, Synonymy, Division, ClassName, Order, CommonName, \
     TaxonomicModel, FinderView, ScientificName, Region, Kingdom
-from apps.catalog.serializers import CommonSerializer, RegionSerializer
+from apps.catalog.serializers import RegionSerializer, StatusSerializer
 from apps.catalog.utils import get_habit, get_conservation_state
 from apps.digitalization.models import VoucherImported, GalleryImage, Licence
 
@@ -23,17 +23,17 @@ class RegionDetailsSerializer(RegionSerializer):
         fields = RegionSerializer.Meta.fields + ['geometry']
 
 
-class TaxonomicApiSerializer(CommonSerializer):
+class TaxonomicApiSerializer(ModelSerializer):
     class Meta:
         model = TaxonomicModel
-        fields = CommonSerializer.Meta.fields + ['name']
+        fields = ['taxon_id', 'unique_taxon_id', 'name']
         abstract = True
 
 
-class CommonNameSerializer(TaxonomicApiSerializer):
+class CommonNameSerializer(ModelSerializer):
     class Meta:
         model = CommonName
-        fields = TaxonomicApiSerializer.Meta.fields
+        fields = ['id', 'name']
         read_only_fields = fields
 
 
@@ -87,6 +87,7 @@ class FinderSerializer(ModelSerializer):
 
 class ScientificNameSerializer(TaxonomicApiSerializer):
     name = CharField(source="scientific_name", read_only=True)
+    taxon_rank = CharField(source="taxon_rank.name", read_only=True)
 
     class Meta:
         model = ScientificName
@@ -96,6 +97,7 @@ class ScientificNameSerializer(TaxonomicApiSerializer):
             'subspecies', 'ssp_authorship',
             'variety', 'variety_authorship',
             'form', 'form_authorship',
+            'taxon_rank'
         ]
         abstract = True
 
@@ -103,17 +105,19 @@ class ScientificNameSerializer(TaxonomicApiSerializer):
 class SpeciesSerializer(ScientificNameSerializer):
     kingdom = ReadOnlyField(source='kingdom.name')
     division = DivisionSerializer()
-    class_name = ClassSerializer()
+    classname = ClassSerializer()
     genus = GenusSerializer()
     family = FamilySerializer()
     order = OrderSerializer()
     habit = SerializerMethodField()
+    status = StatusSerializer()
 
     class Meta:
         model = Species
         fields = ScientificNameSerializer.Meta.fields + [
-            'kingdom', 'division', 'class_name',
+            'kingdom', 'division', 'classname',
             'family', 'order', 'habit', 'determined',
+            'status',
         ]
 
     def get_habit(self, obj: Species) -> str:
@@ -168,7 +172,7 @@ class SpeciesFinderSerializer(SpeciesSerializer):
 
 
 class SynonymyFinderSerializer(ScientificNameSerializer):
-    species = SerializerMethodField()
+    species = SpeciesSerializer()
     genus_name = CharField(source="genus")
 
     class Meta:
@@ -176,12 +180,6 @@ class SynonymyFinderSerializer(ScientificNameSerializer):
         fields = ScientificNameSerializer.Meta.fields + [
             'species', 'genus_name',
         ]
-
-    def get_species(self, obj: Synonymy) -> SpeciesSerializer:
-        return SpeciesSerializer(
-            instance=obj.species_set.all(),
-            many=True, context=self.context
-        ).data
 
 
 class LicenceSerializer(HyperlinkedModelSerializer):
@@ -258,19 +256,13 @@ class SpeciesDetailsSerializer(SpeciesSerializer):
 
 
 class SynonymyDetailsSerializer(SynonymyFinderSerializer):
+    species = SpeciesDetailsSerializer()
 
     class Meta:
         model = Synonymy
         fields = SynonymyFinderSerializer.Meta.fields + [
             'scientific_name_full'
         ]
-
-    def get_species(self, obj: Synonymy) -> SpeciesDetailsSerializer:
-        return SpeciesDetailsSerializer(
-            instance=obj.species_set.all(),
-            many=True,
-            context=self.context
-        ).data
 
 
 class DistributionSerializer(SampleSerializer):

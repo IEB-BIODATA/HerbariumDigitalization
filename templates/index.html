@@ -9,8 +9,8 @@
         Chart.defaults.defaultFontColor = '#292b2c';
 
         // Area Chart Example
-        const ctx = document.getElementById("generated_qr");
-        const myLineChart = new Chart(ctx, {
+        let ctx = document.getElementById("generated_qr");
+        let myLineChart = new Chart(ctx, {
             type: 'line',
             data: {
                 labels: [
@@ -101,24 +101,55 @@
             }
         });
 
-        const ctx2 = document.getElementById("total_generated_qr");
-        const myBarChart = new Chart(ctx2, {
+        let ctx2 = document.getElementById("total_generated_qr");
+        let myBarChart = new Chart(ctx2, {
             type: 'bar',
             data: {
-                labels: ["CONC", "ULS"],
+                labels: [{% for herbarium in herbariums %}"{{ herbarium }}", {% endfor %}],
                 datasets: [
                     {
                         label: "{% translate 'Pending Specimens' %}",
                         backgroundColor: "#007bff",
-                        data: [{{ stand_by_conc }}, {{ stand_by_uls }}]
+                        data: [{% for herbarium in stands %}{{ herbarium }}, {% endfor %}],
                     }, {
                         label: "{% translate 'Scanned Specimens' %}",
                         backgroundColor: "#28a745",
-                        data: [{{ digitalized_conc }}, {{ digitalized_uls }}]
+                        data: [{% for herbarium in digitalized %}{{ herbarium }}, {% endfor %}]
                     }
                 ]
             },
             options: {
+                scales: {
+                    y: {
+                        min: 0,
+                        max: {{ bar_max }},
+                        ticks: {
+                            maxTicksLimit: 5,
+                        },
+                        grid: {
+                            color: "rgba(0, 0, 0, .125)",
+                        }
+                    },
+                },
+                animation: {
+                    duration: 1,
+                    onComplete: function (animation) {
+                        let chartInstance = animation.chart;
+                        let ctx = chartInstance.ctx;
+                        ctx.textAlign = 'center';
+                        ctx.textBaseline = 'bottom';
+                        ctx.font = ctx.font.replace("12", "14");
+
+                        chartInstance.data.datasets.forEach(function (dataset, i) {
+                            let meta = chartInstance.getDatasetMeta(i);
+                            meta.data.forEach(function (bar, index) {
+                                let data = dataset.data[index];
+                                ctx.fillStyle = darkenColor(bar.options.backgroundColor, 60);
+                                ctx.fillText(data, bar.x, bar.y - 5);
+                            });
+                        });
+                    }
+                },
                 plugins: {
                     title: {
                         display: true,

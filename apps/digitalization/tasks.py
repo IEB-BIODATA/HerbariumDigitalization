@@ -9,6 +9,7 @@ import os
 import pytesseract
 import shutil
 import textwrap
+from django.contrib.auth.models import User
 from django.core.files.base import ContentFile
 from io import BytesIO
 from typing import List, Tuple, Type, Dict
@@ -26,7 +27,7 @@ from django.contrib.postgres.search import TrigramSimilarity
 from django.db import transaction
 from django.db.models import Model
 
-from apps.digitalization.models import DCW_SQL
+from apps.digitalization.models import DCW_SQL, PostprocessingLog
 from apps.digitalization.models import GalleryImage, BannerImage
 from apps.digitalization.models import VoucherImported, BiodataCode, ColorProfileFile, PriorityVouchersFile
 from apps.digitalization.storage_backends import PrivateMediaStorage, PublicMediaStorage
@@ -170,13 +171,18 @@ def scheduled_postprocess(input_folder: str, temp_folder: str, log_folder: str):
         return [files[i:i + x] for i in range(0, len(files), x)]
 
     s3 = boto3.client('s3')
+    os.makedirs(temp_folder, exist_ok=True)
     os.makedirs(log_folder, exist_ok=True)
+    log_object = PostprocessingLog(
+        date=dt.datetime.now(),
+        created_by=User.objects.get(pk=1),
+        scheduled=True,
+    )
     process_logger = TaskProcessLogger("Scheduled PostProcessing", log_folder)
     sessions = get_pending_sessions(s3, input_folder, process_logger)
     process_logger.debug(sessions)
     logging.info("Enter in sessions")
     os.makedirs(input_folder, exist_ok=True)
-    os.makedirs(temp_folder, exist_ok=True)
     for session_folder in sessions:
         try:
             process_logger.debug(session_folder)
@@ -191,6 +197,7 @@ def scheduled_postprocess(input_folder: str, temp_folder: str, log_folder: str):
                 cr3_to_dng(input_folder, temp_folder, process_logger)
                 dng_to_jpeg(temp_folder, temp_folder, session_folder.get_institution(), process_logger, log_cache)
                 for filename in glob.glob(temp_folder + '/*.jpg', recursive=False):
+                    log_object.found_images += 1
                     logging.info("Reading QR...")
                     qr = read_qr(filename,
                                  WIDTH_CROP, HEIGHT_CROP,
@@ -234,6 +241,7 @@ def scheduled_postprocess(input_folder: str, temp_folder: str, log_folder: str):
                                         biodata_code.id
                                     )
                                 )
+                        log_object.processed_images += 1
                     else:
                         process_logger.error("QR not found for file {}".format(filename))
                 empty_folder(input_folder)
@@ -242,10 +250,23 @@ def scheduled_postprocess(input_folder: str, temp_folder: str, log_folder: str):
         except Exception as e:
             process_logger.error(e, exc_info=True)
     s3.close()
-    shutil.rmtree(input_folder)
-    shutil.rmtree(temp_folder)
-    process_logger.close()
-    return "Processed"
+    try:
+        shutil.rmtree(input_folder)
+        shutil.rmtree(temp_folder)
+        process_logger.close()
+        log_object.failed_images = log_object.found_images - log_object.processed_images
+        with open(process_logger.file_path, "rb") as log_file:
+            log_object.file.save(
+                f"scheduled/{log_object.date.strftime('%Y-%m-%d')}.log",
+                ContentFile(log_file.read()),
+                save=True
+            )
+        log_object.save()
+        shutil.rmtree(log_folder)
+        return "Processed"
+    except Exception as e:
+        logging.error(e, exc_info=True)
+        return str(e)
 
 
 def get_pending_sessions(s3: boto3.client, input_folder: str, logger: logging.Logger) -> List[SessionFolder]:
@@ -306,9 +327,6 @@ def clean_storage(log_folder: str):
                         (GalleryImage, "image", "", ".jpg"),
                         (GalleryImage, "thumbnail", "_thumbnail", ".jpg"),
                         (BannerImage, "banner", "", ".png"),
-                        (ColorProfileFile, "file", "", ".dcp"),
-                        (PriorityVouchersFile, "file", "", ".xls"),
-                        (PriorityVouchersFile, "file", "", ".xlsx"),
                         (VoucherImported, "image_public_resized_10", "_public_resized_10", ".jpg"),
                         (VoucherImported, "image_public_resized_60", "_public_resized_60", ".jpg"),
                         (VoucherImported, "image_public", "_public", ".jpg"),
@@ -332,6 +350,10 @@ def clean_storage(log_folder: str):
                     file_name = obj['Key'].replace(private_location + "/", "")
                     found = False
                     for model, field, contains, extension in [
+                        (ColorProfileFile, "file", "", ".dcp"),
+                        (PriorityVouchersFile, "file", "", ".xls"),
+                        (PriorityVouchersFile, "file", "", ".xlsx"),
+                        (PostprocessingLog, "file", "", ".log"),
                         (VoucherImported, "image_raw", "", ".CR3"),
                         (VoucherImported, "image_resized_10", "_resized_10", ".jpg"),
                         (VoucherImported, "image_resized_60", "_resized_60", ".jpg"),
@@ -370,7 +392,8 @@ def check_on_model(
         logger: logging.Logger
 ) -> bool:
     prefix = model._meta.get_field(field).upload_to
-    prefix = prefix + "/" if prefix != "" else ""
+    if prefix != "":
+        prefix = prefix if prefix.endswith("/") else prefix + "/"
     if file_name.startswith(prefix) and contains in file_name and file_name.endswith(extension):
         if model.objects.filter(**{field: file_name}).exists():
             return True
@@ -391,12 +414,18 @@ def show_storage(storage: int):
 
 
 @shared_task(name='process_pending_vouchers', bind=True)
-def process_pending_vouchers(self, pending_vouchers: List[str]):
+def process_pending_vouchers(self, pending_vouchers: List[str], user: int) -> str:
     html_logger = HtmlLogger("Pending Logger")
     temp_folder = self.request.id
     logging.info("Pending vouchers: {}".format(", ".join(pending_vouchers)))
     total = len(pending_vouchers)
     os.makedirs(temp_folder, exist_ok=True)
+    log_object = PostprocessingLog(
+        date=dt.datetime.now(),
+        found_images=total,
+        created_by=User.objects.get(pk=user),
+        scheduled=False
+    )
     process_logger = TaskProcessLogger("Pending Logger", temp_folder)
     logger = GroupLogger("Pending Logger", html_logger, process_logger)
     for i, voucher in enumerate(pending_vouchers):
@@ -433,8 +462,10 @@ def process_pending_vouchers(self, pending_vouchers: List[str]):
                     "step": i, "total": total, "logs": logger[0].get_logs()
                 })
                 etiquette_picture(int(voucher), logger=logger)
+            log_object.processed_images += 1
         except Exception as e:
             logger.error(e, exc_info=True)
+            log_object.failed_images += 1
         finally:
             self.update_state(
                 state='PROGRESS',
@@ -448,9 +479,21 @@ def process_pending_vouchers(self, pending_vouchers: List[str]):
             for tmp_file in os.listdir(temp_folder):
                 if os.path.splitext(tmp_file)[1] in [".jpg", ".CR3", ".dng"]:
                     os.remove(os.path.join(temp_folder, tmp_file))
-    close_process(logger, temp_folder + ".log", self, {"step": total, "total": total, })
-    shutil.rmtree(temp_folder)
-    return "Processed"
+    try:
+        logger[1].close()
+        with open(logger[1].file_path, "rb") as log_file:
+            log_object.file.save(
+                f"manually/{self.request.id}.log",
+                ContentFile(log_file.read()),
+                save=True
+            )
+        log_object.save()
+        close_process(logger[0], self, {"step": total, "total": total, })
+        shutil.rmtree(temp_folder)
+        return "Processed"
+    except Exception as e:
+        logging.error(e, exc_info=True)
+        return str(e)
 
 
 @shared_task(name="upload_priority_vouchers", bind=True)
@@ -476,6 +519,7 @@ def upload_priority_vouchers(self, priority_voucher: int):
     on_database = False
     missing_species = False
     code_error = False
+    voucher_assertion = False
     try:
         data = pd.read_excel(priorities.file, header=0)
         data.rename(columns=DCW_SQL, inplace=True)
@@ -483,6 +527,7 @@ def upload_priority_vouchers(self, priority_voucher: int):
         database_errors = list()
         species_errors = list()
         errors = list()
+        voucher_errors = list()
         logger.info("Checking duplications in file")
         duplicated = data[data.duplicated(["catalog_number"], keep=False)]
         logger.debug(f"Found {len(duplicated)} row duplicated")
@@ -529,9 +574,15 @@ def upload_priority_vouchers(self, priority_voucher: int):
                         species_errors.append(info)
                         missing_species = True
                         continue
-                    voucher_imported = VoucherImported.from_pandas_row(
-                        row, priorities, species=species, biodata_code=biodata_code, logger=logger
-                    )
+                    try:
+                        voucher_imported = VoucherImported.from_pandas_row(
+                            row, priorities, species=species, biodata_code=biodata_code, logger=logger
+                        )
+                    except AssertionError as e:
+                        voucher_assertion = True
+                        row["assertion"] = str(e)
+                        voucher_errors.append(row)
+                        continue
                     voucher_imported.save()
                 except Exception as e:
                     logger.error(e, exc_info=True)
@@ -558,7 +609,13 @@ def upload_priority_vouchers(self, priority_voucher: int):
                 error["type"] = "code"
                 error["data"] = pd.DataFrame(errors).rename(columns=sql_dcw).to_json()
                 raise RuntimeError("Error during import data on server, check logs for details")
-        close_process(logger, temp_folder + ".log", self, {"step": total, "total": total, })
+            if voucher_assertion:
+                error["type"] = "voucher assertion"
+                error["data"] = pd.DataFrame(voucher_errors).rename(columns=sql_dcw).to_json()
+                raise AssertionError("Voucher assertion failed")
+        logger[1].close()
+        logger[1].save_file(PrivateMediaStorage(), temp_folder + ".log")
+        close_process(logger[0], self, {"step": total, "total": total, })
         shutil.rmtree(temp_folder)
         return "Processed"
     except Exception as e:
@@ -571,7 +628,9 @@ def upload_priority_vouchers(self, priority_voucher: int):
         except Exception as e:
             logger.error(e, exc_info=True)
             logger.info("Error deleting file!")
-        close_process(logger, temp_folder + ".log", self, {"step": total, "total": total, }, error=error)
+        logger[1].close()
+        logger[1].save_file(PrivateMediaStorage(), temp_folder + ".log")
+        close_process(logger[0], self, {"step": total, "total": total, }, error=error)
         shutil.rmtree(temp_folder)
         raise Ignore()
 
@@ -622,10 +681,8 @@ def get_species(data_candid: pd.Series, logger: logging.Logger) -> Tuple[Species
     return species, info
 
 
-def close_process(logger: GroupLogger, log_filename: str, task: Task, meta: Dict, error: Dict = None) -> None:
-    logger[1].close()
-    logger[1].save_file(PrivateMediaStorage(), log_filename)
-    meta["logs"] = logger[0].get_logs()
+def close_process(logger: HtmlLogger, task: Task, meta: Dict, error: Dict = None) -> None:
+    meta["logs"] = logger.get_logs()
     if error is None:
         task.update_state(
             state='SUCCESS',

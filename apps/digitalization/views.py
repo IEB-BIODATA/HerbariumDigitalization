@@ -31,9 +31,9 @@ from intranet.utils import paginated_table
 from .forms import LoadColorProfileForm, VoucherImportedForm, GalleryImageForm, LicenceForm, PriorityVoucherForm, \
     GeneratedPageForm
 from .models import BiodataCode, GeneratedPage, VoucherImported, PriorityVouchersFile, VouchersView, \
-    GalleryImage, BannerImage, VOUCHER_STATE
+    GalleryImage, BannerImage, VOUCHER_STATE, PostprocessingLog
 from .serializers import PriorityVouchersSerializer, GeneratedPageSerializer, VoucherSerializer, \
-    SpeciesGallerySerializer, GallerySerializer
+    SpeciesGallerySerializer, GallerySerializer, PostprocessingLogSerializer
 from .storage_backends import PrivateMediaStorage
 from .tasks import process_pending_vouchers, upload_priority_vouchers, etiquette_picture, get_taken_by
 from .utils import render_to_pdf
@@ -136,9 +136,12 @@ def xls_error_data(request):
         'verbatimElevation', 'decimalLatitude', 'decimalLongitude',
         'georeferencedDate', 'scientificName',
     ]
-    if "similarity[0]" in data_errors.keys():
+    if any("similarity" in item for item in data_errors.keys()):
         columns = 14
         headers += ['similarity', 'scientificNameSimilarity', 'synonymySimilarity', ]
+    elif any("assertion" in item for item in data_errors.keys()):
+        columns = 12
+        headers += ['assertion', ]
     registers = int(len(data_errors) / columns)
     for idx, value in enumerate(data_errors):
         if idx >= registers:
@@ -159,11 +162,15 @@ def xls_error_data(request):
             data_errors['georeferencedDate[' + str(i) + ']'],
             data_errors['scientificName[' + str(i) + ']'],
         ]
-        if "similarity[0]" in data_errors.keys():
+        if any("similarity" in item for item in data_errors.keys()):
             datum += [
                 data_errors['similarity[' + str(i) + ']'],
                 data_errors['scientificNameSimilarity[' + str(i) + ']'],
                 data_errors['synonymySimilarity[' + str(i) + ']']
+            ]
+        elif any("assertion" in item for item in data_errors.keys()):
+            datum += [
+                data_errors['assertion[' + str(i) + ']'],
             ]
         data.append(datum)
     data = tablib.Dataset(*data, headers=headers)
@@ -402,7 +409,9 @@ def mark_vouchers(request):
 @login_required
 @require_GET
 def control_vouchers(request):
-    voucher_state = int(request.GET.get('voucher_state', 2))
+    voucher_state = request.GET.get('voucher_state', None)
+    if voucher_state:
+        voucher_state = int(voucher_state)
     state_name = "All"
     for voucher, name in VOUCHER_STATE:
         if voucher == voucher_state:
@@ -416,13 +425,13 @@ def control_vouchers(request):
 
 @login_required
 @require_GET
-def vouchers_table(request, voucher_state: str):
-    voucher_state = int(voucher_state)
+def vouchers_table(request):
+    voucher_state = request.GET.get("voucher_state", None)
     voucher_filter = (
-            Q(herbarium__herbariummember__user=request.user) &
-            Q(biodata_code__qr_generated=True)
+            Q(herbarium__herbariummember__user=request.user)
     )
-    if voucher_state != -1:
+    if voucher_state:
+        voucher_state = int(voucher_state)
         voucher_filter = voucher_filter & Q(biodata_code__voucher_state=voucher_state)
     entries = VoucherImported.objects.filter(voucher_filter).order_by(
         'scientific_name__scientific_name', 'catalog_number',
@@ -547,6 +556,40 @@ def set_state(request):
 
 
 @login_required
+@csrf_exempt
+@require_POST
+def mark_all_page_as(request):
+    if 'voucher_state' not in request.POST or 'generated_page_id' not in request.POST:
+        return HttpResponseBadRequest()
+    voucher_state = int(request.POST['voucher_state'])
+    generated_page = GeneratedPage.objects.get(pk=request.POST['generated_page_id'])
+    biodata_codes = BiodataCode.objects.filter(page=generated_page)
+    display = -1
+    for state, display in VOUCHER_STATE:
+        if state == voucher_state:
+            logging.debug(f"Setting {biodata_codes.count()} (Page {generated_page.pk}) to {display} ({voucher_state})")
+            break
+    if voucher_state in [7, 8]:
+        logging.warning(f"'{display}' ({voucher_state}) is used just by system")
+        return HttpResponseForbidden()
+    data = dict()
+    for bc in biodata_codes:
+        try:
+            bc.voucher_state = voucher_state
+            data[bc.pk] = {'result': 'OK'}
+            if voucher_state == 0:
+                bc.qr_generated = False
+            else:
+                bc.qr_generated = True
+            bc.save()
+        except Exception as e:
+            data[bc.pk] = {'result': 'Error', 'detail': str(e)}
+            logging.error(f"Error setting voucher state on {bc.pk}")
+            logging.error(e, exc_info=True)
+    return HttpResponse(json.dumps(data), content_type="application/json")
+
+
+@login_required
 @require_POST
 @csrf_exempt
 def terminate_session(request):
@@ -621,7 +664,7 @@ def gallery_table(request):
     if search_value:
         search_query = (
                 Q(division__name__icontains=search_value) |
-                Q(class_name__name__icontains=search_value) |
+                Q(classname__name__icontains=search_value) |
                 Q(order__name__icontains=search_value) |
                 Q(family__name__icontains=search_value) |
                 Q(scientific_name_full__icontains=search_value) |
@@ -630,7 +673,7 @@ def gallery_table(request):
 
     sort_by_func = {
         0: "division__name",
-        1: "class_name__name",
+        1: "classname__name",
         2: "order__name",
         3: "family__name",
         4: "scientific_name_full",
@@ -650,7 +693,7 @@ def gallery_table(request):
 
 @login_required
 def species_gallery(request, species_id: int):
-    species = Species.objects.get(pk=species_id)
+    species = Species.objects.get(unique_taxon_id=species_id)
     gallery = GalleryImage.objects.filter(scientific_name=species)
     return render(request, 'digitalization/species_gallery.html', {
         'species': species,
@@ -809,7 +852,10 @@ def get_pending_vouchers(request):
 @require_POST
 @login_required
 def process_pending_images(request):
-    task_id = process_pending_vouchers.delay(request.POST.getlist('pendingImages[]'))
+    task_id = process_pending_vouchers.delay(
+        request.POST.getlist('pendingImages[]'),
+        request.user.id
+    )
     return HttpResponse(task_id)
 
 
@@ -864,16 +910,16 @@ def download_catalog(request):
     if request.method == 'GET':
         logging.info("Generating catalog excel...")
         headers = [
-            'id', 'id taxa',
+            'unique_taxon_id', 'id taxa',
             'Family', 'Genus', 'Species',
             'Scientific Name', 'Scientific Name Full',
             'Scientific Name DB', 'Determined'
         ]
         species = Species.objects.values_list(
-            'id', 'id_taxa', 'genus__family__name', 'genus__name',
+            'unique_taxon_id', 'id_taxa', 'genus__family__name', 'genus__name',
             'specific_epithet', 'scientific_name',
             'scientific_name_full', 'scientific_name_db', 'determined'
-        ).order_by('id')
+        ).order_by('unique_taxon_id')
         databook = tablib.Databook()
         data_set = tablib.Dataset(*species, headers=headers, title='Catalog')
         databook.add_sheet(data_set)
@@ -890,7 +936,10 @@ def update_voucher(request, voucher_id):
         form = VoucherImportedForm(request.POST, instance=voucher)
         if form.is_valid():
             voucher = form.save()
-            if not numpy.isnan(voucher.decimal_latitude) and not numpy.isnan(voucher.decimal_longitude):
+            if (
+                    (voucher.decimal_latitude is not None and not numpy.isnan(voucher.decimal_latitude)) and
+                    (voucher.decimal_longitude is not None and not numpy.isnan(voucher.decimal_longitude))
+            ):
                 voucher.point = GEOSGeometry(
                     'POINT(' + str(voucher.decimal_longitude) + ' ' + str(voucher.decimal_latitude) + ')', srid=4326)
                 decimal_latitude_public = VoucherImported.public_point(voucher.decimal_latitude)
@@ -899,11 +948,41 @@ def update_voucher(request, voucher_id):
                 voucher.decimal_longitude_public = decimal_longitude_public
                 voucher.point_public = GEOSGeometry(
                     'POINT(' + str(decimal_longitude_public) + ' ' + str(decimal_latitude_public) + ')', srid=4326)
-                voucher.save()
-                if voucher.image and voucher.biodata_code.voucher_state == 7:
-                    etiquette_picture.delay(int(voucher.pk))
+            voucher.save()
+            if voucher.image and voucher.biodata_code.voucher_state == 7:
+                etiquette_picture.delay(int(voucher.pk))
             return redirect('control_vouchers')
     else:
         form = VoucherImportedForm(instance=voucher)
 
     return render(request, 'digitalization/update_voucher.html', {'form': form, 'id': voucher_id})
+
+
+@login_required
+def postprocessing_log(request) -> HttpResponse:
+    return render(request, 'digitalization/postprocessing_log.html')
+
+
+@login_required
+def postprocessing_log_table(request) -> JsonResponse:
+    sort_by_func = {
+        0: "date",
+        1: "file",
+        2: "found_images",
+        3: "processed_images",
+        4: "failed_images",
+        5: "scheduled",
+        6: "created_by__username",
+    }
+    search_query = Q()
+    search_value = request.GET.get("search[value]", None)
+    if search_value:
+        search_query = (
+            Q(file__icontainse=search_value) |
+            Q(created_by__username__icontains=search_value)
+        )
+    entries = PostprocessingLog.objects.all()
+    return paginated_table(
+        request, entries, PostprocessingLogSerializer,
+        sort_by_func, "Postprocessing Log", search_query
+    )

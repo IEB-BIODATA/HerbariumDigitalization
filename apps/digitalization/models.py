@@ -21,7 +21,7 @@ from django.forms import CharField
 from django.utils.translation import gettext_lazy as _
 from typing import BinaryIO, Union, Any, Tuple, Callable, Dict, List
 
-from apps.catalog.models import Species, TAXONOMIC_RANK
+from apps.catalog.models import Species, TAXONOMIC_RANK, RANK_MODELS, get_fuzzy_taxa
 from intranet.utils import CatalogQuerySet
 from .storage_backends import PublicMediaStorage, PrivateMediaStorage
 from .validators import validate_file_size
@@ -99,6 +99,7 @@ class ColorProfileFile(models.Model):
         verbose_name=_("File"),
         upload_to='uploads/color_profile/',
         validators=[validate_file_size],
+        storage=PrivateMediaStorage(),
         blank=False, null=False
     )
     created_at = models.DateTimeField(verbose_name=_("Created at"), blank=True, null=True, editable=False)
@@ -225,6 +226,7 @@ class PriorityVouchersFile(models.Model):
         verbose_name=_("File"),
         upload_to='uploads/priority_vouchers/',
         validators=[validate_file_size],
+        storage=PrivateMediaStorage(),
         blank=False, null=False
     )
     created_at = models.DateTimeField(verbose_name=_("Created at"), blank=True, null=True, editable=False)
@@ -243,30 +245,10 @@ class PriorityVouchersFile(models.Model):
 
 class VoucherImportedQuerySet(CatalogQuerySet):
 
-    def filter_query_in(self, **parameters: Dict[str, List[str]]) -> CatalogQuerySet:
-        query = Q()
-        for query_key, parameter in parameters.items():
-            query &= Q(**{f"scientific_name__{query_key}__in": parameter})
-        queryset = self.filter(query).distinct()
-        logging.debug(f"Voucher Imported: {query} and got {queryset}")
-        return queryset
-
     def filter_query(self, **parameters: Dict[str, List[str]]) -> CatalogQuerySet:
         query = Q()
         for query_key, parameter in parameters.items():
-            query &= Q(**{f"scientific_name__{query_key}": parameter})
-        queryset = self.filter(query).distinct()
-        logging.debug(f"Voucher Imported: {query} and got {queryset}")
-        return queryset
-
-    def filter_taxonomy_in(self, **parameters: Dict[str: List[str]]) -> CatalogQuerySet:
-        query = Q()
-        for taxonomic_rank, parameter in parameters.items():
-            rank_index = TAXONOMIC_RANK.index(taxonomic_rank)
-            query_name = "__".join(list(reversed(TAXONOMIC_RANK))[0:-rank_index]).replace(
-                "species", "scientific_name"
-            )
-            query &= Q(**{f"{query_name}__in": parameter})
+            query &= Q(**{f"scientific_name__{query_key}__in": parameter})
         queryset = self.filter(query).distinct()
         logging.debug(f"Voucher Imported: {query} and got {queryset}")
         return queryset
@@ -278,20 +260,21 @@ class VoucherImportedQuerySet(CatalogQuerySet):
             query_name = "__".join(list(reversed(TAXONOMIC_RANK))[0:-rank_index]).replace(
                 "species", "scientific_name"
             )
-            query &= Q(**{query_name: parameter})
+            clean_parameters = list()
+            for par in parameter:
+                if par.isdigit():
+                    clean_parameters.append(RANK_MODELS[taxonomic_rank].objects.get(unique_taxon_id=par).pk)
+                else:
+                    clean_parameters.append(get_fuzzy_taxa(taxonomic_rank, par))
+            query &= Q(**{f"{query_name}__in": clean_parameters})
         queryset = self.filter(query).distinct()
         logging.debug(f"Voucher Imported: {query} and got {queryset}")
         return queryset
 
-    def filter_geometry_in(self, geometries: List[str]) -> CatalogQuerySet:
+    def filter_geometry(self, geometries: List[str]) -> CatalogQuerySet:
         queryset = self
         for geometry in geometries:
             queryset = self.filter(point__within=geometry).distinct()
-        logging.debug(f"Voucher Imported: geometry and got {queryset}")
-        return queryset
-
-    def filter_geometry(self, geometry) -> CatalogQuerySet:
-        queryset = self.filter(point__within=geometry).distinct()
         logging.debug(f"Voucher Imported: geometry and got {queryset}")
         return queryset
 
@@ -588,6 +571,27 @@ class TemporalArea(Area):
     class Meta:
         verbose_name = _("Temporal Area")
         verbose_name_plural = _("Temporal Areas")
+
+
+class PostprocessingLog(models.Model):
+    date = models.DateTimeField(verbose_name=_("Date"))
+    file = models.FileField(
+        verbose_name=_("File"),
+        upload_to='logs/',
+        storage=PrivateMediaStorage(),
+        blank=False, null=False
+    )
+    found_images = models.IntegerField(verbose_name=_("Found Images"), default=0, blank=False, null=False)
+    processed_images = models.IntegerField(verbose_name=_("Processed Images"), default=0, blank=False, null=False)
+    failed_images = models.IntegerField(verbose_name=_("Failed Images"), default=0, blank=False, null=False)
+    created_by = models.ForeignKey(
+        User, verbose_name=_("Created by"), on_delete=models.PROTECT, blank=False, null=False
+    )
+    scheduled = models.BooleanField(verbose_name=_("Scheduled"), blank=False, null=False)
+
+    class Meta:
+        verbose_name = _("Postprocessing Log")
+        verbose_name_plural = _("Postprocessing Logs")
 
 
 @receiver(post_delete, sender=PriorityVouchersFile)

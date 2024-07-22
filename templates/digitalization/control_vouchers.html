@@ -7,7 +7,14 @@
     <script type="text/javascript">
         let language = getTableLanguage("{{ LANGUAGE_CODE }}");
         $(document).ready(function() {
-            const voucher_state = parseInt("{{ voucher_state }}");
+            console.log("{{ voucher_state }}");
+            console.log(parseInt("{{ voucher_state }}"));
+            let voucher_state = "{{ voucher_state }}";
+            let data = {};
+            if (voucher_state !== "None") {
+                voucher_state = parseInt("{{ voucher_state }}")
+                data.voucher_state = voucher_state;
+            }
             let values = [];
             for (let i=0; i < 10; i++){
                 let selected = '';
@@ -27,8 +34,9 @@
                 language: language,
                 order: [[5, 'asc'], [4, 'asc']],
                 ajax: {
-                    url: '{% url "vouchers_table" voucher_state=voucher_state %}',
+                    url: '{% url "vouchers_table" %}',
                     type: 'GET',
+                    data: data,
                     dataSrc: 'data',
                 },
                 columnDefs: [

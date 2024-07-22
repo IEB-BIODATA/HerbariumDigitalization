@@ -1,8 +1,6 @@
 from django import forms
 from django.core.exceptions import ValidationError
 from django.utils.translation import gettext_lazy as _
-from leaflet.forms.widgets import LeafletWidget
-from modeltranslation.forms import TranslationModelForm
 
 from .models import Division, ClassName, Order, Family, Genus, Species, Synonymy, Binnacle, CommonName, Region
 from ..home.forms import GeographicFieldForm
@@ -41,12 +39,12 @@ class OrderForm(forms.ModelForm):
         model = Order
         fields = (
             'name',
-            'class_name',
+            'classname',
         )
 
         widgets = {
             'name': forms.TextInput(attrs={'required': True, 'class': "form-control"}),
-            'class_name': forms.Select(attrs={'required': True, 'class': "form-control"}),
+            'classname': forms.Select(attrs={'required': True, 'class': "form-control"}),
         }
 
 
@@ -104,6 +102,16 @@ class BinnacleForm(forms.ModelForm):
 
 
 class SpeciesForm(forms.ModelForm):
+    synonyms = forms.ModelMultipleChoiceField(
+        queryset=Synonymy.objects.all(),
+        widget=forms.SelectMultiple(attrs={
+            'class': "selectpicker",
+            'multiple data-live-search': 'true',
+            'multiple data-multiple-separator': ','}
+        ),
+        required=False
+    )
+
     class Meta:
         model = Species
         fields = (
@@ -115,7 +123,7 @@ class SpeciesForm(forms.ModelForm):
             'in_argentina', 'in_bolivia', 'in_peru',
             'plant_habit', 'env_habit', 'cycle', 'status',
             'minimum_height', 'maximum_height',
-            'synonyms', 'common_names', 'region',
+            'common_names', 'region',
             'notes', 'publication', 'volume', 'pages',
             'type_id',
             'conservation_state', 'determined', 'id_mma',
@@ -150,8 +158,6 @@ class SpeciesForm(forms.ModelForm):
             'status': forms.Select(attrs={'class': "form-control"}),
             'minimum_height': forms.TextInput(attrs={'class': "form-control", 'type': 'number'}),
             'maximum_height': forms.TextInput(attrs={'class': "form-control", 'type': 'number'}),
-            'synonyms': forms.SelectMultiple(attrs={'class': "selectpicker", 'multiple data-live-search': 'true',
-                                                    'multiple data-multiple-separator': ','}),
             'common_names': forms.SelectMultiple(attrs={'class': "selectpicker", 'multiple data-live-search': 'true',
                                                         'multiple data-multiple-separator': ','}),
             'region': forms.SelectMultiple(
@@ -168,6 +174,19 @@ class SpeciesForm(forms.ModelForm):
             'determined': forms.CheckboxInput(attrs={'class': "form-check-input"}),
             'id_mma': forms.TextInput(attrs={'class': "form-control"}),
         }
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        if self.instance and self.instance.pk:
+            self.fields["synonyms"].initial = self.instance.synonyms.all()
+
+    def save(self, commit=True):
+        instance = super(SpeciesForm, self).save(commit=False)
+        if commit:
+            instance.save()
+            instance.save_m2m()
+            self.instance.synonyms.set(self.cleaned_data["synonyms"])
+        return instance
 
     def clean_genus(self):
         genus = self.cleaned_data['genus']

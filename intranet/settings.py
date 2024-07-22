@@ -60,6 +60,7 @@ INSTALLED_APPS = [
     'corsheaders',
     'widget_tweaks',
     'django_hosts',
+    'ckeditor',
 ]
 
 MIDDLEWARE = [
@@ -173,10 +174,9 @@ else:
     AWS_STATIC_LOCATION = 'static/digitalization/'
     STATIC_URL = os.environ.get("DIGITALIZATION_STATIC_HOST")
 
-
 AWS_PUBLIC_MEDIA_LOCATION = 'media/public'
 DEFAULT_FILE_STORAGE = 'apps.digitalization.storage_backends.PublicMediaStorage'
-MEDIA_URL = os.environ.get("IMAGE_HOST")
+MEDIA_URL = os.environ.get("IMAGE_HOST") + '/'
 
 AWS_PRIVATE_MEDIA_LOCATION = 'media/private'
 PRIVATE_FILE_STORAGE = 'apps.digitalization.storage_backends.PrivateMediaStorage'
@@ -211,7 +211,7 @@ CELERY_BEAT_SCHEDULE = {
     'daily_postprocessing': {
         'task': 'scheduled_postprocessing',
         'schedule': crontab(hour="1", minute="0"),
-        'args': ('input', 'tmp', '/var/log/postprocessing')
+        'args': ('input', 'tmp', 'log')
     },
     'weekly_clean_storage': {
         'task': 'clean_storage',
@@ -235,6 +235,8 @@ else:
 
 CSRF_TRUSTED_ORIGINS = ['https://*.herbariodigital.cl']
 CSRF_COOKIE_SECURE = not DEBUG
+
+TAXA_ID_PREF = 'https://catalogoplantas.udec.cl/taxa/'
 
 REST_FRAMEWORK = {
     'DEFAULT_PAGINATION_CLASS': 'rest_framework.pagination.PageNumberPagination',
@@ -308,10 +310,4 @@ LOGGING = {
         'handlers': ['console'],
         'level': 'DEBUG',
     },
-    'loggers': {
-        'django': {
-            'handlers': ['console'],
-            'level': 'INFO',
-        },
-    }
 }

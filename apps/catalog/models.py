@@ -1,16 +1,17 @@
 from __future__ import annotations
 
-from time import time_ns
-
 import logging
 from abc import abstractmethod, ABC
 from copy import deepcopy
+from django.conf import settings
 from django.contrib.auth.models import User
 from django.contrib.gis.db.models import GeometryField
+from django.contrib.postgres.search import TrigramSimilarity
 from django.db import connection
 from django.db import models
 from django.db.models import Q
-from django.utils.translation import gettext_lazy as _, pgettext_lazy
+from django.utils.translation import gettext_lazy as _, pgettext_lazy, pgettext
+from time import time_ns, time
 from typing import List, Dict, Tuple
 
 from intranet.utils import CatalogQuerySet
@@ -23,7 +24,7 @@ ATTRIBUTES = [
 ]
 
 TAXONOMIC_RANK = [
-    "kingdom", "division", "class_name", "order",
+    "kingdom", "division", "classname", "order",
     "family", "genus", "species",
 ]
 
@@ -38,66 +39,53 @@ class AttributeQuerySet(CatalogQuerySet, ABC):
     def filter_for_species(self, query: Q) -> AttributeQuerySet:
         return self.filter(query).distinct()
 
-    def filter_query_in(self, **parameters: Dict[str, List[str]]) -> AttributeQuerySet:
+    def filter_query(self, **parameters: Dict[str, List[str]]) -> AttributeQuerySet:
         start = time_ns()
         query = Q()
         for query_key, parameter in parameters.items():
             if query_key == self.__attribute_name__:
                 continue
-            query &= Q(**{f"species__{query_key}__in": parameter})
+            particular_query = Q()
+            for par in parameter:
+                if par.isdigit():
+                    particular_query |= Q(**{f"species__{query_key}": par})
+                else:
+                    particular_query |= Q(**{f"species__{query_key}__key": par})
+            query &= particular_query
         queryset = self.filter(query).distinct()
         logging.debug(f"{self.__attribute_name__}: {query} and got {queryset}")
+        logging.debug(f"Query: {queryset.query}")
         logging.debug(
             f"Filtering {self.__attribute_name__} using attributes took {(time_ns() - start) / 1e6:.2f} milliseconds"
         )
         return queryset
 
-    def filter_query(self, **parameters: Dict[str, List[str]]) -> AttributeQuerySet:
+    def filter_taxonomy(self, **parameters: Dict[str: List[str]]) -> AttributeQuerySet:
         start = time_ns()
         query = Q()
-        for query_key, parameter in parameters.items():
-            query_name = f"species__{query_key}" if query_key != self.__attribute_name__ else "pk"
-            query &= Q(**{query_name: parameter})
-        queryset = self.filter(query).distinct()
-        logging.debug(f"{self.__attribute_name__}: {query} and got {queryset}")
-        logging.debug(
-            f"Filtering {self.__attribute_name__} using attributes took {(time_ns() - start) / 1e6:.2f} milliseconds"
-        )
-        return queryset
-
-    def filter_taxonomy_in(self, **parameters: Dict[str: List[str]]) -> AttributeQuerySet:
-        return self.filter_taxonomy(_in=True, **parameters)
-
-    def filter_taxonomy(self, _in: bool = False, **parameters: Dict[str: List[str]]) -> AttributeQuerySet:
-        start = time_ns()
-        query = Q()
-        with_in = "__in" if _in else ""
         for taxonomic_rank, parameter in parameters.items():
-            logging.debug(f"{self.__attribute_name__}: Species from {taxonomic_rank}: {parameter}")
-            species = CatalogView.objects.filter(**{f"{taxonomic_rank}_id{with_in}": parameter})
+            clean_parameters = list()
+            for par in parameter:
+                if par.isdigit():
+                    clean_parameters.append(RANK_MODELS[taxonomic_rank].objects.get(unique_taxon_id=par).pk)
+                else:
+                    clean_parameters.append(get_fuzzy_taxa(taxonomic_rank, par))
+            logging.debug(f"{self.__attribute_name__}: Species from {taxonomic_rank}: {clean_parameters}")
+            species = CatalogView.objects.filter(**{f"{taxonomic_rank}_id__in": clean_parameters})
             query &= Q(**{f"{self.species_filter()}__in": Species.objects.filter(pk__in=species)})
         queryset = self.filter_for_species(query)
         logging.debug(
             f"Filtering {self.__attribute_name__} using taxonomies took {(time_ns() - start) / 1e6:.2f} milliseconds"
         )
+        logging.debug(f"Query: {queryset.query}")
         return queryset
-    
-    def filter_geometry_in(self, geometries: List[str]) -> AttributeQuerySet:
+
+    def filter_geometry(self, geometries: List[str]) -> AttributeQuerySet:
         start = time_ns()
         query = Q()
         for geometry in geometries:
             query |= Q(species__voucherimported__point__within=geometry)
-        queryset = self.filter(query)
-        logging.debug(f"{self.__attribute_name__}: {query} and got {queryset}")
-        logging.debug(
-            f"Filtering {self.__attribute_name__} using geometry took {(time_ns() - start) / 1e6:.2f} milliseconds"
-        )
-        return queryset 
-    
-    def filter_geometry(self, geometry) -> AttributeQuerySet:
-        start = time_ns()
-        query = Q(species__voucherimported__point__within=geometry)
-        queryset = self.filter(query)
+        queryset = self.filter(query).distinct()
         logging.debug(f"{self.__attribute_name__}: {query} and got {queryset}")
         logging.debug(
             f"Filtering {self.__attribute_name__} using geometry took {(time_ns() - start) / 1e6:.2f} milliseconds"
@@ -113,24 +101,8 @@ class TaxonomicQuerySet(CatalogQuerySet, ABC):
 
     def __init__(self, model=None, query=None, using=None, hints=None):
         super(TaxonomicQuerySet, self).__init__(model, query, using, hints)
-        self.___rank_index__ = TAXONOMIC_RANK.index(self.__rank_name__)
+        self.__rank_index__ = TAXONOMIC_RANK.index(self.__rank_name__)
         return
-
-    def filter_query_in(self, **parameters: Dict[str, List[str]]) -> TaxonomicQuerySet:
-        start = time_ns()
-        query = Q()
-        rank_index = TAXONOMIC_RANK.index(self.__rank_name__)
-        for query_key, parameter in parameters.items():
-            query_name = "__".join(TAXONOMIC_RANK[rank_index + 1:])
-            if query_name != "":
-                query_name = f"{query_name}__"
-            query &= Q(**{f"{query_name}{query_key}__in": parameter})
-        queryset = self.filter(query).distinct()
-        logging.debug(f"{self.__rank_name__}: {query} and got {queryset}")
-        logging.debug(
-            f"Filtering {self.__rank_name__} using attributes took {(time_ns() - start) / 1e6:.2f} milliseconds"
-        )
-        return queryset
 
     def filter_query(self, **parameters: Dict[str, List[str]]) -> TaxonomicQuerySet:
         start = time_ns()
@@ -140,54 +112,53 @@ class TaxonomicQuerySet(CatalogQuerySet, ABC):
             query_name = "__".join(TAXONOMIC_RANK[rank_index + 1:])
             if query_name != "":
                 query_name = f"{query_name}__"
-            query &= Q(**{f"{query_name}{query_key}": parameter})
+            particular_query = Q()
+            for par in parameter:
+                if par.isdigit():
+                    particular_query |= Q(**{f"{query_name}{query_key}": par})
+                else:
+                    particular_query |= Q(**{f"{query_name}{query_key}__key": par})
+            query &= particular_query
         queryset = self.filter(query).distinct()
         logging.debug(f"{self.__rank_name__}: {query} and got {queryset}")
+        logging.debug(f"Query: {queryset.query}")
         logging.debug(
             f"Filtering {self.__rank_name__} using attributes took {(time_ns() - start) / 1e6:.2f} milliseconds"
         )
         return queryset
 
-    def get_taxonomic_query(self, taxonomic_rank: str, with_in: bool = False) -> str:
+    def get_taxonomic_query(self, taxonomic_rank: str) -> str:
         rank_index = TAXONOMIC_RANK.index(taxonomic_rank)
-        str_in = "__in" if with_in else ""
-        if self.___rank_index__ < rank_index:
-            return "__".join(TAXONOMIC_RANK[self.___rank_index__ + 1: rank_index + 1]) + str_in
-        elif self.___rank_index__ == rank_index:
-            if with_in:
-                raise RuntimeError
-            return "pk"
-        else:  # self.__rank_index__ > rank_index
-            return "__".join(reversed(TAXONOMIC_RANK[rank_index: self.___rank_index__])) + str_in
-
-    def filter_taxonomy_in(self, **parameters: Dict[str: List[str]]) -> TaxonomicQuerySet:
-        start = time_ns()
-        query = Q()
-        for taxonomic_rank, parameter in parameters.items():
-            try:
-                query &= Q(**{self.get_taxonomic_query(taxonomic_rank, with_in=True): parameter})
-            except RuntimeError:
-                continue
-        queryset = self.filter(query).distinct()
-        logging.debug(f"{self.__rank_name__}: {query} and got {queryset}")
-        logging.debug(
-            f"Filtering {self.__rank_name__} using taxonomies took {(time_ns() - start) / 1e6:.2f} milliseconds"
-        )
-        return queryset
+        if self.__rank_index__ < rank_index:
+            return "__".join(TAXONOMIC_RANK[self.__rank_index__ + 1: rank_index + 1]) + "__in"
+        elif self.__rank_index__ > rank_index:
+            return "__".join(reversed(TAXONOMIC_RANK[rank_index: self.__rank_index__])) + "__in"
+        else:
+            raise RuntimeError
 
     def filter_taxonomy(self, **parameters: Dict[str: List[str]]) -> TaxonomicQuerySet:
         start = time_ns()
         query = Q()
         for taxonomic_rank, parameter in parameters.items():
-            query &= Q(**{self.get_taxonomic_query(taxonomic_rank): parameter})
+            clean_parameters = list()
+            for par in parameter:
+                if par.isdigit():
+                    clean_parameters.append(RANK_MODELS[taxonomic_rank].objects.get(unique_taxon_id=par).pk)
+                else:
+                    clean_parameters.append(get_fuzzy_taxa(taxonomic_rank, par))
+            try:
+                query &= Q(**{self.get_taxonomic_query(taxonomic_rank): clean_parameters})
+            except RuntimeError:
+                continue
         queryset = self.filter(query).distinct()
         logging.debug(f"{self.__rank_name__}: {query} and got {queryset}")
+        logging.debug(f"Query: {queryset.query}")
         logging.debug(
             f"Filtering {self.__rank_name__} using taxonomies took {(time_ns() - start) / 1e6:.2f} milliseconds"
         )
         return queryset
 
-    def filter_geometry_in(self, geometries: List[str]) -> TaxonomicQuerySet:
+    def filter_geometry(self, geometries: List[str]) -> TaxonomicQuerySet:
         start = time_ns()
         rank_index = TAXONOMIC_RANK.index(self.__rank_name__)
         query_name = "__".join(TAXONOMIC_RANK[rank_index + 1:])
@@ -196,20 +167,6 @@ class TaxonomicQuerySet(CatalogQuerySet, ABC):
         query = Q()
         for geometry in geometries:
             query |= Q(**{f"{query_name}voucherimported__point__within": geometry})
-        queryset = self.filter(query).distinct()
-        logging.debug(f"{self.__rank_name__}: {query} and got {queryset}")
-        logging.debug(
-            f"Filtering {self.__rank_name__} using geometries took {(time_ns() - start) / 1e6:.2f} milliseconds"
-        )
-        return queryset
-
-    def filter_geometry(self, geometry: str) -> TaxonomicQuerySet:
-        start = time_ns()
-        rank_index = TAXONOMIC_RANK.index(self.__rank_name__)
-        query_name = "__".join(TAXONOMIC_RANK[rank_index + 1:])
-        if query_name != "":
-            query_name = f"{query_name}__"
-        query = Q(**{f"{query_name}voucherimported__point__within": geometry})
         queryset = self.filter(query).distinct()
         logging.debug(f"{self.__rank_name__}: {query} and got {queryset}")
         logging.debug(
@@ -345,24 +302,59 @@ class Habit(AttributeModel):
         ]
 
 
+class TaxonRankQuerySet(AttributeQuerySet):
+    __attribute_name__ = "taxon_rank"
+
+
+class TaxonRank(AttributeModel):
+    objects = TaxonRankQuerySet.as_manager()
+
+    def __unicode__(self):
+        return u"%s" % self.__str__()
+
+    def __str__(self):
+        return "%s" % self.name
+
+    def __repr__(self):
+        return "Taxon Rank::%s" % self.__str__()
+
+    class Meta:
+        verbose_name = _("Taxon Rank")
+        verbose_name_plural = _("Taxon Rank")
+        ordering = ['name']
+
+
 class RegionQuerySet(AttributeQuerySet):
     __attribute_name__ = "region"
 
-    def filter_geometry_in(self, geometries: List[str]) -> TaxonomicQuerySet:
+    def filter_taxonomy(self, **parameters: Dict[str: List[str]]) -> AttributeQuerySet:
+        start = time_ns()
+        query = Q()
+        for taxonomic_rank, parameter in parameters.items():
+            clean_parameters = list()
+            for par in parameter:
+                if par.isdigit():
+                    clean_parameters.append(RANK_MODELS[taxonomic_rank].objects.get(unique_taxon_id=par).pk)
+                else:
+                    clean_parameters.append(get_fuzzy_taxa(taxonomic_rank, par))
+            logging.debug(f"{self.__attribute_name__}: Species from {taxonomic_rank}: {clean_parameters}")
+            species = CatalogView.objects.filter(**{f"{taxonomic_rank}_id__in": clean_parameters})
+            regions = RegionDistributionView.objects.filter(
+                Q(species_id__in=[sp.id for sp in species])
+            ).distinct('region_key')
+            query &= Q(**{f"key__in": [reg.region_key for reg in regions]})
+        queryset = self.filter_for_species(query)
+        logging.debug(
+            f"Filtering {self.__attribute_name__} using taxonomies took {(time_ns() - start) / 1e6:.2f} milliseconds"
+        )
+        logging.debug(f"Query: {queryset.query}")
+        return queryset
+
+    def filter_geometry(self, geometries: List[str]) -> TaxonomicQuerySet:
         start = time_ns()
         query = Q()
         for geometry in geometries:
             query |= Q(geometry__intersects=geometry)
-        queryset = self.filter(query).distinct()
-        logging.debug(f"{self.__attribute_name__}: {query} and got {queryset}")
-        logging.debug(
-            f"Filtering {self.__attribute_name__} using geometries took {(time_ns() - start) / 1e6:.2f} milliseconds"
-        )
-        return queryset
-
-    def filter_geometry(self, geometry) -> TaxonomicQuerySet:
-        start = time_ns()
-        query = Q(geometry__intersects=geometry)
         queryset = self.filter(query).distinct()
         logging.debug(f"{self.__attribute_name__}: {query} and got {queryset}")
         logging.debug(
@@ -397,6 +389,29 @@ class Region(AttributeModel):
 class ConservationStateQuerySet(AttributeQuerySet):
     __attribute_name__ = "conservation_state"
 
+    def filter_taxonomy(self, **parameters: Dict[str: List[str]]) -> AttributeQuerySet:
+        start = time_ns()
+        query = Q()
+        for taxonomic_rank, parameter in parameters.items():
+            clean_parameters = list()
+            for par in parameter:
+                if par.isdigit():
+                    clean_parameters.append(RANK_MODELS[taxonomic_rank].objects.get(unique_taxon_id=par).pk)
+                else:
+                    clean_parameters.append(get_fuzzy_taxa(taxonomic_rank, par))
+            logging.debug(f"{self.__attribute_name__}: Species from {taxonomic_rank}: {clean_parameters}")
+            species_view = CatalogView.objects.filter(**{f"{taxonomic_rank}_id__in": clean_parameters})
+            species = Species.objects.filter(id__in=[sp.id for sp in species_view]).prefetch_related(
+                "conservation_state"
+            )
+            query &= Q(**{f"species__in": [sp.id for sp in species]})
+        queryset = self.filter_for_species(query)
+        logging.debug(
+            f"Filtering {self.__attribute_name__} using taxonomies took {(time_ns() - start) / 1e6:.2f} milliseconds"
+        )
+        logging.debug(f"Query: {queryset.query}")
+        return queryset
+
 
 class ConservationState(AttributeModel):
     key = models.CharField(verbose_name=_("Key"), max_length=3, blank=True, null=True)
@@ -420,6 +435,8 @@ class ConservationState(AttributeModel):
 
 
 class TaxonomicModel(models.Model):
+    unique_taxon_id = models.BigIntegerField()
+    taxon_id = models.CharField()
     created_at = models.DateTimeField(verbose_name=_("Created at"), auto_now_add=True, blank=True, null=True, editable=False)
     updated_at = models.DateTimeField(verbose_name=_("Updated at"), auto_now=True)
     created_by = models.ForeignKey(User, verbose_name=_("Created by"), on_delete=models.PROTECT, default=1, editable=False)
@@ -465,6 +482,16 @@ class TaxonomicModel(models.Model):
             )
         if self.pk is None:
             try:
+                if self.taxon_id is None or self.taxon_id == "":
+                    with connection.cursor() as cursor:
+                        cursor.execute("SELECT get_taxon_id()")
+                        result = cursor.fetchone()
+                        if result:
+                            self.unique_taxon_id = result[0]
+                            logging.debug(self.unique_taxon_id)
+                        else:
+                            raise RuntimeError("Cannot got unique taxa id")
+                    self.taxon_id = settings.TAXA_ID_PREF + str(self.unique_taxon_id)
                 super().save(
                     force_insert=force_insert,
                     force_update=force_update,
@@ -581,7 +608,7 @@ class Division(TaxonomicModel):
 
 
 class ClassQuerySet(TaxonomicQuerySet):
-    __rank_name__ = "class_name"
+    __rank_name__ = "classname"
 
 
 class ClassName(TaxonomicModel):
@@ -620,11 +647,9 @@ class ClassName(TaxonomicModel):
         return TaxonomicModel.get_created_by_query(search)
 
     class Meta:
-        db_table = "catalog_class_name"
         verbose_name = _("Class")
         verbose_name_plural = _("Classes")
         ordering = ['name']
-        default_related_name = "class_name"
 
 
 class OrderQuerySet(TaxonomicQuerySet):
@@ -633,7 +658,7 @@ class OrderQuerySet(TaxonomicQuerySet):
 
 class Order(TaxonomicModel):
     name = models.CharField(verbose_name=_("Name"), max_length=300, blank=True, null=True)
-    class_name = models.ForeignKey(ClassName, verbose_name=_("Class Name"), on_delete=models.CASCADE, blank=True, null=True, help_text="Clase")
+    classname = models.ForeignKey(ClassName, verbose_name=_("Class Name"), on_delete=models.CASCADE, blank=True, null=True, help_text="Clase")
 
     objects = OrderQuerySet.as_manager()
 
@@ -642,7 +667,7 @@ class Order(TaxonomicModel):
 
     def __eq__(self, other):
         return super().__eq__(other) and \
-            self.class_name == other.class_name and \
+            self.classname == other.classname and \
             self.name == other.name
 
     def __unicode__(self):
@@ -652,7 +677,7 @@ class Order(TaxonomicModel):
         return "%s" % self.name
 
     def __repr__(self):
-        return "%s|Class::%s" % (self.name, self.class_name)
+        return "%s|Class::%s" % (self.name, self.classname)
 
     @staticmethod
     def get_query_name(search: str) -> Q:
@@ -660,7 +685,7 @@ class Order(TaxonomicModel):
 
     @staticmethod
     def get_parent_query(search: str) -> Q:
-        return Q(class_name__name__icontains=search)
+        return Q(classname__name__icontains=search)
 
     @staticmethod
     def get_created_by_query(search: str) -> Q:
@@ -817,17 +842,33 @@ class Genus(TaxonomicModel):
 
 class ScientificName(TaxonomicModel):
     scientific_name = models.CharField(verbose_name=_("Scientific Name"), max_length=300, blank=True, null=True)
-    scientific_name_db = models.CharField(verbose_name=_("Scientific Name Database"), max_length=300, blank=True, null=True)
-    scientific_name_full = models.CharField(verbose_name=_("Complete Scientific Name"), max_length=800, blank=True, null=True)
+    scientific_name_db = models.CharField(
+        verbose_name=_("Scientific Name Database"), max_length=300,
+        blank=True, null=True
+    )
+    scientific_name_full = models.CharField(
+        verbose_name=_("Complete Scientific Name"), max_length=800,
+        blank=True, null=True
+    )
     genus = models.CharField(verbose_name=_("Genus"), max_length=300, blank=True, null=True)
-    specific_epithet = models.CharField(verbose_name=_("Specific Epithet"), max_length=300, blank=True, null=True, help_text="EpitetoEspecifico")
-    scientific_name_authorship = models.CharField(verbose_name=_("Scientific Name Authorship"), max_length=500, blank=True, null=True, help_text="AutoresSp")
+    specific_epithet = models.CharField(
+        verbose_name=_("Specific Epithet"), max_length=300,
+        blank=True, null=True, help_text="EpitetoEspecifico"
+    )
+    scientific_name_authorship = models.CharField(
+        verbose_name=_("Scientific Name Authorship"), max_length=500,
+        blank=True, null=True, help_text="AutoresSp"
+    )
     subspecies = models.CharField(verbose_name=_("Subspecies"), max_length=300, blank=True, null=True)
     ssp_authorship = models.CharField(verbose_name=_("Subspecies Authorship"), max_length=500, blank=True, null=True)
     variety = models.CharField(verbose_name=_("Variety"), max_length=300, blank=True, null=True)
     variety_authorship = models.CharField(verbose_name=_("Variety Authorship"), max_length=500, blank=True, null=True)
     form = models.CharField(verbose_name=pgettext_lazy("taxonomic", "Form"), max_length=300, blank=True, null=True)
     form_authorship = models.CharField(verbose_name=_("Form Authorship"), max_length=500, blank=True, null=True)
+    taxon_rank = models.ForeignKey(
+        TaxonRank, verbose_name=_("Taxon Rank"),
+        null=True, editable=False, on_delete=models.PROTECT
+    )
 
     def __hash__(self):
         return super().__hash__()
@@ -894,75 +935,27 @@ class ScientificName(TaxonomicModel):
         self.scientific_name_db = self.scientific_name.upper()
         return
 
+    def save(self, *args, **kwargs):
+        if self.form is not None:
+            taxon_rank = TaxonRank.objects.get(name__iexact=pgettext("taxonomic", "form"))
+        elif self.variety is not None:
+            taxon_rank = TaxonRank.objects.get(name__iexact=pgettext("taxonomic", "variety"))
+        elif self.subspecies is not None:
+            taxon_rank = TaxonRank.objects.get(name__iexact=pgettext("taxonomic", "subspecies"))
+        else:
+            taxon_rank = TaxonRank.objects.get(name__iexact=pgettext("taxonomic", "species"))
+        self.taxon_rank = taxon_rank
+        return super().save(*args, **kwargs)
+
     class Meta:
         abstract = True
-
-
-class SynonymyQuerySet(AttributeQuerySet):
-    __attribute_name__ = "synonymy"
-
-    def search(self, text: str) -> AttributeQuerySet:
-        return self.filter(scientific_name_full__icontains=text)
-
-
-class Synonymy(ScientificName):
-    objects = SynonymyQuerySet.as_manager()
-
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-        if "species" in kwargs:
-            species: Species = kwargs["species"]
-            self.genus = str(species.genus).capitalize()
-            self.scientific_name = species.scientific_name
-            self.scientific_name_db = species.scientific_name_db
-            self.scientific_name_full = species.scientific_name_full
-            self.specific_epithet = species.specific_epithet
-            self.scientific_name_authorship = species.scientific_name_authorship
-            self.subspecies = species.subspecies
-            self.ssp_authorship = species.ssp_authorship
-            self.variety = species.variety
-            self.variety_authorship = species.variety_authorship
-            self.form = species.form
-            self.form_authorship = species.form_authorship
-
-    @staticmethod
-    def get_parent_query(search: str) -> Q:
-        return Q(species__scientific_name__icontains=search)
-
-    @staticmethod
-    def get_created_by_query(search: str) -> Q:
-        return TaxonomicModel.get_created_by_query(search)
-
-    def save(self, force_insert=False, force_update=False, using=None, update_fields=None, **kwargs):
-        if force_update:
-            return super().save(
-                force_insert=force_insert,
-                force_update=force_update,
-                using=using,
-                update_fields=update_fields,
-                **kwargs
-            )
-        self.genus = str(self.genus).capitalize()
-        self.__update_scientific_name__()
-        return super().save(
-            force_insert=force_insert,
-            force_update=force_update,
-            using=using,
-            update_fields=update_fields,
-            **kwargs
-        )
-
-    class Meta:
-        verbose_name = _("Synonym")
-        verbose_name_plural = _("Synonyms")
-        ordering = ['scientific_name']
 
 
 class CommonNameQuerySet(AttributeQuerySet):
     __attribute_name__ = "common_names"
 
 
-class CommonName(TaxonomicModel):
+class CommonName(AttributeModel):
     name = models.CharField(verbose_name=_("Name"), max_length=300, blank=True, null=True)
 
     objects = CommonNameQuerySet.as_manager()
@@ -981,18 +974,6 @@ class CommonName(TaxonomicModel):
 
     def __repr__(self):
         return "%s" % self.name
-
-    @staticmethod
-    def get_query_name(search: str) -> Q:
-        return TaxonomicModel.get_query_name(search)
-
-    @staticmethod
-    def get_parent_query(search: str) -> Q:
-        return Q(species__scientific_name__icontains=search)
-
-    @staticmethod
-    def get_created_by_query(search: str) -> Q:
-        return TaxonomicModel.get_created_by_query(search)
 
     class Meta:
         verbose_name = _("Common Name")
@@ -1044,7 +1025,6 @@ class Species(ScientificName):
     volume = models.CharField(verbose_name=_("Volume"), max_length=300, blank=True, null=True)
     pages = models.CharField(verbose_name=_("Pages"), max_length=300, blank=True, null=True)
     year = models.IntegerField(verbose_name=_("Year"), blank=True, null=True)
-    synonyms = models.ManyToManyField(Synonymy, verbose_name=_("Synonyms"), blank=True)
     region = models.ManyToManyField(Region, verbose_name=_("Regions"), blank=True, db_column="region")
     id_mma = models.IntegerField(verbose_name=_("MMA ID"), blank=True, null=True,
                                  help_text=_("ID of the species platform of the MMA"))
@@ -1087,12 +1067,12 @@ class Species(ScientificName):
         return self.family.order
 
     @property
-    def class_name(self):
-        return self.order.class_name
+    def classname(self):
+        return self.order.classname
 
     @property
     def division(self):
-        return self.class_name.division
+        return self.classname.division
 
     @property
     def kingdom(self):
@@ -1130,9 +1110,17 @@ class Species(ScientificName):
                         ]))
                         for specimen in self.voucherimported_set.all():
                             specimen.generate_etiquette()
+                        with connection.cursor() as cursor:
+                            cursor.execute("SELECT get_taxon_id()")
+                            result = cursor.fetchone()
+                            if result:
+                                self.unique_taxon_id = result[0]
+                            else:
+                                raise RuntimeError("Cannot got unique taxa id")
+                        self.taxon_id = settings.TAXA_ID_PREF + str(self.unique_taxon_id)
                     try:
+                        self.__prev__.species = self
                         self.__prev__.save(user=kwargs["user"])
-                        self.synonyms.add(self.__prev__)
                     except Exception as e:
                         logging.error("Error saving synonymy\n{}".format(e), exc_info=True)
                 if len(self.__difference__(self.__original__)) > 0:
@@ -1150,6 +1138,70 @@ class Species(ScientificName):
     class Meta:
         verbose_name = _("Species")
         verbose_name_plural = pgettext_lazy("plural", "Species")
+        ordering = ['scientific_name']
+
+
+class SynonymyQuerySet(AttributeQuerySet):
+    __attribute_name__ = "synonymy"
+
+    def search(self, text: str) -> AttributeQuerySet:
+        return self.filter(scientific_name_full__icontains=text)
+
+
+class Synonymy(ScientificName):
+    species = models.ForeignKey(Species, verbose_name=_("Species"), related_name="synonyms", on_delete=models.PROTECT, blank=True, null=True)
+
+    objects = SynonymyQuerySet.as_manager()
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        if "species" in kwargs:
+            species: Species = kwargs["species"]
+            self.unique_taxon_id = species.unique_taxon_id
+            self.taxon_id = species.taxon_id
+            self.genus = str(species.genus).capitalize()
+            self.scientific_name = species.scientific_name
+            self.scientific_name_db = species.scientific_name_db
+            self.scientific_name_full = species.scientific_name_full
+            self.specific_epithet = species.specific_epithet
+            self.scientific_name_authorship = species.scientific_name_authorship
+            self.subspecies = species.subspecies
+            self.ssp_authorship = species.ssp_authorship
+            self.variety = species.variety
+            self.variety_authorship = species.variety_authorship
+            self.form = species.form
+            self.form_authorship = species.form_authorship
+
+    @staticmethod
+    def get_parent_query(search: str) -> Q:
+        return Q(species__scientific_name__icontains=search)
+
+    @staticmethod
+    def get_created_by_query(search: str) -> Q:
+        return TaxonomicModel.get_created_by_query(search)
+
+    def save(self, force_insert=False, force_update=False, using=None, update_fields=None, **kwargs):
+        if force_update:
+            return super().save(
+                force_insert=force_insert,
+                force_update=force_update,
+                using=using,
+                update_fields=update_fields,
+                **kwargs
+            )
+        self.genus = str(self.genus).capitalize()
+        self.__update_scientific_name__()
+        return super().save(
+            force_insert=force_insert,
+            force_update=force_update,
+            using=using,
+            update_fields=update_fields,
+            **kwargs
+        )
+
+    class Meta:
+        verbose_name = _("Synonym")
+        verbose_name_plural = _("Synonyms")
         ordering = ['scientific_name']
 
 
@@ -1258,12 +1310,14 @@ class CatalogView(TaxonomicModel):
     CREATE MATERIALIZED VIEW catalog_view AS
     SELECT species.id,
            species.id_taxa,
+           species.unique_taxon_id,
+           species.taxon_id,
            kingdom.id      AS kingdom_id,
            kingdom.name    AS kingdom,
            division.id     AS division_id,
            division.name   AS division,
-           class.id        AS class_name_id,
-           class.name      AS class_name,
+           classname.id    AS classname_id,
+           classname.name  AS classname,
            "order".id      AS order_id,
            "order".name    AS "order",
            family.id       AS family_id,
@@ -1304,8 +1358,8 @@ class CatalogView(TaxonomicModel):
          JOIN catalog_genus genus ON species.genus_id = genus.id
          JOIN catalog_family family ON genus.family_id = family.id
          JOIN catalog_order "order" ON family."order" = "order".id
-         JOIN catalog_class_name class ON "order".class_name_id = class.id
-         JOIN catalog_division division ON class.division_id = division.id
+         JOIN catalog_classname classname ON "order".classname_id = classname.id
+         JOIN catalog_division division ON classname.division_id = division.id
          JOIN catalog_kingdom kingdom ON division.kingdom_id = kingdom.id
          LEFT JOIN catalog_status status ON species.status_id = status.id;
 
@@ -1314,12 +1368,14 @@ class CatalogView(TaxonomicModel):
     """
     id = models.IntegerField(primary_key=True, blank=False, null=False, help_text="")
     id_taxa = models.IntegerField(blank=False, null=False, help_text="")
+    unique_taxon_id = models.BigIntegerField()
+    taxon_id = models.CharField()
     kingdom_id = models.IntegerField(blank=False, null=False, help_text="")
     kingdom = models.CharField(max_length=300, blank=True, null=True)
     division_id = models.IntegerField(blank=False, null=False, help_text="")
     division = models.CharField(max_length=300, blank=True, null=True)
-    class_name_id = models.IntegerField(blank=False, null=False, help_text="")
-    class_name = models.CharField(max_length=300, blank=True, null=True)
+    classname_id = models.IntegerField(blank=False, null=False, help_text="")
+    classname = models.CharField(max_length=300, blank=True, null=True)
     order_id = models.IntegerField(blank=False, null=False, help_text="")
     order = models.CharField(max_length=300, blank=True, null=True, db_column="order")
     family_id = models.IntegerField(blank=False, null=False, help_text="")
@@ -1380,10 +1436,9 @@ class SynonymyView(TaxonomicModel):
     """
     CREATE MATERIALIZED VIEW synonymy_view AS
     SELECT synonymy.id,
-           species.id               AS specie_id,
+           species_id,
            species.id_taxa,
-           species.scientific_name AS specie_scientific_name,
-           species_synonymy.id      AS synonymy_id,
+           species.scientific_name AS species_scientific_name,
            synonymy.scientific_name,
            synonymy.scientific_name_full,
            synonymy.genus,
@@ -1399,18 +1454,18 @@ class SynonymyView(TaxonomicModel):
            synonymy.updated_at,
            "user".username          AS created_by
     FROM catalog_synonymy synonymy
-        LEFT JOIN catalog_species_synonyms species_synonymy ON species_synonymy.synonymy_id = synonymy.id
-        LEFT JOIN catalog_species species ON species_synonymy.species_id = species.id
+        LEFT JOIN catalog_species species ON synonymy.species_id = species.id
         LEFT JOIN auth_user "user" ON synonymy.created_by_id = "user".id;
 
     CREATE UNIQUE INDEX synonymy_view_id_idx
-        ON synonymy_view (synonymy_id);
+        ON synonymy_view (id);
     """
     id = models.IntegerField(primary_key=True, blank=False, null=False, help_text="")
-    specie_id = models.IntegerField(blank=False, null=False, help_text="")
+    species_id = models.IntegerField(blank=False, null=False, help_text="")
     id_taxa = models.IntegerField(blank=False, null=False, help_text="")
-    specie_scientific_name = models.CharField(max_length=500, blank=True, null=True, help_text="sp")
-    synonymy_id = models.IntegerField(blank=False, null=False, help_text="")
+    unique_taxon_id = models.BigIntegerField()
+    taxon_id = models.CharField()
+    species_scientific_name = models.CharField(max_length=500, blank=True, null=True, help_text="sp")
     scientific_name = models.CharField(max_length=300, blank=True, null=True)
     scientific_name_full = models.CharField(max_length=800, blank=True, null=True)
     genus = models.CharField(max_length=300, blank=True, null=True)
@@ -1432,7 +1487,7 @@ class SynonymyView(TaxonomicModel):
 
     @staticmethod
     def get_parent_query(search: str) -> Q:
-        return Q(specie_scientific_name__icontains=search)
+        return Q(species_scientific_name__icontains=search)
 
     @staticmethod
     def get_created_by_query(search: str) -> Q:
@@ -1487,7 +1542,7 @@ class RegionDistributionView(models.Model):
 class FinderView(models.Model):
     """
     CREATE MATERIALIZED VIEW finder_view AS
-    SELECT id,
+    SELECT unique_taxon_id AS id,
            'species'       AS type,
            scientific_name AS name,
            scientific_name AS name_es,
@@ -1495,7 +1550,7 @@ class FinderView(models.Model):
            determined
     FROM catalog_species
     UNION ALL
-    SELECT id,
+    SELECT unique_taxon_id AS id,
            'synonymy'      AS type,
            scientific_name AS name,
            scientific_name AS name_es,
@@ -1503,7 +1558,7 @@ class FinderView(models.Model):
            FALSE           AS determined
     FROM catalog_synonymy
     UNION ALL
-    SELECT id,
+    SELECT unique_taxon_id AS id,
            'family'        AS type,
            name            AS name,
            name            AS name_es,
@@ -1511,7 +1566,7 @@ class FinderView(models.Model):
            FALSE           AS determined
     FROM catalog_family
     UNION ALL
-    SELECT id,
+    SELECT unique_taxon_id AS id,
            'genus'         AS type,
            name            AS name,
            name            AS name_es,
@@ -1550,3 +1605,35 @@ class FinderView(models.Model):
     class Meta:
         managed = False
         db_table = 'finder_view'
+
+
+RANK_MODELS = {
+    "kingdom": Kingdom,
+    "division": Division,
+    "classname": ClassName,
+    "order": Order,
+    "family": Family,
+    "genus": Genus,
+    "species": Species,
+}
+
+
+def get_fuzzy_taxa(rank: str, search: str) -> int:
+    start = time()
+    model = RANK_MODELS[rank]
+    str_name = 'scientific_name' if rank == 'search' else 'name'
+    results = model.objects.annotate(
+        similarity=TrigramSimilarity(str_name, search)
+    ).filter(
+        similarity__gte=0.6
+    ).order_by('-similarity')
+    show_results = [
+        (getattr(result, str_name), result.similarity) for result in results
+    ]
+    logging.debug(f"Fuzzy match of {search} "
+                  f"in {rank} took {time() - start} s, "
+                  f"and got {show_results}")
+    if results.count() >= 1:
+        return results.first().pk
+    else:
+        return -1
