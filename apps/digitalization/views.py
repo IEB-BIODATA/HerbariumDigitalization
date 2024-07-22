@@ -409,7 +409,9 @@ def mark_vouchers(request):
 @login_required
 @require_GET
 def control_vouchers(request):
-    voucher_state = int(request.GET.get('voucher_state', 2))
+    voucher_state = request.GET.get('voucher_state', None)
+    if voucher_state:
+        voucher_state = int(voucher_state)
     state_name = "All"
     for voucher, name in VOUCHER_STATE:
         if voucher == voucher_state:
@@ -423,13 +425,13 @@ def control_vouchers(request):
 
 @login_required
 @require_GET
-def vouchers_table(request, voucher_state: str):
-    voucher_state = int(voucher_state)
+def vouchers_table(request):
+    voucher_state = request.GET.get("voucher_state", None)
     voucher_filter = (
-            Q(herbarium__herbariummember__user=request.user) &
-            Q(biodata_code__qr_generated=True)
+            Q(herbarium__herbariummember__user=request.user)
     )
-    if voucher_state != -1:
+    if voucher_state:
+        voucher_state = int(voucher_state)
         voucher_filter = voucher_filter & Q(biodata_code__voucher_state=voucher_state)
     entries = VoucherImported.objects.filter(voucher_filter).order_by(
         'scientific_name__scientific_name', 'catalog_number',
@@ -691,7 +693,7 @@ def gallery_table(request):
 
 @login_required
 def species_gallery(request, species_id: int):
-    species = Species.objects.get(pk=species_id)
+    species = Species.objects.get(unique_taxon_id=species_id)
     gallery = GalleryImage.objects.filter(scientific_name=species)
     return render(request, 'digitalization/species_gallery.html', {
         'species': species,
@@ -908,16 +910,16 @@ def download_catalog(request):
     if request.method == 'GET':
         logging.info("Generating catalog excel...")
         headers = [
-            'id', 'id taxa',
+            'unique_taxon_id', 'id taxa',
             'Family', 'Genus', 'Species',
             'Scientific Name', 'Scientific Name Full',
             'Scientific Name DB', 'Determined'
         ]
         species = Species.objects.values_list(
-            'id', 'id_taxa', 'genus__family__name', 'genus__name',
+            'unique_taxon_id', 'id_taxa', 'genus__family__name', 'genus__name',
             'specific_epithet', 'scientific_name',
             'scientific_name_full', 'scientific_name_db', 'determined'
-        ).order_by('id')
+        ).order_by('unique_taxon_id')
         databook = tablib.Databook()
         data_set = tablib.Dataset(*species, headers=headers, title='Catalog')
         databook.add_sheet(data_set)

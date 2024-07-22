@@ -89,10 +89,10 @@
                     },
                     {
                         targets: 5,
-                        date: '{{ rank_name }}',
+                        data: '{{ rank_name }}',
                         orderable: false,
                         render: (data, type, row) => {
-                            let update_rank_url = "{{ update_rank_url }}".replace("0", row.id);
+                            let update_rank_url = "{{ update_rank_url }}".replace("0", row.unique_taxon_id);
                             let delete_rank_url = update_rank_url.replace("update", "delete");
                             let deletable = {{ deletable }};
                             let buttonActions = `<a href="${update_rank_url}"><i class="fas fa-fw fa-edit text-primary"></i></a>`;
