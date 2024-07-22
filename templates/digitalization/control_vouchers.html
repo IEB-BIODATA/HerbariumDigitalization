@@ -11,9 +11,10 @@
             console.log(parseInt("{{ voucher_state }}"));
             let voucher_state = "{{ voucher_state }}";
             let data = {};
-            if (voucher_state !== "None")
+            if (voucher_state !== "None") {
                 voucher_state = parseInt("{{ voucher_state }}")
                 data.voucher_state = voucher_state;
+            }
             let values = [];
             for (let i=0; i < 10; i++){
                 let selected = '';
