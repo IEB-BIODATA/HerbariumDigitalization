@@ -409,7 +409,9 @@ def mark_vouchers(request):
 @login_required
 @require_GET
 def control_vouchers(request):
-    voucher_state = int(request.GET.get('voucher_state', 2))
+    voucher_state = request.GET.get('voucher_state', None)
+    if voucher_state:
+        voucher_state = int(voucher_state)
     state_name = "All"
     for voucher, name in VOUCHER_STATE:
         if voucher == voucher_state:
@@ -423,13 +425,13 @@ def control_vouchers(request):
 
 @login_required
 @require_GET
-def vouchers_table(request, voucher_state: str):
-    voucher_state = int(voucher_state)
+def vouchers_table(request):
+    voucher_state = request.GET.get("voucher_state", None)
     voucher_filter = (
-            Q(herbarium__herbariummember__user=request.user) &
-            Q(biodata_code__qr_generated=True)
+            Q(herbarium__herbariummember__user=request.user)
     )
-    if voucher_state != -1:
+    if voucher_state:
+        voucher_state = int(voucher_state)
         voucher_filter = voucher_filter & Q(biodata_code__voucher_state=voucher_state)
     entries = VoucherImported.objects.filter(voucher_filter).order_by(
         'scientific_name__scientific_name', 'catalog_number',
