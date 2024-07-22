@@ -699,7 +699,7 @@ class DistributionList(ListAPIView):
         species_id = self.kwargs["species_id"]
         queryset = super().get_queryset()
         if species_id:
-            queryset = queryset.filter(scientific_name=species_id)
+            queryset = queryset.filter(scientific_name=Species.objects.get(unique_taxon_id=species_id))
         return queryset.order_by("id")
 
     @extend_schema(parameters=[
