@@ -197,6 +197,7 @@ def scheduled_postprocess(input_folder: str, temp_folder: str, log_folder: str):
                 cr3_to_dng(input_folder, temp_folder, process_logger)
                 dng_to_jpeg(temp_folder, temp_folder, session_folder.get_institution(), process_logger, log_cache)
                 for filename in glob.glob(temp_folder + '/*.jpg', recursive=False):
+                    done = False
                     log_object.found_images += 1
                     logging.info("Reading QR...")
                     qr = read_qr(filename,
@@ -234,14 +235,15 @@ def scheduled_postprocess(input_folder: str, temp_folder: str, log_folder: str):
                                         resized_image = change_image_resolution(image, scale_percent)
                                         voucher.upload_scaled_image(resized_image, scale_percent)
                                 voucher.save()
-                                etiquette_picture(voucher.id, logger=process_logger)
+                                done = etiquette_picture(voucher.id, logger=process_logger)
                             else:
                                 process_logger.error(
                                     "No voucher, or more than one, associated with ocurrence {}".format(
                                         biodata_code.id
                                     )
                                 )
-                        log_object.processed_images += 1
+                        if done:
+                            log_object.processed_images += 1
                     else:
                         process_logger.error("QR not found for file {}".format(filename))
                 empty_folder(input_folder)
