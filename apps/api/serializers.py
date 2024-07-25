@@ -124,6 +124,17 @@ class SpeciesSerializer(ScientificNameSerializer):
         return get_habit(obj)
 
 
+serializer_registry = {
+    Kingdom: KingdomSerializer,
+    Division: DivisionSerializer,
+    ClassName: ClassSerializer,
+    Order: OrderSerializer,
+    Family: FamilySerializer,
+    Genus: GenusSerializer,
+    Species: SpeciesSerializer,
+}
+
+
 class SampleSerializer(HyperlinkedModelSerializer):
     image_resized_10 = SerializerMethodField()
     image_resized_60 = SerializerMethodField()
@@ -205,6 +216,7 @@ class SpeciesDetailsSerializer(SpeciesSerializer):
     common_names = CommonNameSerializer(required=False, many=True)
     status = SerializerMethodField()
     conservation_state = SerializerMethodField()
+    parent = SerializerMethodField()
     synonyms = SerializerMethodField()
     vouchers = SerializerMethodField()
     gallery_images = SerializerMethodField()
@@ -214,7 +226,8 @@ class SpeciesDetailsSerializer(SpeciesSerializer):
     class Meta:
         model = Species
         fields = SpeciesSerializer.Meta.fields + [
-            'scientific_name_db', 'scientific_name_full', 'synonyms', 'common_names',
+            'scientific_name_db', 'scientific_name_full',
+            'parent', 'synonyms', 'common_names',
             'status', 'minimum_height', 'maximum_height', 'conservation_state', 'id_mma',
             'region', 'vouchers', 'gallery_images', 'herbarium_url',
         ]
@@ -227,6 +240,11 @@ class SpeciesDetailsSerializer(SpeciesSerializer):
 
     def get_conservation_state(self, obj: Species) -> List[str]:
         return get_conservation_state(obj)
+
+    def get_parent(self, obj: Species) -> Dict:
+        parent_model = obj.parent
+        serializer_class = serializer_registry[type(parent_model)]
+        return serializer_class(parent_model).data
 
     def get_synonyms(self, obj: Species) -> List[str]:
         return [synonym.scientific_name_full for synonym in obj.synonyms.all()]

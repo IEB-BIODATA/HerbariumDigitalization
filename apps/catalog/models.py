@@ -5,6 +5,8 @@ from abc import abstractmethod, ABC
 from copy import deepcopy
 from django.conf import settings
 from django.contrib.auth.models import User
+from django.contrib.contenttypes.fields import GenericForeignKey
+from django.contrib.contenttypes.models import ContentType
 from django.contrib.gis.db.models import GeometryField
 from django.contrib.postgres.search import TrigramSimilarity
 from django.db import connection
@@ -1031,6 +1033,9 @@ class Species(ScientificName):
     conservation_state = models.ManyToManyField(ConservationState, verbose_name=_("Conservation State"), blank=True)
     determined = models.BooleanField(verbose_name=_("Determined?"), default=False)
     id_taxa_origin = models.IntegerField(verbose_name=_("ID Taxa of Origin"), blank=True, null=True, help_text="")
+    parent_content_type = models.ForeignKey(ContentType, on_delete=models.CASCADE)
+    parent_taxon_id = models.PositiveIntegerField()
+    parent_name = GenericForeignKey("parent_content_type", "parent_taxon_id")
 
     objects = SpeciesQuerySet.as_manager()
 
@@ -1077,6 +1082,10 @@ class Species(ScientificName):
     @property
     def kingdom(self):
         return self.division.kingdom
+
+    @property
+    def parent(self) -> TaxonomicModel:
+        return self.parent_content_type.model_class().objects.get(unique_taxon_id=self.parent_taxon_id)
 
     @staticmethod
     def get_parent_query(search: str) -> Q:
