@@ -1,3 +1,8 @@
+import logging
+
+from copy import deepcopy
+
+from django.contrib.contenttypes.models import ContentType
 from django.utils.translation import gettext_lazy as _
 from typing import List
 
@@ -23,3 +28,21 @@ def get_cycle(species: Species) -> str:
 
 def get_conservation_state(species: Species) -> List[str]:
     return [f"{state.name} ({state.key})" for state in species.conservation_state.all()]
+
+
+def get_children(species: Species) -> List[Species]:
+    children = [species]
+    new_children = Species.objects.filter(
+        parent_content_type=ContentType.objects.get_for_model(Species),
+        parent_taxon_id=species.unique_taxon_id
+    )
+    while len(new_children) > 0:
+        children += new_children.all()
+        grand_children = list()
+        for new_child in new_children.all():
+            grand_children += Species.objects.filter(
+                parent_content_type=ContentType.objects.get_for_model(Species),
+                parent_taxon_id=new_child.unique_taxon_id
+            ).all()
+        new_children = deepcopy(grand_children)
+    return children
