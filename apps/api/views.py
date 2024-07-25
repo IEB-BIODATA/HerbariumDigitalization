@@ -40,6 +40,7 @@ from .utils import filter_query_set, OpenAPIKingdom, OpenAPIClass, OpenAPIOrder,
     OpenAPIArea, OpenAPIGeometry
 from ..catalog.serializers import PlantHabitSerializer, EnvHabitSerializer, StatusSerializer, CycleSerializer, \
     RegionSerializer, ConservationStateSerializer
+from ..catalog.utils import get_children
 from ..digitalization.utils import register_temporal_geometry
 from ..home.models import Alert
 
@@ -699,7 +700,9 @@ class DistributionList(ListAPIView):
         species_id = self.kwargs["species_id"]
         queryset = super().get_queryset()
         if species_id:
-            queryset = queryset.filter(scientific_name=Species.objects.get(unique_taxon_id=species_id))
+            main_species = Species.objects.get(unique_taxon_id=species_id)
+            children = get_children(main_species)
+            queryset = queryset.filter(scientific_name__in=children)
         return queryset.order_by("id")
 
     @extend_schema(parameters=[

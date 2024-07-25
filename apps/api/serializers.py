@@ -8,7 +8,7 @@ from typing import Union, List, Dict
 from apps.catalog.models import Species, Family, Genus, Synonymy, Division, ClassName, Order, CommonName, \
     TaxonomicModel, FinderView, ScientificName, Region, Kingdom
 from apps.catalog.serializers import RegionSerializer, StatusSerializer
-from apps.catalog.utils import get_habit, get_conservation_state
+from apps.catalog.utils import get_habit, get_conservation_state, get_children
 from apps.digitalization.models import VoucherImported, GalleryImage, Licence
 
 
@@ -174,6 +174,13 @@ class SpeciesFinderSerializer(SpeciesSerializer):
             Q(image_public_resized_10__isnull=True) |
             Q(image_public_resized_10__exact='')
         ).first()
+        if sample is None:
+            sample = VoucherImported.objects.filter(
+                scientific_name__in=get_children(obj)
+            ).exclude(
+                Q(image_public_resized_10__isnull=True) |
+                Q(image_public_resized_10__exact='')
+            ).first()
         if sample:
             return SampleSerializer(
                 instance=sample, many=False, context=self.context
@@ -250,7 +257,10 @@ class SpeciesDetailsSerializer(SpeciesSerializer):
         return [synonym.scientific_name_full for synonym in obj.synonyms.all()]
 
     def get_vouchers(self, obj: Species) -> SampleSerializer:
-        vouchers = obj.voucherimported_set.exclude(
+        children = get_children(obj)
+        vouchers = VoucherImported.objects.filter(
+            scientific_name__in=children
+        ).exclude(
             Q(image_public_resized_10__isnull=True) |
             Q(image_public_resized_10__exact='') |
             Q(image_public_resized_60__isnull=True) |
