@@ -200,7 +200,9 @@ def qr_generator(request):
                         biodata_code__qr_generated=False,
                         herbarium=generated_page.herbarium
                     ).order_by(
-                        '-priority', 'scientific_name__genus__family__name', 'scientific_name__scientific_name',
+                        '-priority',
+                        'scientific_name__genus__family__name',
+                        'scientific_name__scientific_name',
                         'catalog_number'
                     )[:num_qrs]
                     if vouchers.count() == 0:
@@ -323,7 +325,7 @@ def priority_vouchers_page_download(request: HttpRequest, page_id: int):
     priority_vouchers = VoucherImported.objects.filter(
         biodata_code__page=page
     ).order_by(
-        'priority',
+        '-priority',
         'scientific_name__genus__family__name',
         'scientific_name__scientific_name',
         'catalog_number'
@@ -364,7 +366,7 @@ def qr_page_download(request: HttpRequest, page_id: int):
     vouchers = VoucherImported.objects.filter(
         biodata_code__page=page
     ).order_by(
-        'priority',
+        '-priority',
         'scientific_name__genus__family__name',
         'scientific_name__scientific_name',
         'catalog_number'
@@ -663,19 +665,19 @@ def gallery_table(request):
     search_query = Q()
     if search_value:
         search_query = (
-                Q(division__name__icontains=search_value) |
-                Q(classname__name__icontains=search_value) |
-                Q(order__name__icontains=search_value) |
-                Q(family__name__icontains=search_value) |
+                Q(genus__family__order__classname__division__name__icontains=search_value) |
+                Q(genus__family__order__classname__name__icontains=search_value) |
+                Q(genus__family__order__name__icontains=search_value) |
+                Q(genus__family__name__icontains=search_value) |
                 Q(scientific_name_full__icontains=search_value) |
                 Q(updated_at__icontains=search_value)
         )
 
     sort_by_func = {
-        0: "division__name",
-        1: "classname__name",
-        2: "order__name",
-        3: "family__name",
+        0: "genus__family__order__classname__division__name",
+        1: "genus__family__order__classname__name",
+        2: "genus__family__order__name",
+        3: "genus__family__name",
         4: "scientific_name_full",
         5: "gallery_images_annotation",
         6: "updated_at",
@@ -734,7 +736,7 @@ def modify_gallery_image(request, gallery_id):
             gallery = form.save()
             gallery.generate_thumbnail()
             logging.debug("Gallery modified {}".format(gallery))
-            return redirect('species_gallery', species_id=species.id)
+            return redirect('species_gallery', species_id=species.unique_taxon_id)
         else:
             logging.warning("Form is not valid: {}".format(form.errors), exc_info=True)
     return render(request, 'digitalization/gallery_image.html', {
@@ -948,6 +950,11 @@ def update_voucher(request, voucher_id):
                 voucher.decimal_longitude_public = decimal_longitude_public
                 voucher.point_public = GEOSGeometry(
                     'POINT(' + str(decimal_longitude_public) + ' ' + str(decimal_latitude_public) + ')', srid=4326)
+            else:
+                voucher.point = None
+                voucher.decimal_latitude_public = None
+                voucher.decimal_longitude_public = None
+                voucher.point_public = None
             voucher.save()
             if voucher.image and voucher.biodata_code.voucher_state == 7:
                 etiquette_picture.delay(int(voucher.pk))

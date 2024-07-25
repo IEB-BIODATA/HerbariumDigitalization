@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2024-07-18 12:31-0400\n"
+"POT-Creation-Date: 2024-07-23 12:44-0400\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -43,14 +43,16 @@ msgid "Press 'Log out' if you confirm leaving the account"
 msgstr "Presione 'Cerrar Sesión' si confirma salir de la cuenta."
 
 #: templates/base.html:74 templates/catalog/create_catalog.html:19
-#: templates/catalog/list_catalog.html:170 templates/catalog/taxa_form.html:15
+#: templates/catalog/list_catalog.html:170
+#: templates/catalog/list_common_name.html:170
+#: templates/catalog/taxa_form.html:15
 #: templates/catalog/update_binnacle.html:21
 #: templates/catalog/update_catalog.html:19
 #: templates/catalog/update_taxa.html:24
 #: templates/digitalization/gallery_image.html:135
 #: templates/digitalization/new_licence.html:20
 #: templates/digitalization/species_gallery.html:193
-#: templates/digitalization/update_voucher.html:180
+#: templates/digitalization/update_voucher.html:185
 #: templates/registration/preference.html:32
 #: templates/registration/preference.html:45
 msgid "Cancel"
@@ -69,7 +71,7 @@ msgstr "Nuevo %(title)s"
 #: templates/catalog/create_catalog.html:18 templates/catalog/taxa_form.html:14
 #: templates/catalog/update_binnacle.html:20
 #: templates/catalog/update_catalog.html:18
-#: templates/digitalization/update_voucher.html:179
+#: templates/digitalization/update_voucher.html:184
 #: templates/registration/preference.html:46
 msgid "Save"
 msgstr "Guardar"
@@ -122,7 +124,9 @@ msgid "Note"
 msgstr "Nota"
 
 #: templates/catalog/list_binnacle.html:103
-#: templates/catalog/list_catalog.html:137 templates/catalog/list_taxa.html:191
+#: templates/catalog/list_catalog.html:137
+#: templates/catalog/list_common_name.html:137
+#: templates/catalog/list_taxa.html:191
 #: templates/digitalization/mark_vouchers.html:367
 #: templates/digitalization/postprocessing_log.html:159
 #: templates/digitalization/qr_generator.html:155
@@ -131,7 +135,9 @@ msgid "Created by"
 msgstr "Creado por"
 
 #: templates/catalog/list_binnacle.html:104
-#: templates/catalog/list_catalog.html:138 templates/catalog/list_taxa.html:192
+#: templates/catalog/list_catalog.html:138
+#: templates/catalog/list_common_name.html:138
+#: templates/catalog/list_taxa.html:192
 #: templates/digitalization/mark_vouchers.html:368
 #: templates/digitalization/qr_generator.html:156
 #: templates/digitalization/validate_vouchers.html:395
@@ -139,52 +145,65 @@ msgid "Created at"
 msgstr "Fecha creación"
 
 #: templates/catalog/list_binnacle.html:105
-#: templates/catalog/list_catalog.html:139 templates/catalog/list_taxa.html:193
+#: templates/catalog/list_catalog.html:139
+#: templates/catalog/list_common_name.html:139
+#: templates/catalog/list_taxa.html:193
 #: templates/digitalization/gallery_images.html:109
 msgid "Updated at"
 msgstr "Fecha Actualización"
 
 #: templates/catalog/list_binnacle.html:106
-#: templates/catalog/list_catalog.html:140 templates/catalog/list_taxa.html:196
-#: templates/digitalization/control_vouchers.html:218
+#: templates/catalog/list_catalog.html:140
+#: templates/catalog/list_common_name.html:140
+#: templates/catalog/list_taxa.html:196
+#: templates/digitalization/control_vouchers.html:224
 msgid "Action"
 msgstr "Acción"
 
-#: templates/catalog/list_catalog.html:115 templates/catalog/list_taxa.html:163
+#: templates/catalog/list_catalog.html:115
+#: templates/catalog/list_common_name.html:115
+#: templates/catalog/list_taxa.html:163
 msgid "New"
 msgstr "Nuevo"
 
-#: templates/catalog/list_catalog.html:126 templates/catalog/list_taxa.html:177
+#: templates/catalog/list_catalog.html:126
+#: templates/catalog/list_common_name.html:126
+#: templates/catalog/list_taxa.html:177
 #: templates/digitalization/gallery_images.html:94
 #: templates/digitalization/postprocessing_log.html:144
 msgid "Search"
 msgstr "Buscar"
 
-#: templates/catalog/list_catalog.html:150 templates/catalog/list_taxa.html:206
+#: templates/catalog/list_catalog.html:150
+#: templates/catalog/list_common_name.html:150
+#: templates/catalog/list_taxa.html:206
 #: templates/digitalization/gallery_images.html:119
 #: templates/digitalization/postprocessing_log.html:170
 msgid "Load table"
 msgstr "Cargar tabla"
 
 #: templates/catalog/list_catalog.html:164
+#: templates/catalog/list_common_name.html:164
 #: templates/catalog/update_taxa.html:18
 #: templates/digitalization/species_gallery.html:187
 msgid "Warning!"
 msgstr "¡Cuidado!"
 
 #: templates/catalog/list_catalog.html:167
+#: templates/catalog/list_common_name.html:167
 #, python-format
 msgid "Are you sure? %(rank)s"
 msgstr "¿Estás seguro que deseas borrar %(rank)s?"
 
-#: templates/catalog/list_catalog.html:171 templates/catalog/taxa_form.html:29
-#: templates/catalog/update_taxa.html:25
+#: templates/catalog/list_catalog.html:171
+#: templates/catalog/list_common_name.html:171
+#: templates/catalog/taxa_form.html:29 templates/catalog/update_taxa.html:25
 #: templates/digitalization/species_gallery.html:194
 msgid "Delete"
 msgstr "Borrar"
 
 #: templates/catalog/list_taxa.html:98
-#: templates/digitalization/control_vouchers.html:124
+#: templates/digitalization/control_vouchers.html:130
 #: templates/digitalization/gallery_image.html:131
 msgid "Edit"
 msgstr "Editar"
@@ -372,60 +391,60 @@ msgstr "¿Estás seguro que deseas borrar la especie %(name)s?"
 msgid "Voucher Validation"
 msgstr "Validación de Vouchers"
 
-#: templates/digitalization/control_vouchers.html:47
+#: templates/digitalization/control_vouchers.html:53
 #: templates/digitalization/mark_vouchers.html:166
 msgctxt "spaced"
 msgid "No State"
 msgstr "&nbsp;Sin Estado&nbsp;&nbsp;&nbsp;&nbsp;"
 
-#: templates/digitalization/control_vouchers.html:48
+#: templates/digitalization/control_vouchers.html:54
 #: templates/digitalization/mark_vouchers.html:167
 msgctxt "spaced"
 msgid "Found"
 msgstr "&nbsp;Encontrado&nbsp;&nbsp;&nbsp;&nbsp;"
 
-#: templates/digitalization/control_vouchers.html:49
+#: templates/digitalization/control_vouchers.html:55
 #: templates/digitalization/mark_vouchers.html:168
 msgctxt "spaced"
 msgid "Not Found"
 msgstr "&nbsp;No Encontrado&nbsp;"
 
-#: templates/digitalization/control_vouchers.html:50
+#: templates/digitalization/control_vouchers.html:56
 #: templates/digitalization/mark_vouchers.html:169
 msgctxt "spaced"
 msgid "Borrowed"
 msgstr "&nbsp;En Préstamo&nbsp;&nbsp;&nbsp;"
 
-#: templates/digitalization/control_vouchers.html:51
+#: templates/digitalization/control_vouchers.html:57
 #: templates/digitalization/mark_vouchers.html:170
 msgctxt "spaced"
 msgid "Lost"
 msgstr "&nbsp;Extraviado&nbsp;&nbsp;&nbsp;&nbsp;"
 
-#: templates/digitalization/control_vouchers.html:52
+#: templates/digitalization/control_vouchers.html:58
 #: templates/digitalization/mark_vouchers.html:171
 msgctxt "spaced"
 msgid "In Curatorship"
 msgstr "&nbsp;En curatoria&nbsp;&nbsp;"
 
-#: templates/digitalization/control_vouchers.html:53
+#: templates/digitalization/control_vouchers.html:59
 msgctxt "spaced"
 msgid "Digitalized"
 msgstr "&nbsp;Digitalizado&nbsp;&nbsp;"
 
-#: templates/digitalization/control_vouchers.html:138
+#: templates/digitalization/control_vouchers.html:144
 #: templates/digitalization/mark_vouchers.html:209
 #: templates/digitalization/validate_vouchers.html:195
 msgid "Filter State"
 msgstr "Filtrar Estado"
 
-#: templates/digitalization/control_vouchers.html:139
+#: templates/digitalization/control_vouchers.html:145
 #: templates/digitalization/mark_vouchers.html:210
 #: templates/digitalization/validate_vouchers.html:196
 msgid "All"
 msgstr "Todos"
 
-#: templates/digitalization/control_vouchers.html:140
+#: templates/digitalization/control_vouchers.html:146
 #: templates/digitalization/mark_vouchers.html:211
 #: templates/digitalization/mark_vouchers.html:370
 #: templates/digitalization/validate_vouchers.html:197
@@ -433,7 +452,7 @@ msgstr "Todos"
 msgid "Found"
 msgstr "Encontrado"
 
-#: templates/digitalization/control_vouchers.html:141
+#: templates/digitalization/control_vouchers.html:147
 #: templates/digitalization/mark_vouchers.html:212
 #: templates/digitalization/mark_vouchers.html:369
 #: templates/digitalization/validate_vouchers.html:198
@@ -441,7 +460,7 @@ msgstr "Encontrado"
 msgid "No State"
 msgstr "Sin Estado"
 
-#: templates/digitalization/control_vouchers.html:142
+#: templates/digitalization/control_vouchers.html:148
 #: templates/digitalization/mark_vouchers.html:213
 #: templates/digitalization/mark_vouchers.html:371
 #: templates/digitalization/validate_vouchers.html:199
@@ -449,31 +468,31 @@ msgstr "Sin Estado"
 msgid "Not Found"
 msgstr "No Encontrado"
 
-#: templates/digitalization/control_vouchers.html:143
+#: templates/digitalization/control_vouchers.html:149
 #: templates/digitalization/mark_vouchers.html:214
 #: templates/digitalization/validate_vouchers.html:200
 msgid "Borrowed"
 msgstr "En Préstamo"
 
-#: templates/digitalization/control_vouchers.html:144
+#: templates/digitalization/control_vouchers.html:150
 #: templates/digitalization/mark_vouchers.html:215
 #: templates/digitalization/validate_vouchers.html:201
 msgid "Lost"
 msgstr "Extraviado"
 
-#: templates/digitalization/control_vouchers.html:145
+#: templates/digitalization/control_vouchers.html:151
 #: templates/digitalization/mark_vouchers.html:216
 #: templates/digitalization/validate_vouchers.html:202
 msgid "Found And Borrowed"
 msgstr "En Préstado Encontrado"
 
-#: templates/digitalization/control_vouchers.html:146
+#: templates/digitalization/control_vouchers.html:152
 #: templates/digitalization/mark_vouchers.html:217
 #: templates/digitalization/validate_vouchers.html:203
 msgid "In Curatorship"
 msgstr "En curatoria"
 
-#: templates/digitalization/control_vouchers.html:147
+#: templates/digitalization/control_vouchers.html:153
 #: templates/digitalization/mark_vouchers.html:218
 #: templates/digitalization/mark_vouchers.html:372
 #: templates/digitalization/validate_vouchers.html:204
@@ -481,66 +500,66 @@ msgstr "En curatoria"
 msgid "Digitalized"
 msgstr "Digitalizado"
 
-#: templates/digitalization/control_vouchers.html:197
+#: templates/digitalization/control_vouchers.html:203
 msgid "Voucher Digitalization"
 msgstr "Digitalización de Vouchers"
 
-#: templates/digitalization/control_vouchers.html:202
+#: templates/digitalization/control_vouchers.html:208
 msgid "Voucher table"
 msgstr "Tabla de Vouchers"
 
-#: templates/digitalization/control_vouchers.html:209
+#: templates/digitalization/control_vouchers.html:215
 #: templates/digitalization/mark_vouchers.html:393
 #: templates/digitalization/validate_vouchers.html:419
 #: templates/digitalization/validate_vouchers.html:422
 msgid "State"
 msgstr "Estado"
 
-#: templates/digitalization/control_vouchers.html:210
+#: templates/digitalization/control_vouchers.html:216
 msgid "Processing date"
 msgstr "Fecha Proceso"
 
-#: templates/digitalization/control_vouchers.html:211
+#: templates/digitalization/control_vouchers.html:217
 #: templates/digitalization/load_priority_vouchers_file.html:319
 #: templates/digitalization/qr_generator.html:154
 msgid "Herbarium"
 msgstr "Herbario"
 
-#: templates/digitalization/control_vouchers.html:212
+#: templates/digitalization/control_vouchers.html:218
 msgid "Biodata ID"
 msgstr "ID Biodata"
 
-#: templates/digitalization/control_vouchers.html:213
+#: templates/digitalization/control_vouchers.html:219
 #: templates/digitalization/mark_vouchers.html:394
 #: templates/digitalization/validate_vouchers.html:420
 msgid "Herbarium ID"
 msgstr "ID Herbario"
 
-#: templates/digitalization/control_vouchers.html:214
+#: templates/digitalization/control_vouchers.html:220
 #: templates/digitalization/mark_vouchers.html:395
 #: templates/digitalization/validate_vouchers.html:421
 msgid "Species Name"
 msgstr "Nombre Especie"
 
-#: templates/digitalization/control_vouchers.html:215
+#: templates/digitalization/control_vouchers.html:221
 #: templates/digitalization/mark_vouchers.html:396
 #: templates/digitalization/template_list_priority_voucher.html:41
-#: templates/digitalization/update_voucher.html:85
+#: templates/digitalization/update_voucher.html:90
 msgid "Collected by"
 msgstr "Colectado por"
 
-#: templates/digitalization/control_vouchers.html:216
+#: templates/digitalization/control_vouchers.html:222
 #: templates/digitalization/mark_vouchers.html:397
 #: templates/digitalization/template_list_priority_voucher.html:42
-#: templates/digitalization/update_voucher.html:79
+#: templates/digitalization/update_voucher.html:84
 #: templates/digitalization/validate_vouchers.html:423
 msgid "Collection Number"
 msgstr "Número de Colecta"
 
-#: templates/digitalization/control_vouchers.html:217
+#: templates/digitalization/control_vouchers.html:223
 #: templates/digitalization/mark_vouchers.html:398
-#: templates/digitalization/update_voucher.html:97
-#: templates/digitalization/update_voucher.html:159
+#: templates/digitalization/update_voucher.html:102
+#: templates/digitalization/update_voucher.html:164
 #: templates/digitalization/validate_vouchers.html:424
 msgid "Locality"
 msgstr "Ubicación"
@@ -860,7 +879,7 @@ msgid "Herbarium Code"
 msgstr "Código Herbario"
 
 #: templates/digitalization/template_list_priority_voucher.html:39
-#: templates/digitalization/update_voucher.html:91
+#: templates/digitalization/update_voucher.html:96
 msgid "Species"
 msgstr "Especie"
 
@@ -873,58 +892,58 @@ msgstr "Lista de QRs"
 msgid "Document date: %(date)s"
 msgstr "Fecha Documento: %(date)s"
 
-#: templates/digitalization/update_voucher.html:55
+#: templates/digitalization/update_voucher.html:60
 msgid "Digitalization: Voucher"
 msgstr "Digitalización: Voucher"
 
-#: templates/digitalization/update_voucher.html:60
+#: templates/digitalization/update_voucher.html:65
 msgid "Update Voucher"
 msgstr "Actualizar Voucher"
 
-#: templates/digitalization/update_voucher.html:67
+#: templates/digitalization/update_voucher.html:72
 msgid "Catalogue Number"
 msgstr "Número de Catálogo"
 
-#: templates/digitalization/update_voucher.html:73
+#: templates/digitalization/update_voucher.html:78
 msgid "Herbarium Database ID"
 msgstr "ID Base Dato herbario"
 
-#: templates/digitalization/update_voucher.html:103
+#: templates/digitalization/update_voucher.html:108
 msgid "Altitude"
 msgstr "Altura"
 
-#: templates/digitalization/update_voucher.html:109
+#: templates/digitalization/update_voucher.html:114
 msgid "Collection Date"
 msgstr "Fecha de Colecta"
 
-#: templates/digitalization/update_voucher.html:115
+#: templates/digitalization/update_voucher.html:120
 msgid "Identified by"
 msgstr "Determinado por"
 
-#: templates/digitalization/update_voucher.html:121
+#: templates/digitalization/update_voucher.html:126
 msgid "Identified Date"
 msgstr "Fecha de Determinación"
 
-#: templates/digitalization/update_voucher.html:127
+#: templates/digitalization/update_voucher.html:132
 msgid "Observations"
 msgstr "Observaciones"
 
-#: templates/digitalization/update_voucher.html:133
+#: templates/digitalization/update_voucher.html:138
 msgid "Priority"
 msgstr "Prioridad"
 
-#: templates/digitalization/update_voucher.html:140
+#: templates/digitalization/update_voucher.html:145
 #: templates/digitalization/validate_vouchers.html:425
 msgid "Image"
 msgstr "Imagen"
 
-#: templates/digitalization/update_voucher.html:147
-#: templates/digitalization/update_voucher.html:164
+#: templates/digitalization/update_voucher.html:152
+#: templates/digitalization/update_voucher.html:169
 msgid "Latitude"
 msgstr "Latitud"
 
-#: templates/digitalization/update_voucher.html:153
-#: templates/digitalization/update_voucher.html:165
+#: templates/digitalization/update_voucher.html:158
+#: templates/digitalization/update_voucher.html:170
 msgid "Longitude"
 msgstr "Longitud"
 
