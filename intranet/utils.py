@@ -141,6 +141,11 @@ def __strip_z_dimension_coord__(geometry: GEOSGeometry) -> GEOSGeometry:
         for linear_ring in geometry:
             rings.append(__strip_z_dimension_coord__(linear_ring))
         return Polygon(*rings)
+    elif geometry.geom_typeid == 6:
+        polygons = list()
+        for polygon in geometry:
+            polygons.append(__strip_z_dimension_coord__(polygon))
+        return MultiPolygon(polygons)
     else:
         return GEOM_TYPE[geometry.geom_typeid](
             list(map(__strip_z__, geometry.coords)),
