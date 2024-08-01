@@ -9,6 +9,7 @@ from django.contrib.contenttypes.fields import GenericForeignKey
 from django.contrib.contenttypes.models import ContentType
 from django.contrib.gis.db.models import GeometryField
 from django.contrib.postgres.search import TrigramSimilarity
+from django.core.exceptions import ObjectDoesNotExist
 from django.db import connection
 from django.db import models
 from django.db.models import Q
@@ -707,7 +708,7 @@ class Family(TaxonomicModel):
     name = models.CharField(verbose_name=_("Name"), max_length=300, blank=True, null=True)
     order = models.ForeignKey(
         Order, verbose_name=_("Order"), on_delete=models.CASCADE, blank=True,
-        null=True, help_text="order", db_column="order"
+        null=True, help_text="order"
     )
 
     objects = FamilyQuerySet.as_manager()
@@ -1084,8 +1085,11 @@ class Species(ScientificName):
         return self.division.kingdom
 
     @property
-    def parent(self) -> TaxonomicModel:
-        return self.parent_content_type.model_class().objects.get(unique_taxon_id=self.parent_taxon_id)
+    def parent(self) -> TaxonomicModel | None:
+        try:
+            return self.parent_content_type.model_class().objects.get(unique_taxon_id=self.parent_taxon_id)
+        except ObjectDoesNotExist:
+            return None
 
     @staticmethod
     def get_parent_query(search: str) -> Q:
@@ -1136,6 +1140,9 @@ class Species(ScientificName):
                     kwargs["notes"] = "Actualización de {}".format(
                         "; ".join(self.__difference__(self.__original__))
                     )
+        if self.parent is None:
+            self.parent_content_type = ContentType.objects.get_for_model(Genus)
+            self.parent_taxon_id = self.genus.unique_taxon_id
         return super().save(
             force_insert=force_insert,
             force_update=force_update,
@@ -1366,7 +1373,7 @@ class CatalogView(TaxonomicModel):
          JOIN auth_user "user" ON species.created_by_id = "user".id
          JOIN catalog_genus genus ON species.genus_id = genus.id
          JOIN catalog_family family ON genus.family_id = family.id
-         JOIN catalog_order "order" ON family."order" = "order".id
+         JOIN catalog_order "order" ON family.order_id = "order".id
          JOIN catalog_classname classname ON "order".classname_id = classname.id
          JOIN catalog_division division ON classname.division_id = division.id
          JOIN catalog_kingdom kingdom ON division.kingdom_id = kingdom.id
