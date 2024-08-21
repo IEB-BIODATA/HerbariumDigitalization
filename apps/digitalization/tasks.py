@@ -30,7 +30,8 @@ from django.db.models import Model
 from apps.digitalization.models import DCW_SQL, PostprocessingLog
 from apps.digitalization.models import GalleryImage, BannerImage
 from apps.digitalization.models import VoucherImported, BiodataCode, ColorProfileFile, PriorityVouchersFile
-from apps.digitalization.storage_backends import PrivateMediaStorage, PublicMediaStorage
+from apps.digitalization.storage_backends import PrivateMediaStorage, PublicMediaStorage, IAPrivateMediaStorage, \
+    GlacierPrivateMediaStorage
 from apps.digitalization.utils import SessionFolder, TaskProcessLogger, HtmlLogger, GroupLogger
 from apps.digitalization.utils import cr3_to_dng, dng_to_jpeg, dng_to_jpeg_color_profile
 from apps.digitalization.utils import read_qr, change_image_resolution, empty_folder
@@ -87,7 +88,7 @@ def etiquette_picture(voucher_id, logger: logging.Logger = None):
         logger.info("Working with {}".format(voucher.id))
         parameters = PARAMETERS[voucher.herbarium.collection_code]
         logger.debug(parameters)
-        image_file = PrivateMediaStorage().open(voucher.image.name, "rb")
+        image_file = IAPrivateMediaStorage().open(voucher.image.name, "rb")
         voucher_image = Image.open(image_file)
         voucher_image_editable = ImageDraw.Draw(voucher_image)
         voucher_image_editable.rectangle(parameters["RECTANGLE"], fill='#d7d6e0', outline="black", width=4)
@@ -435,7 +436,7 @@ def process_pending_vouchers(self, pending_vouchers: List[str], user: int) -> st
             voucher_imported: VoucherImported = VoucherImported.objects.get(pk=int(voucher))
             raw_file = voucher_imported.image_raw.name
             logger.info(f"Saving file as {raw_file}...")
-            with PrivateMediaStorage().open(raw_file) as raw_image_file:
+            with GlacierPrivateMediaStorage().open(raw_file) as raw_image_file:
                 with open(os.path.join(temp_folder, raw_file), "wb") as local_file:
                     local_file.write(raw_image_file.read())
             cr3_to_dng(temp_folder, temp_folder, logger)

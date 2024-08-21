@@ -34,3 +34,18 @@ class PrivateMediaStorage(S3Boto3Storage):
     default_acl = 'private'
     file_overwrite = False
     custom_domain = False
+    object_parameters = {
+        'StorageClass': 'STANDARD',
+    }
+
+
+class IAPrivateMediaStorage(PrivateMediaStorage):
+    object_parameters = {
+        'StorageClass': 'STANDARD_IA',
+    }
+
+
+class GlacierPrivateMediaStorage(PrivateMediaStorage):
+    object_parameters = {
+        'StorageClass': 'DEEP_ARCHIVE',
+    }
