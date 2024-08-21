@@ -188,9 +188,10 @@ class SpeciesSerializer(TaxonomicSerializer):
         return get_conservation_state(obj)
 
 
-class BinnacleSerializer(TaxonomicSerializer):
+class BinnacleSerializer(ModelSerializer):
     class Meta:
         model = Binnacle
-        fields = TaxonomicSerializer.Meta.fields + [
+        fields = [
+            'id', 'created_by', 'created_at', 'updated_at',
             'type_update', 'model', 'description', 'note',
         ]
