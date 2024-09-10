@@ -436,7 +436,7 @@ def process_pending_vouchers(self, pending_vouchers: List[str], user: int) -> st
             voucher_imported: VoucherImported = VoucherImported.objects.get(pk=int(voucher))
             raw_file = voucher_imported.image_raw.name
             logger.info(f"Saving file as {raw_file}...")
-            with GlacierPrivateMediaStorage().open(raw_file) as raw_image_file:
+            with PrivateMediaStorage().open(raw_file) as raw_image_file:
                 with open(os.path.join(temp_folder, raw_file), "wb") as local_file:
                     local_file.write(raw_image_file.read())
             cr3_to_dng(temp_folder, temp_folder, logger)
@@ -466,6 +466,17 @@ def process_pending_vouchers(self, pending_vouchers: List[str], user: int) -> st
                 })
                 etiquette_picture(int(voucher), logger=logger)
             log_object.processed_images += 1
+            logger.info("Deep Archive image raw")
+            image_raw_key = voucher_imported.image_raw.storage.location + "/" + voucher_imported.image_raw.name
+            bucket_name = voucher_imported.image_raw.storage.bucket_name
+            s3 = boto3.client('s3')
+            s3.copy_object(
+                Bucket=bucket_name,
+                CopySource={'Bucket': bucket_name, 'Key': image_raw_key},
+                Key=image_raw_key,
+                StorageClass=voucher_imported.image_raw.storage.object_parameters["StorageClass"]
+            )
+            voucher_imported.save()
         except Exception as e:
             logger.error(e, exc_info=True)
             log_object.failed_images += 1
