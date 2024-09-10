@@ -369,8 +369,8 @@ class VoucherImported(models.Model):
         else:
             return '#'
 
-    def upload_raw_image(self, image: Union[File, BinaryIO]):
-        self.__upload_image__(image, ".CR3", "image_raw")
+    def upload_raw_image(self, image: Union[File, BinaryIO], temporal_tier: bool = False):
+        self.__upload_image__(image, ".CR3", "image_raw", temporal_tier=temporal_tier)
         self.biodata_code.voucher_state = 8
         self.biodata_code.save()
         self.save()
@@ -388,7 +388,7 @@ class VoucherImported(models.Model):
         self.save()
         return
 
-    def __upload_image__(self, image: Union[File, BinaryIO], file_info: str, image_variable: str):
+    def __upload_image__(self, image: Union[File, BinaryIO], file_info: str, image_variable: str, temporal_tier: bool = False):
         image_content = ContentFile(image.read())
         image_name = "{}_{}_{:07}{}".format(
             self.herbarium.institution_code,
@@ -399,7 +399,11 @@ class VoucherImported(models.Model):
         logging.info("Voucher {}: Saving {} with name {}".format(
             self.pk, image_variable, image_name
         ))
-        getattr(self, image_variable).save(image_name, image_content, save=True)
+        if temporal_tier:
+            file_field = PrivateMediaStorage().save(image_name, image_content)
+            setattr(self, image_variable, file_field)
+        else:
+            getattr(self, image_variable).save(image_name, image_content, save=True)
         return
 
     @staticmethod

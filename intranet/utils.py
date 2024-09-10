@@ -1,9 +1,21 @@
 from __future__ import annotations
 
+import smtplib
+
+from email.mime.text import MIMEText
+
+from email.header import Header
+
+from email.utils import formataddr, formatdate, make_msgid
+
+from email.mime.multipart import MIMEMultipart
+
 import logging
 import os
 import tempfile
+import time
 from abc import ABC, abstractmethod
+from django.conf import settings
 from django.contrib.gis.gdal import DataSource
 from django.contrib.gis.geos import GEOSGeometry, Point, LineString, LinearRing, Polygon, MultiPoint, MultiLineString, \
     MultiPolygon, GeometryCollection
@@ -157,3 +169,48 @@ def __strip_z__(coordinate: Tuple[float, float, float]) -> Tuple[float, float]:
     if abs(coordinate[2] - 1e-6) < 0:
         logging.warning(f"{coordinate[2]} is not a zero Z coordinate")
     return coordinate[0], coordinate[1]
+
+
+def send_mail(mail_body: str, to_addr: str, subject: str) -> None:
+    """
+    Sends mail based on template
+
+    Parameters
+    ----------
+    mail_body : str
+        Body of mail based on template
+    to_addr : str
+        Address to send email
+    subject : str
+        Subject of mail
+
+    Returns
+    -------
+    None
+    """
+    logging.info("Sending email for subject {}...".format(subject))
+    try:
+        username = settings.EMAIL_HOST_USER
+        password = settings.EMAIL_HOST_PASSWORD
+        from_addr = "contacto@{}".format(os.environ.get("EMAIL_DOMAIN"))
+
+        msg = MIMEMultipart('alternative')
+
+        msg['Subject'] = str(subject)
+        msg['From'] = formataddr((str(Header(from_addr, 'utf-8')), from_addr))
+        msg['To'] = to_addr
+        msg['Date'] = formatdate(time.time(), localtime=True)
+        msg.add_header('Message-id', make_msgid())
+        msg.attach(MIMEText(mail_body, 'html', _charset="utf-8"))
+
+        server = smtplib.SMTP(settings.EMAIL_HOST, settings.EMAIL_PORT)
+        server.ehlo()
+        server.starttls()
+        server.login(username, password)
+        server.sendmail(from_addr, [to_addr], msg.as_string())
+        server.close()
+    except Exception as e:
+        logging.error("Error sending mail")
+        logging.error(e, exc_info=True)
+        raise e
+    return

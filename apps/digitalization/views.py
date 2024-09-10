@@ -790,7 +790,7 @@ def upload_raw_image(request):
         image = request.FILES['image']
         voucher_imported = VoucherImported.objects.get(pk=voucher_id)
         try:
-            voucher_imported.upload_raw_image(image)
+            voucher_imported.upload_raw_image(image, temporal_tier=True)
             data = {'result': 'ok', 'file_url': voucher_imported.image_raw.url}
         except Exception as e:
             logging.warning("Voucher {} could not save".format(voucher_id))
