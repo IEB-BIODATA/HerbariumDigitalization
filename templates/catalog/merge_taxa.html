@@ -10,7 +10,7 @@
             const form = document.getElementById("taxon-form");
 
             selectField.addEventListener("change", function() {
-                const originalUrl = "{% url 'merge_taxa' taxa_1=taxa_1.id taxa_2=0 %}";
+                const originalUrl = "{% url 'merge_taxa' taxa_1=taxa_1.unique_taxon_id taxa_2=0 %}";
                 const selectedValue = selectField.value;
                 const updatedUrl = originalUrl.replace(/0(?!.*0)/, selectedValue);
                 console.debug(`Merge with ${selectedValue}, redirecting to ${updatedUrl}`);
@@ -28,12 +28,12 @@
     <div class="row">
         <div class="col-12" style="margin-bottom: 30px">
             {% if taxa_2 %}
-                <form id="taxon-form" action="{% url 'merge_taxa' taxa_1=taxa_1.id taxa_2=0 %}" method="get" class="form-horizontal">
+                <form id="taxon-form" action="{% url 'merge_taxa' taxa_1=taxa_1.unique_taxon_id taxa_2=0 %}" method="get" class="form-horizontal">
                     {% translate "Select taxon to join" %} <b>{{ taxa_1.scientific_name}}</b>:<br>
                     <select id="select-taxon" class="selectpicker">
                         <option value="0"></option>c
                         {% for taxa in species %}
-                            <option value="{{ taxa.id }}">{{ taxa.scientific_name }}</option>
+                            <option value="{{ taxa.unique_taxon_id }}">{{ taxa.scientific_name }}</option>
                         {% endfor %}
                     </select>
                 </form>
@@ -416,12 +416,12 @@
                             </table>
                         </div>
                     {% else %}
-                        <form id="taxon-form" action="{% url 'merge_taxa' taxa_1=taxa_1.id taxa_2=0 %}" method="get" class="form-horizontal">
+                        <form id="taxon-form" action="{% url 'merge_taxa' taxa_1=taxa_1.unique_taxon_id taxa_2=0 %}" method="get" class="form-horizontal">
                             {% translate "Select taxon to join" %} <b>{{ taxa_1.scientific_name}}</b>:<br>
                             <select id="select-taxon" class="selectpicker">
                                 <option value="0"></option>
                                 {% for taxa in species %}
-                                    <option value="{{ taxa.id }}">{{ taxa.scientific_name }}</option>
+                                    <option value="{{ taxa.unique_taxon_id }}">{{ taxa.scientific_name }}</option>
                                 {% endfor %}
                             </select>
                         </form>

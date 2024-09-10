@@ -30,7 +30,8 @@ from django.db.models import Model
 from apps.digitalization.models import DCW_SQL, PostprocessingLog
 from apps.digitalization.models import GalleryImage, BannerImage
 from apps.digitalization.models import VoucherImported, BiodataCode, ColorProfileFile, PriorityVouchersFile
-from apps.digitalization.storage_backends import PrivateMediaStorage, PublicMediaStorage
+from apps.digitalization.storage_backends import PrivateMediaStorage, PublicMediaStorage, IAPrivateMediaStorage, \
+    GlacierPrivateMediaStorage
 from apps.digitalization.utils import SessionFolder, TaskProcessLogger, HtmlLogger, GroupLogger
 from apps.digitalization.utils import cr3_to_dng, dng_to_jpeg, dng_to_jpeg_color_profile
 from apps.digitalization.utils import read_qr, change_image_resolution, empty_folder
@@ -87,7 +88,7 @@ def etiquette_picture(voucher_id, logger: logging.Logger = None):
         logger.info("Working with {}".format(voucher.id))
         parameters = PARAMETERS[voucher.herbarium.collection_code]
         logger.debug(parameters)
-        image_file = PrivateMediaStorage().open(voucher.image.name, "rb")
+        image_file = IAPrivateMediaStorage().open(voucher.image.name, "rb")
         voucher_image = Image.open(image_file)
         voucher_image_editable = ImageDraw.Draw(voucher_image)
         voucher_image_editable.rectangle(parameters["RECTANGLE"], fill='#d7d6e0', outline="black", width=4)
@@ -197,6 +198,7 @@ def scheduled_postprocess(input_folder: str, temp_folder: str, log_folder: str):
                 cr3_to_dng(input_folder, temp_folder, process_logger)
                 dng_to_jpeg(temp_folder, temp_folder, session_folder.get_institution(), process_logger, log_cache)
                 for filename in glob.glob(temp_folder + '/*.jpg', recursive=False):
+                    done = False
                     log_object.found_images += 1
                     logging.info("Reading QR...")
                     qr = read_qr(filename,
@@ -234,14 +236,15 @@ def scheduled_postprocess(input_folder: str, temp_folder: str, log_folder: str):
                                         resized_image = change_image_resolution(image, scale_percent)
                                         voucher.upload_scaled_image(resized_image, scale_percent)
                                 voucher.save()
-                                etiquette_picture(voucher.id, logger=process_logger)
+                                done = etiquette_picture(voucher.id, logger=process_logger)
                             else:
                                 process_logger.error(
                                     "No voucher, or more than one, associated with ocurrence {}".format(
                                         biodata_code.id
                                     )
                                 )
-                        log_object.processed_images += 1
+                        if done:
+                            log_object.processed_images += 1
                     else:
                         process_logger.error("QR not found for file {}".format(filename))
                 empty_folder(input_folder)
@@ -463,6 +466,17 @@ def process_pending_vouchers(self, pending_vouchers: List[str], user: int) -> st
                 })
                 etiquette_picture(int(voucher), logger=logger)
             log_object.processed_images += 1
+            logger.info("Deep Archive image raw")
+            image_raw_key = voucher_imported.image_raw.storage.location + "/" + voucher_imported.image_raw.name
+            bucket_name = voucher_imported.image_raw.storage.bucket_name
+            s3 = boto3.client('s3')
+            s3.copy_object(
+                Bucket=bucket_name,
+                CopySource={'Bucket': bucket_name, 'Key': image_raw_key},
+                Key=image_raw_key,
+                StorageClass=voucher_imported.image_raw.storage.object_parameters["StorageClass"]
+            )
+            voucher_imported.save()
         except Exception as e:
             logger.error(e, exc_info=True)
             log_object.failed_images += 1

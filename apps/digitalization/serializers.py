@@ -141,10 +141,10 @@ class VoucherSerializer(HyperlinkedModelSerializer):
 
 
 class SpeciesGallerySerializer(HyperlinkedModelSerializer):
-    division = ReadOnlyField(source='division.name')
-    classname = ReadOnlyField(source='classname.name')
-    order = ReadOnlyField(source='order.name')
-    family = ReadOnlyField(source='family.name')
+    division = ReadOnlyField(source='genus.family.order.classname.division.name')
+    classname = ReadOnlyField(source='genus.family.order.classname.name')
+    order = ReadOnlyField(source='genus.family.order.name')
+    family = ReadOnlyField(source='genus.family.name')
     gallery_images = SerializerMethodField()
 
     class Meta:

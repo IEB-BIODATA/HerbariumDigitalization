@@ -23,7 +23,7 @@ from typing import BinaryIO, Union, Any, Tuple, Callable, Dict, List
 
 from apps.catalog.models import Species, TAXONOMIC_RANK, RANK_MODELS, get_fuzzy_taxa
 from intranet.utils import CatalogQuerySet
-from .storage_backends import PublicMediaStorage, PrivateMediaStorage
+from .storage_backends import PublicMediaStorage, PrivateMediaStorage, GlacierPrivateMediaStorage, IAPrivateMediaStorage
 from .validators import validate_file_size
 
 VOUCHER_STATE = (
@@ -304,18 +304,17 @@ class VoucherImported(models.Model):
     decimal_longitude = models.FloatField(verbose_name=_("Longitude"), blank=True, null=True)
     identified_by = models.CharField(verbose_name=_("Identified by"), max_length=100, blank=True, null=True)
     identified_date = models.CharField(verbose_name=_("Identified Date"), max_length=100, blank=True, null=True)
-    identified_date = models.CharField(verbose_name=_("Identified Date"), max_length=100, blank=True, null=True)
-    image = models.ImageField(verbose_name=_("Image"), storage=PrivateMediaStorage(), blank=True, null=True)
+    image = models.ImageField(verbose_name=_("Image"), storage=IAPrivateMediaStorage(), blank=True, null=True)
     image_resized_10 = models.ImageField(verbose_name=_("%d Times Smaller Image Scale") % 10,
-                                         storage=PrivateMediaStorage(), blank=True, null=True)
+                                         storage=IAPrivateMediaStorage(), blank=True, null=True)
     image_resized_60 = models.ImageField(verbose_name=_("%d Times Smaller Image Scale") % 60,
-                                         storage=PrivateMediaStorage(), blank=True, null=True)
+                                         storage=IAPrivateMediaStorage(), blank=True, null=True)
     image_public = models.ImageField(verbose_name=_("Public Image"), storage=PublicMediaStorage(), blank=True, null=True)
     image_public_resized_10 = models.ImageField(verbose_name=_("%d Times Smaller Public Image Scale") % 10,
                                                 storage=PublicMediaStorage(), blank=True, null=True)
     image_public_resized_60 = models.ImageField(verbose_name=_("%d Times Smaller Public Image Scale") % 60,
                                                 storage=PublicMediaStorage(), blank=True, null=True)
-    image_raw = models.ImageField(verbose_name=_("Raw Image"), storage=PrivateMediaStorage(), blank=True, null=True)
+    image_raw = models.ImageField(verbose_name=_("Raw Image"), storage=GlacierPrivateMediaStorage(), blank=True, null=True)
     point = models.PointField(verbose_name=_("Point"), null=True, blank=True, )
     decimal_latitude_public = models.FloatField(verbose_name=_("Public Latitude"), blank=True, null=True)
     decimal_longitude_public = models.FloatField(verbose_name=_("Public Longitude"), blank=True, null=True)
@@ -370,8 +369,8 @@ class VoucherImported(models.Model):
         else:
             return '#'
 
-    def upload_raw_image(self, image: Union[File, BinaryIO]):
-        self.__upload_image__(image, ".CR3", "image_raw")
+    def upload_raw_image(self, image: Union[File, BinaryIO], temporal_tier: bool = False):
+        self.__upload_image__(image, ".CR3", "image_raw", temporal_tier=temporal_tier)
         self.biodata_code.voucher_state = 8
         self.biodata_code.save()
         self.save()
@@ -389,7 +388,7 @@ class VoucherImported(models.Model):
         self.save()
         return
 
-    def __upload_image__(self, image: Union[File, BinaryIO], file_info: str, image_variable: str):
+    def __upload_image__(self, image: Union[File, BinaryIO], file_info: str, image_variable: str, temporal_tier: bool = False):
         image_content = ContentFile(image.read())
         image_name = "{}_{}_{:07}{}".format(
             self.herbarium.institution_code,
@@ -400,7 +399,11 @@ class VoucherImported(models.Model):
         logging.info("Voucher {}: Saving {} with name {}".format(
             self.pk, image_variable, image_name
         ))
-        getattr(self, image_variable).save(image_name, image_content, save=True)
+        if temporal_tier:
+            file_field = PrivateMediaStorage().save(image_name, image_content)
+            setattr(self, image_variable, file_field)
+        else:
+            getattr(self, image_variable).save(image_name, image_content, save=True)
         return
 
     @staticmethod
