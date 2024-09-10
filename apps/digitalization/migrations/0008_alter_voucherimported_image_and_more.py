@@ -34,7 +34,7 @@ def change_storage_class(apps, schema_editor):
                 except Exception as e:
                     error_file.write(f"{key_object}: {e}\n")
                     pass
-        error_file.close()
+    error_file.close()
     return
 
 
