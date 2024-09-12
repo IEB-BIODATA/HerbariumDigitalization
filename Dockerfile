@@ -22,7 +22,7 @@ COPY ./apps /app/apps
 COPY ./assets /app/assets
 COPY ./templates /app/templates
 COPY ./static /app/static
-COPY intranet /app/intranet
+COPY ./intranet /app/intranet
 COPY ./manage.py /app
 
 RUN mkdir -p /app/media/upload

@@ -25,7 +25,7 @@ from urllib.parse import urlparse, parse_qs, urlencode
 
 from apps.catalog.models import Species, Synonymy, Family, Division, ClassName, Order, Status, Genus, \
     Region, ConservationState, PlantHabit, EnvironmentalHabit, Cycle, FinderView, CommonName, Kingdom, SynonymyQuerySet, \
-    SpeciesQuerySet
+    SpeciesQuerySet, TAXONOMIC_RANK, TaxonomicQuerySet
 from apps.digitalization.models import VoucherImported, BannerImage
 from intranet.utils import get_geometry_post
 from .serializers import SpeciesFinderSerializer, \
@@ -43,6 +43,16 @@ from ..catalog.serializers import PlantHabitSerializer, EnvHabitSerializer, Stat
 from ..catalog.utils import get_children
 from ..digitalization.utils import register_temporal_geometry
 from ..home.models import Alert
+
+TAXONOMIC_MODEL = {
+    "species": Species,
+    "synonymy": Synonymy,
+}
+
+TAXONOMIC_SERIALIZER = {
+    "species": SpeciesDetailsSerializer,
+    "synonymy": SynonymyDetailsSerializer,
+}
 
 
 def index(request: HttpRequest) -> HttpResponse:
@@ -464,7 +474,10 @@ class NameApiView(ObjectMultipleModelAPIView):
             label = a_model["label"]
             asking_for = self.request.query_params.getlist(label)
             if len(asking_for) > 0:
-                a_queryset = a_model["queryset"].filter(unique_taxon_id__in=self.request.query_params.getlist(label))
+                if isinstance(a_model["queryset"], TaxonomicQuerySet):
+                    a_queryset = a_model["queryset"].filter(unique_taxon_id__in=self.request.query_params.getlist(label))
+                else:
+                    a_queryset = a_model["queryset"].filter(id__in=self.request.query_params.getlist(label))
                 if a_queryset.count() > 0:
                     logging.info(label)
                     logging.debug(a_queryset)
@@ -669,6 +682,30 @@ class RetrieveLangApiView(RetrieveAPIView):
         lang = request.query_params.get("lang", default_language)
         activate(lang)
         return super(RetrieveLangApiView, self).get(request, *args, **kwargs)
+
+
+class RetrieveTaxaApiView(RetrieveLangApiView):
+    """
+    Gets the detail of any rank taxa
+    """
+    lookup_field = "unique_taxon_id"
+
+    def get_type(self) -> str:
+        lookup_value = self.kwargs.get(self.lookup_field)
+        obj = FinderView.objects.get(taxon_id=f"{settings.TAXA_ID_PREF}{lookup_value}")
+        return obj.type
+
+    def get_queryset(self):
+        try:
+            return TAXONOMIC_MODEL[self.get_type()].objects.all()
+        except KeyError:
+            return None
+
+    def get_serializer_class(self):
+        try:
+            return TAXONOMIC_SERIALIZER[self.get_type()]
+        except KeyError:
+            return None
 
 
 class ScientificNameDetails(RetrieveLangApiView):
