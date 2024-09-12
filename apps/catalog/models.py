@@ -1558,7 +1558,8 @@ class RegionDistributionView(models.Model):
 class FinderView(models.Model):
     """
     CREATE MATERIALIZED VIEW finder_view AS
-    SELECT unique_taxon_id AS id,
+    SELECT taxon_id,
+           unique_taxon_id AS id,
            'species'       AS type,
            scientific_name AS name,
            scientific_name AS name_es,
@@ -1566,7 +1567,8 @@ class FinderView(models.Model):
            determined
     FROM catalog_species
     UNION ALL
-    SELECT unique_taxon_id AS id,
+    SELECT taxon_id,
+           unique_taxon_id AS id,
            'synonymy'      AS type,
            scientific_name AS name,
            scientific_name AS name_es,
@@ -1574,7 +1576,44 @@ class FinderView(models.Model):
            FALSE           AS determined
     FROM catalog_synonymy
     UNION ALL
-    SELECT unique_taxon_id AS id,
+    SELECT taxon_id,
+           unique_taxon_id AS id,
+           'kingdom'       AS type,
+           name            AS name,
+           name            AS name_es,
+           name            AS name_en,
+           FALSE           AS determined
+    FROM catalog_kingdom
+    UNION ALL
+    SELECT taxon_id,
+           unique_taxon_id AS id,
+           'division'      AS type,
+           name            AS name,
+           name            AS name_es,
+           name            AS name_en,
+           FALSE           AS determined
+    FROM catalog_division
+    UNION ALL
+    SELECT taxon_id,
+           unique_taxon_id AS id,
+           'class'         AS type,
+           name            AS name,
+           name            AS name_es,
+           name            AS name_en,
+           FALSE           AS determined
+    FROM catalog_classname
+    UNION ALL
+    SELECT taxon_id,
+           unique_taxon_id AS id,
+           'order'         AS type,
+           name            AS name,
+           name            AS name_es,
+           name            AS name_en,
+           FALSE           AS determined
+    FROM catalog_order
+    UNION ALL
+    SELECT taxon_id,
+           unique_taxon_id AS id,
            'family'        AS type,
            name            AS name,
            name            AS name_es,
@@ -1582,7 +1621,8 @@ class FinderView(models.Model):
            FALSE           AS determined
     FROM catalog_family
     UNION ALL
-    SELECT unique_taxon_id AS id,
+    SELECT taxon_id,
+           unique_taxon_id AS id,
            'genus'         AS type,
            name            AS name,
            name            AS name_es,
@@ -1590,7 +1630,8 @@ class FinderView(models.Model):
            FALSE           AS determined
     FROM catalog_genus
     UNION ALL
-    SELECT id,
+    SELECT id              AS taxon_id,
+           id,
            'common_name'   AS type,
            name,
            name_es,
@@ -1608,6 +1649,7 @@ class FinderView(models.Model):
     CREATE INDEX finder_view_trgm_en_id
         ON finder_view USING gin(name_en gin_trgm_ops);
     """
+    taxon_id = models.CharField()
     id = models.IntegerField(primary_key=True, blank=False, null=False, help_text="id")
     name = models.CharField(max_length=500, blank=True, null=True, help_text="name")
     type = models.CharField(max_length=50, blank=True, null=True)

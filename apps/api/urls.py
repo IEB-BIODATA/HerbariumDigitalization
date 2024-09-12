@@ -15,7 +15,7 @@ Including another URLconf
 """
 from django.urls import re_path
 
-from .views import index, InfoApi, DivisionList, ClassList, OrderList, FamilyList, GenusList
+from .views import index, InfoApi, DivisionList, ClassList, OrderList, FamilyList, GenusList, RetrieveTaxaApiView
 from .views import PlantHabitList, EnvHabitList, StatusList, CycleList, RegionList, ConservationStateList, \
     CommonNameList
 from .views import MenuApiView, NameApiView, FinderApiView, RegionDetails, SpeciesListApiView, SpeciesDetails, \
@@ -41,6 +41,7 @@ urlpatterns = [
     re_path(r'^finder/(?P<text>[\w ]+)/$', FinderApiView.as_view()),
     re_path(r'^region/(?P<pk>\d+)/$', RegionDetails.as_view()),
     re_path(r'^species_list/$', SpeciesListApiView.as_view()),
+    re_path(r'^taxa/(?P<unique_taxon_id>\d+)/$', RetrieveTaxaApiView.as_view()),
     re_path(r'^species/(?P<unique_taxon_id>\d+)/$', SpeciesDetails.as_view()),
     re_path(r'^synonymy/(?P<unique_taxon_id>\d+)/$', SynonymyDetails.as_view()),
     re_path(r'^distribution/(?P<species_id>\d+)/$', DistributionList.as_view()),

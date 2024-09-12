@@ -14,7 +14,11 @@ from apps.digitalization.models import VoucherImported, GalleryImage, Licence
 
 class MinimumSerializer(Serializer):
     def to_representation(self, instance):
-        return str(instance.id), str(instance.name)
+        try:
+            id = instance.unique_taxon_id
+        except AttributeError:
+            id = instance.id
+        return str(id), str(instance.name)
 
 
 class RegionDetailsSerializer(RegionSerializer):
@@ -88,6 +92,7 @@ class FinderSerializer(ModelSerializer):
 class ScientificNameSerializer(TaxonomicApiSerializer):
     name = CharField(source="scientific_name", read_only=True)
     taxon_rank = CharField(source="taxon_rank.name", read_only=True)
+    taxonomic_status = SerializerMethodField()
 
     class Meta:
         model = ScientificName
@@ -97,7 +102,7 @@ class ScientificNameSerializer(TaxonomicApiSerializer):
             'subspecies', 'ssp_authorship',
             'variety', 'variety_authorship',
             'form', 'form_authorship',
-            'taxon_rank'
+            'taxonomic_status', 'taxon_rank'
         ]
         abstract = True
 
@@ -122,6 +127,9 @@ class SpeciesSerializer(ScientificNameSerializer):
 
     def get_habit(self, obj: Species) -> str:
         return get_habit(obj)
+
+    def get_taxonomic_status(self, obj: Species) -> str:
+        return "accepted"
 
 
 serializer_registry = {
@@ -198,6 +206,9 @@ class SynonymyFinderSerializer(ScientificNameSerializer):
         fields = ScientificNameSerializer.Meta.fields + [
             'species', 'genus_name',
         ]
+
+    def get_taxonomic_status(self, obj: Synonymy) -> str:
+        return "synonym"
 
 
 class LicenceSerializer(HyperlinkedModelSerializer):
