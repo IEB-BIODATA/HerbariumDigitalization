@@ -3,7 +3,7 @@ from leaflet.admin import LeafletGeoAdmin
 from modeltranslation.admin import TranslationAdmin
 
 from .forms import RegionForm
-from .models import PlantHabit, EnvironmentalHabit, Status, Cycle, Region, ConservationState, Habit, TaxonRank
+from .models import PlantHabit, EnvironmentalHabit, Status, Cycle, Region, ConservationStatus, Habit, TaxonRank
 
 ATTRIBUTE_LIST_DISPLAY = (['id', 'name', 'created_by', 'created_at', 'updated_at'])
 
@@ -53,6 +53,6 @@ class RegionAdmin(LeafletGeoAdmin, AttributeAdmin):
     exclude = ('geometry', )
 
 
-@admin.register(ConservationState)
-class ConservationStateAdmin(AttributeAdmin):
+@admin.register(ConservationStatus)
+class ConservationStatusAdmin(AttributeAdmin):
     pass

@@ -1,12 +1,13 @@
 from collections import OrderedDict
 
+import celery
 import logging
 import os
 from django.conf import settings
 from django.core.paginator import InvalidPage
 from django.db.models import Q, ExpressionWrapper, F, FloatField, Value, Count, QuerySet
 from django.db.models.functions import Length
-from django.http import HttpRequest, HttpResponse
+from django.http import HttpRequest, HttpResponse, JsonResponse, HttpResponseBadRequest
 from django.shortcuts import redirect
 from django.utils.translation import get_language, activate
 from drf_multiple_model.views import FlatMultipleModelAPIView, ObjectMultipleModelAPIView
@@ -24,8 +25,8 @@ from typing import Dict, List
 from urllib.parse import urlparse, parse_qs, urlencode
 
 from apps.catalog.models import Species, Synonymy, Family, Division, ClassName, Order, Status, Genus, \
-    Region, ConservationState, PlantHabit, EnvironmentalHabit, Cycle, FinderView, CommonName, Kingdom, SynonymyQuerySet, \
-    SpeciesQuerySet, TAXONOMIC_RANK, TaxonomicQuerySet
+    Region, ConservationStatus, PlantHabit, EnvironmentalHabit, Cycle, FinderView, CommonName, Kingdom, SynonymyQuerySet, \
+    SpeciesQuerySet, TAXONOMIC_RANK, TaxonomicQuerySet, DownloadSearchRegistration, FORMAT_CHOICES
 from apps.digitalization.models import VoucherImported, BannerImage
 from intranet.utils import get_geometry_post
 from .serializers import SpeciesFinderSerializer, \
@@ -34,15 +35,17 @@ from .serializers import SpeciesFinderSerializer, \
     FinderSerializer, GenusSerializer, CommonNameSerializer, \
     SpeciesDetailsSerializer, SynonymyDetailsSerializer, SpecimenDetailSerializer, SpecimenFinderSerializer, \
     RegionDetailsSerializer, MinimumSerializer
+from .tasks import request_download
 from .utils import filter_query_set, OpenAPIKingdom, OpenAPIClass, OpenAPIOrder, OpenAPIFamily, OpenAPIGenus, \
     OpenAPISpecies, OpenAPIPlantHabit, OpenAPIEnvHabit, OpenAPIStatus, OpenAPICycle, OpenAPIRegion, OpenAPIConservation, \
     OpenAPICommonName, OpenAPISearch, OpenAPIDivision, OpenAPIHerbarium, OpenApiPaginated, OpenAPILang, filter_by_geo, \
     OpenAPIArea, OpenAPIGeometry
 from ..catalog.serializers import PlantHabitSerializer, EnvHabitSerializer, StatusSerializer, CycleSerializer, \
-    RegionSerializer, ConservationStateSerializer
+    RegionSerializer, ConservationStatusSerializer
 from ..catalog.utils import get_children
 from ..digitalization.utils import register_temporal_geometry
 from ..home.models import Alert
+
 
 TAXONOMIC_MODEL = {
     "species": Species,
@@ -216,7 +219,7 @@ class QueryList(ListAPIView):
 
     def get_queryset(self):
         logging.info(f"Getting {self.queryset.model._meta.model_name}: {self.request.get_full_path()}")
-        return filter_query_set(super().get_queryset(), self.request)
+        return filter_query_set(super().get_queryset(), self.request.query_params)
 
     def get_serializer_class(self):
         return super().get_serializer_class()
@@ -312,12 +315,12 @@ class RegionList(QueryList):
     queryset = Region.objects.all()
 
 
-class ConservationStateList(QueryList):
+class ConservationStatusList(QueryList):
     """
-    Gets all available conservation state in the catalogue
+    Gets all available conservation status in the catalogue
     """
-    serializer_class = ConservationStateSerializer
-    queryset = ConservationState.objects.all()
+    serializer_class = ConservationStatusSerializer
+    queryset = ConservationStatus.objects.all()
 
 
 class CommonNameList(QueryList):
@@ -385,15 +388,15 @@ class MenuApiView(ObjectMultipleModelAPIView):
                 "serializer_class": RegionSerializer
             },
             {
-                "label": "conservation_state",
-                "queryset": ConservationState.objects.all(),
-                "serializer_class": ConservationStateSerializer
+                "label": "conservation_status",
+                "queryset": ConservationStatus.objects.all(),
+                "serializer_class": ConservationStatusSerializer
             },
         ]
         for i in range(len(querylist)):
             label = querylist[i]["label"]
             logging.info(label)
-            querylist[i]["queryset"] = filter_query_set(querylist[i]["queryset"], self.request)
+            querylist[i]["queryset"] = filter_query_set(querylist[i]["queryset"], self.request.query_params)
             logging.info(querylist[i])
         return querylist
 
@@ -465,8 +468,8 @@ class NameApiView(ObjectMultipleModelAPIView):
                 "queryset": Region.objects.all(),
             },
             {
-                "label": "conservation_state",
-                "queryset": ConservationState.objects.all(),
+                "label": "conservation_status",
+                "queryset": ConservationStatus.objects.all(),
             },
         ]
         querylist = list()
@@ -479,8 +482,6 @@ class NameApiView(ObjectMultipleModelAPIView):
                 else:
                     a_queryset = a_model["queryset"].filter(id__in=self.request.query_params.getlist(label))
                 if a_queryset.count() > 0:
-                    logging.info(label)
-                    logging.debug(a_queryset)
                     querylist.append({
                         "label": label,
                         "queryset": a_queryset,
@@ -610,7 +611,7 @@ class SpeciesListApiView(FlatMultipleModelAPIView, POSTRedirect):
         results = list()
         if species_filter:
             logging.info(f"Getting species: {self.request.get_full_path()}")
-            species_queryset = filter_query_set(Species.objects.all(), self.request)
+            species_queryset = filter_query_set(Species.objects.all(), self.request.query_params)
             if image_filter:
                 species_queryset = species_queryset.annotate(
                     vouchers_count=Count('voucherimported')
@@ -620,7 +621,7 @@ class SpeciesListApiView(FlatMultipleModelAPIView, POSTRedirect):
                     Q(voucherimported__image_public_resized_10__exact='')
                 )
             species_queryset = species_queryset.filter(
-                filter_by_geo(self.request, "voucherimported__point__within")
+                filter_by_geo(self.request.query_params, "voucherimported__point__within")
             ).distinct()
             self.species_count = species_queryset.count()
             results.append({
@@ -634,9 +635,9 @@ class SpeciesListApiView(FlatMultipleModelAPIView, POSTRedirect):
             logging.debug("Species count: {}".format(self.species_count))
         if synonyms_filter:
             logging.info(f"Getting synonyms: {self.request.get_full_path()}")
-            synonyms_queryset = filter_query_set(Synonymy.objects.all(), self.request)
+            synonyms_queryset = filter_query_set(Synonymy.objects.all(), self.request.query_params)
             synonyms_queryset = synonyms_queryset.filter(
-                filter_by_geo(self.request, "species__voucherimported__point__within")
+                filter_by_geo(self.request.query_params, "species__voucherimported__point__within")
             ).distinct()
             self.synonyms_count = synonyms_queryset.count()
             results.append({
@@ -779,7 +780,7 @@ class SpecimensList(QueryList, POSTRedirect):
                 Q(image_public_resized_60__isnull=False) &
                 Q(image_public__isnull=False)
             )
-        query = query & filter_by_geo(self.request, "point__within")
+        query = query & filter_by_geo(self.request.query_params, "point__within")
         regions = self.request.GET.getlist("region", [])
         if len(regions) > 0:
             region_query = Q()
@@ -848,3 +849,71 @@ class BannerSpecie(APIView):
                 specie_id
             )
         })
+
+
+class RequestDownload(APIView):
+    @extend_schema(
+        parameters=[
+            OpenAPIKingdom(), OpenAPIDivision(), OpenAPIClass(), OpenAPIOrder(),
+            OpenAPIFamily(), OpenAPIGenus(), OpenAPISpecies(),
+            OpenAPIPlantHabit(), OpenAPIEnvHabit(), OpenAPIStatus(), OpenAPICycle(),
+            OpenAPIRegion(), OpenAPIConservation(), OpenAPICommonName(),
+            OpenAPIArea(), OpenAPIGeometry(), OpenAPILang(),
+            OpenApiParameter(
+                name="name",
+                location=OpenApiParameter.HEADER,
+                description="The name of the person requesting a species list",
+                type=OpenApiTypes.STR,
+            ),
+            OpenApiParameter(
+                name="mail",
+                location=OpenApiParameter.HEADER,
+                description="The mail of the person requesting a species list",
+                type=OpenApiTypes.STR,
+            ),
+            OpenApiParameter(
+                name="institution",
+                location=OpenApiParameter.HEADER,
+                description="The institution of the person requesting a species list",
+                type=OpenApiTypes.STR,
+            ),
+            OpenApiParameter(
+                name="format_file",
+                location=OpenApiParameter.QUERY,
+                description="The format of list of species file",
+                type=OpenApiTypes.STR,
+                enum=["csv", "xlsx", "tsv"]
+            ),
+        ],
+    )
+    def get(self, request, *args, **kwargs):
+        response = dict()
+        try:
+            try:
+                download_request = DownloadSearchRegistration(
+                    name=request.headers["name"],
+                    mail=request.headers["mail"],
+                    institution=request.headers["institution"],
+                    format=self.encode_format(request.GET.get("format_file", "csv")),
+                )
+            except KeyError as e:
+                return HttpResponseBadRequest(f"Missing {e}, needed to process request")
+            download_request.save()
+            response["mail"] = download_request.mail
+            response["date"] = download_request.requested_at
+            request_download.delay({key: values for key, values in request.GET.lists()}, download_request.pk)
+            logging.info(download_request)
+            response["message"] = "Request successful"
+            return JsonResponse(response)
+        except Exception as e:
+            logging.error(e, exc_info=True)
+            response["message"] = str(e)
+            return JsonResponse(response)
+
+    @staticmethod
+    def encode_format(format_str: str) -> int:
+        format_dict = {key: value for value, key in FORMAT_CHOICES}
+        try:
+            return format_dict[format_str]
+        except KeyError:
+            raise AttributeError(f"{format_str} not in possible format")

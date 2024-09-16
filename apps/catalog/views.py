@@ -20,7 +20,7 @@ from .forms import DivisionForm, ClassForm, OrderForm, FamilyForm, GenusForm, Sp
     CommonNameForm
 from .models import Species, CatalogView, SynonymyView, RegionDistributionView, Division, ClassName, Order, Family, \
     Genus, Synonymy, Region, CommonName, Binnacle, PlantHabit, EnvironmentalHabit, Cycle, TaxonomicModel, \
-    ConservationState, FinderView
+    ConservationStatus, FinderView
 from .serializers import DivisionSerializer, ClassSerializer, OrderSerializer, FamilySerializer, GenusSerializer, \
     CatalogViewSerializer, SpeciesSerializer, SynonymsSerializer, BinnacleSerializer, CommonNameSerializer
 from ..digitalization.storage_backends import PrivateMediaStorage
@@ -33,7 +33,7 @@ MANY_RELATIONS = [
     ("env_habit", "forma de vida", EnvironmentalHabit),
     ("cycle", "ciclo de vida", Cycle),
     ("region", "región", Region),
-    ("conservation_state", "estado de conservación", ConservationState),
+    ("conservation_status", "estado de conservación", ConservationStatus),
 ]
 
 

@@ -1,0 +1,21 @@
+{% load i18n %}
+<body>
+    <h3>{% translate 'Download search' %}</h3>
+    <p><b>{{ name }}:</b></p>
+    <p>
+        {% translate 'Gratitude for using the digital herbarium' %}
+        {% translate 'Presentation of data' %}
+    </p>
+    {% for param in params %}
+        {% if param.parameters %}
+            <p>{{ param.label }}:</p>
+            <ul>
+                {% for p in param.parameters %}
+                    <li>{{ p }}</li>
+                {% endfor %}
+            </ul>
+        {% endif %}
+    {% endfor %}
+    <p>{% translate 'Species found' %}: {{ species_found }}</p>
+    <p>{% translate 'Synonyms found' %}: {{ synonyms_found }}</p>
+</body>

@@ -26,8 +26,8 @@ def get_cycle(species: Species) -> str:
     return _(' or ').join([cycle.name for cycle in species.cycle.all()])
 
 
-def get_conservation_state(species: Species) -> List[str]:
-    return [f"{state.name} ({state.key})" for state in species.conservation_state.all()]
+def get_conservation_status(species: Species) -> List[str]:
+    return [f"{state.name} ({state.key})" for state in species.conservation_status.all()]
 
 
 def get_children(species: Species) -> List[Species]:

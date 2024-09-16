@@ -3,9 +3,9 @@ from typing import List
 from rest_framework.fields import ReadOnlyField, SerializerMethodField
 from rest_framework.serializers import ModelSerializer
 
-from apps.catalog.models import CommonName, PlantHabit, EnvironmentalHabit, Status, Cycle, Region, ConservationState, \
+from apps.catalog.models import CommonName, PlantHabit, EnvironmentalHabit, Status, Cycle, Region, ConservationStatus, \
     TaxonomicModel, Genus, Family, Order, ClassName, Division, CatalogView, Synonymy, Species, Binnacle, TaxonRank
-from apps.catalog.utils import get_habit, get_cycle, get_conservation_state
+from apps.catalog.utils import get_habit, get_cycle, get_conservation_status
 
 
 class AttributeSerializer(ModelSerializer):
@@ -50,9 +50,9 @@ class RegionSerializer(AttributeSerializer):
         fields = AttributeSerializer.Meta.fields
 
 
-class ConservationStateSerializer(AttributeSerializer):
+class ConservationStatusSerializer(AttributeSerializer):
     class Meta:
-        model = ConservationState
+        model = ConservationStatus
         fields = AttributeSerializer.Meta.fields + ['key']
 
 
@@ -151,7 +151,7 @@ class SpeciesSerializer(TaxonomicSerializer):
     genus = SerializerMethodField()
     habit = SerializerMethodField()
     cycle = SerializerMethodField()
-    conservation_state = SerializerMethodField()
+    conservation_status = SerializerMethodField()
     status = ReadOnlyField(source='status.name')
     synonyms = SynonymsSerializer(required=False, many=True)
     common_names = CommonNameSerializer(required=False, many=True)
@@ -171,7 +171,7 @@ class SpeciesSerializer(TaxonomicSerializer):
             'notes', 'type_id', 'publication',
             'volume', 'pages', 'year',
             'common_names', 'synonyms', 'region',
-            'conservation_state', 'determined',
+            'conservation_status', 'determined',
             'id_taxa_origin',
         ]
 
@@ -184,8 +184,8 @@ class SpeciesSerializer(TaxonomicSerializer):
     def get_habit(self, obj: Species) -> str:
         return get_habit(obj)
 
-    def get_conservation_state(self, obj: Species) -> List[str]:
-        return get_conservation_state(obj)
+    def get_conservation_status(self, obj: Species) -> List[str]:
+        return get_conservation_status(obj)
 
 
 class BinnacleSerializer(ModelSerializer):
