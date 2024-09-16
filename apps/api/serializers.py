@@ -8,7 +8,7 @@ from typing import Union, List, Dict
 from apps.catalog.models import Species, Family, Genus, Synonymy, Division, ClassName, Order, CommonName, \
     TaxonomicModel, FinderView, ScientificName, Region, Kingdom
 from apps.catalog.serializers import RegionSerializer, StatusSerializer
-from apps.catalog.utils import get_habit, get_conservation_state, get_children
+from apps.catalog.utils import get_habit, get_conservation_status, get_children
 from apps.digitalization.models import VoucherImported, GalleryImage, Licence
 
 
@@ -233,7 +233,7 @@ class GallerySerializer(HyperlinkedModelSerializer):
 class SpeciesDetailsSerializer(SpeciesSerializer):
     common_names = CommonNameSerializer(required=False, many=True)
     status = SerializerMethodField()
-    conservation_state = SerializerMethodField()
+    conservation_status = SerializerMethodField()
     parent = SerializerMethodField()
     synonyms = SerializerMethodField()
     vouchers = SerializerMethodField()
@@ -246,7 +246,7 @@ class SpeciesDetailsSerializer(SpeciesSerializer):
         fields = SpeciesSerializer.Meta.fields + [
             'scientific_name_db', 'scientific_name_full',
             'parent', 'synonyms', 'common_names',
-            'status', 'minimum_height', 'maximum_height', 'conservation_state', 'id_mma',
+            'status', 'minimum_height', 'maximum_height', 'conservation_status', 'id_mma',
             'region', 'vouchers', 'gallery_images', 'herbarium_url',
         ]
 
@@ -256,8 +256,8 @@ class SpeciesDetailsSerializer(SpeciesSerializer):
         except AttributeError:
             return None
 
-    def get_conservation_state(self, obj: Species) -> List[str]:
-        return get_conservation_state(obj)
+    def get_conservation_status(self, obj: Species) -> List[str]:
+        return get_conservation_status(obj)
 
     def get_parent(self, obj: Species) -> Dict:
         parent_model = obj.parent

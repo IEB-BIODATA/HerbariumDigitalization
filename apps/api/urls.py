@@ -15,8 +15,9 @@ Including another URLconf
 """
 from django.urls import re_path
 
-from .views import index, InfoApi, DivisionList, ClassList, OrderList, FamilyList, GenusList, RetrieveTaxaApiView
-from .views import PlantHabitList, EnvHabitList, StatusList, CycleList, RegionList, ConservationStateList, \
+from .views import index, InfoApi, DivisionList, ClassList, OrderList, FamilyList, GenusList, RetrieveTaxaApiView, \
+    RequestDownload
+from .views import PlantHabitList, EnvHabitList, StatusList, CycleList, RegionList, ConservationStatusList, \
     CommonNameList
 from .views import MenuApiView, NameApiView, FinderApiView, RegionDetails, SpeciesListApiView, SpeciesDetails, \
     SynonymyDetails, DistributionList, SpecimensList, SpecimenDetails
@@ -34,7 +35,7 @@ urlpatterns = [
     re_path(r'^status/$', StatusList.as_view()),
     re_path(r'^cycles/$', CycleList.as_view()),
     re_path(r'^regions/$', RegionList.as_view()),
-    re_path(r'^conservation_states/$', ConservationStateList.as_view()),
+    re_path(r'^conservation_status/$', ConservationStatusList.as_view()),
     re_path(r'^common_names/$', CommonNameList.as_view()),
     re_path(r'^menu/$', MenuApiView.as_view()),
     re_path(r'^names/$', NameApiView.as_view()),
@@ -48,4 +49,5 @@ urlpatterns = [
     re_path(r'^specimens_list/$', SpecimensList.as_view()),
     re_path(r'^specimen/(?P<pk>\d+)/$', SpecimenDetails.as_view()),
     # re_path(r'^banner/(?P<specie_id>\d+)/$', BannerSpecie.as_view()),
+    re_path(r'^download_species_list/$', RequestDownload.as_view()),
 ]
