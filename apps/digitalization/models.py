@@ -293,7 +293,7 @@ class VoucherImported(models.Model):
                                              blank=True, null=True)
     catalog_number = models.IntegerField(verbose_name=_("Catalog Number"), blank=True, null=True)
     recorded_by = models.CharField(verbose_name=_("Recorded by"), max_length=300, blank=True, null=True)
-    record_number = models.CharField(verbose_name=_("Record Number"), max_length=13, blank=True, null=True)
+    record_number = models.CharField(verbose_name=_("Record Number"), max_length=20, blank=True, null=True)
     organism_remarks = models.CharField(verbose_name=_("Observations"), max_length=300, blank=True, null=True)
     scientific_name = models.ForeignKey(Species, verbose_name=_("Species"), on_delete=models.CASCADE, blank=True,
                                         null=True)
@@ -703,7 +703,7 @@ class VouchersView(models.Model):
     other_catalog_numbers = models.CharField(max_length=13, blank=True, null=True)
     catalog_number = models.IntegerField(blank=True, null=True)
     recorded_by = models.CharField(max_length=300, blank=True, null=True)
-    record_number = models.CharField(max_length=13, blank=True, null=True)
+    record_number = models.CharField(max_length=20, blank=True, null=True)
     organism_remarks = models.CharField(max_length=300, blank=True, null=True)
     scientific_name = models.CharField(max_length=300, blank=True, null=True)
     locality = models.CharField(max_length=300, blank=True, null=True)
