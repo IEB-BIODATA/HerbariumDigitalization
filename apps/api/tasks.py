@@ -34,21 +34,25 @@ def request_download(params: Dict[str, List[str]], request_user: int):
         )
         for species in species_queryset
     ]
-    synonyms_queryset = filter_query_set(Synonymy.objects.all(), query_params)
-    synonyms_queryset = synonyms_queryset.filter(
-        filter_by_geo(query_params, "species__voucherimported__point__within")
-    ).distinct()
-    synonyms_list = [
-        (
-            species.unique_taxon_id, species.scientific_name, species.scientific_name_full,
-            species.species.division.name, species.species.classname.name, species.species.order.name,
-            species.species.family.name, "synonym", species.species.unique_taxon_id
-        ) if species.species is not None else (
-            species.unique_taxon_id, species.scientific_name, species.scientific_name_full,
-            "", "", "", "", "synonym", ""
-        )
-        for species in synonyms_queryset
-    ]
+    species_filter = query_params.get("species_filter", "false").lower() == "true"
+    if not species_filter:
+        synonyms_queryset = filter_query_set(Synonymy.objects.all(), query_params)
+        synonyms_queryset = synonyms_queryset.filter(
+            filter_by_geo(query_params, "species__voucherimported__point__within")
+        ).distinct()
+        synonyms_list = [
+            (
+                species.unique_taxon_id, species.scientific_name, species.scientific_name_full,
+                species.species.division.name, species.species.classname.name, species.species.order.name,
+                species.species.family.name, "synonym", species.species.unique_taxon_id
+            ) if species.species is not None else (
+                species.unique_taxon_id, species.scientific_name, species.scientific_name_full,
+                "", "", "", "", "synonym", ""
+            )
+            for species in synonyms_queryset
+        ]
+    else:
+        synonyms_list = list()
     data = pd.DataFrame(species_list + synonyms_list, columns=[
         "id", "scientificName", "scientificNameFull",
         "division", "class", "order",
