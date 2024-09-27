@@ -1,8 +1,9 @@
-from collections import OrderedDict
-
-import celery
 import logging
 import os
+from collections import OrderedDict
+from typing import Dict, List
+from urllib.parse import urlparse, parse_qs, urlencode
+
 from django.conf import settings
 from django.core.paginator import InvalidPage
 from django.db.models import Q, ExpressionWrapper, F, FloatField, Value, Count, QuerySet
@@ -21,12 +22,11 @@ from rest_framework.request import Request
 from rest_framework.response import Response
 from rest_framework.utils.urls import replace_query_param
 from rest_framework.views import APIView
-from typing import Dict, List
-from urllib.parse import urlparse, parse_qs, urlencode
 
 from apps.catalog.models import Species, Synonymy, Family, Division, ClassName, Order, Status, Genus, \
-    Region, ConservationStatus, PlantHabit, EnvironmentalHabit, Cycle, FinderView, CommonName, Kingdom, SynonymyQuerySet, \
-    SpeciesQuerySet, TAXONOMIC_RANK, TaxonomicQuerySet, DownloadSearchRegistration, FORMAT_CHOICES
+    Region, ConservationStatus, PlantHabit, EnvironmentalHabit, Cycle, FinderView, CommonName, Kingdom, \
+    SynonymyQuerySet, \
+    SpeciesQuerySet, TaxonomicQuerySet, DownloadSearchRegistration, FORMAT_CHOICES
 from apps.digitalization.models import VoucherImported, BannerImage
 from intranet.utils import get_geometry_post
 from .serializers import SpeciesFinderSerializer, \
@@ -38,14 +38,13 @@ from .serializers import SpeciesFinderSerializer, \
 from .tasks import request_download
 from .utils import filter_query_set, OpenAPIKingdom, OpenAPIClass, OpenAPIOrder, OpenAPIFamily, OpenAPIGenus, \
     OpenAPISpecies, OpenAPIPlantHabit, OpenAPIEnvHabit, OpenAPIStatus, OpenAPICycle, OpenAPIRegion, OpenAPIConservation, \
-    OpenAPICommonName, OpenAPISearch, OpenAPIDivision, OpenAPIHerbarium, OpenApiPaginated, OpenAPILang, filter_by_geo, \
-    OpenAPIArea, OpenAPIGeometry
+    OpenAPICommonName, OpenAPISearch, OpenAPIDivision, OpenAPIHerbarium, OpenApiPaginated, OpenAPISpeciesFilter, \
+    OpenAPILang, filter_by_geo, OpenAPIArea, OpenAPIGeometry
 from ..catalog.serializers import PlantHabitSerializer, EnvHabitSerializer, StatusSerializer, CycleSerializer, \
     RegionSerializer, ConservationStatusSerializer
 from ..catalog.utils import get_children
 from ..digitalization.utils import register_temporal_geometry
 from ..home.models import Alert
-
 
 TAXONOMIC_MODEL = {
     "species": Species,
@@ -667,7 +666,7 @@ class SpeciesListApiView(FlatMultipleModelAPIView, POSTRedirect):
         OpenAPIPlantHabit(), OpenAPIEnvHabit(), OpenAPIStatus(), OpenAPICycle(),
         OpenAPIRegion(), OpenAPIConservation(), OpenAPICommonName(),
         OpenAPIArea(), OpenAPIGeometry(), OpenAPISearch(),
-        OpenApiPaginated(), OpenAPILang(),
+        OpenApiPaginated(), OpenAPISpeciesFilter(), OpenAPILang(),
     ])
     def get(self, request, *args, **kwargs):
         return super(SpeciesListApiView, self).get(request, *args, **kwargs)
@@ -858,7 +857,7 @@ class RequestDownload(APIView):
             OpenAPIFamily(), OpenAPIGenus(), OpenAPISpecies(),
             OpenAPIPlantHabit(), OpenAPIEnvHabit(), OpenAPIStatus(), OpenAPICycle(),
             OpenAPIRegion(), OpenAPIConservation(), OpenAPICommonName(),
-            OpenAPIArea(), OpenAPIGeometry(), OpenAPILang(),
+            OpenAPIArea(), OpenAPIGeometry(), OpenAPISpeciesFilter(), OpenAPILang(),
             OpenApiParameter(
                 name="name",
                 location=OpenApiParameter.HEADER,

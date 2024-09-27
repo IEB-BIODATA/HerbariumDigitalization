@@ -229,6 +229,17 @@ class OpenApiPaginated(OpenApiParameter):
         return
 
 
+class OpenAPISpeciesFilter(OpenApiParameter):
+    def __init__(self):
+        super(OpenAPISpeciesFilter, self).__init__(
+            name="species_filter",
+            location=OpenApiParameter.QUERY,
+            description="Whether the response contains just accepted species",
+            type=OpenApiTypes.BOOL,
+        )
+        return
+
+
 class OpenAPILang(OpenApiParameter):
     def __init__(self):
         super(OpenAPILang, self).__init__(
