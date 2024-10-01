@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from email import encoders
+from email.mime.application import MIMEApplication
 
 from email.mime.base import MIMEBase
 
@@ -200,7 +201,7 @@ def send_mail(mail_body: str, to_addr: str, subject: str, attachment_path: str =
         password = settings.EMAIL_HOST_PASSWORD
         from_addr = "noreply@{}".format(os.environ.get("EMAIL_DOMAIN"))
 
-        msg = MIMEMultipart('alternative')
+        msg = MIMEMultipart('relative')
 
         msg['Subject'] = str(subject)
         msg['From'] = formataddr((str(Header(from_addr, 'utf-8')), from_addr))
@@ -211,14 +212,9 @@ def send_mail(mail_body: str, to_addr: str, subject: str, attachment_path: str =
 
         if attachment_path:
             with open(attachment_path, 'rb') as attach_file:
-                part = MIMEBase('application', 'octet-stream')
-                part.set_payload(attach_file.read())
-                encoders.encode_base64(part)
-                part.add_header(
-                    'Content-Disposition',
-                    'attachment',
-                    filename=os.path.basename(attachment_path)
-                )
+                basename = os.path.basename(attachment_path)
+                part = MIMEApplication(attach_file.read(), Name=basename)
+                part['Content-Disposition'] = 'attachment; filename="%s"' % basename
                 msg.attach(part)
 
         server = smtplib.SMTP(settings.EMAIL_HOST, settings.EMAIL_PORT)
