@@ -18,4 +18,8 @@
     {% endfor %}
     <p>{% translate 'Species found' %}: {{ species_found }}</p>
     <p>{% translate 'Synonyms found' %}: {{ synonyms_found }}</p>
+    <p>{% translate 'How to cite:' %}</p>
+    {% now "Y" as current_year %}
+    {% now "d b Y" as current_date %}
+    <p class="text-cite">{% blocktranslate with link="https://www.herbariodigital.cl" target="_blank" year=current_year date=current_date%}Cite Herbarium {{ link }}{{ target }} {{ year }} {{ date }}{% endblocktranslate %}</p>
 </body>

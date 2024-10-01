@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2024-09-16 12:28-0300\n"
+"POT-Creation-Date: 2024-10-01 12:08-0300\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -18,62 +18,62 @@ msgstr ""
 "Content-Transfer-Encoding: 8bit\n"
 "Plural-Forms: nplurals=2; plural=(n != 1);\n"
 
-#: apps/api/tasks.py:59
+#: apps/api/tasks.py:62
 msgid "Geometry"
 msgstr ""
 
-#: apps/api/tasks.py:63
+#: apps/api/tasks.py:66
 msgid "Kingdom"
 msgstr ""
 
-#: apps/api/tasks.py:64
+#: apps/api/tasks.py:67
 msgid "Division"
 msgstr ""
 
-#: apps/api/tasks.py:65
+#: apps/api/tasks.py:68
 msgid "Class"
 msgstr ""
 
-#: apps/api/tasks.py:66
+#: apps/api/tasks.py:69
 msgid "Order"
 msgstr ""
 
-#: apps/api/tasks.py:67
+#: apps/api/tasks.py:70
 msgid "Family"
 msgstr ""
 
-#: apps/api/tasks.py:68
+#: apps/api/tasks.py:71
 msgid "Genus"
 msgstr ""
 
-#: apps/api/tasks.py:76
+#: apps/api/tasks.py:79
 msgid "Common Name"
 msgstr ""
 
-#: apps/api/tasks.py:77
+#: apps/api/tasks.py:80
 msgid "Conservation Status"
 msgstr ""
 
-#: apps/api/tasks.py:78
+#: apps/api/tasks.py:81
 msgid "Cycle"
 msgstr ""
 
-#: apps/api/tasks.py:79
+#: apps/api/tasks.py:82
 msgid "Plant Habit"
 msgstr ""
 
-#: apps/api/tasks.py:80
+#: apps/api/tasks.py:83
 msgid "Environmental Habit"
 msgstr ""
 
-#: apps/api/tasks.py:81
+#: apps/api/tasks.py:84
 msgid "Region"
 msgstr ""
 
-#: apps/api/tasks.py:82
+#: apps/api/tasks.py:85
 msgid "Status"
 msgstr ""
 
-#: apps/api/tasks.py:103
+#: apps/api/tasks.py:105
 msgid "Species List"
 msgstr "Lista de Especies - Herbario Digital"
