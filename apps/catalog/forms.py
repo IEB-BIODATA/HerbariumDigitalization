@@ -126,7 +126,7 @@ class SpeciesForm(forms.ModelForm):
             'common_names', 'region',
             'notes', 'publication', 'volume', 'pages',
             'type_id',
-            'conservation_state', 'determined', 'id_mma',
+            'conservation_status', 'determined', 'id_mma',
         )
 
         widgets = {
@@ -168,7 +168,7 @@ class SpeciesForm(forms.ModelForm):
             'volume': forms.TextInput(attrs={'class': "form-control"}),
             'pages': forms.TextInput(attrs={'class': "form-control"}),
             'type_id': forms.TextInput(attrs={'class': "form-control"}),
-            'conservation_state': forms.SelectMultiple(
+            'conservation_status': forms.SelectMultiple(
                 attrs={'class': "selectpicker", 'multiple data-live-search': 'true',
                        'multiple data-multiple-separator': ','}),
             'determined': forms.CheckboxInput(attrs={'class': "form-check-input"}),

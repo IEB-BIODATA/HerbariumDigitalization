@@ -22,13 +22,17 @@ from intranet.utils import CatalogQuerySet
 ATTRIBUTES = [
     "plant_habit", "env_habit",
     "status", "cycle",
-    "region", "conservation_state",
+    "region", "conservation_status",
     "common_names",
 ]
 
 TAXONOMIC_RANK = [
     "kingdom", "division", "classname", "order",
     "family", "genus", "species",
+]
+
+FORMAT_CHOICES = [
+    (0, "csv"), (1, "xlsx"), (2, "tsv")
 ]
 
 
@@ -389,8 +393,8 @@ class Region(AttributeModel):
         ordering = ['order']
 
 
-class ConservationStateQuerySet(AttributeQuerySet):
-    __attribute_name__ = "conservation_state"
+class ConservationStatusQuerySet(AttributeQuerySet):
+    __attribute_name__ = "conservation_status"
 
     def filter_taxonomy(self, **parameters: Dict[str: List[str]]) -> AttributeQuerySet:
         start = time_ns()
@@ -405,7 +409,7 @@ class ConservationStateQuerySet(AttributeQuerySet):
             logging.debug(f"{self.__attribute_name__}: Species from {taxonomic_rank}: {clean_parameters}")
             species_view = CatalogView.objects.filter(**{f"{taxonomic_rank}_id__in": clean_parameters})
             species = Species.objects.filter(id__in=[sp.id for sp in species_view]).prefetch_related(
-                "conservation_state"
+                "conservation_status"
             )
             query &= Q(**{f"species__in": [sp.id for sp in species]})
         queryset = self.filter_for_species(query)
@@ -416,11 +420,11 @@ class ConservationStateQuerySet(AttributeQuerySet):
         return queryset
 
 
-class ConservationState(AttributeModel):
+class ConservationStatus(AttributeModel):
     key = models.CharField(verbose_name=_("Key"), max_length=3, blank=True, null=True)
     order = models.IntegerField(verbose_name=pgettext_lazy("ordering", "Order"), blank=True, null=True, db_column="order")
 
-    objects = ConservationStateQuerySet.as_manager()
+    objects = ConservationStatusQuerySet.as_manager()
 
     def __unicode__(self):
         return u"%s" % self.name
@@ -429,11 +433,11 @@ class ConservationState(AttributeModel):
         return f"{self.name} ({self.key})"
 
     def __repr__(self):
-        return "Conservation State::%s" % self.name
+        return "Conservation Status::%s" % self.name
 
     class Meta:
-        verbose_name = _("Conservation State")
-        verbose_name_plural = _("Conservation States")
+        verbose_name = _("State of Conservation")
+        verbose_name_plural = _("Conservation Status")
         ordering = ['order']
 
 
@@ -1031,7 +1035,7 @@ class Species(ScientificName):
     region = models.ManyToManyField(Region, verbose_name=_("Regions"), blank=True, db_column="region")
     id_mma = models.IntegerField(verbose_name=_("MMA ID"), blank=True, null=True,
                                  help_text=_("ID of the species platform of the MMA"))
-    conservation_state = models.ManyToManyField(ConservationState, verbose_name=_("Conservation State"), blank=True)
+    conservation_status = models.ManyToManyField(ConservationStatus, verbose_name=_("State of Conservation"), blank=True)
     determined = models.BooleanField(verbose_name=_("Determined?"), default=False)
     id_taxa_origin = models.IntegerField(verbose_name=_("ID Taxa of Origin"), blank=True, null=True, help_text="")
     parent_content_type = models.ForeignKey(ContentType, on_delete=models.CASCADE)
@@ -1321,6 +1325,15 @@ class Binnacle(models.Model):
             raise e
 
 
+class DownloadSearchRegistration(models.Model):
+    mail = models.EmailField(null=False, blank=False)
+    name = models.CharField(max_length=100, null=False, blank=False)
+    requested_at = models.DateTimeField(auto_now=True, null=False, blank=False)
+    institution = models.CharField(max_length=200, null=False, blank=False)
+    format = models.IntegerField(choices=FORMAT_CHOICES, default=0)
+    request_status = models.BooleanField(default=False)
+
+
 class CatalogView(TaxonomicModel):
     """
     CREATE MATERIALIZED VIEW catalog_view AS
@@ -1558,7 +1571,8 @@ class RegionDistributionView(models.Model):
 class FinderView(models.Model):
     """
     CREATE MATERIALIZED VIEW finder_view AS
-    SELECT unique_taxon_id AS id,
+    SELECT taxon_id,
+           unique_taxon_id AS id,
            'species'       AS type,
            scientific_name AS name,
            scientific_name AS name_es,
@@ -1566,7 +1580,8 @@ class FinderView(models.Model):
            determined
     FROM catalog_species
     UNION ALL
-    SELECT unique_taxon_id AS id,
+    SELECT taxon_id,
+           unique_taxon_id AS id,
            'synonymy'      AS type,
            scientific_name AS name,
            scientific_name AS name_es,
@@ -1574,7 +1589,44 @@ class FinderView(models.Model):
            FALSE           AS determined
     FROM catalog_synonymy
     UNION ALL
-    SELECT unique_taxon_id AS id,
+    SELECT taxon_id,
+           unique_taxon_id AS id,
+           'kingdom'       AS type,
+           name            AS name,
+           name            AS name_es,
+           name            AS name_en,
+           FALSE           AS determined
+    FROM catalog_kingdom
+    UNION ALL
+    SELECT taxon_id,
+           unique_taxon_id AS id,
+           'division'      AS type,
+           name            AS name,
+           name            AS name_es,
+           name            AS name_en,
+           FALSE           AS determined
+    FROM catalog_division
+    UNION ALL
+    SELECT taxon_id,
+           unique_taxon_id AS id,
+           'class'         AS type,
+           name            AS name,
+           name            AS name_es,
+           name            AS name_en,
+           FALSE           AS determined
+    FROM catalog_classname
+    UNION ALL
+    SELECT taxon_id,
+           unique_taxon_id AS id,
+           'order'         AS type,
+           name            AS name,
+           name            AS name_es,
+           name            AS name_en,
+           FALSE           AS determined
+    FROM catalog_order
+    UNION ALL
+    SELECT taxon_id,
+           unique_taxon_id AS id,
            'family'        AS type,
            name            AS name,
            name            AS name_es,
@@ -1582,7 +1634,8 @@ class FinderView(models.Model):
            FALSE           AS determined
     FROM catalog_family
     UNION ALL
-    SELECT unique_taxon_id AS id,
+    SELECT taxon_id,
+           unique_taxon_id AS id,
            'genus'         AS type,
            name            AS name,
            name            AS name_es,
@@ -1590,7 +1643,8 @@ class FinderView(models.Model):
            FALSE           AS determined
     FROM catalog_genus
     UNION ALL
-    SELECT id,
+    SELECT id              AS taxon_id,
+           id,
            'common_name'   AS type,
            name,
            name_es,
@@ -1608,6 +1662,7 @@ class FinderView(models.Model):
     CREATE INDEX finder_view_trgm_en_id
         ON finder_view USING gin(name_en gin_trgm_ops);
     """
+    taxon_id = models.CharField()
     id = models.IntegerField(primary_key=True, blank=False, null=False, help_text="id")
     name = models.CharField(max_length=500, blank=True, null=True, help_text="name")
     type = models.CharField(max_length=50, blank=True, null=True)

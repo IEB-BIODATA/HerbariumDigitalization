@@ -1,5 +1,10 @@
 from __future__ import annotations
 
+from email import encoders
+from email.mime.application import MIMEApplication
+
+from email.mime.base import MIMEBase
+
 import smtplib
 
 from email.mime.text import MIMEText
@@ -171,7 +176,7 @@ def __strip_z__(coordinate: Tuple[float, float, float]) -> Tuple[float, float]:
     return coordinate[0], coordinate[1]
 
 
-def send_mail(mail_body: str, to_addr: str, subject: str) -> None:
+def send_mail(mail_body: str, to_addr: str, subject: str, attachment_path: str = None) -> None:
     """
     Sends mail based on template
 
@@ -183,6 +188,8 @@ def send_mail(mail_body: str, to_addr: str, subject: str) -> None:
         Address to send email
     subject : str
         Subject of mail
+    attachment_path : str, optional
+        Path to attachment file
 
     Returns
     -------
@@ -192,9 +199,9 @@ def send_mail(mail_body: str, to_addr: str, subject: str) -> None:
     try:
         username = settings.EMAIL_HOST_USER
         password = settings.EMAIL_HOST_PASSWORD
-        from_addr = "contacto@{}".format(os.environ.get("EMAIL_DOMAIN"))
+        from_addr = "noreply@{}".format(os.environ.get("EMAIL_DOMAIN"))
 
-        msg = MIMEMultipart('alternative')
+        msg = MIMEMultipart('relative')
 
         msg['Subject'] = str(subject)
         msg['From'] = formataddr((str(Header(from_addr, 'utf-8')), from_addr))
@@ -202,6 +209,13 @@ def send_mail(mail_body: str, to_addr: str, subject: str) -> None:
         msg['Date'] = formatdate(time.time(), localtime=True)
         msg.add_header('Message-id', make_msgid())
         msg.attach(MIMEText(mail_body, 'html', _charset="utf-8"))
+
+        if attachment_path:
+            with open(attachment_path, 'rb') as attach_file:
+                basename = os.path.basename(attachment_path)
+                part = MIMEApplication(attach_file.read(), Name=basename)
+                part['Content-Disposition'] = 'attachment; filename="%s"' % basename
+                msg.attach(part)
 
         server = smtplib.SMTP(settings.EMAIL_HOST, settings.EMAIL_PORT)
         server.ehlo()

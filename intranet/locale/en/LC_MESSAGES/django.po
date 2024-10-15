@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2024-07-23 12:44-0400\n"
+"POT-Creation-Date: 2024-10-01 12:08-0300\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -1062,6 +1062,38 @@ msgstr "Preference"
 #: templates/navegation.html:17
 msgid "Admin Django Page"
 msgstr "Admin Django Page"
+
+#: templates/others/download_mail.html:3
+msgid "Download search"
+msgstr "Download search"
+
+#: templates/others/download_mail.html:6
+msgid "Gratitude for using the digital herbarium"
+msgstr "Thank you for using the Digital Herbarium. "
+
+#: templates/others/download_mail.html:7
+msgid "Presentation of data"
+msgstr ""
+"Here is your requested data. The following parameters were used to filter it:"
+
+#: templates/others/download_mail.html:19
+msgid "Species found"
+msgstr "Species found"
+
+#: templates/others/download_mail.html:20
+msgid "Synonyms found"
+msgstr "Synonyms found"
+
+#: templates/others/download_mail.html:21
+msgid "How to cite:"
+msgstr "How to cite:"
+
+#: templates/others/download_mail.html:24
+#, python-format
+msgid "Cite Herbarium %(link)s%(target)s %(year)s %(date)s"
+msgstr ""
+"IEB, CONC & ULS (%(year)s) Digital Herbarium. Published on the Internet; <a "
+"href='%(link)s' target='%(target)s'>%(link)s</a>. Access in: %(date)s"
 
 #: templates/registration/preference.html:30
 msgid "Save Changes"

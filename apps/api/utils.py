@@ -4,7 +4,7 @@ from time import time
 
 from django.conf import settings
 from django.db.models import Q
-from django.http import HttpRequest
+from django.http import HttpRequest, QueryDict
 from django.utils.translation import activate
 from drf_spectacular.types import OpenApiTypes
 from drf_spectacular.utils import OpenApiParameter
@@ -15,14 +15,14 @@ from apps.catalog.models import ATTRIBUTES, TAXONOMIC_RANK, CatalogQuerySet
 from apps.digitalization.models import Area
 
 
-def filter_query_set(queryset: CatalogQuerySet, request: Request) -> CatalogQuerySet:
+def filter_query_set(queryset: CatalogQuerySet, query_params: QueryDict) -> CatalogQuerySet:
     start = time()
     default_language = get_language()
-    lang = request.query_params.get("lang", default_language)
+    lang = query_params.get("lang", default_language)
     activate(lang)
     attribute_query = dict()
     for attribute in ATTRIBUTES:
-        parameters = request.query_params.getlist(attribute, [])
+        parameters = query_params.getlist(attribute, [])
         if len(parameters) > 0:
             # Adding small tree if tree is selected
             if attribute == "plant_habit" and "2" in parameters:
@@ -30,27 +30,27 @@ def filter_query_set(queryset: CatalogQuerySet, request: Request) -> CatalogQuer
             attribute_query[attribute] = parameters.copy()
     taxonomic_query = dict()
     for taxonomic_rank in TAXONOMIC_RANK:
-        parameters = request.query_params.getlist(taxonomic_rank, [])
+        parameters = query_params.getlist(taxonomic_rank, [])
         if len(parameters) > 0:
             taxonomic_query[taxonomic_rank] = parameters.copy()
     if len(attribute_query) > 0 or len(taxonomic_query) > 0:
         queryset = queryset.filter_query(**attribute_query).filter_taxonomy(**taxonomic_query)
-    search = request.query_params.get("search")
+    search = query_params.get("search")
     if search:
         queryset = queryset.search(search)
-    geometry_query = request.query_params.getlist("geometry", [])
+    geometry_query = query_params.getlist("geometry", [])
     if len(geometry_query) > 0:
         queryset = queryset.filter_geometry(geometry_query)
     logging.debug(f"Filtering {queryset.model} took {(time() - start):.2f} seconds")
     return queryset
 
 
-def filter_by_geo(request: HttpRequest, point_query_name: str) -> Q:
+def filter_by_geo(query_params: QueryDict, point_query_name: str) -> Q:
     query = Q()
-    for area in request.GET.getlist("area", None):
+    for area in query_params.getlist("area", None):
         areas_model = Area.objects.get(pk=area)
         query = query | Q(**{point_query_name: areas_model.geometry})
-    for geometry in request.GET.getlist("geometry", None):
+    for geometry in query_params.getlist("geometry", None):
         query = query | Q(**{point_query_name: geometry})
     return query
 
@@ -224,6 +224,17 @@ class OpenApiPaginated(OpenApiParameter):
             name="paginated",
             location=OpenApiParameter.QUERY,
             description="Whether the response is a paginated list or all results are delivered at once",
+            type=OpenApiTypes.BOOL,
+        )
+        return
+
+
+class OpenAPISpeciesFilter(OpenApiParameter):
+    def __init__(self):
+        super(OpenAPISpeciesFilter, self).__init__(
+            name="species_filter",
+            location=OpenApiParameter.QUERY,
+            description="Whether the response contains just accepted species",
             type=OpenApiTypes.BOOL,
         )
         return

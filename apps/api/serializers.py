@@ -8,13 +8,17 @@ from typing import Union, List, Dict
 from apps.catalog.models import Species, Family, Genus, Synonymy, Division, ClassName, Order, CommonName, \
     TaxonomicModel, FinderView, ScientificName, Region, Kingdom
 from apps.catalog.serializers import RegionSerializer, StatusSerializer
-from apps.catalog.utils import get_habit, get_conservation_state, get_children
+from apps.catalog.utils import get_habit, get_conservation_status, get_children
 from apps.digitalization.models import VoucherImported, GalleryImage, Licence
 
 
 class MinimumSerializer(Serializer):
     def to_representation(self, instance):
-        return str(instance.id), str(instance.name)
+        try:
+            id = instance.unique_taxon_id
+        except AttributeError:
+            id = instance.id
+        return str(id), str(instance.name)
 
 
 class RegionDetailsSerializer(RegionSerializer):
@@ -88,6 +92,7 @@ class FinderSerializer(ModelSerializer):
 class ScientificNameSerializer(TaxonomicApiSerializer):
     name = CharField(source="scientific_name", read_only=True)
     taxon_rank = CharField(source="taxon_rank.name", read_only=True)
+    taxonomic_status = SerializerMethodField()
 
     class Meta:
         model = ScientificName
@@ -97,7 +102,7 @@ class ScientificNameSerializer(TaxonomicApiSerializer):
             'subspecies', 'ssp_authorship',
             'variety', 'variety_authorship',
             'form', 'form_authorship',
-            'taxon_rank'
+            'taxonomic_status', 'taxon_rank'
         ]
         abstract = True
 
@@ -122,6 +127,9 @@ class SpeciesSerializer(ScientificNameSerializer):
 
     def get_habit(self, obj: Species) -> str:
         return get_habit(obj)
+
+    def get_taxonomic_status(self, obj: Species) -> str:
+        return "accepted"
 
 
 serializer_registry = {
@@ -199,6 +207,9 @@ class SynonymyFinderSerializer(ScientificNameSerializer):
             'species', 'genus_name',
         ]
 
+    def get_taxonomic_status(self, obj: Synonymy) -> str:
+        return "synonym"
+
 
 class LicenceSerializer(HyperlinkedModelSerializer):
     class Meta:
@@ -222,7 +233,7 @@ class GallerySerializer(HyperlinkedModelSerializer):
 class SpeciesDetailsSerializer(SpeciesSerializer):
     common_names = CommonNameSerializer(required=False, many=True)
     status = SerializerMethodField()
-    conservation_state = SerializerMethodField()
+    conservation_status = SerializerMethodField()
     parent = SerializerMethodField()
     synonyms = SerializerMethodField()
     vouchers = SerializerMethodField()
@@ -235,7 +246,7 @@ class SpeciesDetailsSerializer(SpeciesSerializer):
         fields = SpeciesSerializer.Meta.fields + [
             'scientific_name_db', 'scientific_name_full',
             'parent', 'synonyms', 'common_names',
-            'status', 'minimum_height', 'maximum_height', 'conservation_state', 'id_mma',
+            'status', 'minimum_height', 'maximum_height', 'conservation_status', 'id_mma',
             'region', 'vouchers', 'gallery_images', 'herbarium_url',
         ]
 
@@ -245,8 +256,8 @@ class SpeciesDetailsSerializer(SpeciesSerializer):
         except AttributeError:
             return None
 
-    def get_conservation_state(self, obj: Species) -> List[str]:
-        return get_conservation_state(obj)
+    def get_conservation_status(self, obj: Species) -> List[str]:
+        return get_conservation_status(obj)
 
     def get_parent(self, obj: Species) -> Dict:
         parent_model = obj.parent
