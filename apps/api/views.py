@@ -82,16 +82,14 @@ class InfoApi(APIView):
         default_language = get_language()
         lang = request.query_params.get("lang", default_language)
         activate(lang)
-        images_count = VoucherImported.objects.all().exclude(
-            Q(image_public_resized_10__exact='') |
-            Q(image_public_resized_10__isnull=True)
+        images_count = VoucherImported.objects.all().filter(
+            image_public_resized_10__isnull=False,
+            image_public_resized_10__gt=''
         ).count()
-        species_count = Species.objects.all().exclude(
-            voucherimported__isnull=True
-        ).exclude(
-            Q(voucherimported__image_public_resized_10__exact='') |
-            Q(voucherimported__image_public_resized_10__isnull=True)
-        ).count()
+        species_count = Species.objects.filter(
+            voucherimported__image_public_resized_10__isnull=False,
+            voucherimported__image_public_resized_10__gt=''
+        ).distinct().count()
         content = {
             'images': images_count,
             'species': species_count,
