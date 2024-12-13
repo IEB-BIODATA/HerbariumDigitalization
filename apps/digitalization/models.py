@@ -401,9 +401,9 @@ class VoucherImported(models.Model):
         ))
         if temporal_tier:
             file_field = PrivateMediaStorage().save(image_name, image_content)
-            setattr(self, image_variable, file_field)
         else:
-            getattr(self, image_variable).save(image_name, image_content, save=True)
+            file_field = getattr(self, image_variable).storage.save(image_name, image_content)
+        setattr(self, image_variable, file_field)
         return
 
     @staticmethod

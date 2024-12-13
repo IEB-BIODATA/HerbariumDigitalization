@@ -465,6 +465,7 @@ def process_pending_vouchers(self, pending_vouchers: List[str], user: int) -> st
                     "step": i, "total": total, "logs": logger[0].get_logs()
                 })
                 etiquette_picture(int(voucher), logger=logger)
+                voucher_imported.refresh_from_db()
             log_object.processed_images += 1
             logger.info("Deep Archive image raw")
             image_raw_key = voucher_imported.image_raw.storage.location + "/" + voucher_imported.image_raw.name
