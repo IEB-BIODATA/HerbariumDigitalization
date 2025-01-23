@@ -150,7 +150,7 @@
                                     <a class="thumbnail" id="thumbnail-{{ forloop.counter0 }}" href="{{ image.image }}" target="_blank">
                                         {{ image.image|replace_gallery_name }}
                                         <span class="enlarge-image below" id="enlarge-image-{{ forloop.counter0 }}">
-                                            <img src="{{ image.thumbnail }}">
+                                            <img src="{{ image.thumbnail }}" alt="{{ image.image|replace_gallery_name }}" loading="lazy">
                                         </span>
                                     </a>
                                 </td>

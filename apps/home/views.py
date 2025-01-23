@@ -52,7 +52,7 @@ def index(request):
         {
             'count_total_codes': count_total_codes,
             'y_max': int(max_total_codes * 1.05),
-            'bar_max': int(bar_max * 1.05),
+            'bar_max': int(bar_max * 1.1),
             'count_scanned_codes': count_scanned_codes,
             'herbariums': herbariums,
             'stands': stands,

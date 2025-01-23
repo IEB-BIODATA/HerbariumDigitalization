@@ -172,7 +172,7 @@
                                 else
                                     download += `<a href="${row.image_voucher_cr3_raw_url}" target=_"blank">${downloadMsg}</a>`;
                             } else {
-                                image = `<div class="gallery-box wow fadeInDown"><div data-bs-toggle="modal" data-bs-target="#myModal" data-bs-src="${row.image_voucher_url}"><img width="200px" src="${row.image_voucher_thumb_url}" data-bs-target="#myCarousel"></div>`;
+                                image = `<div class="gallery-box wow fadeInDown"><div data-bs-toggle="modal" data-bs-target="#myModal" data-bs-src="${row.image_voucher_url}"><img alt="${row.herbarium_code}:${row.catalog_number}" width="200px" src="${row.image_voucher_thumb_url}" loading="lazy" data-bs-target="#myCarousel"></div>`;
                                 const downloadOriginalMsg = "{% translate 'Download Original JPG' %}";
                                 const downloadPublicMsg = "{% translate 'Download Public JPG' %}";
                                 download = `
@@ -446,7 +446,7 @@
                     <div id="myCarousel" class="carousel slide">
                         <div class="carousel-inner" id="myCarouselItem">
                             <div class="carousel-item active">
-                                <img src="#" class="d-block w-100">
+                                <img alt="voucher carousel" src="#" class="d-block w-100">
                             </div>
                         </div>
                     </div>
