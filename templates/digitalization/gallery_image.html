@@ -38,7 +38,9 @@
                             ${previewMsg}
                         </div>
                         <div class="col-sm-10">
-                            <img id="imagePreview" src="${response.image_url}" style="height: 300px; width: auto" alt="${previewMsg}">
+                            <img
+                                id="imagePreview" src="${response.image_url}" style="height: 300px; width: auto" loading="lazy" alt="${previewMsg}"
+                            >
                         </div>
                     </div>
                     `).insertBefore("#id_image");
