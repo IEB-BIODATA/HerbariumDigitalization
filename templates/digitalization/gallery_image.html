@@ -126,7 +126,7 @@
                 <div id="loading" class="col-sm-12"></div>
                 <form action="{% if gallery is None %}{% url 'new_gallery_image' species_id=species.id %}{% else %}{% url 'modify_gallery_image' gallery_id=gallery.id %}{% endif %}" method="post" enctype="multipart/form-data">
                     {% csrf_token %}
-                    {% include "form_base.html" with form=form %}
+                    {% include "form_base.html" with form=form height="300px"%}
                     <div style="display: flex; justify-content: space-around; margin: 20px;">
                         <button type="submit" class="btn btn-primary" id="load_button">
                             {% if gallery is None %} {% translate "Load" %}

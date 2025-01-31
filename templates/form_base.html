@@ -3,29 +3,32 @@
 {% for field in form %}
     {% if not field.is_hidden %}
         <div class="form-group row">
-            <label class="col-sm-2 col-form-label" for="{{ field.id_for_label }}">
-                {{ field.label_tag }}
-            </label>
-            <div class="col-sm-10">
-                {% if "image" in field.name and field.value %}
+            {% if "image" in field.name %}
+                {% if field.value %}
                     <div class="row align-items-center">
-                        <div class="col-sm-2">
+                        <div class="col-sm-2 col-form-label">
                             {% translate "Preview" %}
                         </div>
                         <div class="col-sm-10">
-                            <img id="{{ field.name }}Preview" src="{{ field.value.url }}" style="height: 300px; width: auto" loading="lazy" alt="{% translate 'Preview' %}">
+                            <img id="{{ field.name }}Preview" src="{{ field.value.url }}" style="height: {% if height %}{{ height }}{% else %}auto{% endif %}; width: {% if width %}{{ width }}{% else %}auto{% endif %}" loading="lazy" alt="{% translate 'Preview' %}">
                         </div>
                     </div>
                 {% endif %}
-                {% if field.errors %}
-                    {{ field|add_class:'is-invalid' }}
-                    <div class="invalid-feedback">
-                        {{ field.errors|join:", " }}
-                    </div>
-                {% else %}
-                    {{ field }}
-                {% endif %}
-            </div>
+            {% else %}
+                <label class="col-sm-2 col-form-label" for="{{ field.id_for_label }}">
+                    {{ field.label_tag }}
+                </label>
+                <div class="col-sm-10">
+                    {% if field.errors %}
+                        {{ field|add_class:'is-invalid' }}
+                        <div class="invalid-feedback">
+                            {{ field.errors|join:", " }}
+                        </div>
+                    {% else %}
+                        {{ field }}
+                    {% endif %}
+                </div>
+            {% endif %}
         </div>
     {% else %}
         {{ field }}

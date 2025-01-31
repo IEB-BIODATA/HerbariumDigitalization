@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2025-01-23 13:08-0300\n"
+"POT-Creation-Date: 2025-01-31 14:32-0300\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -52,13 +52,13 @@ msgstr "Press 'Log out' if you confirm leaving the account."
 #: templates/digitalization/gallery_image.html:137
 #: templates/digitalization/new_licence.html:20
 #: templates/digitalization/species_gallery.html:193
-#: templates/digitalization/update_voucher.html:185
+#: templates/digitalization/update_voucher.html:107
 #: templates/registration/preference.html:32
 #: templates/registration/preference.html:45
 msgid "Cancel"
 msgstr "Cancel"
 
-#: templates/base.html:75 templates/navegation.html:20
+#: templates/base.html:75 templates/navegation.html:24
 msgid "Log out"
 msgstr "Log out"
 
@@ -71,13 +71,14 @@ msgstr "New %(title)s"
 #: templates/catalog/create_catalog.html:18 templates/catalog/taxa_form.html:14
 #: templates/catalog/update_binnacle.html:20
 #: templates/catalog/update_catalog.html:18
-#: templates/digitalization/update_voucher.html:184
+#: templates/digitalization/update_voucher.html:106
 #: templates/registration/preference.html:46
 msgid "Save"
 msgstr "Save"
 
 #: templates/catalog/create_taxa.html:6 templates/catalog/merge_taxa.html:6
 #: templates/catalog/update_taxa.html:6
+#: templates/digitalization/update_voucher.html:17
 msgid "Nothing selected"
 msgstr "Nothing selected"
 
@@ -545,28 +546,25 @@ msgstr "Species Name"
 #: templates/digitalization/control_vouchers.html:218
 #: templates/digitalization/mark_vouchers.html:396
 #: templates/digitalization/template_list_priority_voucher.html:41
-#: templates/digitalization/update_voucher.html:90
 msgid "Collected by"
 msgstr "Collected by"
 
 #: templates/digitalization/control_vouchers.html:219
 #: templates/digitalization/mark_vouchers.html:397
 #: templates/digitalization/template_list_priority_voucher.html:42
-#: templates/digitalization/update_voucher.html:84
 #: templates/digitalization/validate_vouchers.html:423
 msgid "Collection Number"
 msgstr "Collection Number"
 
 #: templates/digitalization/control_vouchers.html:220
 #: templates/digitalization/mark_vouchers.html:398
-#: templates/digitalization/update_voucher.html:102
-#: templates/digitalization/update_voucher.html:164
+#: templates/digitalization/update_voucher.html:76
 #: templates/digitalization/validate_vouchers.html:424
 msgid "Locality"
 msgstr "Locality"
 
-#: templates/digitalization/gallery_image.html:34 templates/form_base.html:13
-#: templates/form_base.html:16
+#: templates/digitalization/gallery_image.html:34 templates/form_base.html:10
+#: templates/form_base.html:13
 msgid "Preview"
 msgstr "Preview"
 
@@ -879,7 +877,6 @@ msgid "Herbarium Code"
 msgstr "Herbarium Code"
 
 #: templates/digitalization/template_list_priority_voucher.html:39
-#: templates/digitalization/update_voucher.html:96
 msgid "Species"
 msgstr "Species"
 
@@ -892,60 +889,29 @@ msgstr "QR List"
 msgid "Document date: %(date)s"
 msgstr "Document date: %(date)s"
 
-#: templates/digitalization/update_voucher.html:60
+#: templates/digitalization/update_voucher.html:63
 msgid "Digitalization: Voucher"
 msgstr "Digitalization: Voucher"
 
-#: templates/digitalization/update_voucher.html:65
+#: templates/digitalization/update_voucher.html:68
 msgid "Update Voucher"
 msgstr "Update Voucher"
 
-#: templates/digitalization/update_voucher.html:72
-msgid "Catalogue Number"
-msgstr "Catalogue Number"
-
-#: templates/digitalization/update_voucher.html:78
-msgid "Herbarium Database ID"
-msgstr "Herbarium Database ID"
-
-#: templates/digitalization/update_voucher.html:108
-msgid "Altitude"
-msgstr "Altitude"
-
-#: templates/digitalization/update_voucher.html:114
-msgid "Collection Date"
-msgstr "Collection Date"
-
-#: templates/digitalization/update_voucher.html:120
-msgid "Identified by"
-msgstr "Identified by"
-
-#: templates/digitalization/update_voucher.html:126
-msgid "Identified Date"
-msgstr "Identified Date"
-
-#: templates/digitalization/update_voucher.html:132
-msgid "Observations"
-msgstr "Observations"
-
-#: templates/digitalization/update_voucher.html:138
-msgid "Priority"
-msgstr "Priority"
-
-#: templates/digitalization/update_voucher.html:145
-#: templates/digitalization/validate_vouchers.html:425
-msgid "Image"
-msgstr "Image"
-
-#: templates/digitalization/update_voucher.html:152
-#: templates/digitalization/update_voucher.html:169
+#: templates/digitalization/update_voucher.html:81
 msgid "Latitude"
 msgstr "Latitude"
 
-#: templates/digitalization/update_voucher.html:158
-#: templates/digitalization/update_voucher.html:170
+#: templates/digitalization/update_voucher.html:82
 msgid "Longitude"
 msgstr "Longitude"
+
+#: templates/digitalization/update_voucher.html:91
+msgid "Typification"
+msgstr "Typification"
+
+#: templates/digitalization/update_voucher.html:102
+msgid "Add type"
+msgstr "Add type"
 
 #: templates/digitalization/validate_vouchers.html:6
 msgid "Specimen Digitalization"
@@ -1006,6 +972,10 @@ msgstr ""
 msgid "Process pending images"
 msgstr "Process pending images"
 
+#: templates/digitalization/validate_vouchers.html:425
+msgid "Image"
+msgstr "Image"
+
 #: templates/digitalization/validate_vouchers.html:456
 #: templates/digitalization/validate_vouchers.html:472
 msgid "Close"
@@ -1055,11 +1025,11 @@ msgstr "Digitization indicators"
 msgid "Generated QR Quantity"
 msgstr "Generated QR Quantity"
 
-#: templates/navegation.html:14 templates/registration/preference.html:14
+#: templates/navegation.html:18 templates/registration/preference.html:14
 msgid "Preference"
 msgstr "Preference"
 
-#: templates/navegation.html:17
+#: templates/navegation.html:21
 msgid "Admin Django Page"
 msgstr "Admin Django Page"
 

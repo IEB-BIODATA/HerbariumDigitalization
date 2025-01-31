@@ -1,9 +1,15 @@
+from typing import Dict
+
 from django import forms
+from django.contrib.contenttypes.models import ContentType
+from django.forms import inlineformset_factory
+from django.utils.safestring import mark_safe
 from django.utils.translation import gettext_lazy as _
 
-from .models import Herbarium, ProtectedArea
+from .models import Herbarium, ProtectedArea, TypeStatus, TYPIFICATION
 from .models import PriorityVouchersFile, ColorProfileFile, GeneratedPage
 from .models import VoucherImported, GalleryImage, Licence
+from ..catalog.models import Species, Synonymy, ScientificName
 from ..home.forms import GeographicFieldForm
 
 
@@ -64,44 +70,113 @@ class VoucherImportedForm(forms.ModelForm):
     class Meta:
         model = VoucherImported
         fields = (
-            'other_catalog_numbers',
             'catalog_number',
-            'recorded_by',
+            'other_catalog_numbers',
             'record_number',
-            'organism_remarks',
+            'recorded_by',
             'scientific_name',
             'locality',
             'verbatim_elevation',
             'georeferenced_date',
-            'decimal_latitude',
-            'decimal_longitude',
             'identified_by',
             'identified_date',
-            'image',
-            'image_resized_10',
+            'organism_remarks',
+            'priority',
             'image_resized_60',
-            'image_public',
-            'image_public_resized_60',
-            'priority'
+            'decimal_latitude',
+            'decimal_longitude',
         )
         widgets = {
-            'other_catalog_numbers': forms.TextInput(attrs={'class': "form-control", 'readonly': 'true'}),
             'catalog_number': forms.TextInput(attrs={'class': "form-control", 'readonly': 'true'}),
-            'recorded_by': forms.TextInput(attrs={'class': "form-control"}),
+            'other_catalog_numbers': forms.TextInput(attrs={'class': "form-control", 'readonly': 'true'}),
             'record_number': forms.TextInput(attrs={'class': "form-control"}),
-            'organism_remarks': forms.Textarea(attrs={'class': "form-control", 'rows': "5"}),
+            'recorded_by': forms.TextInput(attrs={'class': "form-control"}),
             'scientific_name': forms.Select(attrs={'class': "form-control"}),
             'locality': forms.TextInput(attrs={'class': "form-control"}),
             'verbatim_elevation': forms.TextInput(attrs={'class': "form-control", 'type': 'number'}),
             'georeferenced_date': forms.DateTimeInput(attrs={'class': 'form-control datetimepicker-input'}),
-            'decimal_latitude': forms.TextInput(attrs={'class': "form-control"}),
-            'decimal_longitude': forms.TextInput(attrs={'class': "form-control"}),
             'identified_by': forms.TextInput(attrs={'class': "form-control"}),
             'identified_date': forms.DateTimeInput(attrs={'class': 'form-control datetimepicker-input'}),
-            'image': forms.TextInput(attrs={'class': "form-control", 'readonly': 'true'}),
-            'image_resized_60': forms.TextInput(attrs={'class': "form-control", 'readonly': 'true'}),
+            'organism_remarks': forms.Textarea(attrs={'class': "form-control", 'rows': "5"}),
             'priority': forms.TextInput(attrs={'class': "form-control", 'type': 'number'}),
+            'image_resized_60': forms.TextInput(attrs={'class': "form-control", 'readonly': 'true'}),
+            'decimal_latitude': forms.TextInput(attrs={'class': "form-control"}),
+            'decimal_longitude': forms.TextInput(attrs={'class': "form-control"}),
         }
+
+
+class TypeStatusForm(forms.ModelForm):
+    taxon_id = forms.ChoiceField(
+        label=_("Attached Taxon"),
+        choices=[],
+        widget=forms.Select(attrs={
+            'class': 'form-control',
+            'data-live-search': 'true',
+        }),
+        required=True,
+    )
+
+    def __init__(self, voucher, *args, **kwargs):
+        super(TypeStatusForm, self).__init__(*args, **kwargs)
+        self.taxon_content_type: ContentType
+        self.attached_taxon: ScientificName
+        species = voucher.scientific_name
+        synonyms = species.synonyms.all()
+        self.fields['taxon_id'].choices = [
+            (species.unique_taxon_id, species.scientific_name)
+        ] + [
+            (x.unique_taxon_id, x.scientific_name) for x in synonyms
+        ]
+
+
+    def clean(self) -> Dict:
+        cleaned_data = super().clean()
+        taxon_id = cleaned_data.get("taxon_id")
+        try:
+            self.attached_taxon = Species.objects.get(unique_taxon_id=taxon_id)
+            self.taxon_content_type = ContentType.objects.get_for_model(Species)
+        except Species.DoesNotExist:
+            try:
+                self.attached_taxon = Synonymy.objects.get(unique_taxon_id=taxon_id)
+                self.taxon_content_type = ContentType.objects.get_for_model(Synonymy)
+            except Synonymy.DoesNotExist:
+                self.add_error(
+                    "taxon_id",
+                    _("No taxon with that id")
+                )
+        return cleaned_data
+
+    def save(self, *args, **kwargs) -> Species:
+        sp = super().save(commit=False)
+        sp.taxon_content_type = self.taxon_content_type
+        sp.taxon_id = self.attached_taxon.unique_taxon_id
+        if kwargs.get("commit", True):
+            return sp.save(*args, **kwargs)
+        else:
+            return sp
+
+    class Meta:
+        model = TypeStatus
+        fields = (
+            'type',
+            'taxon_id',
+        )
+
+        widgets = {
+            'type': forms.Select(attrs={'class': 'form-control'}, choices=TYPIFICATION),
+        }
+
+class TypeStatusFormSet(forms.BaseInlineFormSet):
+    def __init__(self, *args, **kwargs):
+        super(TypeStatusFormSet, self).__init__(*args, **kwargs)
+        self.voucher = self.instance
+        if self.instance is not None:
+            self.queryset = self.instance.typestatus_set.all()
+
+    def get_form_kwargs(self, index):
+        kwargs = super(TypeStatusFormSet, self).get_form_kwargs(index)
+        kwargs["voucher"] = self.voucher
+        return kwargs
 
 
 class GalleryImageForm(forms.ModelForm):
