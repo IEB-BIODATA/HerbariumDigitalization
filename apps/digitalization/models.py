@@ -9,9 +9,12 @@ import pandas as pd
 import pytz
 from django.conf import settings
 from django.contrib.auth.models import User
+from django.contrib.contenttypes.fields import GenericForeignKey
+from django.contrib.contenttypes.models import ContentType
 from django.contrib.gis.db import models
 from django.contrib.gis.db.models import GeometryField
 from django.contrib.gis.geos import GEOSGeometry
+from django.core.exceptions import ObjectDoesNotExist
 from django.core.files.base import ContentFile, File
 from django.db import connection
 from django.db.models import Q
@@ -21,7 +24,7 @@ from django.forms import CharField
 from django.utils.translation import gettext_lazy as _
 from typing import BinaryIO, Union, Any, Tuple, Callable, Dict, List
 
-from apps.catalog.models import Species, TAXONOMIC_RANK, RANK_MODELS, get_fuzzy_taxa
+from apps.catalog.models import Species, TAXONOMIC_RANK, RANK_MODELS, get_fuzzy_taxa, TaxonomicModel
 from intranet.utils import CatalogQuerySet
 from .storage_backends import PublicMediaStorage, PrivateMediaStorage, GlacierPrivateMediaStorage, IAPrivateMediaStorage
 from .validators import validate_file_size
@@ -52,6 +55,16 @@ IUCN_CATEGORIES = (
     ('IV', _('habitat or species management area')),
     ('V', _('protected landscape or seascape')),
     ('VI', _('protected area with sustainable use of natural resources')),
+)
+
+TYPIFICATION = (
+    (1, _("Holotype")),
+    (2, _("Lectotype")),
+    (3, _("Isotype")),
+    (4, _("Syntype")),
+    (5, _("Paratype")),
+    (6, _("Neotype")),
+    (7, _("Epitype")),
 )
 
 DCW_SQL = {
@@ -498,6 +511,21 @@ class VoucherImported(models.Model):
             point_public=point_public,
             priority=1 if "priority" not in row.keys() else row["priority"]
         )
+
+
+class TypeStatus(models.Model):
+    type = models.IntegerField(choices=TYPIFICATION, verbose_name=_("Type"), blank=False, null=False)
+    taxon_content_type = models.ForeignKey(ContentType, on_delete=models.CASCADE)
+    taxon_id = models.PositiveIntegerField()
+    attached = GenericForeignKey("taxon_content_type", "taxon_id")
+    specimen = models.ForeignKey(VoucherImported, on_delete=models.CASCADE, verbose_name=_("Specimen"))
+
+    @property
+    def attached_taxon(self) -> TaxonomicModel | None:
+        try:
+            return self.taxon_content_type.model_class().objects.get(unique_taxon_id=self.taxon_id)
+        except ObjectDoesNotExist:
+            return None
 
 
 class Licence(models.Model):

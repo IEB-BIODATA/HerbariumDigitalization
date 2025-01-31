@@ -1,5 +1,4 @@
 # -*- coding: utf-8 -*-
-import hashlib
 import json
 import logging
 import os
@@ -20,24 +19,24 @@ from django.core.files.base import ContentFile
 from django.db import transaction
 from django.db.models import Q, Count, CharField, Case, When, Value
 from django.db.models.functions import Cast
+from django.forms import inlineformset_factory
 from django.http import HttpResponse, HttpResponseBadRequest, HttpResponseServerError, HttpResponseRedirect, \
     HttpResponseForbidden, HttpRequest, JsonResponse
 from django.shortcuts import render, redirect
 from django.views.decorators.csrf import csrf_exempt
 from django.views.decorators.http import require_POST, require_GET
 
-from apps.catalog.models import Species, CatalogView
+from apps.catalog.models import Species
 from intranet.utils import paginated_table
 from .forms import LoadColorProfileForm, VoucherImportedForm, GalleryImageForm, LicenceForm, PriorityVoucherForm, \
-    GeneratedPageForm
+    GeneratedPageForm, TypeStatusFormSet, TypeStatusForm
 from .models import BiodataCode, GeneratedPage, VoucherImported, PriorityVouchersFile, VouchersView, \
-    GalleryImage, BannerImage, VOUCHER_STATE, PostprocessingLog
+    GalleryImage, BannerImage, VOUCHER_STATE, PostprocessingLog, TypeStatus
 from .serializers import PriorityVouchersSerializer, GeneratedPageSerializer, VoucherSerializer, \
     SpeciesGallerySerializer, GallerySerializer, PostprocessingLogSerializer
 from .storage_backends import PrivateMediaStorage
 from .tasks import process_pending_vouchers, upload_priority_vouchers, etiquette_picture, get_taken_by
 from .utils import render_to_pdf
-from ..catalog.serializers import CatalogViewSerializer
 
 
 class HttpResponsePreconditionFailed(HttpResponse):
@@ -934,9 +933,17 @@ def download_catalog(request):
 @login_required
 def update_voucher(request, voucher_id):
     voucher = VoucherImported.objects.get(id=voucher_id)
+    new_types = int(request.GET.get("new_types", 0))
+    type_status_factory = inlineformset_factory(
+        VoucherImported, TypeStatus,
+        form=TypeStatusForm,
+        formset=TypeStatusFormSet,
+        extra=new_types
+    )
     if request.method == 'POST':
         form = VoucherImportedForm(request.POST, instance=voucher)
-        if form.is_valid():
+        formset = type_status_factory(request.POST, instance=voucher)
+        if form.is_valid() and formset.is_valid():
             voucher = form.save()
             if (
                     (voucher.decimal_latitude is not None and not numpy.isnan(voucher.decimal_latitude)) and
@@ -958,11 +965,18 @@ def update_voucher(request, voucher_id):
             voucher.save()
             if voucher.image and voucher.biodata_code.voucher_state == 7:
                 etiquette_picture.delay(int(voucher.pk))
+            for form in formset.deleted_forms:
+                form.instance.delete()
+            related_instances = formset.save(commit=False)
+            for instance in related_instances:
+                instance.specimen = voucher
+                instance.save()
             return redirect('control_vouchers')
     else:
         form = VoucherImportedForm(instance=voucher)
+        formset = type_status_factory(instance=voucher)
 
-    return render(request, 'digitalization/update_voucher.html', {'form': form, 'id': voucher_id})
+    return render(request, 'digitalization/update_voucher.html', {'form': form, 'id': voucher_id, 'formset': formset, "new_types": new_types})
 
 
 @login_required
