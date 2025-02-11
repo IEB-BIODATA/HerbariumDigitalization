@@ -15,6 +15,7 @@ import boto3
 import cv2
 import numpy as np
 from PIL.Image import Image
+from pyzbar.pyzbar import decode, ZBarSymbol  # Para la decodificación de códigos QR
 from django.contrib.auth.models import User
 from django.contrib.gis.geos import GEOSGeometry
 from django.core.files.base import ContentFile
@@ -497,492 +498,228 @@ def dng_to_jpeg_color_profile(
     return
 
 
-def read_qr(filename: str,
-            width_crop: int, height_crop: int,
-            margin: int, corner: Dict[str, Tuple[int]],
-            logger: logging.Logger) -> Union[None, str]:
+def read_qr(filename: str, logger: logging.Logger) -> Union[None, str]:
     """
-    Reads a QR code on an image on filename
+    Given the name of the file that contains an image, the image is read and 
+    then divided into 4 zones. A QR is searched in each of them sequentially 
+    using different image preprocessing methods.
 
     Parameters
     ----------
     filename : str
         File path to image to process
-    width_crop : int
-        Width of crop of QR
-    height_crop : int
-        Height of crop of QR
-    margin : int
-        Margin of crop
-    corner : {str: (int, int)}
-        Corner sizes ('LEFT' and 'RIGHT')
     logger : Logger
         Object Logger
 
     Returns
     -------
     str
-        Code on QR at the image
+        In case of found, the code on QR at the image. Otherwise None.
     """
+
     logging.info("Reading QR of {}...".format(filename))
-    qr_code_detector = cv2.QRCodeDetector()
-    image = cv2.imread(filename)
     p = re.compile('(?<!\\\\)\'')
+
+    image = cv2.imread(filename, cv2.IMREAD_GRAYSCALE)
+    read_functions = [read_qr_at_top_right, read_qr_at_top_left, read_qr_at_bottom_left, read_qr_at_bottom_right]
+
     try:
         if image is not None:
-            for read_function in [
-                read_qr_at_right,
-                read_qr_at_left,
-                read_qr_at_right_margin_left,
-                read_qr_at_right_margin_right,
-                read_qr_at_left_margin_left,
-                read_qr_at_left_margin_right,
-                read_qr_at_right_margin_up,
-                read_qr_at_right_margin_down,
-                read_qr_at_left_margin_up,
-                read_qr_at_left_margin_down,
-            ]:
-                qr_code = read_function(
-                    qr_code_detector, p, image,
-                    width_crop, height_crop, margin,
-                    corner, logger
-                )
-                if qr_code is not None:
+            for read_function in read_functions:
+                qr_code = read_function(p, image, logger, 'resize')
+                if qr_code:
                     return qr_code
+            
+            for read_function in read_functions:
+                qr_code = read_function(p, image, logger, 'no_filter')
+                if qr_code:
+                    return qr_code
+                
+            for read_function in read_functions:
+                qr_code = read_function(p, image, logger, 'median')
+                if qr_code:
+                    return qr_code
+            
             logging.error("QR code on {} not detected".format(filename))
-            os.remove('cropped.jpg')
             return None
+        
     except Exception as e:
         logging.error("QR code reading error:\n{}".format(e))
         return None
 
 
 def __read_qr_at__(
-        qr_code_detector: cv2.QRCodeDetector, p: re.Pattern,
-        cropped_image: np.ndarray, found_message: str,
-        logger: logging.Logger
+        p: re.Pattern, cropped_image: np.ndarray, 
+        found_message: str, logger: logging.Logger, 
+        filter: str
 ) -> Union[str, None]:
-    logger.debug("Looking for QR in {}".format(found_message))
-    cv2.imwrite('cropped.jpg', cropped_image)
-    image_temp = cv2.imread('cropped.jpg')
-    decoded_text, points, _ = qr_code_detector.detectAndDecode(image_temp)
-    if decoded_text is not None and decoded_text != "":
+    
+    """
+    Reads the QR in an image using some method specified in the 'filter' argument.
+
+    Parameters
+    ----------
+    p : Pattern
+        Regular expression pattern
+    cropped_image : ND-Array
+        Array of N=2 dimension coding an image
+    found_message : Str
+        Custom message delivered when finding a QR
+    logger : Logger
+        Object Logger
+    filter : Str
+        String specifying the image preproceessing method
+
+    Returns
+    -------
+    str
+        In case of found, the code on the QR. otherwise None.
+    """
+    
+    image_to_process = None 
+    
+    if filter == 'no_filter':
+        logger.debug("Looking for QR in {}".format(found_message))
+        image_to_process = cropped_image
+
+    elif filter == 'resize':
+        logger.debug("Looking for QR in {} with {}".format(found_message, filter))
+        image_to_process = cv2.resize(cropped_image, None, fx=0.5, fy=0.5, interpolation=cv2.INTER_LINEAR)
+
+    elif filter == 'median':
+        logger.debug("Looking for QR in {} with {} filter".format(found_message, filter))
+        image_to_process = cv2.medianBlur(cropped_image, 7)
+    
+    else:
+        logger.error("No filter specified")
+        raise ValueError("Se debe especificar el filtro que se está aplicando (o no) en el agrumento de la funcion")
+    
+    code = decode(image_to_process, [ZBarSymbol.QRCODE])
+
+    if code:
+        decoded_text = code[0].data.decode('utf8')
         logger.debug("Decoded Text '{}'".format(decoded_text))
-        os.remove('cropped.jpg')
         logger.info("QR found in {}".format(found_message))
         return p.sub('\"', decoded_text)
     else:
         return None
 
 
-def read_qr_at_right(
-        qr_code_detector: cv2.QRCodeDetector,
+def read_qr_at_top_right(
         p: re.Pattern, image: np.ndarray,
-        width_crop: int, height_crop: int, margin: int,
-        corner: Dict[str, Tuple[int]],
-        logger: logging.Logger
+        logger: logging.Logger, filter: str
 ) -> Union[str, None]:
     """
-    Read QR at the right corner of the image
+    Crops the top right of image and read QR in that zone using the auxiliary function 
+    __read__qr__at__.
 
     Parameters
     ----------
-    qr_code_detector : QRCodeDetector
-        Open CV reader of QR code on images
     p : Patter
         Regular expression pattern
     image : ND-Array
         Array of N=2 dimension coding an image
-    width_crop : int
-        Width of crop of QR
-    height_crop : int
-        Height of crop of QR
-    margin : int
-        Margin of crop
-    corner : {str: (int, int)}
-        Corner sizes ('LEFT' and 'RIGHT')
     logger : Logger
         Object Logger
 
     Returns
     -------
     str
-        In case of found, the code on the QR
+        In case of found, the code on the QR. otherwise None.
     """
-    cropped_image = image[
-        corner["RIGHT"][1]:corner["RIGHT"][1] + height_crop,
-        corner["RIGHT"][0]:corner["RIGHT"][0] + width_crop
-    ]
-    return __read_qr_at__(qr_code_detector, p, cropped_image, "right corner", logger)
+
+    height, widht = image.shape
+    cropped_image = image[:height // 2, widht // 2:]
+
+    return __read_qr_at__(p, cropped_image, "top right corner", logger, filter)
 
 
-def read_qr_at_left(
-        qr_code_detector: cv2.QRCodeDetector,
+def read_qr_at_top_left(
         p: re.Pattern, image: np.ndarray,
-        width_crop: int, height_crop: int, margin: int,
-        corner: Dict[str, Tuple[int]],
-        logger: logging.Logger
+        logger: logging.Logger, filter: str
 ) -> Union[str, None]:
     """
-    Read QR at the left corner of the image
+    Crops the top left of image and read QR in that zone using the auxiliary function 
+    __read__qr__at__.
 
     Parameters
     ----------
-    qr_code_detector : QRCodeDetector
-        Open CV reader of QR code on images
     p : Patter
         Regular expression pattern
     image : ND-Array
         Array of N=2 dimension coding an image
-    width_crop : int
-        Width of crop of QR
-    height_crop : int
-        Height of crop of QR
-    margin : int
-        Margin of crop
-    corner : {str: (int, int)}
-        Corner sizes ('LEFT' and 'RIGHT')
     logger : Logger
         Object Logger
 
     Returns
     -------
     str
-        In case of found, the code on the QR
+        In case of found, the code on the QR. otherwise None.
     """
-    cropped_image = image[
-        corner["LEFT"][1]:corner["LEFT"][1] + height_crop,
-        corner["LEFT"][0]:corner["LEFT"][0] + width_crop
-    ]
-    return __read_qr_at__(qr_code_detector, p, cropped_image, "left corner", logger)
+
+    height, widht = image.shape
+    cropped_image = image[:height // 2, :widht // 2]
+
+    return __read_qr_at__(p, cropped_image, "top left corner", logger, filter)
 
 
-def read_qr_at_right_margin_left(
-        qr_code_detector: cv2.QRCodeDetector,
+def read_qr_at_bottom_left(
         p: re.Pattern, image: np.ndarray,
-        width_crop: int, height_crop: int, margin: int,
-        corner: Dict[str, Tuple[int]],
-        logger: logging.Logger
+        logger: logging.Logger, filter:str
 ) -> Union[str, None]:
     """
-    Read QR at the right margin left corner of the image
+    Crops the bottom left of image and read QR in that zone using the auxiliary function 
+    __read__qr__at__.
 
     Parameters
     ----------
-    qr_code_detector : QRCodeDetector
-        Open CV reader of QR code on images
     p : Patter
         Regular expression pattern
     image : ND-Array
         Array of N=2 dimension coding an image
-    width_crop : int
-        Width of crop of QR
-    height_crop : int
-        Height of crop of QR
-    margin : int
-        Margin of crop
-    corner : {str: (int, int)}
-        Corner sizes ('LEFT' and 'RIGHT')
     logger : Logger
         Object Logger
 
     Returns
     -------
     str
-        In case of found, the code on the QR
+        In case of found, the code on the QR. otherwise None.
     """
-    cropped_image = image[
-        corner["RIGHT"][1]:corner["RIGHT"][1] + height_crop,
-        corner["RIGHT"][0] - margin:corner["RIGHT"][0] + width_crop - margin
-    ]
-    return __read_qr_at__(qr_code_detector, p, cropped_image, "right margin left", logger)
+
+    height, widht = image.shape
+    cropped_image = image[height // 2:, :widht // 2]
+
+    return __read_qr_at__(p, cropped_image, "bottom left corner", logger, filter)
 
 
-def read_qr_at_right_margin_right(
-        qr_code_detector: cv2.QRCodeDetector,
+def read_qr_at_bottom_right(
         p: re.Pattern, image: np.ndarray,
-        width_crop: int, height_crop: int, margin: int,
-        corner: Dict[str, Tuple[int]],
-        logger: logging.Logger
+        logger: logging.Logger, filter: str
 ) -> Union[str, None]:
     """
-    Read QR at the right margin right corner of the image
+    Crops the bottom right of image and read QR in that zone using the auxiliary function 
+    __read__qr__at__.
 
     Parameters
     ----------
-    qr_code_detector : QRCodeDetector
-        Open CV reader of QR code on images
     p : Patter
         Regular expression pattern
     image : ND-Array
         Array of N=2 dimension coding an image
-    width_crop : int
-        Width of crop of QR
-    height_crop : int
-        Height of crop of QR
-    margin : int
-        Margin of crop
-    corner : {str: (int, int)}
-        Corner sizes ('LEFT' and 'RIGHT')
     logger : Logger
         Object Logger
 
     Returns
     -------
     str
-        In case of found, the code on the QR
+        In case of found, the code on the QR. otherwise None.
     """
-    cropped_image = image[
-        corner["RIGHT"][1]:corner["RIGHT"][1] + height_crop,
-        corner["RIGHT"][0] + margin:corner["RIGHT"][0] + width_crop + margin
-    ]
-    return __read_qr_at__(qr_code_detector, p, cropped_image, "right margin right", logger)
 
+    height, widht = image.shape
+    cropped_image = image[height // 2:, widht // 2:]
+    
+    return __read_qr_at__(p, cropped_image, "bottom right corner", logger, filter)
 
-def read_qr_at_left_margin_left(
-        qr_code_detector: cv2.QRCodeDetector,
-        p: re.Pattern, image: np.ndarray,
-        width_crop: int, height_crop: int, margin: int,
-        corner: Dict[str, Tuple[int]],
-        logger: logging.Logger
-) -> Union[str, None]:
-    """
-    Read QR at the left margin left corner of the image
-
-    Parameters
-    ----------
-    qr_code_detector : QRCodeDetector
-        Open CV reader of QR code on images
-    p : Patter
-        Regular expression pattern
-    image : ND-Array
-        Array of N=2 dimension coding an image
-    width_crop : int
-        Width of crop of QR
-    height_crop : int
-        Height of crop of QR
-    margin : int
-        Margin of crop
-    corner : {str: (int, int)}
-        Corner sizes ('LEFT' and 'RIGHT')
-    logger : Logger
-        Object Logger
-
-    Returns
-    -------
-    str
-        In case of found, the code on the QR
-    """
-    cropped_image = image[
-        corner["LEFT"][1]:corner["LEFT"][1] + height_crop,
-        corner["LEFT"][0] - margin:corner["LEFT"][0] + width_crop - margin
-    ]
-    return __read_qr_at__(qr_code_detector, p, cropped_image, "left margin left", logger)
-
-
-def read_qr_at_left_margin_right(
-        qr_code_detector: cv2.QRCodeDetector,
-        p: re.Pattern, image: np.ndarray,
-        width_crop: int, height_crop: int, margin: int,
-        corner: Dict[str, Tuple[int]],
-        logger: logging.Logger
-) -> Union[str, None]:
-    """
-    Read QR at the left margin right corner of the image
-
-    Parameters
-    ----------
-    qr_code_detector : QRCodeDetector
-        Open CV reader of QR code on images
-    p : Patter
-        Regular expression pattern
-    image : ND-Array
-        Array of N=2 dimension coding an image
-    width_crop : int
-        Width of crop of QR
-    height_crop : int
-        Height of crop of QR
-    margin : int
-        Margin of crop
-    corner : {str: (int, int)}
-        Corner sizes ('LEFT' and 'RIGHT')
-    logger : Logger
-        Object Logger
-
-    Returns
-    -------
-    str
-        In case of found, the code on the QR
-    """
-    cropped_image = image[
-        corner["LEFT"][1]:corner["LEFT"][1] + height_crop,
-        corner["LEFT"][0] + margin:corner["LEFT"][0] + width_crop + margin
-    ]
-    return __read_qr_at__(qr_code_detector, p, cropped_image, "left margin right", logger)
-
-
-def read_qr_at_right_margin_up(
-        qr_code_detector: cv2.QRCodeDetector,
-        p: re.Pattern, image: np.ndarray,
-        width_crop: int, height_crop: int, margin: int,
-        corner: Dict[str, Tuple[int]],
-        logger: logging.Logger
-) -> Union[str, None]:
-    """
-    Read QR at the right margin up corner of the image
-
-    Parameters
-    ----------
-    qr_code_detector : QRCodeDetector
-        Open CV reader of QR code on images
-    p : Patter
-        Regular expression pattern
-    image : ND-Array
-        Array of N=2 dimension coding an image
-    width_crop : int
-        Width of crop of QR
-    height_crop : int
-        Height of crop of QR
-    margin : int
-        Margin of crop
-    corner : {str: (int, int)}
-        Corner sizes ('LEFT' and 'RIGHT')
-    logger : Logger
-        Object Logger
-
-    Returns
-    -------
-    str
-        In case of found, the code on the QR
-    """
-    cropped_image = image[
-        corner["RIGHT"][1] - margin:corner["RIGHT"][1] + height_crop - margin,
-        corner["RIGHT"][0] - margin:corner["RIGHT"][0] + width_crop
-    ]
-    return __read_qr_at__(qr_code_detector, p, cropped_image, "right margin up", logger)
-
-
-def read_qr_at_right_margin_down(
-        qr_code_detector: cv2.QRCodeDetector,
-        p: re.Pattern, image: np.ndarray,
-        width_crop: int, height_crop: int, margin: int,
-        corner: Dict[str, Tuple[int]],
-        logger: logging.Logger
-) -> Union[str, None]:
-    """
-    Read QR at the right margin down corner of the image
-
-    Parameters
-    ----------
-    qr_code_detector : QRCodeDetector
-        Open CV reader of QR code on images
-    p : Patter
-        Regular expression pattern
-    image : ND-Array
-        Array of N=2 dimension coding an image
-    width_crop : int
-        Width of crop of QR
-    height_crop : int
-        Height of crop of QR
-    margin : int
-        Margin of crop
-    corner : {str: (int, int)}
-        Corner sizes ('LEFT' and 'RIGHT')
-    logger : Logger
-        Object Logger
-
-    Returns
-    -------
-    str
-        In case of found, the code on the QR
-    """
-    cropped_image = image[
-        corner["RIGHT"][1] + margin:corner["RIGHT"][1] + height_crop + margin,
-        corner["RIGHT"][0] - margin:corner["RIGHT"][0] + width_crop
-    ]
-    return __read_qr_at__(qr_code_detector, p, cropped_image, "right margin down", logger)
-
-
-def read_qr_at_left_margin_up(
-        qr_code_detector: cv2.QRCodeDetector,
-        p: re.Pattern, image: np.ndarray,
-        width_crop: int, height_crop: int, margin: int,
-        corner: Dict[str, Tuple[int]],
-        logger: logging.Logger
-) -> Union[str, None]:
-    """
-    Read QR at the left margin up corner of the image
-
-    Parameters
-    ----------
-    qr_code_detector : QRCodeDetector
-        Open CV reader of QR code on images
-    p : Patter
-        Regular expression pattern
-    image : ND-Array
-        Array of N=2 dimension coding an image
-    width_crop : int
-        Width of crop of QR
-    height_crop : int
-        Height of crop of QR
-    margin : int
-        Margin of crop
-    corner : {str: (int, int)}
-        Corner sizes ('LEFT' and 'RIGHT')
-    logger : Logger
-        Object Logger
-
-    Returns
-    -------
-    str
-        In case of found, the code on the QR
-    """
-    cropped_image = image[
-        corner["LEFT"][1] - margin:corner["LEFT"][1] + height_crop - margin,
-        corner["LEFT"][0] - margin:corner["LEFT"][0] + width_crop
-    ]
-    return __read_qr_at__(qr_code_detector, p, cropped_image, "left margin up", logger)
-
-
-def read_qr_at_left_margin_down(
-        qr_code_detector: cv2.QRCodeDetector,
-        p: re.Pattern, image: np.ndarray,
-        width_crop: int, height_crop: int, margin: int,
-        corner: Dict[str, Tuple[int]],
-        logger: logging.Logger
-) -> Union[str, None]:
-    """
-    Read QR at the left margin down corner of the image
-
-    Parameters
-    ----------
-    qr_code_detector : QRCodeDetector
-        Open CV reader of QR code on images
-    p : Patter
-        Regular expression pattern
-    image : ND-Array
-        Array of N=2 dimension coding an image
-    width_crop : int
-        Width of crop of QR
-    height_crop : int
-        Height of crop of QR
-    margin : int
-        Margin of crop
-    corner : {str: (int, int)}
-        Corner sizes ('LEFT' and 'RIGHT')
-    logger : Logger
-        Object Logger
-
-    Returns
-    -------
-    str
-        In case of found, the code on the QR
-    """
-    cropped_image = image[
-        corner["LEFT"][1] + margin:corner["LEFT"][1] + height_crop + margin,
-        corner["LEFT"][0] - margin:corner["LEFT"][0] + width_crop
-    ]
-    return __read_qr_at__(qr_code_detector, p, cropped_image, "left margin down", logger)
 
 
 def change_image_resolution(image: Image, scale_percent) -> BytesIO:
