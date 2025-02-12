@@ -9,7 +9,8 @@ RUN apt-get install -y \
     libgdal-dev \
     libgeos-dev \
     libpq-dev \
-    gettext
+    gettext \
+    zbar-tools
 
 RUN mkdir /app
 WORKDIR /app
