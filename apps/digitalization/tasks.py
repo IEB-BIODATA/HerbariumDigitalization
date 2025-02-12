@@ -201,10 +201,7 @@ def scheduled_postprocess(input_folder: str, temp_folder: str, log_folder: str):
                     done = False
                     log_object.found_images += 1
                     logging.info("Reading QR...")
-                    qr = read_qr(filename,
-                                 WIDTH_CROP, HEIGHT_CROP,
-                                 MARGIN, PARAMETERS[session_folder.get_institution()]["CORNER"],
-                                 process_logger)
+                    qr = read_qr(filename, process_logger)
                     if qr is not None:
                         json_qr = json.loads(qr)
                         code_voucher = json_qr['code']
