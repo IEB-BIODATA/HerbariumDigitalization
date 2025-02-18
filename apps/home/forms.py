@@ -132,8 +132,7 @@ class AlertForm(forms.ModelForm):
     class Meta:
         model = Alert
         fields = (
-            'message_es',
-            'message_en',
+            'message',
             'active',
         )
         widgets = {

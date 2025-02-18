@@ -1,0 +1,267 @@
+# SOME DESCRIPTIVE TITLE.
+# Copyright (C) YEAR THE PACKAGE'S COPYRIGHT HOLDER
+# This file is distributed under the same license as the PACKAGE package.
+# FIRST AUTHOR <EMAIL@ADDRESS>, YEAR.
+#
+#, fuzzy
+msgid ""
+msgstr ""
+"Project-Id-Version: PACKAGE VERSION\n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2025-02-18 19:04-0300\n"
+"PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
+"Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
+"Language-Team: LANGUAGE <LL@li.org>\n"
+"Language: \n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=2; plural=(n != 1);\n"
+
+#: apps/metadata/models.py:11
+msgid "West Bounding"
+msgstr "West Bounding"
+
+#: apps/metadata/models.py:12
+msgid "East Bounding"
+msgstr "East Bounding"
+
+#: apps/metadata/models.py:13
+msgid "North Bounding"
+msgstr "North Bounding"
+
+#: apps/metadata/models.py:14
+msgid "South Bounding"
+msgstr "South Bounding"
+
+#: apps/metadata/models.py:15 apps/metadata/models.py:103
+msgid "Description"
+msgstr "Description"
+
+#: apps/metadata/models.py:16
+msgid "Bound"
+msgstr "Bound"
+
+#: apps/metadata/models.py:19 apps/metadata/models.py:128
+msgid "Geographic Coverage"
+msgstr "Geographic Coverage"
+
+#: apps/metadata/models.py:20
+msgid "Geographic Coverages"
+msgstr "Geographic Coverages"
+
+#: apps/metadata/models.py:24 apps/metadata/models.py:28
+msgid "Taxon ID"
+msgstr "Taxon ID"
+
+#: apps/metadata/models.py:25
+msgid "Provider"
+msgstr "Provider"
+
+#: apps/metadata/models.py:29 apps/metadata/models.py:36
+msgid "Taxon IDs"
+msgstr "Taxon IDs"
+
+#: apps/metadata/models.py:33
+msgid "Rank"
+msgstr "Rank"
+
+#: apps/metadata/models.py:34
+msgid "Rank Value"
+msgstr "Rank Value"
+
+#: apps/metadata/models.py:35
+msgid "Common Name"
+msgstr "Common Name"
+
+#: apps/metadata/models.py:37
+msgid "Parent"
+msgstr "Parent"
+
+#: apps/metadata/models.py:43 apps/metadata/models.py:49
+msgid "Taxonomic Classification"
+msgstr "Taxonomic Classification"
+
+#: apps/metadata/models.py:44
+msgid "Taxonomic Classifications"
+msgstr "Taxonomic Classifications"
+
+#: apps/metadata/models.py:48
+msgid "General Coverage"
+msgstr "General Coverage"
+
+#: apps/metadata/models.py:52 apps/metadata/models.py:129
+msgid "Taxonomic Coverage"
+msgstr "Taxonomic Coverage"
+
+#: apps/metadata/models.py:53
+msgid "Taxonomic Coverages"
+msgstr "Taxonomic Coverages"
+
+#: apps/metadata/models.py:57
+msgid "First Name"
+msgstr "First Name"
+
+#: apps/metadata/models.py:58
+msgid "Last Name"
+msgstr "Last Name"
+
+#: apps/metadata/models.py:59
+msgid "Position"
+msgstr "Position"
+
+#: apps/metadata/models.py:60
+msgid "Organization"
+msgstr "Organization"
+
+#: apps/metadata/models.py:61
+msgid "Address"
+msgstr "Address"
+
+#: apps/metadata/models.py:62
+msgid "City"
+msgstr "City"
+
+#: apps/metadata/models.py:63
+msgid "Country"
+msgstr "Country"
+
+#: apps/metadata/models.py:64
+msgid "Postal Code"
+msgstr "Postal Code"
+
+#: apps/metadata/models.py:65
+msgid "Phone"
+msgstr "Phone"
+
+#: apps/metadata/models.py:66
+msgid "Email"
+msgstr "Email"
+
+#: apps/metadata/models.py:67
+msgid "Web Page"
+msgstr "Web Page"
+
+#: apps/metadata/models.py:73 apps/metadata/models.py:139
+msgid "Responsible Party"
+msgstr "Responsible Party"
+
+#: apps/metadata/models.py:74
+msgid "Responsible Parties"
+msgstr "Responsible Parties"
+
+#: apps/metadata/models.py:78 apps/metadata/models.py:87
+msgid "Keyword"
+msgstr "Keyword"
+
+#: apps/metadata/models.py:79
+msgid "Type"
+msgstr "Type"
+
+#: apps/metadata/models.py:88 apps/metadata/models.py:92
+msgid "Keywords"
+msgstr "Keywords"
+
+#: apps/metadata/models.py:93
+msgid "Thesaurus"
+msgstr "Thesaurus"
+
+#: apps/metadata/models.py:96 apps/metadata/models.py:127
+msgid "Keyword Set"
+msgstr "Keyword Set"
+
+#: apps/metadata/models.py:97
+msgid "Keyword Sets"
+msgstr "Keyword Sets"
+
+#: apps/metadata/models.py:101
+msgid "Step"
+msgstr "Step"
+
+#: apps/metadata/models.py:102
+msgid "Sub Step"
+msgstr "Sub Step"
+
+#: apps/metadata/models.py:106
+msgid "Procedure Step"
+msgstr "Procedure Step"
+
+#: apps/metadata/models.py:107
+msgid "Procedure Steps"
+msgstr "Procedure Steps"
+
+#: apps/metadata/models.py:111
+msgid "Steps"
+msgstr "Steps"
+
+#: apps/metadata/models.py:114 apps/metadata/models.py:130
+msgid "Method"
+msgstr "Method"
+
+#: apps/metadata/models.py:115
+msgid "Methods"
+msgstr "Methods"
+
+#: apps/metadata/models.py:119
+msgid "Title"
+msgstr "Title"
+
+#: apps/metadata/models.py:120
+msgid "Abstract"
+msgstr "Abstract"
+
+#: apps/metadata/models.py:121
+msgid "Language"
+msgstr "Language"
+
+#: apps/metadata/models.py:122
+msgid "Creator"
+msgstr "Creator"
+
+#: apps/metadata/models.py:123
+msgid "Contact"
+msgstr "Contact"
+
+#: apps/metadata/models.py:124
+msgid "Metadata Provider"
+msgstr "Metadata Provider"
+
+#: apps/metadata/models.py:125
+msgid "Intellectual Rights"
+msgstr "Intellectual Rights"
+
+#: apps/metadata/models.py:126
+msgid "Licenced"
+msgstr "Licenced"
+
+#: apps/metadata/models.py:133 apps/metadata/models.py:149
+msgid "EML Dataset"
+msgstr "EML Dataset"
+
+#: apps/metadata/models.py:134
+msgid "EML Datasets"
+msgstr "EML Datasets"
+
+#: apps/metadata/models.py:138
+msgid "Dataset"
+msgstr "Dataset"
+
+#: apps/metadata/models.py:140
+msgid "Role"
+msgstr "Role"
+
+#: apps/metadata/models.py:143
+msgid "Associated Party"
+msgstr "Associated Party"
+
+#: apps/metadata/models.py:144
+msgid "Associated Parties"
+msgstr "Associated Parties"
+
+#: apps/metadata/models.py:148
+msgid "Package ID"
+msgstr "Package ID"
+
+#: apps/metadata/models.py:152 apps/metadata/models.py:153
+msgid "EML"
+msgstr "EML"

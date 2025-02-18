@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2025-01-31 14:32-0300\n"
+"POT-Creation-Date: 2025-02-18 14:19-0300\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -989,6 +989,32 @@ msgstr "Pending image processing"
 msgid "Continue"
 msgstr "Continue"
 
+#: templates/download_dwc_archive.html:36
+#, fuzzy
+#| msgid "Download search"
+msgid "Download Darwin Core Archive"
+msgstr "Download search"
+
+#: templates/download_dwc_archive.html:41
+msgid "Download Darwin Core Of:"
+msgstr ""
+
+#: templates/download_dwc_archive.html:45
+msgid "Catalog of Vascular Plant"
+msgstr ""
+
+#: templates/download_dwc_archive.html:46
+#, fuzzy
+#| msgid "Herbarium Code"
+msgid "Herbarium CONC"
+msgstr "Herbarium Code"
+
+#: templates/download_dwc_archive.html:47
+#, fuzzy
+#| msgid "Herbarium"
+msgid "Herbarium ULS"
+msgstr "Herbarium"
+
 #: templates/footer.html:4
 msgid "IEB Complete Name"
 msgstr "Institute of Ecology and Biodiversity"
@@ -1110,29 +1136,35 @@ msgid "Download current version"
 msgstr "Download current version"
 
 #: templates/sidebar.html:144
+#, fuzzy
+#| msgid "Download search"
+msgid "Download DwC Archive"
+msgstr "Download search"
+
+#: templates/sidebar.html:150
 msgid "Test"
 msgstr "Test"
 
-#: intranet/settings.py:150
+#: intranet/settings.py:151
 msgid "Spanish"
 msgstr "Spanish"
 
-#: intranet/settings.py:151
+#: intranet/settings.py:152
 msgid "English"
 msgstr "English"
 
-#: intranet/settings.py:253
+#: intranet/settings.py:254
 msgid "Digital Herbarium API"
 msgstr "Digital Herbarium API"
 
-#: intranet/settings.py:254
+#: intranet/settings.py:255
 msgid "API description"
 msgstr "Catalogue of Vascular Plants of Chile and Digital Herbarium API"
 
-#: intranet/settings.py:260
+#: intranet/settings.py:261
 msgid "Mozilla Public License, version 2.0"
 msgstr "Mozilla Public License, version 2.0"
 
-#: intranet/settings.py:261
+#: intranet/settings.py:262
 msgid "Mozilla MPL URL"
 msgstr "https://www.mozilla.org/en-US/MPL/2.0/"

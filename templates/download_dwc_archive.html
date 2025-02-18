@@ -1,0 +1,51 @@
+{% extends "base.html" %}
+{% load static %}
+{% load i18n %}
+{% block javascript %}
+    <script>
+        function download_dwc_catalog() {
+            $(document).ajaxSend(function() {
+                $("#overlay").fadeIn(300);
+            });
+            $.ajax({
+                url: "{% url 'download_dwc_catalog' %}",
+                type: "GET",
+                xhrFields: {
+                    responseType: 'blob'
+                }
+            }).done(function(data) {
+                let link = document.createElement("a");
+                link.href = window.URL.createObjectURL(data);
+                link.download = data.name;
+                document.body.appendChild(link);
+                link.click();
+                document.body.removeChild(link);
+            }).catch(function(data, status, error) {
+                console.log(data);
+                console.log(status);
+                console.log(error);
+            }).always(function() {
+                setTimeout(function() {
+                    $("#overlay").fadeOut(300);
+                }, 100);
+            });
+        }
+    </script>
+{% endblock %}
+{% block content %}
+    <h1>{% translate "Download Darwin Core Archive" %}</h1>
+    <!-- Area Chart Example-->
+    <div class="card mb-3">
+        <div class="card-header">
+            <i class="fas fa-fw fa-file"></i>
+            {% translate "Download Darwin Core Of:" %}
+        </div>
+        <div class="card-body">
+            <ul>
+                <li><a href="#" onclick="download_dwc_catalog()" class="btn btn-primary">{% translate "Catalog of Vascular Plant" %}</a></li>
+                <li><button class="btn btn-primary">{% translate "Herbarium CONC" %}</button></li>
+                <li><button class="btn btn-primary">{% translate "Herbarium ULS" %}</button></li>
+            </ul>
+        </div>
+    </div>
+{% endblock %}
