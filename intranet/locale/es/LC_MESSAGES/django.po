@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2025-01-31 14:32-0300\n"
+"POT-Creation-Date: 2025-02-18 14:20-0300\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -989,6 +989,32 @@ msgstr "Procesamiento de imágenes pendientes"
 msgid "Continue"
 msgstr "Continuar"
 
+#: templates/download_dwc_archive.html:36
+#, fuzzy
+#| msgid "Download search"
+msgid "Download Darwin Core Archive"
+msgstr "Descarga de búsqueda"
+
+#: templates/download_dwc_archive.html:41
+msgid "Download Darwin Core Of:"
+msgstr ""
+
+#: templates/download_dwc_archive.html:45
+msgid "Catalog of Vascular Plant"
+msgstr ""
+
+#: templates/download_dwc_archive.html:46
+#, fuzzy
+#| msgid "Herbarium Code"
+msgid "Herbarium CONC"
+msgstr "Código Herbario"
+
+#: templates/download_dwc_archive.html:47
+#, fuzzy
+#| msgid "Herbarium"
+msgid "Herbarium ULS"
+msgstr "Herbario"
+
 #: templates/footer.html:4
 msgid "IEB Complete Name"
 msgstr "Instituto de Ecología y Biodiversidad"
@@ -1111,29 +1137,35 @@ msgid "Download current version"
 msgstr "Descargar actual versión"
 
 #: templates/sidebar.html:144
+#, fuzzy
+#| msgid "Download search"
+msgid "Download DwC Archive"
+msgstr "Descarga de búsqueda"
+
+#: templates/sidebar.html:150
 msgid "Test"
 msgstr "Pruebas"
 
-#: intranet/settings.py:150
+#: intranet/settings.py:151
 msgid "Spanish"
 msgstr "Español"
 
-#: intranet/settings.py:151
+#: intranet/settings.py:152
 msgid "English"
 msgstr "Inglés"
 
-#: intranet/settings.py:253
+#: intranet/settings.py:254
 msgid "Digital Herbarium API"
 msgstr "API del Herbario Digital"
 
-#: intranet/settings.py:254
+#: intranet/settings.py:255
 msgid "API description"
 msgstr "API del Catálogo de Plantas Vasculares de Chile y Herbario Digital"
 
-#: intranet/settings.py:260
+#: intranet/settings.py:261
 msgid "Mozilla Public License, version 2.0"
 msgstr "Licencia pública de Mozilla, versión 2.0"
 
-#: intranet/settings.py:261
+#: intranet/settings.py:262
 msgid "Mozilla MPL URL"
 msgstr "https://www.mozilla.org/en-US/MPL/2.0/"

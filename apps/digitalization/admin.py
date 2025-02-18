@@ -9,7 +9,7 @@ from leaflet.admin import LeafletGeoAdmin
 from modeltranslation.admin import TranslationAdmin
 
 from .forms import ProtectedAreaForm
-from .models import Herbarium, HerbariumMember, ProtectedArea
+from .models import Herbarium, HerbariumMember, ProtectedArea, Licence
 from ..home.models import Profile
 
 
@@ -20,6 +20,11 @@ class HerbariumAdmin(TranslationAdmin):
     def save_model(self, request, obj, form, change):
         obj.created_by = request.user
         obj.save()
+
+
+@admin.register(Licence)
+class LicenceAdmin(TranslationAdmin):
+    list_display = (['short_name'])
 
 
 # The classes are defined to integer the units in the django user form

@@ -139,6 +139,12 @@
 <!-- For test new task -->
 {% if request.user|has_group:"Test" %}
     <li class="nav-item">
+        <a class="nav-link" href="{% url 'download_dwc_archive' %}">
+            <i class="fas fa-fw fa-download"></i>
+            <span>{% translate "Download DwC Archive" %}</span>
+        </a>
+    </li>
+    <li class="nav-item">
         <a class="nav-link" href="{% url 'test_view' %}">
             <i class="fas fa-fw fa-check"></i>
             <span>{% translate "Test" %}</span>
