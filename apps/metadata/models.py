@@ -103,7 +103,7 @@ class KeywordSet(models.Model):
 
 class ProcedureStep(models.Model):
     step = models.IntegerField(verbose_name=_("Step"))
-    sub_step = models.ManyToManyField("self", verbose_name=_("Sub Step"))
+    sub_step = models.ManyToManyField("self", blank=True, verbose_name=_("Sub Step"))
     description = models.TextField(verbose_name=_("Description"))
 
     class Meta:
@@ -125,13 +125,13 @@ class EMLDataset(models.Model):
     language = models.CharField(choices=settings.LANGUAGES, verbose_name=_("Language"))
     creator = models.ManyToManyField(ResponsibleParty, related_name="creator", verbose_name=_("Creator"))
     contact = models.ManyToManyField(ResponsibleParty, related_name="contact", verbose_name=_("Contact"))
-    metadata_provider = models.ManyToManyField(ResponsibleParty, related_name="metadata_provider", verbose_name=_("Metadata Provider"))
-    intellectual_rights = models.TextField(verbose_name=_("Intellectual Rights"))
-    licensed = models.ManyToManyField(Licence, verbose_name=_("Licenced"))
-    keyword_set = models.ManyToManyField(KeywordSet, verbose_name=_("Keyword Set"))
-    geographic_coverage = models.ForeignKey(GeographicCoverage, on_delete=models.CASCADE, verbose_name=_("Geographic Coverage"))
-    taxonomic_coverage = models.ForeignKey(TaxonomicCoverage, on_delete=models.CASCADE, verbose_name=_("Taxonomic Coverage"))
-    method = models.ForeignKey(Method, on_delete=models.CASCADE, related_name="method", verbose_name=_("Method"))
+    metadata_provider = models.ManyToManyField(ResponsibleParty, blank=True, related_name="metadata_provider", verbose_name=_("Metadata Provider"))
+    intellectual_rights = models.TextField(null=True, blank=True, verbose_name=_("Intellectual Rights"))
+    licensed = models.ManyToManyField(Licence, blank=True, verbose_name=_("Licenced"))
+    keyword_set = models.ManyToManyField(KeywordSet, blank=True, verbose_name=_("Keyword Set"))
+    geographic_coverage = models.ForeignKey(GeographicCoverage, null=True, blank=True, on_delete=models.CASCADE, verbose_name=_("Geographic Coverage"))
+    taxonomic_coverage = models.ForeignKey(TaxonomicCoverage, null=True, blank=True, on_delete=models.CASCADE, verbose_name=_("Taxonomic Coverage"))
+    method = models.ForeignKey(Method, null=True, blank=True, on_delete=models.CASCADE, related_name="method", verbose_name=_("Method"))
 
     class Meta:
         verbose_name = _("EML Dataset")

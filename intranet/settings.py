@@ -171,7 +171,11 @@ STATICFILES_DIRS = [os.path.join(BASE_DIR, 'static')]
 if DEBUG:
     STATIC_URL = 'static/'
 else:
-    STATICFILES_STORAGE = 'apps.digitalization.storage_backends.StaticStorage'
+    STORAGES = {
+        'staticfiles': {
+            'BACKEND': 'apps.digitalization.storage_backends.StaticStorage',
+        }
+    }
     AWS_STATIC_LOCATION = 'static/digitalization/'
     STATIC_URL = os.environ.get("DIGITALIZATION_STATIC_HOST")
 
