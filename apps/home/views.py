@@ -1,28 +1,25 @@
 # -*- coding: utf-8 -*-
+import json
 import logging
 import os
-import zipfile
 
-import dwca.terms as dwc
-
+from celery.result import AsyncResult
 from django.conf import settings
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth.models import User
 from django.db.models import Count
 from django.db.models import Q
 from django.db.models.functions import ExtractDay, ExtractMonth, ExtractYear
-from django.http import HttpResponse
+from django.http import HttpResponse, FileResponse
 from django.shortcuts import render, redirect
 from django.utils import translation
-from django.utils.html import smart_urlquote
-from dwca import DarwinCoreArchive
-from dwca.classes import Taxon
-from eml.types import ResponsibleParty, OrganizationName, I18nString, PositionName
-from xml_common.utils import Language as EMLLanguage
+from django.views.decorators.http import require_GET
 
 from apps.digitalization.models import BiodataCode, Herbarium
+from apps.digitalization.storage_backends import PrivateMediaStorage
 from apps.home.forms import ProfileForm, UserForm
 from apps.home.models import Profile
+from apps.home.tasks import generate_dwc_archive
 
 
 @login_required
@@ -101,6 +98,22 @@ def preference(request):
         })
 
 
+@require_GET
+@login_required
+def get_progress(request, task_id: str):
+    result = AsyncResult(task_id)
+    return HttpResponse(json.dumps({
+        'state': result.state,
+        'details': result.info,
+    }), content_type="application/json")
+
+
+@require_GET
+@login_required
+def get_task_log(request, task_id: str):
+    return HttpResponse(PrivateMediaStorage().url(f"{task_id}.log"))
+
+
 @login_required()
 def test_view(request):
     return render(request, "test.html")
@@ -108,43 +121,28 @@ def test_view(request):
 
 @login_required()
 def download_dwc_archive(request):
-    return render(request, "download_dwc_archive.html")
+    context = dict()
+    task_id = request.GET.get("task_id", None)
+    if task_id is not None:
+        context["task_id"] = task_id
+    return render(request, "download_dwc_archive.html", context=context)
+
+
+@login_required()
+def generate_dwc_catalog(request):
+    task_id = generate_dwc_archive.delay(1)
+    return HttpResponse(task_id)
 
 
 @login_required()
 def download_dwc_catalog(request):
-    catalog = DarwinCoreArchive("https://catalogoplantas.udec.cl/")
-    catalog.generate_eml("eml.xml")
-    catalog.metadata.initialize_resource(
-        "Catalogue of Vacular Plants of Chile",
-        ResponsibleParty(
-            organization_name=OrganizationName(I18nString("Departamento de Botánica, Facultad de Ciencias Naturales y Oceanográficas, Universidad de Concepción", EMLLanguage.ESP))
-        ),
-        contact=[
-            ResponsibleParty(position_name=PositionName("Informatics Researcher"))
-        ]
-    )
-    core = Taxon(
-        0, "taxon.tsv", [
-            dwc.TaxonID(0), dwc.ParentNameUsageID(1), dwc.AcceptedNameUsageID(2),
-            dwc.OriginalNameUsageID(3), dwc.ScientificNameID(4), dwc.DWCDataset(5),
-            dwc.TaxonomicStatus(6), dwc.TaxonRank(7), dwc.TaxonRemarks(8), dwc.ScientificName(9),
-            dwc.Phylum(10), dwc.Kingdom(11), dwc.DWCClass(12), dwc.Order(13), dwc.Family(14), dwc.Genus(15),
-            dwc.GenericName(16), dwc.InfragenericEpithet(17), dwc.SpecificEpithet(18),
-            dwc.InfraspecificEpithet(19), dwc.ScientificNameAuthorship(20),
-            dwc.NameAccordingTo(21), dwc.NamePublishedIn(22),
-            dwc.NomenclaturalCode(23), dwc.NomenclaturalStatus(24)
-        ], fields_terminated_by="\t", ignore_header_lines=1
-    )
-    catalog.core = core
-    zip_filename = "tmp/data.zip"
-    catalog.to_file(zip_filename)
+    zip_filename = "catalog.zip"
 
-    with open(zip_filename, "rb") as zip_file:
-        response = HttpResponse(zip_file.read(), content_type="application/zip")
-        response["Content-Disposition"] = f"attachment; filename={smart_urlquote(zip_filename)}"
-
-    os.remove(zip_filename)
+    response = FileResponse(
+        open(zip_filename, "rb"),
+        as_attachment=True,
+        filename="catalog.zip"
+    )
 
     return response
 

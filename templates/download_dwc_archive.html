@@ -3,7 +3,27 @@
 {% load i18n %}
 {% block javascript %}
     <script>
-        function download_dwc_catalog() {
+        const csrfToken = "{{ csrf_token }}";
+        function downloadDwCArchive() {
+            $(document).ajaxSend(function() {
+                $("#overlay").fadeIn(300);
+            });
+            $.ajax({
+                url: "{% url 'generate_dwc_catalog' %}",
+                type: "GET",
+            }).done(function(data) {
+                window.location.href = "{% url 'download_dwc_archive' %}?task_id=" + data;
+            }).catch(function(data, status, error) {
+                console.error(data);
+                console.error(status);
+                console.error(error);
+            }).always(function() {
+                setTimeout(function() {
+                    $("#overlay").fadeOut(300);
+                }, 100);
+            });
+        }
+        function downloadDwCCatalog() {
             $(document).ajaxSend(function() {
                 $("#overlay").fadeIn(300);
             });
@@ -25,11 +45,58 @@
                 console.log(status);
                 console.log(error);
             }).always(function() {
+                let downloadLink = document.getElementById("downloadCatalog");
+                downloadLink.getElementsByTagName("i")[0].hidden = true;
+                downloadLink.setAttribute("onClick", "downloadDwCArchive();");
                 setTimeout(function() {
                     $("#overlay").fadeOut(300);
                 }, 100);
             });
         }
+
+        function parseError(error) {
+            console.error(error);
+            let message = "{% translate 'An unexpected error has happened, please contact the admin before closing this window' %}";
+            return `<p>${message}</p>`;
+        }
+
+        $(document).ready(function() {
+            let taskId = "{{ task_id }}";
+            if (taskId === "") {
+                console.debug("Home page. Not downloading.");
+            } else {
+                const progressUrl = "{% url 'get_progress' task_id='placeholder' %}".replace('placeholder', taskId);
+                const urlLog = "{% url 'get_task_log' task_id='placeholder' %}".replace('placeholder', taskId);
+                const logFileDefault = "{% static 'assets/processed' %}";
+                const alertDOM = document.getElementById("alert");
+                updateProgress({
+                    taskId: taskId,
+                    progressUrl: progressUrl,
+                    urlLog: urlLog,
+                    progressDOM: alertDOM,
+                    csrfToken: csrfToken,
+                    logFileDefault: logFileDefault,
+                    onErrorMessage: (error) => {
+                        return parseError(error);
+                    },
+                    successCallback: () => {
+                        console.log("Success");
+                        document.getElementById("downloadCatalog").disabled = false;
+                        document.getElementById("downloadHerbariumCONC").disabled = false;
+                        document.getElementById("downloadHerbariumULS").disabled = false;
+                        let downloadLink = document.getElementById("downloadCatalog");
+                        downloadLink.getElementsByTagName("i")[0].hidden = false;
+                        downloadLink.setAttribute("onClick", "downloadDwCCatalog();");
+                    },
+                    errorCallback: (error) => {
+                        console.error(error);
+                        document.getElementById("downloadCatalog").disabled = false;
+                        document.getElementById("downloadHerbariumCONC").disabled = false;
+                        document.getElementById("downloadHerbariumULS").disabled = false;
+                    }
+                });
+            }
+        });
     </script>
 {% endblock %}
 {% block content %}
@@ -40,12 +107,28 @@
             <i class="fas fa-fw fa-file"></i>
             {% translate "Download Darwin Core Of:" %}
         </div>
+        {% if task_id %}
+            <div id="alert" class="card mb-3" style="display: block;"></div>
+        {% endif %}
         <div class="card-body">
-            <ul>
-                <li><a href="#" onclick="download_dwc_catalog()" class="btn btn-primary">{% translate "Catalog of Vascular Plant" %}</a></li>
-                <li><button class="btn btn-primary">{% translate "Herbarium CONC" %}</button></li>
-                <li><button class="btn btn-primary">{% translate "Herbarium ULS" %}</button></li>
-            </ul>
+            <div class="row">
+                <div class="col-md-12">
+                    <button id="downloadCatalog" onclick="downloadDwCArchive()" class="btn btn-primary" {% if task_id %} disabled="disabled" {% endif %}>
+                        <i class="fas fa-fw fa-download" hidden="hidden"></i>
+                        {% translate "Catalog of Vascular Plant" %}
+                    </button>
+                </div>
+            </div>
+            <div class="row">
+                <div class="col-md-12">
+                    <button id="downloadHerbariumCONC" class="btn btn-primary" {% if task_id %} disabled="disabled" {% endif %}>{% translate "Herbarium CONC" %}</button>
+                </div>
+            </div>
+            <div class="row">
+                <div class="col-md-12">
+                    <button id="downloadHerbariumULS" class="btn btn-primary" {% if task_id %} disabled="disabled" {% endif %}>{% translate "Herbarium ULS" %}</button>
+                </div>
+            </div>
         </div>
     </div>
 {% endblock %}

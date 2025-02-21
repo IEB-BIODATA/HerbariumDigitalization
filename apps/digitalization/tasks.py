@@ -1,40 +1,39 @@
-import cv2
 import datetime as dt
 import glob
 import json
 import logging
 import math
-import numpy as np
 import os
-import pytesseract
 import shutil
 import textwrap
-from django.contrib.auth.models import User
-from django.core.files.base import ContentFile
 from io import BytesIO
-from typing import List, Tuple, Type, Dict
+from typing import List, Tuple, Type
 
 import boto3
+import cv2
+import numpy as np
 import pandas as pd
+import pytesseract
 import pytz
 from PIL import Image, ImageDraw, ImageFont
-from apps.catalog.models import Species, Synonymy
 from celery import shared_task
-from celery.app.task import Task
 from celery.exceptions import Ignore
 from django.conf import settings
+from django.contrib.auth.models import User
 from django.contrib.postgres.search import TrigramSimilarity
+from django.core.files.base import ContentFile
 from django.db import transaction
 from django.db.models import Model
 
+from apps.catalog.models import Species, Synonymy
 from apps.digitalization.models import DCW_SQL, PostprocessingLog
 from apps.digitalization.models import GalleryImage, BannerImage
 from apps.digitalization.models import VoucherImported, BiodataCode, ColorProfileFile, PriorityVouchersFile
-from apps.digitalization.storage_backends import PrivateMediaStorage, PublicMediaStorage, IAPrivateMediaStorage, \
-    GlacierPrivateMediaStorage
-from apps.digitalization.utils import SessionFolder, TaskProcessLogger, HtmlLogger, GroupLogger
+from apps.digitalization.storage_backends import PrivateMediaStorage, PublicMediaStorage, IAPrivateMediaStorage
+from apps.digitalization.utils import SessionFolder
 from apps.digitalization.utils import cr3_to_dng, dng_to_jpeg, dng_to_jpeg_color_profile
 from apps.digitalization.utils import read_qr, change_image_resolution, empty_folder
+from intranet.utils import TaskProcessLogger, HtmlLogger, GroupLogger, close_process
 
 N_BATCH = 1
 WIDTH_CROP = 550
@@ -693,21 +692,7 @@ def get_species(data_candid: pd.Series, logger: logging.Logger) -> Tuple[Species
     return species, info
 
 
-def close_process(logger: HtmlLogger, task: Task, meta: Dict, error: Dict = None) -> None:
-    meta["logs"] = logger.get_logs()
-    if error is None:
-        task.update_state(
-            state='SUCCESS',
-            meta=meta,
-        )
-        return
-    else:
-        meta["error"] = error
-        task.update_state(
-            state='ERROR',
-            meta=meta
-        )
-        return
+
 
 
 @shared_task(name="extract_taken_by", bind=True)

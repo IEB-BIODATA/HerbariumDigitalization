@@ -1,136 +1,25 @@
-import datetime as dt
 import glob
-import html
+import glob
 import logging
 import os
 import re
 import shutil
 import subprocess
-import traceback
 import uuid
 from io import BytesIO
-from typing import Set, Union, Dict, Tuple, List, Any, Sequence
+from typing import Set, Union, List
 
 import boto3
 import cv2
 import numpy as np
 from PIL.Image import Image
-from pyzbar.pyzbar import decode, ZBarSymbol  # Para la decodificación de códigos QR
 from django.contrib.auth.models import User
 from django.contrib.gis.geos import GEOSGeometry
-from django.core.files.base import ContentFile
-from django.core.files.storage import Storage
 from django.template.loader import get_template
+from pyzbar.pyzbar import decode, ZBarSymbol  # Para la decodificación de códigos QR
 from xhtml2pdf import pisa
 
 from apps.digitalization.models import TemporalArea
-
-
-class TaskProcessLogger(logging.Logger):
-    def __init__(self, name: str, path_file: str):
-        super().__init__(name)
-        self.__path__ = os.path.join(
-            path_file, dt.datetime.today().strftime("%Y-%m-%d") + ".log"
-        )
-        self.__log_file__ = open(self.__path__, "a+", encoding="utf-8")
-
-    def __message__(self, level: str, message: Any, **kwargs) -> None:
-        self.__log_file__.write("{} [{}]:{}\n".format(
-            dt.datetime.now().strftime("%Y-%m-%d %I:%M:%S"),
-            level,
-            str(message)
-        ))
-        if kwargs.get("exc_info", False):
-            self.__log_file__.write(traceback.format_exc() + "\n")
-
-    def debug(self, message: Any, **kwargs) -> None:
-        self.__message__("DEBUG", message, **kwargs)
-
-    def info(self, message: Any, **kwargs) -> None:
-        self.__message__("INFO", message, **kwargs)
-
-    def warning(self, message: Any, **kwargs) -> None:
-        self.__message__("WARN", message, **kwargs)
-
-    def error(self, message: Any, **kwargs) -> None:
-        self.__message__("ERROR", message, **kwargs)
-
-    def save_file(self, storage: Storage, file_name: str) -> None:
-        with open(self.__path__, "rb") as file:
-            storage.save(file_name, ContentFile(file.read()))
-        return
-
-    @property
-    def file_path(self) -> str:
-        return self.__path__
-
-    def close(self) -> None:
-        self.__log_file__.close()
-        return
-
-
-class HtmlLogger(logging.Logger):
-    def __init__(self, name: str):
-        super().__init__(name)
-        self.__logs__ = ""
-
-    def __message__(self, level: str, message: Any, **kwargs) -> None:
-        escaped_msg = html.escape("{} [{}]:{}".format(
-            dt.datetime.now().strftime("%Y-%m-%d %I:%M:%S"),
-            level,
-            str(message)
-        ))
-        self.__logs__ += f'<code class="{level.lower()}">{escaped_msg}</code><br>'
-        if kwargs.get("exc_info", False):
-            for line in traceback.format_exc().split("\n"):
-                escaped_line = html.escape(line)
-                self.__logs__ += f'<code class="{level.lower()}">{escaped_line}</code><br>'
-
-    def debug(self, message: Any, **kwargs) -> None:
-        self.__message__("DEBUG", message, **kwargs)
-
-    def info(self, message: Any, **kwargs) -> None:
-        self.__message__("INFO", message, **kwargs)
-
-    def warning(self, message: Any, **kwargs) -> None:
-        self.__message__("WARN", message, **kwargs)
-
-    def error(self, message: Any, **kwargs) -> None:
-        self.__message__("ERROR", message, **kwargs)
-
-    def get_logs(self) -> str:
-        return self.__logs__
-
-
-class GroupLogger(logging.Logger, Sequence):
-    def __init__(self, name: str, *args):
-        super().__init__(name)
-        self.__loggers__ = list()
-        for arg in args:
-            assert isinstance(arg, logging.Logger), f"{arg} is not a Logger object"
-            self.__loggers__.append(arg)
-
-    def __getitem__(self, index: int) -> logging.Logger:
-        return self.__loggers__[index]
-
-    def __len__(self) -> int:
-        return len(self.__loggers__)
-
-    def debug(self, message: Any, **kwargs) -> None:
-        for logger in self.__loggers__:
-            logger.debug(message, **kwargs)
-
-    def info(self, message: Any, **kwargs) -> None:
-        for logger in self.__loggers__:
-            logger.info(message, **kwargs)
-
-    def warning(self, message: Any, **kwargs) -> None:
-        for logger in self.__loggers__:
-            logger.warning(message, **kwargs)
-
-    def error(self, message: Any, **kwargs) -> None:
-        for logger in self.__loggers__:
-            logger.error(message, **kwargs)
 
 
 def log_stdout_stderr(out: bytes, err: bytes, logger: logging.Logger, log_cache: Set[str] = None) -> None:

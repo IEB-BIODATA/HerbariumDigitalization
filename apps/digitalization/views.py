@@ -860,22 +860,6 @@ def process_pending_images(request):
     return HttpResponse(task_id)
 
 
-@require_GET
-@login_required
-def get_progress(request, task_id: str):
-    result = AsyncResult(task_id)
-    return HttpResponse(json.dumps({
-        'state': result.state,
-        'details': result.info,
-    }), content_type="application/json")
-
-
-@require_GET
-@login_required
-def get_task_log(request, task_id: str):
-    return HttpResponse(PrivateMediaStorage().url(f"{task_id}.log"))
-
-
 @login_required
 @require_GET
 def vouchers_download(request):

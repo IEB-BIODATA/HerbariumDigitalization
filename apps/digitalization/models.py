@@ -4,6 +4,8 @@ from __future__ import annotations
 import celery
 import logging
 import math
+
+import eml.resources
 import numpy as np
 import pandas as pd
 import pytz
@@ -534,6 +536,14 @@ class Licence(models.Model):
     short_name = models.CharField(verbose_name=_("Short Name"), max_length=20, null=True)
     added_by = models.ForeignKey(User, verbose_name=_("Added by"), on_delete=models.SET_NULL, default=1, editable=False,
                                  null=True)
+
+    @property
+    def eml_object(self):
+        return eml.resources.EMLLicense(
+            name=self.name,
+            url=self.link,
+            identifier=self.short_name
+        )
 
     def __unicode__(self):
         return self.name

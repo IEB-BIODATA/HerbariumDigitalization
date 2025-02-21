@@ -1,8 +1,14 @@
 from __future__ import annotations
 
 import logging
+import dwca.terms as dwc
+import dwca.classes as dwc_classes
 from abc import abstractmethod, ABC
 from copy import deepcopy
+
+import pandas as pd
+from celery.app.task import Task
+from celery.result import AsyncResult
 from django.conf import settings
 from django.contrib.auth.models import User
 from django.contrib.contenttypes.fields import GenericForeignKey
@@ -34,6 +40,87 @@ TAXONOMIC_RANK = [
 FORMAT_CHOICES = [
     (0, "csv"), (1, "xlsx"), (2, "tsv")
 ]
+
+
+CATALOG_DWC_FIELDS = [
+    dwc.TaxonID(0), dwc.ParentNameUsageID(1), dwc.AcceptedNameUsageID(2),
+    dwc.OriginalNameUsageID(3), dwc.ScientificNameID(4), dwc.DWCDataset(5),
+    dwc.TaxonomicStatus(6), dwc.TaxonRank(7), dwc.TaxonRemarks(8), dwc.ScientificName(9),
+    dwc.HigherClassification(10), dwc.Kingdom(11), dwc.Phylum(12), dwc.DWCClass(13), dwc.Order(14), dwc.Family(15), dwc.Genus(16),
+    dwc.GenericName(17), dwc.InfragenericEpithet(18), dwc.SpecificEpithet(19),
+    dwc.InfraspecificEpithet(20), dwc.ScientificNameAuthorship(21),
+    dwc.NameAccordingTo(22), dwc.NamePublishedIn(23),
+    dwc.NomenclaturalCode(24), dwc.NomenclaturalStatus(25),
+    dwc.DWCModified(26), dwc.DWCInstitution(27), dwc.DWCInstitutionCode(28),
+    dwc.DWCDatasetName(29)
+]
+
+
+class VernacularName(dwc_classes.DataFile):
+    URI = "http://rs.gbif.org/terms/1.0/VernacularName"
+    def __init__(self, _id: int, files: str, fields: List[dwc.Field]):
+        super().__init__(
+            _id, files, fields, dwc_classes.DataFileType.EXTENSION,
+            "utf-8", "\n", "\t",
+            "", 1
+        )
+        return
+
+
+class Distribution(dwc_classes.DataFile):
+    URI = "http://rs.gbif.org/terms/1.0/Distribution"
+    def __init__(self, _id: int, files: str, fields: List[dwc.Field]):
+        super().__init__(
+            _id, files, fields, dwc_classes.DataFileType.EXTENSION,
+            "utf-8", "\n", "\t",
+            "", 1
+        )
+        return
+
+
+class SpeciesProfile(dwc_classes.DataFile):
+    URI = "http://rs.gbif.org/terms/1.0/SpeciesProfile"
+    def __init__(self, _id: int, files: str, fields: List[dwc.Field]):
+        super().__init__(
+            _id, files, fields, dwc_classes.DataFileType.EXTENSION,
+            "utf-8", "\n", "\t",
+            "", 1
+        )
+        return
+
+
+class MinimumHeight(dwc.Field):
+    URI = f"{settings.HERBARIUM_FRONTEND}/herbarium-namespace#minimumHeight"
+    TYPE = float
+
+    def __init__(self, index: int | str, default: TYPE = None, vocabulary: str = None) -> None:
+        super().__init__(index, default, vocabulary)
+        return
+
+    @classmethod
+    def name_cls(cls) -> str:
+        return "minimumHeight"
+
+    @property
+    def name(self) -> str:
+        return "minimumHeight"
+
+
+class MaximumHeight(dwc.Field):
+    URI = f"{settings.HERBARIUM_FRONTEND}/herbarium-namespace#maximumHeight"
+    TYPE = float
+
+    def __init__(self, index: int | str, default: TYPE = None, vocabulary: str = None) -> None:
+        super().__init__(index, default, vocabulary)
+        return
+
+    @classmethod
+    def name_cls(cls) -> str:
+        return "maximumHeight"
+
+    @property
+    def name(self) -> str:
+        return "maximumHeight"
 
 
 class AttributeQuerySet(CatalogQuerySet, ABC):
@@ -479,6 +566,64 @@ class TaxonomicModel(models.Model):
     def get_created_by_query(search: str) -> Q:
         return Q(created_by__username__icontains=search)
 
+    @property
+    @abstractmethod
+    def parent(self) -> TaxonomicModel | None:
+        return None
+
+    def get_higher_classification(self) -> List[str]:
+        if self.parent is None:
+            return list()
+        else:
+            return self.parent.get_higher_classification() + [self.parent.name]
+
+    @classmethod
+    def get_dwc_data(cls, logger: logging.Logger = logging.getLogger(__name__), task: Task = None):
+        from ..metadata.models import EML
+        eml = EML.objects.get(pk=1)
+        objects = cls.objects.all()
+        rank_name = objects.__rank_name__
+        if rank_name == "classname":
+            rank_name = "class"
+        rows = list()
+        logger.debug(f"Extracting data: {rank_name}")
+        current_total = 0
+        total = objects.count()
+        if task is not None:
+            async_result = AsyncResult(task.request.id)
+            current_total = async_result.info["total"]
+            total += current_total
+            task.update_state(state="PROGRESS", meta={"step": current_total, "total": total, "logs": logger[0].get_logs()})
+        for i, obj in enumerate(objects):
+            if task is not None:
+                task.update_state(state="PROGRESS", meta={"step": i + current_total, "total": total, "logs": logger[0].get_logs()})
+            higher_classification = obj.get_higher_classification()
+            complete_classification = higher_classification.copy()
+            complete_classification.append(obj.name)
+            while len(complete_classification) < 6:
+                complete_classification.append(None)
+            parent_id = None
+            if obj.parent is not None:
+                parent_id = obj.parent.taxon_id
+            rows.append(
+                [
+                    obj.taxon_id, parent_id, obj.taxon_id,
+                    obj.taxon_id, obj.taxon_id, eml.package_id,
+                    "accepted", rank_name, "", obj.name,
+                    obj.get_higher_classification()
+                ] + complete_classification + [
+                    None, None, None,
+                    None, None,
+                    None, None,
+                    "ICBN", None,
+                    obj.updated_at, "https://udec.cl", "UDEC",
+                    eml.dataset.title,
+                ]
+            )
+        return pd.DataFrame(rows, columns=[
+            field.name for field in CATALOG_DWC_FIELDS
+        ])
+
     def save(self, force_insert=False, force_update=False, using=None, update_fields=None, **kwargs):
         if force_update:
             return super().save(
@@ -563,6 +708,10 @@ class Kingdom(TaxonomicModel):
     def get_created_by_query(search: str) -> Q:
         return TaxonomicModel.get_created_by_query(search)
 
+    @property
+    def parent(self) -> TaxonomicModel | None:
+        return None
+
     class Meta:
         verbose_name = _("Kingdom")
         verbose_name_plural = _("Kingdoms")
@@ -607,6 +756,10 @@ class Division(TaxonomicModel):
     @staticmethod
     def get_created_by_query(search: str) -> Q:
         return TaxonomicModel.get_created_by_query(search)
+
+    @property
+    def parent(self) -> TaxonomicModel | None:
+        return self.kingdom
 
     class Meta:
         verbose_name_plural = _("Division")
@@ -653,6 +806,10 @@ class ClassName(TaxonomicModel):
     def get_created_by_query(search: str) -> Q:
         return TaxonomicModel.get_created_by_query(search)
 
+    @property
+    def parent(self) -> TaxonomicModel | None:
+        return self.division
+
     class Meta:
         verbose_name = _("Class")
         verbose_name_plural = _("Classes")
@@ -697,6 +854,10 @@ class Order(TaxonomicModel):
     @staticmethod
     def get_created_by_query(search: str) -> Q:
         return TaxonomicModel.get_created_by_query(search)
+
+    @property
+    def parent(self) -> TaxonomicModel | None:
+        return self.classname
 
     class Meta:
         verbose_name = _("Order")
@@ -745,6 +906,10 @@ class Family(TaxonomicModel):
     @staticmethod
     def get_created_by_query(search: str) -> Q:
         return TaxonomicModel.get_created_by_query(search)
+
+    @property
+    def parent(self) -> TaxonomicModel | None:
+        return self.order
 
     def save(self, force_insert=False, force_update=False, using=None, update_fields=None, **kwargs):
         if self.__original__ is not None and self.__original__.name != self.name:
@@ -811,6 +976,10 @@ class Genus(TaxonomicModel):
     @staticmethod
     def get_created_by_query(search: str) -> Q:
         return TaxonomicModel.get_created_by_query(search)
+
+    @property
+    def parent(self) -> TaxonomicModel | None:
+        return self.family
 
     def save(self, force_insert=False, force_update=False, using=None, update_fields=None, **kwargs):
         if self.__original__ is not None and self.__original__ != self:
@@ -906,6 +1075,48 @@ class ScientificName(TaxonomicModel):
     @staticmethod
     def get_created_by_query(search: str) -> Q:
         return TaxonomicModel.get_created_by_query(search)
+
+    @property
+    @abstractmethod
+    def parent(self) -> TaxonomicModel | None:
+        pass
+
+    @property
+    def name(self) -> str:
+        return self.scientific_name
+
+    @property
+    def dwc_scientific_name(self) -> str:
+        sp_name = f"{self.genus} {self.specific_epithet}"
+        if self.form is not None:
+            return f"{sp_name} fma. {self.form}"
+        if self.variety is not None:
+            return f"{sp_name} var. {self.variety}"
+        if self.subspecies is not None:
+            return f"{sp_name} fma. {self.subspecies}"
+        return sp_name
+
+    @property
+    def infraspecific_epithet(self) -> str | None:
+        if self.form is not None:
+            return self.form
+        elif self.variety is not None:
+            return self.variety
+        elif self.subspecies is not None:
+            return self.subspecies
+        else:
+            return None
+
+    @property
+    def authorship(self) -> str | None:
+        if self.form_authorship is not None:
+            return self.form_authorship
+        elif self.variety_authorship is not None:
+            return self.variety_authorship
+        elif self.ssp_authorship is not None:
+            return self.ssp_authorship
+        else:
+            return self.scientific_name_authorship
 
     def __update_scientific_name__(self):
         genus = str(self.genus).capitalize()
@@ -1088,13 +1299,6 @@ class Species(ScientificName):
     def kingdom(self):
         return self.division.kingdom
 
-    @property
-    def parent(self) -> TaxonomicModel | None:
-        try:
-            return self.parent_content_type.model_class().objects.get(unique_taxon_id=self.parent_taxon_id)
-        except ObjectDoesNotExist:
-            return None
-
     @staticmethod
     def get_parent_query(search: str) -> Q:
         return Q(genus__name__icontains=search)
@@ -1102,6 +1306,63 @@ class Species(ScientificName):
     @staticmethod
     def get_created_by_query(search: str) -> Q:
         return TaxonomicModel.get_created_by_query(search)
+
+    @property
+    def parent(self) -> TaxonomicModel | None:
+        try:
+            return self.parent_content_type.model_class().objects.get(unique_taxon_id=self.parent_taxon_id)
+        except ObjectDoesNotExist:
+            return None
+
+    def get_higher_classification(self) -> List[str]:
+        higher_classification = list()
+        parent = self.parent
+        while parent is not None:
+            higher_classification.insert(0, parent.name)
+            parent = parent.parent
+        return higher_classification
+
+    @classmethod
+    def get_dwc_data(cls, logger: logging.Logger = logging.getLogger(__name__), task: Task = None):
+        from ..metadata.models import EML
+        eml = EML.objects.get(pk=1)
+        objects = cls.objects.all()
+        rows = list()
+        logger.debug(f"Extracting data: species")
+        current_total = 0
+        total = objects.count()
+        if task is not None:
+            async_result = AsyncResult(task.request.id)
+            current_total = async_result.info["total"]
+            total += current_total
+            task.update_state(state="PROGRESS", meta={"step": current_total, "total": total, "logs": logger[0].get_logs()})
+        errors = list()
+        for i, obj in enumerate(objects):
+            if task is not None:
+                task.update_state(state="PROGRESS", meta={"step": i + current_total, "total": total, "logs": logger[0].get_logs()})
+            if obj.parent is None:
+                errors.append(obj.name)
+            else:
+                rows.append(
+                    [
+                        obj.taxon_id, obj.parent.taxon_id, obj.taxon_id,
+                        obj.taxon_id, obj.taxon_id, eml.package_id,
+                        "accepted", obj.taxon_rank.name_en, obj.notes, obj.dwc_scientific_name,
+                        obj.get_higher_classification()
+                    ] + obj.get_higher_classification()[0:6] + [
+                        obj.genus.name, None, obj.specific_epithet,
+                        obj.infraspecific_epithet, obj.authorship,
+                        None, None,
+                        "ICBN", None,
+                        obj.updated_at, "https://udec.cl", "UDEC",
+                        eml.dataset.title,
+                    ]
+                )
+        if len(errors) > 0:
+            raise AttributeError("Parent not found on:\n" + "\n".join(errors))
+        return pd.DataFrame(rows, columns=[
+            field.name for field in CATALOG_DWC_FIELDS
+        ])
 
     def save(self, force_insert=False, force_update=False, using=None, update_fields=None, **kwargs):
         if force_update:
@@ -1199,6 +1460,54 @@ class Synonymy(ScientificName):
     @staticmethod
     def get_created_by_query(search: str) -> Q:
         return TaxonomicModel.get_created_by_query(search)
+
+    @property
+    def parent(self) -> TaxonomicModel | None:
+        return self.species.parent
+
+    def get_higher_classification(self) -> List[str]:
+        return self.species.get_higher_classification()
+
+    @classmethod
+    def get_dwc_data(cls, logger: logging.Logger = logging.getLogger(__name__), task: Task = None):
+        from ..metadata.models import EML
+        eml = EML.objects.get(pk=1)
+        objects = cls.objects.all()
+        rows = list()
+        logger.debug(f"Extracting data: synonyms")
+        current_total = 0
+        total = objects.count()
+        if task is not None:
+            async_result = AsyncResult(task.request.id)
+            current_total = async_result.info["total"]
+            total += current_total
+            task.update_state(state="PROGRESS",
+                              meta={"step": current_total, "total": total, "logs": logger[0].get_logs()})
+        for i, obj in enumerate(objects):
+            if task is not None:
+                task.update_state(state="PROGRESS",
+                                  meta={"step": i + current_total, "total": total, "logs": logger[0].get_logs()})
+            if obj.species is None:
+                logger.warning(f"Species not found on synonym {obj.name}")
+            else:
+                rows.append(
+                    [
+                        obj.taxon_id, obj.parent.taxon_id, obj.species.taxon_id,
+                        obj.species.taxon_id, obj.taxon_id, eml.package_id,
+                        "synonym", obj.taxon_rank.name_en, "", obj.dwc_scientific_name,
+                        obj.get_higher_classification()
+                    ] + obj.get_higher_classification()[0:6] + [
+                        obj.genus, None, obj.specific_epithet,
+                        obj.infraspecific_epithet, obj.authorship,
+                        None, None,
+                        "ICBN", None,
+                        obj.updated_at, "https://udec.cl", "UDEC",
+                        eml.dataset.title,
+                    ]
+                )
+        return pd.DataFrame(rows, columns=[
+            field.name for field in CATALOG_DWC_FIELDS
+        ])
 
     def save(self, force_insert=False, force_update=False, using=None, update_fields=None, **kwargs):
         if force_update:

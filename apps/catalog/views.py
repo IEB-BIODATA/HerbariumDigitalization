@@ -15,7 +15,7 @@ from django.urls import reverse
 from django.utils.translation import gettext_lazy as _
 from rest_framework.serializers import SerializerMetaclass
 
-from intranet.utils import paginated_table
+from intranet.utils import paginated_table, TaskProcessLogger
 from .forms import DivisionForm, ClassForm, OrderForm, FamilyForm, GenusForm, SpeciesForm, SynonymyForm, BinnacleForm, \
     CommonNameForm
 from .models import Species, CatalogView, SynonymyView, RegionDistributionView, Division, ClassName, Order, Family, \
@@ -24,7 +24,6 @@ from .models import Species, CatalogView, SynonymyView, RegionDistributionView, 
 from .serializers import DivisionSerializer, ClassSerializer, OrderSerializer, FamilySerializer, GenusSerializer, \
     CatalogViewSerializer, SpeciesSerializer, SynonymsSerializer, BinnacleSerializer, CommonNameSerializer
 from ..digitalization.storage_backends import PrivateMediaStorage
-from ..digitalization.utils import TaskProcessLogger
 
 MANY_RELATIONS = [
     ("common_names", "nombres comunes", CommonName),
