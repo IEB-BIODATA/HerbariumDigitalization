@@ -889,7 +889,7 @@ def vouchers_download(request):
             'other_catalog_numbers', 'catalog_number',
             'recorded_by', 'record_number', 'organism_remarks',
             'scientific_name', 'locality', 'verbatim_elevation',
-            'decimal_latitude', 'decimal_longitude',
+            'georeferenced_date', 'decimal_latitude', 'decimal_longitude',
             'identified_by', 'identified_date',
             'decimal_latitude_public', 'decimal_longitude_public',
             'priority',
