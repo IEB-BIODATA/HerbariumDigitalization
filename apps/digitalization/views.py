@@ -31,7 +31,7 @@ from intranet.utils import paginated_table
 from .forms import LoadColorProfileForm, VoucherImportedForm, GalleryImageForm, LicenceForm, PriorityVoucherForm, \
     GeneratedPageForm, TypeStatusFormSet, TypeStatusForm
 from .models import BiodataCode, GeneratedPage, VoucherImported, PriorityVouchersFile, VouchersView, \
-    GalleryImage, BannerImage, VOUCHER_STATE, PostprocessingLog, TypeStatus
+    GalleryImage, BannerImage, VOUCHER_STATE, PostprocessingLog, TypeStatus, DCW_SQL
 from .serializers import PriorityVouchersSerializer, GeneratedPageSerializer, VoucherSerializer, \
     SpeciesGallerySerializer, GallerySerializer, PostprocessingLogSerializer
 from .storage_backends import PrivateMediaStorage
@@ -872,7 +872,7 @@ def vouchers_download(request):
             'other_catalog_numbers', 'catalog_number',
             'recorded_by', 'record_number', 'organism_remarks',
             'scientific_name', 'locality', 'verbatim_elevation',
-            'decimal_latitude', 'decimal_longitude',
+            'georeferenced_date', 'decimal_latitude', 'decimal_longitude',
             'identified_by', 'identified_date',
             'decimal_latitude_public', 'decimal_longitude_public',
             'priority',
@@ -881,8 +881,20 @@ def vouchers_download(request):
         species = VouchersView.objects.values_list(*headers).filter(
             Q(voucher_state=1) | Q(voucher_state=3) | Q(voucher_state=4) | Q(voucher_state=7) | Q(voucher_state=8)
         ).order_by('id')
+        species_list = [list(item) for item in species]
+        geo_index = headers.index("georeferenced_date")
+        for obj in species_list:
+            if obj[geo_index] is not None:
+                obj[geo_index] = obj[geo_index].replace(tzinfo=None)
         databook = tablib.Databook()
-        data_set = tablib.Dataset(*species, headers=headers, title='Vouchers')
+        sql_dcw = {v: k for k, v in DCW_SQL.items()}
+        headers_to_show = list()
+        for header in headers:
+            try:
+                headers_to_show.append(sql_dcw[header])
+            except KeyError:
+                headers_to_show.append(header)
+        data_set = tablib.Dataset(*species_list, headers=headers_to_show, title='Vouchers')
         databook.add_sheet(data_set)
         response = HttpResponse(databook.xlsx, content_type='application/vnd.ms-Excel')
         response['Content-Disposition'] = "attachment; filename=vochers.xlsx"
