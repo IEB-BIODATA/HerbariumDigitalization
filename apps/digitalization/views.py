@@ -31,7 +31,7 @@ from intranet.utils import paginated_table
 from .forms import LoadColorProfileForm, VoucherImportedForm, GalleryImageForm, LicenceForm, PriorityVoucherForm, \
     GeneratedPageForm, TypeStatusFormSet, TypeStatusForm
 from .models import BiodataCode, GeneratedPage, VoucherImported, PriorityVouchersFile, VouchersView, \
-    GalleryImage, BannerImage, VOUCHER_STATE, PostprocessingLog, TypeStatus, DCW_SQL
+    GalleryImage, BannerImage, VOUCHER_STATE, PostprocessingLog, TypeStatus, DCW_SQL, HerbariumMember
 from .serializers import PriorityVouchersSerializer, GeneratedPageSerializer, VoucherSerializer, \
     SpeciesGallerySerializer, GallerySerializer, PostprocessingLogSerializer
 from .storage_backends import PrivateMediaStorage
@@ -878,9 +878,14 @@ def vouchers_download(request):
             'priority',
         ]
         logging.debug("Filtering voucher according to state")
-        species = VouchersView.objects.values_list(*headers).filter(
+        available_herbaria = [herbarium.collection_code for herbarium in HerbariumMember.objects.get(
+            user=request.user
+        ).herbarium.all()]
+        species = VouchersView.objects.filter(
             Q(voucher_state=1) | Q(voucher_state=3) | Q(voucher_state=4) | Q(voucher_state=7) | Q(voucher_state=8)
-        ).order_by('id')
+        ).filter(
+            collection_code__in=available_herbaria
+        ).values_list(*headers).order_by('id')
         species_list = [list(item) for item in species]
         geo_index = headers.index("georeferenced_date")
         for obj in species_list:
