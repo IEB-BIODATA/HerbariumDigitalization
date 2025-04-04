@@ -91,7 +91,7 @@ DCW_SQL = {
 class Herbarium(models.Model):
     name = models.CharField(verbose_name=_("Name"), max_length=300, blank=False, null=False)
     collection_code = models.CharField(verbose_name=_("Collection Code"), max_length=6, blank=False, null=False,
-                                       help_text=_("No more than %d letters") % 6)
+                                       unique=True, help_text=_("No more than %d letters") % 6)
     institution_code = models.CharField(verbose_name=_("Institution Code"), max_length=10, blank=True, null=True,
                                         help_text=_("No more than %d letters") % 10)
 
