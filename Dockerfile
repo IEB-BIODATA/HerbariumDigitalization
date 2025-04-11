@@ -16,7 +16,7 @@ RUN mkdir /app
 WORKDIR /app
 COPY ./requirements.txt /app
 
-RUN pip install --upgrade pip
+RUN pip install --upgrade pip setuptools setuptools_scm wheel
 RUN pip install --no-cache-dir -r requirements.txt
 
 COPY ./apps /app/apps

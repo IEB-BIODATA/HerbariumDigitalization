@@ -314,11 +314,11 @@ class VoucherImported(models.Model):
                                         null=True)
     locality = models.CharField(verbose_name=_("Locality"), max_length=300, blank=True, null=True)
     verbatim_elevation = models.IntegerField(verbose_name=_("Altitude"), blank=True, null=True)
-    georeferenced_date = models.DateTimeField(verbose_name=_("Georeferenced Date"), blank=True, null=True)
+    georeferenced_date = models.DateField(verbose_name=_("Georeferenced Date"), blank=True, null=True)
     decimal_latitude = models.FloatField(verbose_name=_("Latitude"), blank=True, null=True)
     decimal_longitude = models.FloatField(verbose_name=_("Longitude"), blank=True, null=True)
     identified_by = models.CharField(verbose_name=_("Identified by"), max_length=100, blank=True, null=True)
-    identified_date = models.CharField(verbose_name=_("Identified Date"), max_length=100, blank=True, null=True)
+    date_identified = models.IntegerField(verbose_name=_("Date Identified"), max_length=100, blank=True, null=True)
     image = models.ImageField(verbose_name=_("Image"), storage=IAPrivateMediaStorage(), blank=True, null=True)
     image_resized_10 = models.ImageField(verbose_name=_("%d Times Smaller Image Scale") % 10,
                                          storage=IAPrivateMediaStorage(), blank=True, null=True)
@@ -720,7 +720,7 @@ class VouchersView(models.Model):
            voucher.decimal_latitude,
            voucher.decimal_longitude,
            voucher.identified_by,
-           voucher.identified_date,
+           voucher.date_identified,
            voucher.decimal_latitude_public,
            voucher.decimal_longitude_public,
            voucher.priority
@@ -750,7 +750,7 @@ class VouchersView(models.Model):
     decimal_latitude = models.FloatField(blank=True, null=True)
     decimal_longitude = models.FloatField(blank=True, null=True)
     identified_by = models.CharField(max_length=100, blank=True, null=True)
-    identified_date = models.CharField(max_length=100, blank=True, null=True)
+    date_identified = models.CharField(max_length=100, blank=True, null=True)
     decimal_latitude_public = models.FloatField(blank=True, null=True)
     decimal_longitude_public = models.FloatField(blank=True, null=True)
     priority = models.IntegerField(blank=True, null=True, default=3)

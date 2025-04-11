@@ -873,7 +873,7 @@ def vouchers_download(request):
             'recorded_by', 'record_number', 'organism_remarks',
             'scientific_name', 'locality', 'verbatim_elevation',
             'georeferenced_date', 'decimal_latitude', 'decimal_longitude',
-            'identified_by', 'identified_date',
+            'identified_by', 'date_identified',
             'decimal_latitude_public', 'decimal_longitude_public',
             'priority',
         ]
@@ -887,10 +887,6 @@ def vouchers_download(request):
             collection_code__in=available_herbaria
         ).values_list(*headers).order_by('id')
         species_list = [list(item) for item in species]
-        geo_index = headers.index("georeferenced_date")
-        for obj in species_list:
-            if obj[geo_index] is not None:
-                obj[geo_index] = obj[geo_index].replace(tzinfo=None)
         databook = tablib.Databook()
         sql_dcw = {v: k for k, v in DCW_SQL.items()}
         headers_to_show = list()
