@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2025-02-18 14:20-0300\n"
+"POT-Creation-Date: 2025-04-11 09:17-0400\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -38,11 +38,11 @@ msgstr "Sistema Digitalización de Herbario"
 msgid "Are you sure you want to log out?"
 msgstr "¿Está seguro de que desea salir?"
 
-#: templates/base.html:72
+#: templates/base.html:69
 msgid "Press 'Log out' if you confirm leaving the account"
 msgstr "Presione 'Cerrar Sesión' si confirma salir de la cuenta."
 
-#: templates/base.html:74 templates/catalog/create_catalog.html:19
+#: templates/base.html:73 templates/catalog/create_catalog.html:19
 #: templates/catalog/list_catalog.html:170
 #: templates/catalog/list_common_name.html:170
 #: templates/catalog/taxa_form.html:15
@@ -58,7 +58,7 @@ msgstr "Presione 'Cerrar Sesión' si confirma salir de la cuenta."
 msgid "Cancel"
 msgstr "Cancelar"
 
-#: templates/base.html:75 templates/navegation.html:24
+#: templates/base.html:74 templates/navegation.html:24
 msgid "Log out"
 msgstr "Cerrar Sesión"
 
@@ -620,6 +620,7 @@ msgid "Voucher failed an assertion"
 msgstr "Voucher falló una aserción"
 
 #: templates/digitalization/load_priority_vouchers_file.html:177
+#: templates/download_dwc_archive.html:59
 msgid ""
 "An unexpected error has happened, please contact the admin before closing "
 "this window"
@@ -989,27 +990,27 @@ msgstr "Procesamiento de imágenes pendientes"
 msgid "Continue"
 msgstr "Continuar"
 
-#: templates/download_dwc_archive.html:36
+#: templates/download_dwc_archive.html:103
 #, fuzzy
 #| msgid "Download search"
 msgid "Download Darwin Core Archive"
 msgstr "Descarga de búsqueda"
 
-#: templates/download_dwc_archive.html:41
+#: templates/download_dwc_archive.html:108
 msgid "Download Darwin Core Of:"
 msgstr ""
 
-#: templates/download_dwc_archive.html:45
+#: templates/download_dwc_archive.html:118
 msgid "Catalog of Vascular Plant"
 msgstr ""
 
-#: templates/download_dwc_archive.html:46
+#: templates/download_dwc_archive.html:124
 #, fuzzy
 #| msgid "Herbarium Code"
 msgid "Herbarium CONC"
 msgstr "Código Herbario"
 
-#: templates/download_dwc_archive.html:47
+#: templates/download_dwc_archive.html:129
 #, fuzzy
 #| msgid "Herbarium"
 msgid "Herbarium ULS"
@@ -1154,18 +1155,18 @@ msgstr "Español"
 msgid "English"
 msgstr "Inglés"
 
-#: intranet/settings.py:254
+#: intranet/settings.py:258
 msgid "Digital Herbarium API"
 msgstr "API del Herbario Digital"
 
-#: intranet/settings.py:255
+#: intranet/settings.py:259
 msgid "API description"
 msgstr "API del Catálogo de Plantas Vasculares de Chile y Herbario Digital"
 
-#: intranet/settings.py:261
+#: intranet/settings.py:265
 msgid "Mozilla Public License, version 2.0"
 msgstr "Licencia pública de Mozilla, versión 2.0"
 
-#: intranet/settings.py:262
+#: intranet/settings.py:266
 msgid "Mozilla MPL URL"
 msgstr "https://www.mozilla.org/en-US/MPL/2.0/"

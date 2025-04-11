@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2024-09-16 12:07-0300\n"
+"POT-Creation-Date: 2025-04-11 09:17-0400\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -62,327 +62,327 @@ msgstr "Nombre en español"
 msgid "English name"
 msgstr "Nombre en inglés"
 
-#: apps/catalog/models.py:189 apps/catalog/models.py:534
-#: apps/catalog/models.py:577 apps/catalog/models.py:622
-#: apps/catalog/models.py:667 apps/catalog/models.py:712
-#: apps/catalog/models.py:781 apps/catalog/models.py:966
-#: apps/catalog/views.py:244 apps/catalog/views.py:291
-#: apps/catalog/views.py:337 apps/catalog/views.py:384
-#: apps/catalog/views.py:431 apps/catalog/views.py:773
+#: apps/catalog/models.py:276 apps/catalog/models.py:679
+#: apps/catalog/models.py:726 apps/catalog/models.py:775
+#: apps/catalog/models.py:824 apps/catalog/models.py:873
+#: apps/catalog/models.py:946 apps/catalog/models.py:1177
+#: apps/catalog/views.py:243 apps/catalog/views.py:290
+#: apps/catalog/views.py:336 apps/catalog/views.py:383
+#: apps/catalog/views.py:430 apps/catalog/views.py:772
 msgid "Name"
 msgstr "Nombre"
 
-#: apps/catalog/models.py:190 apps/catalog/models.py:447
+#: apps/catalog/models.py:277 apps/catalog/models.py:534
 msgid "Created at"
 msgstr "Creado el"
 
-#: apps/catalog/models.py:192 apps/catalog/models.py:448
+#: apps/catalog/models.py:279 apps/catalog/models.py:535
 msgid "Updated at"
 msgstr "Actualizado"
 
-#: apps/catalog/models.py:193 apps/catalog/models.py:449
+#: apps/catalog/models.py:280 apps/catalog/models.py:536
 msgid "Created by"
 msgstr "Creado por"
 
-#: apps/catalog/models.py:217 apps/catalog/models.py:1026
+#: apps/catalog/models.py:304 apps/catalog/models.py:1237
 msgid "Origin"
 msgstr "Origen"
 
-#: apps/catalog/models.py:218
+#: apps/catalog/models.py:305
 msgid "Origins"
 msgstr "Orígenes"
 
-#: apps/catalog/models.py:239 apps/catalog/models.py:1025
+#: apps/catalog/models.py:326 apps/catalog/models.py:1236
 msgid "Cycle"
 msgstr "Ciclo"
 
-#: apps/catalog/models.py:240
+#: apps/catalog/models.py:327
 msgid "Cycles"
 msgstr "Ciclos"
 
-#: apps/catalog/models.py:261
+#: apps/catalog/models.py:348
 msgid "Plant Habit"
 msgstr "Hábito de la planta"
 
-#: apps/catalog/models.py:262
+#: apps/catalog/models.py:349
 msgid "Plant Habits"
 msgstr "Hábitos de la planta"
 
-#: apps/catalog/models.py:283
+#: apps/catalog/models.py:370
 msgid "Environmental Habit"
 msgstr "Hábito de ambiente"
 
-#: apps/catalog/models.py:284
+#: apps/catalog/models.py:371
 msgid "Environmental Habits"
 msgstr "Hábitos de ambiente"
 
-#: apps/catalog/models.py:305
+#: apps/catalog/models.py:392
 msgid "Habits"
 msgstr "Hábitos"
 
-#: apps/catalog/models.py:329 apps/catalog/models.py:330
-#: apps/catalog/models.py:876
+#: apps/catalog/models.py:416 apps/catalog/models.py:417
+#: apps/catalog/models.py:1045
 msgid "Taxon Rank"
 msgstr "Rango de Taxón"
 
-#: apps/catalog/models.py:374 apps/catalog/models.py:424
+#: apps/catalog/models.py:461 apps/catalog/models.py:511
 msgid "Key"
 msgstr "Símbolo"
 
-#: apps/catalog/models.py:375 apps/catalog/models.py:425
+#: apps/catalog/models.py:462 apps/catalog/models.py:512
 msgctxt "ordering"
 msgid "Order"
 msgstr "Orden"
 
-#: apps/catalog/models.py:377
+#: apps/catalog/models.py:464
 msgid "Geometry"
 msgstr "Geometría"
 
-#: apps/catalog/models.py:391
+#: apps/catalog/models.py:478
 msgid "Region"
 msgstr "Región"
 
-#: apps/catalog/models.py:392 apps/catalog/models.py:1035
+#: apps/catalog/models.py:479 apps/catalog/models.py:1246
 msgid "Regions"
 msgstr "Regiones"
 
-#: apps/catalog/models.py:439 apps/catalog/models.py:1038
+#: apps/catalog/models.py:526 apps/catalog/models.py:1249
 msgid "State of Conservation"
 msgstr "Estado de conservación"
 
-#: apps/catalog/models.py:440
+#: apps/catalog/models.py:527
 msgid "Conservation Status"
 msgstr "Estados de conservación"
 
-#: apps/catalog/models.py:567 apps/catalog/models.py:578
-#: apps/catalog/views.py:245
+#: apps/catalog/models.py:716 apps/catalog/models.py:727
+#: apps/catalog/views.py:244
 msgid "Kingdom"
 msgstr "Reino"
 
-#: apps/catalog/models.py:568
+#: apps/catalog/models.py:717
 msgid "Kingdoms"
 msgstr "Reinos"
 
-#: apps/catalog/models.py:612 apps/catalog/models.py:623
-#: apps/catalog/views.py:242 apps/catalog/views.py:269
-#: apps/catalog/views.py:277 apps/catalog/views.py:292
+#: apps/catalog/models.py:765 apps/catalog/models.py:776
+#: apps/catalog/views.py:241 apps/catalog/views.py:268
+#: apps/catalog/views.py:276 apps/catalog/views.py:291
 msgid "Division"
 msgstr "División"
 
-#: apps/catalog/models.py:613
+#: apps/catalog/models.py:766
 msgid "Divisions"
 msgstr "Divisiones"
 
-#: apps/catalog/models.py:657 apps/catalog/views.py:289
-#: apps/catalog/views.py:316 apps/catalog/views.py:324
-#: apps/catalog/views.py:339
+#: apps/catalog/models.py:814 apps/catalog/views.py:288
+#: apps/catalog/views.py:315 apps/catalog/views.py:323
+#: apps/catalog/views.py:338
 msgid "Class"
 msgstr "Clase"
 
-#: apps/catalog/models.py:658
+#: apps/catalog/models.py:815
 msgid "Classes"
 msgstr "Clases"
 
-#: apps/catalog/models.py:668
+#: apps/catalog/models.py:825
 msgid "Class Name"
 msgstr "Nombre de Clase"
 
-#: apps/catalog/models.py:702 apps/catalog/models.py:714
-#: apps/catalog/views.py:336 apps/catalog/views.py:363
-#: apps/catalog/views.py:371 apps/catalog/views.py:386
+#: apps/catalog/models.py:863 apps/catalog/models.py:875
+#: apps/catalog/views.py:335 apps/catalog/views.py:362
+#: apps/catalog/views.py:370 apps/catalog/views.py:385
 msgid "Order"
 msgstr "Orden"
 
-#: apps/catalog/models.py:703
+#: apps/catalog/models.py:864
 msgid "Orders"
 msgstr "Órdenes"
 
-#: apps/catalog/models.py:771 apps/catalog/models.py:782
-#: apps/catalog/views.py:383 apps/catalog/views.py:410
-#: apps/catalog/views.py:418 apps/catalog/views.py:433
+#: apps/catalog/models.py:936 apps/catalog/models.py:947
+#: apps/catalog/views.py:382 apps/catalog/views.py:409
+#: apps/catalog/views.py:417 apps/catalog/views.py:432
 msgid "Family"
 msgstr "Familia"
 
-#: apps/catalog/models.py:772
+#: apps/catalog/models.py:937
 msgid "Families"
 msgstr "Familias"
 
-#: apps/catalog/models.py:845 apps/catalog/models.py:860
-#: apps/catalog/models.py:1016 apps/catalog/models.py:1017
-#: apps/catalog/views.py:430 apps/catalog/views.py:457
-#: apps/catalog/views.py:465
+#: apps/catalog/models.py:1014 apps/catalog/models.py:1029
+#: apps/catalog/models.py:1227 apps/catalog/models.py:1228
+#: apps/catalog/views.py:429 apps/catalog/views.py:456
+#: apps/catalog/views.py:464
 msgid "Genus"
 msgstr "Género"
 
-#: apps/catalog/models.py:846
+#: apps/catalog/models.py:1015
 msgid "Genera"
 msgstr "Géneros"
 
-#: apps/catalog/models.py:851
+#: apps/catalog/models.py:1020
 msgid "Scientific Name"
 msgstr "Nombre Científico"
 
-#: apps/catalog/models.py:853
+#: apps/catalog/models.py:1022
 msgid "Scientific Name Database"
 msgstr "Nombre Científico en Base de Datos"
 
-#: apps/catalog/models.py:857 apps/catalog/views.py:665
+#: apps/catalog/models.py:1026 apps/catalog/views.py:664
 msgid "Complete Scientific Name"
 msgstr "Nombre Científico Completo"
 
-#: apps/catalog/models.py:862
+#: apps/catalog/models.py:1031
 msgid "Specific Epithet"
 msgstr "Epíteto específico"
 
-#: apps/catalog/models.py:866
+#: apps/catalog/models.py:1035
 msgid "Scientific Name Authorship"
 msgstr "Autor(es) Nombre Científico"
 
-#: apps/catalog/models.py:869
+#: apps/catalog/models.py:1038
 msgid "Subspecies"
 msgstr "Subespecie"
 
-#: apps/catalog/models.py:870
+#: apps/catalog/models.py:1039
 msgid "Subspecies Authorship"
 msgstr "Autor(es) subespecie"
 
-#: apps/catalog/models.py:871
+#: apps/catalog/models.py:1040
 msgid "Variety"
 msgstr "Variedad"
 
-#: apps/catalog/models.py:872
+#: apps/catalog/models.py:1041
 msgid "Variety Authorship"
 msgstr "Autor(es) variedad"
 
-#: apps/catalog/models.py:873
+#: apps/catalog/models.py:1042
 msgctxt "taxonomic"
 msgid "Form"
 msgstr "Forma"
 
-#: apps/catalog/models.py:874
+#: apps/catalog/models.py:1043
 msgid "Form Authorship"
 msgstr "Autor(es) forma"
 
-#: apps/catalog/models.py:947
+#: apps/catalog/models.py:1158
 msgctxt "taxonomic"
 msgid "form"
 msgstr "forma"
 
-#: apps/catalog/models.py:949
+#: apps/catalog/models.py:1160
 msgctxt "taxonomic"
 msgid "variety"
 msgstr "variedad"
 
-#: apps/catalog/models.py:951
+#: apps/catalog/models.py:1162
 msgctxt "taxonomic"
 msgid "subspecies"
 msgstr "subespecie"
 
-#: apps/catalog/models.py:953
+#: apps/catalog/models.py:1164
 msgctxt "taxonomic"
 msgid "species"
 msgstr "especie"
 
-#: apps/catalog/models.py:986 apps/catalog/views.py:772
-#: apps/catalog/views.py:799 apps/catalog/views.py:813
+#: apps/catalog/models.py:1197 apps/catalog/views.py:771
+#: apps/catalog/views.py:798 apps/catalog/views.py:812
 msgid "Common Name"
 msgstr "Nombre Común"
 
-#: apps/catalog/models.py:987
+#: apps/catalog/models.py:1198
 msgid "Common Names"
 msgstr "Nombres comunes"
 
-#: apps/catalog/models.py:1015
+#: apps/catalog/models.py:1226
 msgid "ID Taxa"
 msgstr "ID del Taxa"
 
-#: apps/catalog/models.py:1018
+#: apps/catalog/models.py:1229
 msgid "Common names"
 msgstr "Nombres comunes"
 
-#: apps/catalog/models.py:1019
+#: apps/catalog/models.py:1230
 msgid "In Argentina"
 msgstr "En Argentina"
 
-#: apps/catalog/models.py:1020
+#: apps/catalog/models.py:1231
 msgid "In Bolivia"
 msgstr "En Bolivia"
 
-#: apps/catalog/models.py:1021
+#: apps/catalog/models.py:1232
 msgid "In Peru"
 msgstr "En Perú"
 
-#: apps/catalog/models.py:1022
+#: apps/catalog/models.py:1233
 msgid "Habit"
 msgstr "Hábito"
 
-#: apps/catalog/models.py:1023
+#: apps/catalog/models.py:1234
 msgid "Life Form"
 msgstr "Forma de Vida"
 
-#: apps/catalog/models.py:1027
+#: apps/catalog/models.py:1238
 msgid "Minimum Height"
 msgstr "Altura mínima"
 
-#: apps/catalog/models.py:1028
+#: apps/catalog/models.py:1239
 msgid "Maximum Height"
 msgstr "Altura máxima"
 
-#: apps/catalog/models.py:1029
+#: apps/catalog/models.py:1240
 msgid "Notes"
 msgstr "Notas"
 
-#: apps/catalog/models.py:1030
+#: apps/catalog/models.py:1241
 msgid "Type ID"
 msgstr "ID Tipo"
 
-#: apps/catalog/models.py:1031
+#: apps/catalog/models.py:1242
 msgid "Publication"
 msgstr "Publicación"
 
-#: apps/catalog/models.py:1032
+#: apps/catalog/models.py:1243
 msgid "Volume"
 msgstr "Volumen"
 
-#: apps/catalog/models.py:1033
+#: apps/catalog/models.py:1244
 msgid "Pages"
 msgstr "Páginas"
 
-#: apps/catalog/models.py:1034
+#: apps/catalog/models.py:1245
 msgid "Year"
 msgstr "Año"
 
-#: apps/catalog/models.py:1036
+#: apps/catalog/models.py:1247
 msgid "MMA ID"
 msgstr "ID MMA"
 
-#: apps/catalog/models.py:1037
+#: apps/catalog/models.py:1248
 msgid "ID of the species platform of the MMA"
 msgstr "ID en la plataforma de especies del MMA"
 
-#: apps/catalog/models.py:1039
+#: apps/catalog/models.py:1250
 msgid "Determined?"
 msgstr "¿Terminal?"
 
-#: apps/catalog/models.py:1040
+#: apps/catalog/models.py:1251
 msgid "ID Taxa of Origin"
 msgstr "ID del taxa original"
 
-#: apps/catalog/models.py:1159 apps/catalog/models.py:1172
-#: apps/catalog/views.py:667 apps/catalog/views.py:775
+#: apps/catalog/models.py:1420 apps/catalog/models.py:1433
+#: apps/catalog/views.py:666 apps/catalog/views.py:774
 msgid "Species"
 msgstr "Especie"
 
-#: apps/catalog/models.py:1160
+#: apps/catalog/models.py:1421
 msgctxt "plural"
 msgid "Species"
 msgstr "Especies"
 
-#: apps/catalog/models.py:1223
+#: apps/catalog/models.py:1532
 msgid "Synonym"
 msgstr "Sinónimo"
 
-#: apps/catalog/models.py:1224 apps/catalog/views.py:664
+#: apps/catalog/models.py:1533 apps/catalog/views.py:663
 msgid "Synonyms"
 msgstr "Sinónimos"
 
@@ -390,6 +390,6 @@ msgstr "Sinónimos"
 msgid " or "
 msgstr " ó "
 
-#: apps/catalog/views.py:691 apps/catalog/views.py:699
+#: apps/catalog/views.py:690 apps/catalog/views.py:698
 msgid "Synonymy"
 msgstr "Sinonimia"
