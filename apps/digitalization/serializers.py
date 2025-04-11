@@ -103,7 +103,7 @@ class VoucherSerializer(HyperlinkedModelSerializer):
             'other_catalog_numbers', 'catalog_number', 'recorded_by',
             'record_number', 'organism_remarks', 'species', 'locality',
             'verbatim_elevation', 'georeferenced_date', 'identified_by',
-            'identified_date', 'image_public', 'image_public_resized_10',
+            'date_identified', 'image_public', 'image_public_resized_10',
             'image_public_resized_60', 'priority_voucher',
             'image_voucher_url', 'image_voucher_thumb_url',
             'image_voucher_cr3_raw_url', 'image_voucher_jpg_raw_url',

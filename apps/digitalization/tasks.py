@@ -128,9 +128,9 @@ def etiquette_picture(voucher_id, logger: logging.Logger = None):
             parameters["RECORD_POS"], 'Leg. ' + voucher.recorded_by + ' ' + voucher.record_number,
             (0, 0, 0), font=normal_font
         )
-        if voucher.identified_date is not None and voucher.identified_date != "":
+        if voucher.date_identified is not None and voucher.date_identified != "":
             voucher_image_editable.text(
-                parameters["RECORD_DATE_POS"], 'Fecha Det. ' + str(voucher.identified_date),
+                parameters["RECORD_DATE_POS"], 'Fecha Det. ' + str(voucher.date_identified),
                 (0, 0, 0), font=normal_font
             )
         if voucher.identified_by is not None and voucher.identified_by != "":
