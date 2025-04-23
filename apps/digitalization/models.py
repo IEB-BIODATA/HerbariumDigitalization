@@ -506,7 +506,7 @@ class VoucherImported(models.Model):
                 lambda x: None if np.isnan(x) else float(x)
             ),
             identified_by=__validate_attribute__(row, "identified_by", lambda x: x),
-            identified_date=__validate_attribute__(row, "identified_date", lambda x: x),
+            date_identified=__validate_attribute__(row, "date_identified", lambda x: x),
             point=point,
             decimal_latitude_public=decimal_latitude_public,
             decimal_longitude_public=decimal_longitude_public,

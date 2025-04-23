@@ -74,6 +74,57 @@ PARAMETERS = {
             "LEFT": (100, 100),
             "RIGHT": (3450, 100),
         },
+    },
+    "AGUCH": {
+        "RECTANGLE": ((2046, 4614), (3915, 5758)),
+        "TITLE_POS": (3075, 4760),
+        "NUMBER_POS": (2250, 4890),
+        "NAME_POS": (3075, 5040),
+        "FAMILY_POS": (3075, 5100),
+        "LOCALITY_POS": (2250, 5210),
+        "GEO_DATE_POS": (2250, 5360),
+        "RECORD_POS": (2900, 5360),
+        "RECORD_DATE_POS": (2250, 5430),
+        "IDENTIFY_POS": (2900, 5430),
+        "OBS_POS": (2250, 5580),
+        "CORNER": {
+            "LEFT": (100, 200),
+            "RIGHT": (3450, 200),
+        },
+    },
+    "EIF": {
+        "RECTANGLE": ((2046, 4614), (3915, 5758)),
+        "TITLE_POS": (3075, 4760),
+        "NUMBER_POS": (2250, 4890),
+        "NAME_POS": (3075, 5040),
+        "FAMILY_POS": (3075, 5100),
+        "LOCALITY_POS": (2250, 5210),
+        "GEO_DATE_POS": (2250, 5360),
+        "RECORD_POS": (2900, 5360),
+        "RECORD_DATE_POS": (2250, 5430),
+        "IDENTIFY_POS": (2900, 5430),
+        "OBS_POS": (2250, 5580),
+        "CORNER": {
+            "LEFT": (100, 200),
+            "RIGHT": (3450, 200),
+        },
+    },
+    "SQF": {
+        "RECTANGLE": ((2046, 4614), (3915, 5758)),
+        "TITLE_POS": (3075, 4760),
+        "NUMBER_POS": (2250, 4890),
+        "NAME_POS": (3075, 5040),
+        "FAMILY_POS": (3075, 5100),
+        "LOCALITY_POS": (2250, 5210),
+        "GEO_DATE_POS": (2250, 5360),
+        "RECORD_POS": (2900, 5360),
+        "RECORD_DATE_POS": (2250, 5430),
+        "IDENTIFY_POS": (2900, 5430),
+        "OBS_POS": (2250, 5580),
+        "CORNER": {
+            "LEFT": (100, 200),
+            "RIGHT": (3450, 200),
+        },
     }
 }
 
@@ -128,9 +179,9 @@ def etiquette_picture(voucher_id, logger: logging.Logger = None):
             parameters["RECORD_POS"], 'Leg. ' + voucher.recorded_by + ' ' + voucher.record_number,
             (0, 0, 0), font=normal_font
         )
-        if voucher.identified_date is not None and voucher.identified_date != "":
+        if voucher.date_identified is not None and voucher.date_identified != "":
             voucher_image_editable.text(
-                parameters["RECORD_DATE_POS"], 'Fecha Det. ' + str(voucher.identified_date),
+                parameters["RECORD_DATE_POS"], 'Fecha Det. ' + str(voucher.date_identified),
                 (0, 0, 0), font=normal_font
             )
         if voucher.identified_by is not None and voucher.identified_by != "":

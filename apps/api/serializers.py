@@ -343,7 +343,7 @@ class SpecimenDetailSerializer(SpecimenFinderSerializer):
         fields = SpecimenFinderSerializer.Meta.fields + [
             'image', 'recorded_by', 'georeferenced_date',
             'record_number', 'locality', 'identified_by',
-            'identified_date', 'organism_remarks',
+            'date_identified', 'organism_remarks',
         ]
 
     def get_image(self, obj: VoucherImported) -> Dict[str, str]:
