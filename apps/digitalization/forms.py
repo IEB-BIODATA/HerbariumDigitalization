@@ -94,7 +94,7 @@ class VoucherImportedForm(forms.ModelForm):
             'scientific_name': forms.Select(attrs={'class': "form-control"}),
             'locality': forms.TextInput(attrs={'class': "form-control"}),
             'verbatim_elevation': forms.TextInput(attrs={'class': "form-control", 'type': 'number'}),
-            'georeferenced_date': forms.DateTimeInput(attrs={'class': 'form-control datepicker-input'}),
+            'georeferenced_date': forms.DateInput(attrs={'class': 'form-control datepicker-input'}),
             'identified_by': forms.TextInput(attrs={'class': "form-control"}),
             'date_identified': forms.DateTimeInput(attrs={'class': 'form-control datepicker-input'}),
             'organism_remarks': forms.Textarea(attrs={'class': "form-control", 'rows': "5"}),
