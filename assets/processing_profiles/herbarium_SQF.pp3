@@ -273,10 +273,10 @@ Lab=false
 
 [Crop]
 Enabled=true
-X=264
-Y=528
-W=4177
-H=4950
+X=430
+Y=328
+W=3470
+H=5180
 FixedRatio=false
 Ratio=As Image
 Orientation=As Image
