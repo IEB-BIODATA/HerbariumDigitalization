@@ -96,6 +96,8 @@ def preference(request):
             "user_form": user_form,
             "profile_form": profile_form,
         })
+    else:
+        return None
 
 
 @require_GET
@@ -121,10 +123,12 @@ def test_view(request):
 
 @login_required()
 def download_dwc_archive(request):
-    context = dict()
+    context = {"code": 0}
     task_id = request.GET.get("task_id", None)
     if task_id is not None:
         context["task_id"] = task_id
+        context["code"] = int(request.GET.get("code"))
+    context["herbaria"] = Herbarium.objects.all()
     return render(request, "download_dwc_archive.html", context=context)
 
 
@@ -135,13 +139,25 @@ def generate_dwc_catalog(request):
 
 
 @login_required()
-def download_dwc_catalog(request):
-    zip_filename = "catalog.zip"
+def generate_dwc_herbarium(request, herbarium_id):
+    metadata = Herbarium.objects.get(pk=herbarium_id).metadata
+    if metadata is None:
+        return HttpResponse(status=400)
+    task_id = generate_dwc_archive.delay(metadata.pk)
+    return HttpResponse(task_id)
+
+
+@login_required()
+def download_dwca_file(request, code):
+    if code == 0:
+        zip_filename = "catalog.zip"
+    else:
+        zip_filename = f"{Herbarium.objects.get(pk=code).metadata.package_id}.zip"
 
     response = FileResponse(
         open(zip_filename, "rb"),
         as_attachment=True,
-        filename="catalog.zip"
+        filename=zip_filename,
     )
 
     return response

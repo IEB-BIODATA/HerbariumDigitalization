@@ -4,15 +4,22 @@
 {% block javascript %}
     <script>
         const csrfToken = "{{ csrf_token }}";
-        function downloadDwCArchive() {
+        function generateDwCA(code) {
             $(document).ajaxSend(function() {
                 $("#overlay").fadeIn(300);
             });
+            let url;
+            if (code === 0)
+                url = "{% url 'generate_dwc_catalog' %}";
+            else {
+                url = "{% url 'generate_dwc_herbarium' herbarium_id=0 %}";
+                url = url.replace("0", code);
+            }
             $.ajax({
-                url: "{% url 'generate_dwc_catalog' %}",
+                url: url,
                 type: "GET",
             }).done(function(data) {
-                window.location.href = "{% url 'download_dwc_archive' %}?task_id=" + data;
+                window.location.href = "{% url 'download_dwc_archive' %}?task_id=" + data + "&code=" + code;
             }).catch(function(data, status, error) {
                 console.error(data);
                 console.error(status);
@@ -23,12 +30,15 @@
                 }, 100);
             });
         }
-        function downloadDwCCatalog() {
+
+        function downloadDwCArchive(code) {
             $(document).ajaxSend(function() {
                 $("#overlay").fadeIn(300);
             });
+            let url = "{% url 'download_dwca_file' code=0 %}";
+            url = url.replace("0", code);
             $.ajax({
-                url: "{% url 'download_dwc_catalog' %}",
+                url: url,
                 type: "GET",
                 xhrFields: {
                     responseType: 'blob'
@@ -45,9 +55,13 @@
                 console.log(status);
                 console.log(error);
             }).always(function() {
-                let downloadLink = document.getElementById("downloadCatalog");
+                let downloadLink;
+                if (code === 0)
+                    downloadLink = document.getElementById("downloadCatalog");
+                else
+                    downloadLink = document.getElementById(`downloadHerbarium${code}`);
                 downloadLink.getElementsByTagName("i")[0].hidden = true;
-                downloadLink.setAttribute("onClick", "downloadDwCArchive();");
+                downloadLink.setAttribute("onClick", `generateDwCA(${code});`);
                 setTimeout(function() {
                     $("#overlay").fadeOut(300);
                 }, 100);
@@ -81,18 +95,20 @@
                     },
                     successCallback: () => {
                         console.log("Success");
+                        let code = {{ code }};
+                        let downloadLink;
+                        if (code === 0)
+                            downloadLink = document.getElementById("downloadCatalog");
+                        else
+                            downloadLink = document.getElementById(`downloadHerbarium${code}`);
                         document.getElementById("downloadCatalog").disabled = false;
-                        document.getElementById("downloadHerbariumCONC").disabled = false;
-                        document.getElementById("downloadHerbariumULS").disabled = false;
-                        let downloadLink = document.getElementById("downloadCatalog");
+                        document.querySelectorAll(".download-herbarium").forEach(el => el.disabled = false);
                         downloadLink.getElementsByTagName("i")[0].hidden = false;
-                        downloadLink.setAttribute("onClick", "downloadDwCCatalog();");
                     },
                     errorCallback: (error) => {
                         console.error(error);
                         document.getElementById("downloadCatalog").disabled = false;
-                        document.getElementById("downloadHerbariumCONC").disabled = false;
-                        document.getElementById("downloadHerbariumULS").disabled = false;
+                        document.querySelectorAll(".download-herbarium").forEach(el => el.disabled = false);
                     }
                 });
             }
@@ -113,22 +129,22 @@
         <div class="card-body">
             <div class="row">
                 <div class="col-md-12">
-                    <button id="downloadCatalog" onclick="downloadDwCArchive()" class="btn btn-primary" {% if task_id %} disabled="disabled" {% endif %}>
+                    <button id="downloadCatalog" onclick="{% if task_id and code == 0 %}downloadDwCArchive(0){% else %}generateDwCA(0){% endif %}" class="btn btn-primary" {% if task_id %} disabled="disabled" {% endif %}>
                         <i class="fas fa-fw fa-download" hidden="hidden"></i>
-                        {% translate "Catalog of Vascular Plant" %}
+                        {% translate "Catalog of Vascular Plants" %}
                     </button>
                 </div>
             </div>
+            {% for herbarium in herbaria %}
             <div class="row">
                 <div class="col-md-12">
-                    <button id="downloadHerbariumCONC" class="btn btn-primary" {% if task_id %} disabled="disabled" {% endif %}>{% translate "Herbarium CONC" %}</button>
+                    <button id="downloadHerbarium{{ herbarium.id }}" onclick="{% if task_id and code == herbarium.id %}downloadDwCArchive({{ herbarium.id }}){% else %}generateDwCA({{ herbarium.id }}){% endif %}" class="btn btn-primary download-herbarium" {% if task_id %} disabled="disabled" {% endif %}>
+                        <i class="fas fa-fw fa-download" hidden="hidden"></i>
+                        {% blocktrans with code=herbarium.collection_code %}Herbarium {{ code }}{% endblocktrans %}
+                    </button>
                 </div>
             </div>
-            <div class="row">
-                <div class="col-md-12">
-                    <button id="downloadHerbariumULS" class="btn btn-primary" {% if task_id %} disabled="disabled" {% endif %}>{% translate "Herbarium ULS" %}</button>
-                </div>
-            </div>
+            {% endfor %}
         </div>
     </div>
 {% endblock %}
