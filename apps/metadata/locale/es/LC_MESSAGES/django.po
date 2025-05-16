@@ -203,24 +203,20 @@ msgid "Methods"
 msgstr "Métodos"
 
 #: apps/metadata/models.py:228
-#, fuzzy
-#| msgid "Last Name"
 msgid "Name"
-msgstr "Apellido"
+msgstr "Nombre"
 
 #: apps/metadata/models.py:229
 msgid "Link"
-msgstr ""
+msgstr "Enlace"
 
 #: apps/metadata/models.py:230
-#, fuzzy
-#| msgid "First Name"
 msgid "Short Name"
-msgstr "Nombre"
+msgstr "Nombre Corto"
 
 #: apps/metadata/models.py:231
 msgid "Added by"
-msgstr ""
+msgstr "Añadido por"
 
 #: apps/metadata/models.py:250
 msgid "Title"

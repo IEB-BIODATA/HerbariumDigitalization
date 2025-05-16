@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2025-04-11 20:36-0400\n"
+"POT-Creation-Date: 2025-05-16 11:08-0400\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -621,7 +621,7 @@ msgid "Voucher failed an assertion"
 msgstr "Voucher failed an assertion"
 
 #: templates/digitalization/load_priority_vouchers_file.html:177
-#: templates/download_dwc_archive.html:59
+#: templates/download_dwc_archive.html:73
 msgid ""
 "An unexpected error has happened, please contact the admin before closing "
 "this window"
@@ -990,19 +990,22 @@ msgstr "Pending image processing"
 msgid "Continue"
 msgstr "Continue"
 
-#: templates/download_dwc_archive.html:103
+#: templates/download_dwc_archive.html:119
 msgid "Download Darwin Core Archive"
 msgstr "Download Darwin Core Archive"
 
-#: templates/download_dwc_archive.html:108
+#: templates/download_dwc_archive.html:124
 msgid "Download Darwin Core Of:"
 msgstr "Download Darwin Core Of:"
 
-#: templates/download_dwc_archive.html:118
-msgid "Catalog of Vascular Plant"
+#: templates/download_dwc_archive.html:134
+#, fuzzy
+#| msgid "Catalog of Vascular Plant"
+msgid "Catalog of Vascular Plants"
 msgstr "Catalog of Vascular Plant"
 
-#: templates/download_dwc_archive.html:125
+#: templates/download_dwc_archive.html:143
+#, python-format
 msgid "Herbarium %(code)s"
 msgstr "Herbarium %(code)s"
 

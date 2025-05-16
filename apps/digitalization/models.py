@@ -64,6 +64,7 @@ IUCN_CATEGORIES = (
 )
 
 TYPIFICATION = (
+    (0, _("Type")),
     (1, _("Holotype")),
     (2, _("Lectotype")),
     (3, _("Isotype")),
