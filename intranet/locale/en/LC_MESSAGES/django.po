@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2025-04-11 09:17-0400\n"
+"POT-Creation-Date: 2025-04-11 20:36-0400\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -991,30 +991,20 @@ msgid "Continue"
 msgstr "Continue"
 
 #: templates/download_dwc_archive.html:103
-#, fuzzy
-#| msgid "Download search"
 msgid "Download Darwin Core Archive"
-msgstr "Download search"
+msgstr "Download Darwin Core Archive"
 
 #: templates/download_dwc_archive.html:108
 msgid "Download Darwin Core Of:"
-msgstr ""
+msgstr "Download Darwin Core Of:"
 
 #: templates/download_dwc_archive.html:118
 msgid "Catalog of Vascular Plant"
-msgstr ""
+msgstr "Catalog of Vascular Plant"
 
-#: templates/download_dwc_archive.html:124
-#, fuzzy
-#| msgid "Herbarium Code"
-msgid "Herbarium CONC"
-msgstr "Herbarium Code"
-
-#: templates/download_dwc_archive.html:129
-#, fuzzy
-#| msgid "Herbarium"
-msgid "Herbarium ULS"
-msgstr "Herbarium"
+#: templates/download_dwc_archive.html:125
+msgid "Herbarium %(code)s"
+msgstr "Herbarium %(code)s"
 
 #: templates/footer.html:4
 msgid "IEB Complete Name"
