@@ -1,14 +1,16 @@
 # -*- coding: utf-8 -*-
 from __future__ import annotations
 
+from datetime import datetime
+
 import celery
 import logging
 import math
 
-import eml.resources
 import numpy as np
 import pandas as pd
 import pytz
+from celery.app.task import Task
 from django.conf import settings
 from django.contrib.auth.models import User
 from django.contrib.contenttypes.fields import GenericForeignKey
@@ -27,6 +29,8 @@ from django.utils.translation import gettext_lazy as _
 from typing import BinaryIO, Union, Any, Tuple, Callable, Dict, List
 
 from apps.catalog.models import Species, TAXONOMIC_RANK, RANK_MODELS, get_fuzzy_taxa, TaxonomicModel
+from apps.metadata.models import EML, Licence
+import dwca.terms as dwc
 from intranet.utils import CatalogQuerySet
 from .storage_backends import PublicMediaStorage, PrivateMediaStorage, GlacierPrivateMediaStorage, IAPrivateMediaStorage
 from .validators import validate_file_size
@@ -87,6 +91,18 @@ DCW_SQL = {
     "similarity": "similarity",
 }
 
+HERBARIUM_DWC_FIELDS = [
+    dwc.OccurrenceID(0), dwc.DWCModified(1), dwc.DWCLicense(2), dwc.DWCRightsHolder(3),
+    dwc.DWCInstitutionCode(4), dwc.DWCCollectionCode(5), dwc.DWCDatasetName(6), dwc.DWCBasisOfRecord(7),
+    dwc.CatalogNumber(8), dwc.RecordNumber(9), dwc.RecordedBy(10), dwc.OccurrenceRemarks(11),
+    dwc.OtherCatalogNumbers(12), dwc.IdentifiedBy(13),
+    dwc.VerbatimElevation(14), dwc.DecimalLatitude(15), dwc.DecimalLongitude(16),
+    dwc.GeoreferencedDate(17), dwc.DateIdentified(18), dwc.TypeStatus(19),
+    dwc.ScientificName(20), dwc.Kingdom(21), dwc.Family(22), dwc.Genus(23),
+    dwc.SpecificEpithet(24), dwc.InfraspecificEpithet(25),
+    dwc.TaxonRank(26), dwc.ScientificNameAuthorship(27)
+]
+
 
 class Herbarium(models.Model):
     name = models.CharField(verbose_name=_("Name"), max_length=300, blank=False, null=False)
@@ -94,6 +110,7 @@ class Herbarium(models.Model):
                                        unique=True, help_text=_("No more than %d letters") % 6)
     institution_code = models.CharField(verbose_name=_("Institution Code"), max_length=10, blank=True, null=True,
                                         help_text=_("No more than %d letters") % 10)
+    metadata = models.ForeignKey(EML, verbose_name=_("Metadata"), on_delete=models.PROTECT, blank=True, null=True)
 
     class Meta:
         verbose_name = _("Herbarium")
@@ -295,6 +312,60 @@ class VoucherImportedQuerySet(CatalogQuerySet):
 
     def search(self, text: str) -> CatalogQuerySet:
         return self.filter(scientific_name__scientific_name__icontains=text)
+
+    def get_dwc_data(self, logger: logging.Logger = logging.getLogger(__name__), task: Task = None) -> pd.DataFrame:
+        vouchers = self.all()
+        if task is not None:
+            task.update_state(
+                state='PROGRESS',
+                meta={
+                    'step': 0,
+                    'total': self.count(),
+                    'logs': logger[0].get_logs()
+                }
+            )
+        rows = list()
+        for i, obj in enumerate(vouchers):
+            if task is not None:
+                task.update_state(state='PROGRESS', meta={
+                    'step': i,
+                    'total': self.count(),
+                    'logs': logger[0].get_logs()
+                })
+            rows.append(
+                [
+                    f"{settings.HERBARIUM_FRONTEND}/images/zoom/{obj.pk}/",
+                    obj.biodata_code.created_at,
+                    obj.herbarium.metadata.dataset.licensed.first().link,
+                    obj.herbarium.name,
+                    obj.herbarium.institution_code,
+                    obj.herbarium.collection_code,
+                    obj.herbarium.name,
+                    "PreservedSpecimen",
+                    str(obj.catalog_number),
+                    obj.record_number,
+                    [obj.recorded_by],
+                    obj.organism_remarks,
+                    [obj.other_catalog_numbers],
+                    [obj.identified_by],
+                    str(obj.verbatim_elevation),
+                    obj.decimal_latitude_public,
+                    obj.decimal_longitude_public,
+                    None if obj.georeferenced_date is None else datetime.combine(obj.georeferenced_date, datetime.min.time()),
+                    None if obj.date_identified is None else datetime(year=obj.date_identified, month=1, day=1),
+                    [type_status.get_type_display() for type_status in obj.typestatus_set.all()],
+                    obj.scientific_name.scientific_name_full,
+                    obj.scientific_name.kingdom.name,
+                    obj.scientific_name.family.name,
+                    obj.scientific_name.genus.name,
+                    obj.scientific_name.specific_epithet,
+                    obj.scientific_name.infraspecific_epithet,
+                    obj.scientific_name.taxon_rank.name_en,
+                    obj.scientific_name.authorship
+                ]
+            )
+        return pd.DataFrame(rows, columns=[field.name for field in HERBARIUM_DWC_FIELDS])
+
 
 
 class VoucherImported(models.Model):
@@ -528,28 +599,6 @@ class TypeStatus(models.Model):
             return self.taxon_content_type.model_class().objects.get(unique_taxon_id=self.taxon_id)
         except ObjectDoesNotExist:
             return None
-
-
-class Licence(models.Model):
-    name = models.CharField(verbose_name=_("Name"), max_length=300, null=True)
-    link = models.CharField(verbose_name=_("Link"), max_length=300, blank=True, null=True)
-    short_name = models.CharField(verbose_name=_("Short Name"), max_length=20, null=True)
-    added_by = models.ForeignKey(User, verbose_name=_("Added by"), on_delete=models.SET_NULL, default=1, editable=False,
-                                 null=True)
-
-    @property
-    def eml_object(self):
-        return eml.resources.EMLLicense(
-            name=self.name,
-            url=self.link,
-            identifier=self.short_name
-        )
-
-    def __unicode__(self):
-        return self.name
-
-    def __str__(self):
-        return "%s " % self.name
 
 
 class GalleryImage(models.Model):
