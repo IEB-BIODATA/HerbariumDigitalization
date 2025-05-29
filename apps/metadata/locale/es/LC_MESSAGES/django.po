@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2025-04-11 09:17-0400\n"
+"POT-Creation-Date: 2025-04-11 20:34-0400\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -18,250 +18,266 @@ msgstr ""
 "Content-Transfer-Encoding: 8bit\n"
 "Plural-Forms: nplurals=2; plural=(n != 1);\n"
 
-#: apps/metadata/models.py:14
+#: apps/metadata/models.py:13
 msgid "West Bounding"
 msgstr "Límite Oeste"
 
-#: apps/metadata/models.py:15
+#: apps/metadata/models.py:14
 msgid "East Bounding"
 msgstr "Límite Este"
 
-#: apps/metadata/models.py:16
+#: apps/metadata/models.py:15
 msgid "North Bounding"
 msgstr "Límite Norte"
 
-#: apps/metadata/models.py:17
+#: apps/metadata/models.py:16
 msgid "South Bounding"
 msgstr "Límite Sur"
 
-#: apps/metadata/models.py:18 apps/metadata/models.py:194
+#: apps/metadata/models.py:17 apps/metadata/models.py:193
 msgid "Description"
 msgstr "Descripción"
 
-#: apps/metadata/models.py:19
+#: apps/metadata/models.py:18
 msgid "Bound"
 msgstr "Límite"
 
-#: apps/metadata/models.py:33 apps/metadata/models.py:238
+#: apps/metadata/models.py:32 apps/metadata/models.py:259
 msgid "Geographic Coverage"
 msgstr "Cobertura Geográfica"
 
-#: apps/metadata/models.py:34
+#: apps/metadata/models.py:33
 msgid "Geographic Coverages"
 msgstr "Coberturas Geográficas"
 
-#: apps/metadata/models.py:38 apps/metadata/models.py:46
+#: apps/metadata/models.py:37 apps/metadata/models.py:45
 msgid "Taxon ID"
 msgstr "ID del Taxón"
 
-#: apps/metadata/models.py:39
+#: apps/metadata/models.py:38
 msgid "Provider"
 msgstr "Proveedor"
 
-#: apps/metadata/models.py:47 apps/metadata/models.py:54
+#: apps/metadata/models.py:46 apps/metadata/models.py:53
 msgid "Taxon IDs"
 msgstr "IDs del Taxón"
 
-#: apps/metadata/models.py:51
+#: apps/metadata/models.py:50
 msgid "Rank"
 msgstr "Rango"
 
-#: apps/metadata/models.py:52
+#: apps/metadata/models.py:51
 msgid "Rank Value"
 msgstr "Valor del Rango"
 
-#: apps/metadata/models.py:53
+#: apps/metadata/models.py:52
 msgid "Common Name"
 msgstr "Nombre Común"
 
-#: apps/metadata/models.py:55
+#: apps/metadata/models.py:54
 msgid "Parent"
 msgstr "Padre"
 
-#: apps/metadata/models.py:76 apps/metadata/models.py:82
+#: apps/metadata/models.py:75 apps/metadata/models.py:81
 msgid "Taxonomic Classification"
 msgstr "Clasificación Taxonómica"
 
-#: apps/metadata/models.py:77
+#: apps/metadata/models.py:76
 msgid "Taxonomic Classifications"
 msgstr "Clasificaciones Taxonómicas"
 
-#: apps/metadata/models.py:81
+#: apps/metadata/models.py:80
 msgid "General Coverage"
 msgstr "Cobertura General"
 
-#: apps/metadata/models.py:94 apps/metadata/models.py:239
+#: apps/metadata/models.py:93 apps/metadata/models.py:260
 msgid "Taxonomic Coverage"
 msgstr "Cobertura Taxonómica"
 
-#: apps/metadata/models.py:95
+#: apps/metadata/models.py:94
 msgid "Taxonomic Coverages"
 msgstr "Coberturas Taxonómicas"
 
-#: apps/metadata/models.py:99
+#: apps/metadata/models.py:98
 msgid "First Name"
 msgstr "Nombre"
 
-#: apps/metadata/models.py:100
+#: apps/metadata/models.py:99
 msgid "Last Name"
 msgstr "Apellido"
 
-#: apps/metadata/models.py:101
+#: apps/metadata/models.py:100
 msgid "Position"
 msgstr "Posición"
 
-#: apps/metadata/models.py:102
+#: apps/metadata/models.py:101
 msgid "Organization"
 msgstr "Organización"
 
-#: apps/metadata/models.py:103
+#: apps/metadata/models.py:102
 msgid "Address"
 msgstr "Dirección"
 
-#: apps/metadata/models.py:104
+#: apps/metadata/models.py:103
 msgid "City"
 msgstr "Ciudad"
 
-#: apps/metadata/models.py:105
+#: apps/metadata/models.py:104
 msgid "Country"
 msgstr "País"
 
-#: apps/metadata/models.py:106
+#: apps/metadata/models.py:105
 msgid "Postal Code"
 msgstr "Código Postal"
 
-#: apps/metadata/models.py:107
+#: apps/metadata/models.py:106
 msgid "Phone"
 msgstr "Teléfono"
 
-#: apps/metadata/models.py:108
+#: apps/metadata/models.py:107
 msgid "Email"
 msgstr "Correo electrónico"
 
-#: apps/metadata/models.py:109
+#: apps/metadata/models.py:108
 msgid "Web Page"
 msgstr "Página Web"
 
-#: apps/metadata/models.py:152 apps/metadata/models.py:284
+#: apps/metadata/models.py:151 apps/metadata/models.py:311
 msgid "Responsible Party"
 msgstr "Parte Responsable"
 
-#: apps/metadata/models.py:153
+#: apps/metadata/models.py:152
 msgid "Responsible Parties"
 msgstr "Partes Responsables"
 
-#: apps/metadata/models.py:157 apps/metadata/models.py:170
+#: apps/metadata/models.py:156 apps/metadata/models.py:169
 msgid "Keyword"
 msgstr "Palabra Clave"
 
-#: apps/metadata/models.py:161
+#: apps/metadata/models.py:160
 msgid "Type"
 msgstr "Tipo"
 
-#: apps/metadata/models.py:171 apps/metadata/models.py:175
+#: apps/metadata/models.py:170 apps/metadata/models.py:174
 msgid "Keywords"
 msgstr "Palabras Claves"
 
-#: apps/metadata/models.py:176
+#: apps/metadata/models.py:175
 msgid "Thesaurus"
 msgstr "Tesaurio"
 
-#: apps/metadata/models.py:187 apps/metadata/models.py:237
+#: apps/metadata/models.py:186 apps/metadata/models.py:258
 msgid "Keyword Set"
 msgstr "Conjunto de Palabra Clave"
 
-#: apps/metadata/models.py:188
+#: apps/metadata/models.py:187
 msgid "Keyword Sets"
 msgstr "Conjuntos de Palabra Clave"
 
-#: apps/metadata/models.py:192
+#: apps/metadata/models.py:191
 msgid "Step"
 msgstr "Paso"
 
-#: apps/metadata/models.py:193
+#: apps/metadata/models.py:192
 msgid "Sub Step"
 msgstr "Subpaso"
 
-#: apps/metadata/models.py:206
+#: apps/metadata/models.py:205
 msgid "Procedure Step"
 msgstr "Paso del Procedimiento"
 
-#: apps/metadata/models.py:207
+#: apps/metadata/models.py:206
 msgid "Procedure Steps"
 msgstr "Pasos del Procedimiento"
 
-#: apps/metadata/models.py:211
+#: apps/metadata/models.py:210
 msgid "Steps"
 msgstr "Pasos"
 
-#: apps/metadata/models.py:224 apps/metadata/models.py:240
+#: apps/metadata/models.py:223 apps/metadata/models.py:261
 msgid "Method"
 msgstr "Método"
 
-#: apps/metadata/models.py:225
+#: apps/metadata/models.py:224
 msgid "Methods"
 msgstr "Métodos"
 
+#: apps/metadata/models.py:228
+msgid "Name"
+msgstr "Nombre"
+
 #: apps/metadata/models.py:229
+msgid "Link"
+msgstr "Enlace"
+
+#: apps/metadata/models.py:230
+msgid "Short Name"
+msgstr "Nombre Corto"
+
+#: apps/metadata/models.py:231
+msgid "Added by"
+msgstr "Añadido por"
+
+#: apps/metadata/models.py:250
 msgid "Title"
 msgstr "Título"
 
-#: apps/metadata/models.py:230
+#: apps/metadata/models.py:251
 msgid "Abstract"
 msgstr "Resumen"
 
-#: apps/metadata/models.py:231
+#: apps/metadata/models.py:252
 msgid "Language"
 msgstr "Idioma"
 
-#: apps/metadata/models.py:232
+#: apps/metadata/models.py:253
 msgid "Creator"
 msgstr "Creador"
 
-#: apps/metadata/models.py:233
+#: apps/metadata/models.py:254
 msgid "Contact"
 msgstr "Contacto"
 
-#: apps/metadata/models.py:234
+#: apps/metadata/models.py:255
 msgid "Metadata Provider"
 msgstr "Proveedor de Metadatos"
 
-#: apps/metadata/models.py:235
+#: apps/metadata/models.py:256
 msgid "Intellectual Rights"
 msgstr "Propiedad Intelectual"
 
-#: apps/metadata/models.py:236
+#: apps/metadata/models.py:257
 msgid "Licenced"
 msgstr "Con Licencia"
 
-#: apps/metadata/models.py:278 apps/metadata/models.py:294
+#: apps/metadata/models.py:305 apps/metadata/models.py:321
 msgid "EML Dataset"
 msgstr "Dataset EML"
 
-#: apps/metadata/models.py:279
+#: apps/metadata/models.py:306
 msgid "EML Datasets"
 msgstr "Datasets EML"
 
-#: apps/metadata/models.py:283
+#: apps/metadata/models.py:310
 msgid "Dataset"
 msgstr "Set de Datos"
 
-#: apps/metadata/models.py:285
+#: apps/metadata/models.py:312
 msgid "Role"
 msgstr "Rol"
 
-#: apps/metadata/models.py:288
+#: apps/metadata/models.py:315
 msgid "Associated Party"
 msgstr "Parte Asociada"
 
-#: apps/metadata/models.py:289
+#: apps/metadata/models.py:316
 msgid "Associated Parties"
 msgstr "Partes Asociadas"
 
-#: apps/metadata/models.py:293
+#: apps/metadata/models.py:320
 msgid "Package ID"
 msgstr "ID del Paquete"
 
-#: apps/metadata/models.py:309 apps/metadata/models.py:310
+#: apps/metadata/models.py:342 apps/metadata/models.py:343
 msgid "EML"
 msgstr "EML"

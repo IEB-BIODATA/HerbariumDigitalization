@@ -1,13 +1,12 @@
 import eml
 import eml.resources
+from django.contrib.auth.models import User
 from xml_common.utils import Language as EMLLanguage
 from django.conf import settings
 from django.contrib.gis.db.models import GeometryField
 from django.utils.translation import gettext_lazy as _, get_language
 from django.db import models
-from eml.types import Role
-
-from apps.digitalization.models import Licence
+from eml.types import Role, I18nString
 
 
 class GeographicCoverage(models.Model):
@@ -123,9 +122,9 @@ class ResponsibleParty(models.Model):
                 first_name=self.name
             )
         if self.organization is not None:
-            organization = eml.types.OrganizationName(self.organization)
+            organization = I18nString(self.organization)
         if self.position is not None:
-            position_name = eml.types.PositionName(self.position)
+            position_name = I18nString(self.position)
         if self.address is not None or self.city is not None or self.country is not None or self.postal_code is not None:
             address.append(eml.types.EMLAddress(
                 delivery_point=self.address,
@@ -225,6 +224,28 @@ class Method(models.Model):
         verbose_name_plural = _("Methods")
 
 
+class Licence(models.Model):
+    name = models.CharField(verbose_name=_("Name"), max_length=300, null=True)
+    link = models.CharField(verbose_name=_("Link"), max_length=300, blank=True, null=True)
+    short_name = models.CharField(verbose_name=_("Short Name"), max_length=20, null=True)
+    added_by = models.ForeignKey(User, verbose_name=_("Added by"), on_delete=models.SET_NULL, default=1, editable=False,
+                                 null=True)
+
+    @property
+    def eml_object(self):
+        return eml.resources.EMLLicense(
+            name=self.name,
+            url=self.link,
+            identifier=self.short_name
+        )
+
+    def __unicode__(self):
+        return self.name
+
+    def __str__(self):
+        return "%s" % self.name
+
+
 class EMLDataset(models.Model):
     title = models.CharField(max_length=255, verbose_name=_("Title"))
     abstract = models.TextField(null=True, blank=True, verbose_name=_("Abstract"))
@@ -274,6 +295,12 @@ class EMLDataset(models.Model):
             methods=methods
         )
 
+    def __unicode__(self):
+        return self.title
+
+    def __str__(self):
+        return "%s" % self.title
+
     class Meta:
         verbose_name = _("EML Dataset")
         verbose_name_plural = _("EML Datasets")
@@ -304,6 +331,12 @@ class EML(models.Model):
         )
         eml_object.__resource__ = self.dataset.eml_object
         return eml_object
+
+    def __unicode__(self):
+        return self.package_id
+
+    def __str__(self):
+        return "%s" % self.package_id
 
     class Meta:
         verbose_name = _("EML")

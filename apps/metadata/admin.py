@@ -1,8 +1,9 @@
 from django.contrib import admin
+from modeltranslation.admin import TranslationAdmin
 
 from apps.metadata.forms import GeographicCoverageForm
 from apps.metadata.models import GeographicCoverage, TaxonomicCoverage, TaxonomicClassification, ResponsibleParty, \
-    Keyword, Method, ProcedureStep, EMLDataset, EML, KeywordSet, TaxonID
+    Keyword, Method, ProcedureStep, EMLDataset, EML, KeywordSet, TaxonID, Licence
 
 
 @admin.register(GeographicCoverage)
@@ -52,6 +53,10 @@ class MethodAdmin(admin.ModelAdmin):
 @admin.register(ProcedureStep)
 class ProcedureStepAdmin(admin.ModelAdmin):
     list_display = (['step'])
+
+@admin.register(Licence)
+class LicenceAdmin(TranslationAdmin):
+    list_display = (['short_name'])
 
 
 @admin.register(EMLDataset)
