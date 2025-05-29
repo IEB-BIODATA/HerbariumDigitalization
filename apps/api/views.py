@@ -527,7 +527,7 @@ class FinderApiView(ListAPIView):
         filters = {"name__icontains": text}
         if category is not None and category.lower() != "all":
             filters["type"] = category.lower()
-        return super().get_queryset().filter(**filters)
+        return super().get_queryset().filter(**filters).order_by("type","name")
 
 
 class RegionDetails(RetrieveAPIView):
