@@ -212,11 +212,12 @@ class SessionFolder:
         if logger is None:
             logger = logging.getLogger(__name__)
         try:
-            s3.upload_file(
-                "assets/processed",
-                bucket_name,
-                f"{self.__remote_prefix__}/processed"
-            )
+            if len(self.__files__) > 0:
+                s3.upload_file(
+                    "assets/processed",
+                    bucket_name,
+                    f"{self.__remote_prefix__}/processed"
+                )
         except Exception as e:
             logger.error("Error uploading processed, upload it by hand")
             logger.error(e, exc_info=True)
