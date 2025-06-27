@@ -475,7 +475,7 @@ def get_vouchers_to_validate(request, page_id, voucher_state):
     )
     if int(voucher_state) != -1:
         filters &= Q(biodata_code__voucher_state=int(voucher_state))
-    biodata_codes = VoucherImported.objects.filter(filters)
+    biodata_codes = VoucherImported.objects.filter(filters).order_by('scientific_name__genus__family','scientific_name', 'catalog_number')
     search_query = Q()
     search_value = request.GET.get("search[value]", None)
     if search_value:
