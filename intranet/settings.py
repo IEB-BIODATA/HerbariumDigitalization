@@ -215,7 +215,7 @@ CELERY_TIMEZONE = TIME_ZONE
 CELERY_BEAT_SCHEDULE = {
     'daily_postprocessing': {
         'task': 'scheduled_postprocessing',
-        'schedule': crontab(hour="1", minute="0"),
+        'schedule': crontab(hour="5", minute="0"),
         'args': ('input', 'tmp', 'log')
     },
     'weekly_clean_storage': {
