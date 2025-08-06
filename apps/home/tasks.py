@@ -121,6 +121,7 @@ def generate_dwc_archive(self, option: int):
                 file_field = PrivateMediaStorage().save(zip_filename, ContentFile(zip_file.read()))
             file_object.file = file_field
             file_object.save()
+            os.remove(zip_filename)
         except Exception as e:
             error = {
                 "type": str(type(e)),
