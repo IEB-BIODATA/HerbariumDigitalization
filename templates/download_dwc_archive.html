@@ -40,28 +40,18 @@
             $.ajax({
                 url: url,
                 type: "GET",
-                xhrFields: {
-                    responseType: 'blob'
-                }
             }).done(function(data) {
-                let link = document.createElement("a");
-                link.href = window.URL.createObjectURL(data);
-                link.download = data.name;
-                document.body.appendChild(link);
-                link.click();
-                document.body.removeChild(link);
+                console.log(data);
+                const downloadLink = document.createElement('a');
+                downloadLink.href = data.url;
+                downloadLink.download = data.filename;
+                document.body.appendChild(downloadLink);
+                downloadLink.click();
             }).catch(function(data, status, error) {
                 console.log(data);
                 console.log(status);
                 console.log(error);
             }).always(function() {
-                let downloadLink;
-                if (code === 0)
-                    downloadLink = document.getElementById("downloadCatalog");
-                else
-                    downloadLink = document.getElementById(`downloadHerbarium${code}`);
-                downloadLink.getElementsByTagName("i")[0].hidden = true;
-                downloadLink.setAttribute("onClick", `generateDwCA(${code});`);
                 setTimeout(function() {
                     $("#overlay").fadeOut(300);
                 }, 100);

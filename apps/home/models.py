@@ -7,6 +7,9 @@ from django.contrib.auth.models import User
 from django.utils import timezone
 from django.utils.translation import gettext_lazy as _
 
+from apps.digitalization.storage_backends import PrivateMediaStorage
+from apps.metadata.models import EML
+
 THEMES = [
     ("light", _("Light")),
 ]
@@ -34,3 +37,9 @@ class Alert(models.Model):
 
     def __str__(self):
         return f"{self._meta.verbose_name}: `{self.message[0:20]}`"
+
+
+class DarwinCoreArchiveFile(models.Model):
+    metadata = models.ForeignKey(EML, primary_key=True, on_delete=models.PROTECT, verbose_name=_("Metadata File"))
+    file = models.FileField(verbose_name=_("File"), upload_to="darwin_core_archive", storage=PrivateMediaStorage())
+    created_at = models.DateTimeField(verbose_name=_("Created at"), auto_now_add=True)

@@ -1,8 +1,6 @@
 # -*- coding: utf-8 -*-
 import json
 import logging
-import os
-
 from celery.result import AsyncResult
 from django.conf import settings
 from django.contrib.auth.decorators import login_required
@@ -10,7 +8,7 @@ from django.contrib.auth.models import User
 from django.db.models import Count
 from django.db.models import Q
 from django.db.models.functions import ExtractDay, ExtractMonth, ExtractYear
-from django.http import HttpResponse, FileResponse
+from django.http import HttpResponse, FileResponse, JsonResponse
 from django.shortcuts import render, redirect
 from django.utils import translation
 from django.views.decorators.http import require_GET
@@ -18,8 +16,9 @@ from django.views.decorators.http import require_GET
 from apps.digitalization.models import BiodataCode, Herbarium
 from apps.digitalization.storage_backends import PrivateMediaStorage
 from apps.home.forms import ProfileForm, UserForm
-from apps.home.models import Profile
+from apps.home.models import Profile, DarwinCoreArchiveFile
 from apps.home.tasks import generate_dwc_archive
+from apps.metadata.models import EML
 
 
 @login_required
@@ -149,18 +148,15 @@ def generate_dwc_herbarium(request, herbarium_id):
 
 @login_required()
 def download_dwca_file(request, code):
-    if code == 0:
-        zip_filename = "catalog.zip"
+    if int(code) == 0:
+        eml = EML.objects.get(pk=1)
     else:
-        zip_filename = f"{Herbarium.objects.get(pk=code).metadata.package_id}.zip"
-
-    response = FileResponse(
-        open(zip_filename, "rb"),
-        as_attachment=True,
-        filename=zip_filename,
-    )
-
-    return response
+        eml = Herbarium.objects.get(pk=code).metadata
+    zip_filename = DarwinCoreArchiveFile.objects.get(metadata=eml)
+    return JsonResponse({
+        "filename": zip_filename.file.name,
+        "url": zip_filename.file.url
+    })
 
 class ProfileLanguageMiddleware:
     def __init__(self, get_response):

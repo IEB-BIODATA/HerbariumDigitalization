@@ -6,6 +6,7 @@ import pandas as pd
 from celery import shared_task
 from celery.exceptions import Ignore
 from celery.result import AsyncResult
+from django.core.files.base import ContentFile
 from dwca import DarwinCoreArchive
 from dwca.classes import Taxon, Occurrence
 import dwca.terms as dwc
@@ -15,6 +16,7 @@ from apps.catalog.models import Kingdom, Division, ClassName, Order, Family, Gen
     CATALOG_DWC_FIELDS, VernacularName, CommonName, Distribution, Region, SpeciesProfile
 from apps.digitalization.models import HERBARIUM_DWC_FIELDS, VoucherImported
 from apps.digitalization.storage_backends import PrivateMediaStorage
+from apps.home.models import DarwinCoreArchiveFile
 from apps.metadata.models import EML
 from intranet.utils import HtmlLogger, close_process, TaskProcessLogger, GroupLogger
 
@@ -65,7 +67,7 @@ def generate_dwc_archive(self, option: int):
                 # Extensions
                 logger.info(f"Retrieving vernacular names")
                 vernacular_extension = VernacularName(
-                    0, "vernacular.tsv", [dwc.DWCLanguage(1), dwc.VernacularName(2)]
+                    0, "vernacular.tsv", [dwc.DWCLanguage(1, two_letter_coding=True), dwc.VernacularName(2)]
                 )
                 common_names_result = list()
                 common_objects = CommonName.objects.all()
@@ -113,6 +115,12 @@ def generate_dwc_archive(self, option: int):
                 logger.info("Zipping archive")
                 zip_filename = f"{eml.package_id}.zip"
                 darwin_core_archive.to_file(zip_filename)
+            file_object = DarwinCoreArchiveFile.objects.get_or_create(metadata=eml)[0]
+            file_object.file.delete()
+            with open(zip_filename, "rb") as zip_file:
+                file_field = PrivateMediaStorage().save(zip_filename, ContentFile(zip_file.read()))
+            file_object.file = file_field
+            file_object.save()
         except Exception as e:
             error = {
                 "type": str(type(e)),
