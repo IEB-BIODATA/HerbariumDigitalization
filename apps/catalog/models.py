@@ -67,19 +67,8 @@ class VernacularName(dwc_classes.DataFile):
         return
 
 
-class Distribution(dwc_classes.DataFile):
-    URI = "http://rs.gbif.org/terms/1.0/Distribution"
-    def __init__(self, _id: int, files: str, fields: List[dwc.Field]):
-        super().__init__(
-            _id, files, fields, dwc_classes.DataFileType.EXTENSION,
-            "utf-8", "\n", "\t",
-            "", 1
-        )
-        return
-
-
-class SpeciesProfile(dwc_classes.DataFile):
-    URI = "http://rs.gbif.org/terms/1.0/SpeciesProfile"
+class Reference(dwc_classes.DataFile):
+    URI = "http://rs.gbif.org/terms/1.0/Reference"
     def __init__(self, _id: int, files: str, fields: List[dwc.Field]):
         super().__init__(
             _id, files, fields, dwc_classes.DataFileType.EXTENSION,
@@ -528,12 +517,68 @@ class ConservationStatus(AttributeModel):
         ordering = ['order']
 
 
+class Author(models.Model):
+    first_name = models.CharField(verbose_name=_("First name"), max_length=255)
+    last_name = models.CharField(verbose_name=_("Last name"), max_length=255, blank=True, null=True)
+
+    def __str__(self):
+        if self.last_name is not None:
+            return f"{self.last_name}, {self.first_name[0]}."
+        else:
+            return f"{self.first_name}"
+
+
+
+class References(models.Model):
+    author = models.ManyToManyField(Author, verbose_name=_("Author"))
+    title = models.TextField(verbose_name=_("Title"), blank=True, null=True)
+    journal = models.CharField(verbose_name=_("Journal"), max_length=300, blank=True, null=True)
+    volume = models.IntegerField(verbose_name=_("Volume"), blank=True, null=True)
+    issue = models.IntegerField(verbose_name=_("Issue"), blank=True, null=True)
+    first_page = models.IntegerField(verbose_name=_("First Page"), blank=True, null=True)
+    last_page = models.IntegerField(verbose_name=_("Last Page"), blank=True, null=True)
+    year = models.IntegerField(verbose_name=_("Year"), blank=True, null=True)
+
+    def __str__(self) -> str:
+        return self.cite()
+
+    def cite(self) -> str:
+        authors = self.author.all()
+        if len(authors) >= 3:
+            authors_str = f"{authors[0]}, et al."
+        else:
+            authors_str = ", ".join([str(a) for a in authors])
+        if self.issue is not None:
+            if self.volume is not None:
+                issue_str = f" {self.volume} ({self.issue}),"
+            else:
+                issue_str = f" {self.issue},"
+        else:
+            if self.volume is not None:
+                issue_str = f" {self.volume},"
+            else:
+                issue_str = f""
+        if self.first_page is not None:
+            if self.last_page is not None:
+                page_str = f" {self.first_page}-{self.last_page}"
+            else:
+                page_str = f" {self.first_page}"
+        else:
+            page_str = ""
+        if self.year is not None:
+            year_str = f" ({self.year})"
+        else:
+            year_str = ""
+        return f"{authors_str} {self.title}. {self.journal}{issue_str}{page_str}{year_str}."
+
+
 class TaxonomicModel(models.Model):
     unique_taxon_id = models.BigIntegerField()
     taxon_id = models.CharField()
     created_at = models.DateTimeField(verbose_name=_("Created at"), auto_now_add=True, blank=True, null=True, editable=False)
     updated_at = models.DateTimeField(verbose_name=_("Updated at"), auto_now=True)
     created_by = models.ForeignKey(User, verbose_name=_("Created by"), on_delete=models.PROTECT, default=1, editable=False)
+    references = models.ManyToManyField(References, verbose_name=_("References"), blank=True)
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -1214,10 +1259,6 @@ class Species(ScientificName):
         "maximum_height": "altura máxima",
         "notes": "notes",
         "type_id": "id de tipo",
-        "publication": "publicación",
-        "volume": "volume",
-        "pages": "páginas",
-        "year": "año de publicación",
         "id_mma": "id del MMA",
         "determined": "terminal",
         "id_taxa_origin": "id del taxón de origen",
@@ -1239,10 +1280,6 @@ class Species(ScientificName):
     maximum_height = models.IntegerField(verbose_name=_("Maximum Height"), blank=True, null=True)
     notes = models.CharField(verbose_name=_("Notes"), max_length=1000, blank=True, null=True)
     type_id = models.CharField(verbose_name=_("Type ID"), max_length=300, blank=True, null=True)
-    publication = models.CharField(verbose_name=_("Publication"), max_length=300, blank=True, null=True)
-    volume = models.CharField(verbose_name=_("Volume"), max_length=300, blank=True, null=True)
-    pages = models.CharField(verbose_name=_("Pages"), max_length=300, blank=True, null=True)
-    year = models.IntegerField(verbose_name=_("Year"), blank=True, null=True)
     region = models.ManyToManyField(Region, verbose_name=_("Regions"), blank=True, db_column="region")
     id_mma = models.IntegerField(verbose_name=_("MMA ID"), blank=True, null=True,
                                  help_text=_("ID of the species platform of the MMA"))
@@ -1682,10 +1719,6 @@ class CatalogView(TaxonomicModel):
            species.maximum_height,
            species.notes,
            species.type_id,
-           species.publication,
-           species.volume,
-           species.pages,
-           species.year,
            species.determined,
            species.id_taxa_origin,
            species.created_at,
@@ -1738,10 +1771,6 @@ class CatalogView(TaxonomicModel):
     maximum_height = models.IntegerField(blank=True, null=True)
     notes = models.CharField(max_length=1000, blank=True, null=True)
     type_id = models.CharField(max_length=300, blank=True, null=True)
-    publication = models.CharField(max_length=300, blank=True, null=True)
-    volume = models.CharField(max_length=300, blank=True, null=True)
-    pages = models.CharField(max_length=300, blank=True, null=True)
-    year = models.IntegerField(blank=True, null=True)
     determined = models.BooleanField(default=False)
     id_taxa_origin = models.IntegerField(blank=True, null=True, help_text="")
     created_at = models.DateTimeField(blank=True, null=True, editable=False)
