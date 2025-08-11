@@ -1,0 +1,159 @@
+{% extends "base.html" %}
+{% load static %}
+{% load i18n %}
+{% load roles %}
+{% block javascript %}
+    <script type="text/javascript">
+        function activateAutocomplete(){
+            $(".autocomplete-author-first-name").each(function(index) {
+                let uniqueId = `autocomplete-author-first-name-${index}`;
+                $(this).attr("id", uniqueId);
+                if (!$(this).data("ui-autocomplete")){
+                    $(this).autocomplete({
+                        source: function (request, response) {
+                            $.ajax({
+                                url: "{% url 'autocomplete_author_first_name' %}",
+                                data: { term: request.term },
+                                dataType: "json",
+                                success: function(data) {
+                                    response($.map(data, function(item) {
+                                        return {
+                                            label: item.first_name + " " + item.last_name,
+                                            value: item.first_name,
+                                            last_name: item.last_name,
+                                        };
+                                    }));
+                                }
+                            });
+                        },
+                        minLength: 2,
+                        select: function(event, ui) {
+                            let parentContainer = $(this).closest(".author-fields");
+                            parentContainer.find(".autocomplete-author-surname").val(ui.item.surname);
+                        }
+                    });
+                }
+            });
+
+            $(".autocomplete-author-last-name").each(function(index) {
+                let uniqueId = `autocomplete-author-last-name-${index}`;
+                $(this).attr("id", uniqueId);
+
+                if (!$(this).data("ui-autocomplete")) {
+                    $(this).autocomplete({
+                        source: function(request, response) {
+                            $.ajax({
+                                url: "{% url 'autocomplete_author_last_name' %}",
+                                data: { term: request.term },
+                                dataType: "json",
+                                success: function(data) {
+                                    response($.map(data, function(item) {
+                                        return {
+                                            label: item.last_name + ", " + item.first_name,
+                                            value: item.last_name,
+                                            first_name: item.first_name,
+                                        };
+                                    }));
+                                }
+                            });
+                        },
+                        minLength: 2,
+                        select: function(event, ui) {
+                            let parentContainer = $(this).closest(".author-fields");
+                            parentContainer.find(".autocomplete-author-name").val(ui.item.name);
+                        }
+                    });
+                }
+            });
+        }
+
+        function deleteAuthor(reference, author, event) {
+            const csrfToken = document.querySelector('[name=csrfmiddlewaretoken]').value;
+            fetch("{% url 'delete_author' %}", {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/x-www-form-urlencoded',
+                    'X-CSRFToken': csrfToken
+                },
+                body: new URLSearchParams({
+                    reference: reference,
+                    author: author
+                })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    const button = event.target.closest('button');
+                    const authorItem = button.closest('.author-item');
+                    if (authorItem) {
+                        authorItem.remove();
+                    }
+                } else {
+                    alert("Error: " + (data.error || "{% translate 'Default error author' %}"));
+                }
+            })
+            .catch(error => {
+                console.error("Error deleting author:", error);
+            });
+        }
+
+        document.addEventListener('DOMContentLoaded', function(){
+            activateAutocomplete();
+            let authorTemplate = document.getElementById("empty-creator-form").innerHTML;
+            let authorContainer = document.getElementById("author-container");
+            let addAuthorButton = document.getElementById("add-author-button");
+            addAuthorButton.addEventListener("click", function(){
+                let newForm = document.createElement("div");
+                newForm.innerHTML = authorTemplate;
+                authorContainer.appendChild(newForm);
+                newForm.querySelector(".remove-author").addEventListener("click", function(){
+                    newForm.remove();
+                })
+                activateAutocomplete();
+            })
+        });
+    </script>
+{% endblock %}
+{% block content %}
+    <h1>{% translate "References" %}</h1>
+    <div class="card mb-3">
+        <div class="card-header">
+            <i class="far fa-file"></i> &nbsp;
+            {% translate "References" %}
+        </div>
+        <div class="card-body">
+            <div class="table-responsive">
+                <form action="{% url 'new_reference' %}" method="post">
+                    {% csrf_token %}
+                    <input type="hidden" name="next" value="{{ prev_page }}">
+                    {% include 'form_base.html' with form=form %}
+                    <div id="add-attr" class="row">
+                        <div class="col-12">
+                            <button id="add-author-button" type="button" class="btn btn-primary"><i class="fa-solid fa-circle-plus"></i>{% translate 'Add Author' %}</button>
+                        </div>
+                    </div>
+                    <div id="author-container">
+                        {% for subform in author_set %}
+                            <div class="author-item">
+                                {% include 'form_base.html' with form=subform %}
+                            </div>
+                        {% endfor %}
+                    </div>
+                    <div class="form-group row">
+                        <div class="col-sm-10">
+                            <input type="submit" class="btn btn-primary" value="{% translate 'Add' %}">
+                            <a href="{{ prev_page }}" class="btn btn-danger">{% translate "Cancel" %}</a>
+                        </div>
+                    </div>
+                </form>
+            </div>
+        </div>
+        <div id="empty-creator-form" style="display: none">
+            <div class="bg-color-1">
+                <div class="author-item">
+                    {% include 'form_base.html' with form=author_form %}
+                </div>
+            </div>
+        </div>
+    </div>
+{% endblock %}

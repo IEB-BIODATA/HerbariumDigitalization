@@ -1,7 +1,11 @@
+from urllib.parse import urlparse
+
 import os
 
 import datetime as dt
 import logging
+from django.views import View
+from django.views.decorators.http import require_GET, require_POST
 from typing import Type
 
 import tablib
@@ -9,18 +13,18 @@ from django import forms
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth.models import User
 from django.db.models import Q
-from django.http import HttpResponse, JsonResponse, HttpRequest, HttpResponseServerError
+from django.http import HttpResponse, JsonResponse, HttpRequest, HttpResponseServerError, HttpResponseRedirect
 from django.shortcuts import render, redirect
-from django.urls import reverse
+from django.urls import reverse, resolve
 from django.utils.translation import gettext_lazy as _
 from rest_framework.serializers import SerializerMetaclass
 
 from intranet.utils import paginated_table, TaskProcessLogger
 from .forms import DivisionForm, ClassForm, OrderForm, FamilyForm, GenusForm, SpeciesForm, SynonymyForm, BinnacleForm, \
-    CommonNameForm
+    CommonNameForm, ReferenceForm, AuthorForm
 from .models import Species, CatalogView, SynonymyView, RegionDistributionView, Division, ClassName, Order, Family, \
     Genus, Synonymy, Region, CommonName, Binnacle, PlantHabit, EnvironmentalHabit, Cycle, TaxonomicModel, \
-    ConservationStatus, FinderView
+    ConservationStatus, FinderView, Author, References
 from .serializers import DivisionSerializer, ClassSerializer, OrderSerializer, FamilySerializer, GenusSerializer, \
     CatalogViewSerializer, SpeciesSerializer, SynonymsSerializer, BinnacleSerializer, CommonNameSerializer
 from ..digitalization.storage_backends import PrivateMediaStorage
@@ -32,6 +36,7 @@ MANY_RELATIONS = [
     ("env_habit", "forma de vida", EnvironmentalHabit),
     ("cycle", "ciclo de vida", Cycle),
     ("region", "región", Region),
+    ("references", "publicaciones", References),
     ("conservation_status", "estado de conservación", ConservationStatus),
 ]
 
@@ -109,18 +114,19 @@ def __catalog_table__(
 
 def __create_catalog__(
         form: forms.ModelForm,
-        user: User,
-        request: HttpRequest = None
+        request: HttpRequest
 ) -> int:
     if form.is_valid():
         try:
             new_model = form.save(commit=False)
-            new_model.save(user=user)
-            if request:
-                if new_model.__class__.__name__ == "Species":
-                    for relation, _, many_model in MANY_RELATIONS:
-                        for identifier in request.POST.getlist(relation):
-                            getattr(new_model, relation).add(many_model.objects.get(id=identifier))
+            new_model.save(user=request.user)
+            if new_model.__class__.__name__ == "Species":
+                for relation, _, many_model in MANY_RELATIONS:
+                    for identifier in request.POST.getlist(relation):
+                        getattr(new_model, relation).add(many_model.objects.get(id=identifier))
+            else:
+                for identifier in request.POST.getlist("references"):
+                    new_model.references.add(References.objects.get(id=identifier))
             CatalogView.refresh_view()
             FinderView.refresh_view()
             SynonymyView.refresh_view()
@@ -135,28 +141,31 @@ def __create_catalog__(
 
 def __update_catalog__(
         form: forms.ModelForm,
-        user: User,
-        request: HttpRequest = None
+        request: HttpRequest
 ) -> bool:
     if form.is_valid():
         try:
             new_model = form.save(commit=False)
-            if request:
-                if new_model.__class__.__name__ == "Species":
-                    changes = list()
-                    for relation, relation_name, many_model in MANY_RELATIONS:
-                        for old_relation in getattr(new_model, relation).all():
-                            if str(old_relation.id) not in request.POST.getlist(relation):
-                                getattr(new_model, relation).remove(old_relation)
-                                changes.append("Se elimina '{}' de '{}'".format(old_relation, relation_name))
-                        for identifier in request.POST.getlist(relation):
-                            if not getattr(new_model, relation).filter(id=identifier).exists():
-                                new_relation = many_model.objects.get(id=identifier)
-                                getattr(new_model, relation).add(new_relation)
-                                changes.append("Se añade '{}' a '{}'".format(new_relation, relation_name))
-                    if len(changes) > 0:
-                        Binnacle.update_entry(repr(new_model), new_model, user, notes=". ".join(changes))
-            new_model.save(user=user)
+            if new_model.__class__.__name__ == "Species":
+                changes = list()
+                for relation, relation_name, many_model in MANY_RELATIONS:
+                    for old_relation in getattr(new_model, relation).all():
+                        if str(old_relation.id) not in request.POST.getlist(relation):
+                            getattr(new_model, relation).remove(old_relation)
+                            changes.append("Se elimina '{}' de '{}'".format(old_relation, relation_name))
+                    for identifier in request.POST.getlist(relation):
+                        if not getattr(new_model, relation).filter(id=identifier).exists():
+                            new_relation = many_model.objects.get(id=identifier)
+                            getattr(new_model, relation).add(new_relation)
+                            changes.append("Se añade '{}' a '{}'".format(new_relation, relation_name))
+                if len(changes) > 0:
+                    Binnacle.update_entry(repr(new_model), new_model, user, notes=". ".join(changes))
+            else:
+                logging.info("Here")
+                for identifier in request.POST.getlist("references"):
+                    logging.info(identifier)
+                    new_model.references.add(References.objects.get(id=identifier))
+            new_model.save(user=request.user)
             CatalogView.refresh_view()
             FinderView.refresh_view()
             SynonymyView.refresh_view()
@@ -190,7 +199,7 @@ def __create_catalog_route__(
 ) -> HttpResponse:
     if request.method == "POST":
         form = form_class(request.POST)
-        if __create_catalog__(form, request.user) != -1:
+        if __create_catalog__(form, request) != -1:
             return redirect("list_{}".format(model_name))
     else:
         form = form_class()
@@ -213,7 +222,7 @@ def __update_catalog_route__(
     entry = model.objects.get(unique_taxon_id=identifier)
     if request.method == "POST":
         form = form_class(request.POST, instance=entry)
-        if __update_catalog__(form, request.user):
+        if __update_catalog__(form, request):
             return redirect("list_{}".format(model_name))
     else:
         form = form_class(instance=entry)
@@ -504,7 +513,7 @@ def taxa_table(request):
 def create_taxa(request):
     if request.method == "POST":
         form = SpeciesForm(request.POST)
-        if __create_catalog__(form, request.user, request=request) != -1:
+        if __create_catalog__(form, request) != -1:
             return redirect("list_taxa")
     else:
         form = SpeciesForm()
@@ -531,7 +540,7 @@ def update_taxa(request, species_id):
         )
     if request.method == "POST":
         form = SpeciesForm(request.POST, instance=species)
-        if __update_catalog__(form, request.user, request=request):
+        if __update_catalog__(form, request):
             return redirect("list_taxa")
     else:
         form = SpeciesForm(instance=species)
@@ -594,7 +603,7 @@ def merge_taxa(request, taxa_1: int, taxa_2: int) -> HttpResponse:
     species = Species.objects.all()
     if request.method == "POST":
         form = SpeciesForm(request.POST, instance=species_2)
-        updated = __update_catalog__(form, request.user, request=request)
+        updated = __update_catalog__(form, request)
         if updated:
             new_synonymy = Synonymy(species=species_1)
             new_synonymy.save(user=request.user)
@@ -804,7 +813,7 @@ def update_common_name(request, common_name_id):
     entry = CommonName.objects.get(id=common_name_id)
     if request.method == "POST":
         form = CommonNameForm(request.POST, instance=entry)
-        if __update_catalog__(form, request.user):
+        if __update_catalog__(form, request):
             return redirect("list_common_name")
     else:
         form = CommonNameForm(instance=entry)
@@ -831,6 +840,37 @@ def delete_common_name(request, common_name_id):
     except Exception as e:
         logging.error(e, exc_info=True)
         return HttpResponseServerError
+
+
+@login_required
+def new_reference(request):
+    form = ReferenceForm(instance=None)
+    prev_page = request.headers["Referer"]
+    author_set = [AuthorForm()]
+    if request.method == "POST":
+        prev_page = request.POST['next']
+        form = ReferenceForm(request.POST)
+        if form.is_valid():
+            reference = form.save(commit=False)
+            reference.save()
+            logging.info("New reference saved: {}".format(reference))
+            for index, (author_first_name, author_last_name) in enumerate(zip(
+                request.POST.getlist("author_field_first_name"),
+                request.POST.getlist("author_field_last_name")
+            )):
+                author_first_name = author_first_name.strip().title()
+                author_last_name = author_last_name.strip().title() if author_last_name else None
+                author, _ = Author.objects.get_or_create(
+                    first_name=author_first_name, last_name=author_last_name
+                )
+                reference.author.add(author)
+            return HttpResponseRedirect(prev_page)
+    return render(request, "catalog/new_reference.html", {
+        "prev_page": prev_page,
+        "form": form,
+        "author_form": AuthorForm(),
+        "author_set": author_set,
+    })
 
 
 @login_required
@@ -863,3 +903,36 @@ def reload_scientific_name(request):
     import shutil
     shutil.rmtree("scientific_name_log")
     return redirect("index")
+
+@require_POST
+@login_required
+def delete_author(request):
+    author_id = request.POST.get("author")
+    reference_id = request.POST.get("reference")
+    try:
+        author = Author.objects.get(pk=author_id)
+        reference = References.objects.get(pk=reference_id)
+        reference.author.remove(author)
+        return JsonResponse({"success": True})
+    except Author.DoesNotExist:
+        return JsonResponse({"success": False, "error": "Author not found."}, status=404)
+    except References.DoesNotExist:
+        return JsonResponse({"success": False, "error": "Paper not found."}, status=404)
+
+
+class AutocompleteFirstNameView(View):
+    def get(self, request, *args, **kwargs):
+        query = request.GET.get('term', '')
+        results = Author.objects.filter(
+            first_name__icontains=query
+        ).values('first_name', 'last_name')
+        return JsonResponse(list(results), safe=False)
+
+
+class AutocompleteLastNameView(View):
+    def get(self, request, *args, **kwargs):
+        query = request.GET.get('term', '')
+        results = Author.objects.filter(
+            last_name__icontains=query
+        ).values('first_name', 'last_name')
+        return JsonResponse(list(results), safe=False)

@@ -206,11 +206,11 @@ class LicenceForm(forms.ModelForm):
 
     class Meta:
         model = Licence
-        fields = {
+        fields = (
             'name',
             'link',
             'short_name',
-        }
+        )
 
         widgets = {
             'name': forms.TextInput(attrs={'class': "form-control"}),

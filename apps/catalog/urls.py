@@ -45,5 +45,12 @@ urlpatterns = [
     re_path(r'^create_common_name$', views.create_common_name, name='create_common_name'),
     re_path(r'^update_common_name/(?P<common_name_id>\d+)/$', views.update_common_name, name='update_common_name'),
     re_path(r'^delete_common_name/(?P<common_name_id>\d+)/$', views.delete_common_name, name='delete_common_name'),
-    re_path(r'^reload_scientific_name/$', views.reload_scientific_name, name='reload_scientific_name')
+    re_path(r'^new_reference$', views.new_reference, name='new_reference'),
+    re_path(r'^reload_scientific_name/$', views.reload_scientific_name, name='reload_scientific_name'),
+    re_path(r'^delete_author/$', views.delete_author, name='delete_author'),
+    re_path(r'^autocomplete_author_first_name/', views.AutocompleteFirstNameView.as_view(),
+            name='autocomplete_author_first_name'),
+    re_path(r'^autocomplete_author_last_name/', views.AutocompleteLastNameView.as_view(),
+            name='autocomplete_author_last_name'),
+
 ]

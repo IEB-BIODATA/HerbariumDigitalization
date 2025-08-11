@@ -1,6 +1,19 @@
 {% extends "base.html" %}
 {% load static %}
 {% load i18n %}
+{% block javascript %}
+    <script type="text/javascript">
+        $.fn.selectpicker.Constructor.DEFAULTS.noneSelectedText = "{% translate 'Nothing selected' %}";
+
+        document.querySelector("#id_references").addEventListener("change", function() {
+            const selectedValue = this.value;
+            if (selectedValue === "") {
+                this.value = 1;
+                window.location.href = "{% url 'new_reference' %}";
+            }
+        });
+    </script>
+{% endblock %}
 {% block content %}
     <h1>{{ rank_title }}</h1>
     <div class="card mb-3">
