@@ -159,7 +159,7 @@ def __update_catalog__(
                             getattr(new_model, relation).add(new_relation)
                             changes.append("Se añade '{}' a '{}'".format(new_relation, relation_name))
                 if len(changes) > 0:
-                    Binnacle.update_entry(repr(new_model), new_model, user, notes=". ".join(changes))
+                    Binnacle.update_entry(repr(new_model), new_model, request.user, notes=". ".join(changes))
             else:
                 logging.info("Here")
                 for identifier in request.POST.getlist("references"):
