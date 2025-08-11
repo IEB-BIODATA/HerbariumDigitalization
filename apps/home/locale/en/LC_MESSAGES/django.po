@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2024-07-18 17:16-0400\n"
+"POT-Creation-Date: 2025-08-11 14:08-0400\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -18,15 +18,15 @@ msgstr ""
 "Content-Transfer-Encoding: 8bit\n"
 "Plural-Forms: nplurals=2; plural=(n != 1);\n"
 
-#: apps/home/admin.py:15 apps/home/models.py:26
+#: apps/home/admin.py:15 apps/home/models.py:29
 msgid "Message"
 msgstr "Mensaje"
 
-#: apps/home/forms.py:25 apps/home/models.py:17
+#: apps/home/forms.py:25 apps/home/models.py:20
 msgid "Language"
 msgstr "Language"
 
-#: apps/home/forms.py:26 apps/home/models.py:18
+#: apps/home/forms.py:26 apps/home/models.py:21
 msgid "Theme"
 msgstr "Theme"
 
@@ -70,34 +70,42 @@ msgstr "Geometry"
 msgid "Geometry is required"
 msgstr "Geometry is required"
 
-#: apps/home/models.py:11
+#: apps/home/models.py:14
 msgid "Light"
 msgstr "Light"
 
-#: apps/home/models.py:21
+#: apps/home/models.py:24
 msgid "Profile"
 msgstr "Profile"
 
-#: apps/home/models.py:22
+#: apps/home/models.py:25
 msgid "Profiles"
 msgstr "Profiles"
 
-#: apps/home/models.py:27
+#: apps/home/models.py:30
 msgid "Active"
 msgstr "Activo"
 
-#: apps/home/models.py:28
+#: apps/home/models.py:31
 msgid "Created by"
 msgstr "Created by"
 
-#: apps/home/models.py:29
+#: apps/home/models.py:32 apps/home/models.py:45
 msgid "Created at"
 msgstr "Created at"
 
-#: apps/home/models.py:32
+#: apps/home/models.py:35
 msgid "Alert"
 msgstr "Alert"
 
-#: apps/home/models.py:33
+#: apps/home/models.py:36
 msgid "Alerts"
 msgstr "Alerts"
+
+#: apps/home/models.py:43
+msgid "Metadata File"
+msgstr "Metadata File"
+
+#: apps/home/models.py:44
+msgid "File"
+msgstr "File"
