@@ -67,19 +67,8 @@ class VernacularName(dwc_classes.DataFile):
         return
 
 
-class Distribution(dwc_classes.DataFile):
-    URI = "http://rs.gbif.org/terms/1.0/Distribution"
-    def __init__(self, _id: int, files: str, fields: List[dwc.Field]):
-        super().__init__(
-            _id, files, fields, dwc_classes.DataFileType.EXTENSION,
-            "utf-8", "\n", "\t",
-            "", 1
-        )
-        return
-
-
-class SpeciesProfile(dwc_classes.DataFile):
-    URI = "http://rs.gbif.org/terms/1.0/SpeciesProfile"
+class Reference(dwc_classes.DataFile):
+    URI = "http://rs.gbif.org/terms/1.0/Reference"
     def __init__(self, _id: int, files: str, fields: List[dwc.Field]):
         super().__init__(
             _id, files, fields, dwc_classes.DataFileType.EXTENSION,
