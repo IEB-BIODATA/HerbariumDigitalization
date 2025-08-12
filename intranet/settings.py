@@ -54,6 +54,7 @@ INSTALLED_APPS = [
     'apps.home',
     'apps.api',
     'apps.metadata',
+    'apps.datavis',
     'import_export',
     'django_dump_load_utf8',
     'storages',
