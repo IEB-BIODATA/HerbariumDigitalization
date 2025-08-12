@@ -27,6 +27,7 @@ from apps.catalog.models import Species, Synonymy, Family, Division, ClassName, 
     Region, ConservationStatus, PlantHabit, EnvironmentalHabit, Cycle, FinderView, CommonName, Kingdom, \
     SynonymyQuerySet, \
     SpeciesQuerySet, TaxonomicQuerySet, DownloadSearchRegistration, FORMAT_CHOICES
+from apps.datavis.models import DataVisualization
 from apps.digitalization.models import VoucherImported, BannerImage
 from intranet.utils import get_geometry_post
 from .serializers import SpeciesFinderSerializer, \
@@ -42,6 +43,7 @@ from .utils import filter_query_set, OpenAPIKingdom, OpenAPIClass, OpenAPIOrder,
     OpenAPILang, filter_by_geo, OpenAPIArea, OpenAPIGeometry
 from ..catalog.serializers import PlantHabitSerializer, EnvHabitSerializer, StatusSerializer, CycleSerializer, \
     RegionSerializer, ConservationStatusSerializer
+from ..datavis.serializers import DataVisualizationSerializer
 from ..catalog.utils import get_children
 from ..digitalization.utils import register_temporal_geometry
 from ..home.models import Alert
@@ -914,3 +916,19 @@ class RequestDownload(APIView):
             return format_dict[format_str]
         except KeyError:
             raise AttributeError(f"{format_str} not in possible format")
+
+class DataVisualizationView(APIView):
+    def get(self, request, name):
+        try:
+            dataviz = DataVisualization.objects.get(name=name)
+        except DataVisualization.DoesNotExist:
+            return Response({"error": "Not Found"}, status=status.HTTP_404_NOT_FOUND)
+        serializer = DataVisualizationSerializer(dataviz)
+        return Response(serializer.data)
+
+    def post(self, request):
+        serializer = DataVisualizationSerializer(data=request.data)
+        if serializer.is_valid():
+            serializer.save()
+            return Response(serializer.data, status=status.HTTP_201_CREATED)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
