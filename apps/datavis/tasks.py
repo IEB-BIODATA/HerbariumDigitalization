@@ -114,8 +114,8 @@ def digitalization_progress():
     species = Species.objects.filter(determined=True).count()
     families = Family.objects.all().count()
     genera = Genus.objects.all().count()
+    natives = Species.objects.filter(determined=True, status__in=[1,3]).count()
     endemic = Species.objects.filter(determined=True, status=1).count()
-    natives = Species.objects.filter(determined=True, status=3).count()
     data = {
         "fig_1": url, 
         "species": species, 
