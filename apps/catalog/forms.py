@@ -308,17 +308,18 @@ class CommonNameForm(forms.ModelForm):
     class Meta:
         model = CommonName
         fields = (
-            'name_es', 'name_en'
+            'name',
+            'language',
         )
 
         labels = {
-            'name_es': _('Spanish name'),
-            'name_en': _('English name')
+            'name': _('Name'),
+            'language': _('Language'),
         }
 
         widgets = {
-            'name_es': forms.TextInput(attrs={'required': True, 'class': "form-control"}),
-            'name_en': forms.TextInput(attrs={'required': True, 'class': "form-control"}),
+            'name': forms.TextInput(attrs={'required': True, 'class': "form-control"}),
+            'language': forms.Select(attrs={'class': 'form-control'}),
         }
 
 

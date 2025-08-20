@@ -44,11 +44,6 @@ class ConservationStatusOptions(TranslationOptions):
     fields = ('name',)
 
 
-@register(CommonName)
-class CommonNameTranslationOptions(TranslationOptions):
-    fields = ('name',)
-
-
 @register(CatalogView)
 class CatalogViewTranslationOptions(TranslationOptions):
     fields = ('status',)
@@ -57,11 +52,6 @@ class CatalogViewTranslationOptions(TranslationOptions):
 @register(RegionDistributionView)
 class RegionViewTranslationOptions(TranslationOptions):
     fields = ('region_name',)
-
-
-@register(FinderView)
-class FinderViewTranslationOptions(TranslationOptions):
-    fields = ('name',)
 
 
 @register(Binnacle)

@@ -60,11 +60,7 @@ TAXONOMIC_SERIALIZER = {
 
 
 def index(request: HttpRequest) -> HttpResponse:
-    return HttpResponse(
-        settings.SPECTACULAR_SETTINGS["TITLE"] +
-        ": " + settings.SPECTACULAR_SETTINGS["VERSION"] +
-        "<br>" + settings.SPECTACULAR_SETTINGS["DESCRIPTION"]
-    )
+    return redirect("swagger-ui")
 
 
 class InfoApi(APIView):

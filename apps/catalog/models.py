@@ -1220,6 +1220,8 @@ class CommonNameQuerySet(AttributeQuerySet):
 
 class CommonName(AttributeModel):
     name = models.CharField(verbose_name=_("Name"), max_length=300, blank=True, null=True)
+    language = models.CharField(verbose_name=_("Language"), choices=settings.LANGUAGES, max_length=5, default="es",
+                                blank=False, null=True)
 
     objects = CommonNameQuerySet.as_manager()
 
@@ -1913,8 +1915,6 @@ class FinderView(models.Model):
            unique_taxon_id AS id,
            'species'       AS type,
            scientific_name AS name,
-           scientific_name AS name_es,
-           scientific_name AS name_en,
            determined
     FROM catalog_species
     UNION ALL
@@ -1922,8 +1922,6 @@ class FinderView(models.Model):
            unique_taxon_id AS id,
            'synonymy'      AS type,
            scientific_name AS name,
-           scientific_name AS name_es,
-           scientific_name AS name_en,
            FALSE           AS determined
     FROM catalog_synonymy
     UNION ALL
@@ -1931,8 +1929,6 @@ class FinderView(models.Model):
            unique_taxon_id AS id,
            'kingdom'       AS type,
            name            AS name,
-           name            AS name_es,
-           name            AS name_en,
            FALSE           AS determined
     FROM catalog_kingdom
     UNION ALL
@@ -1940,8 +1936,6 @@ class FinderView(models.Model):
            unique_taxon_id AS id,
            'division'      AS type,
            name            AS name,
-           name            AS name_es,
-           name            AS name_en,
            FALSE           AS determined
     FROM catalog_division
     UNION ALL
@@ -1949,8 +1943,6 @@ class FinderView(models.Model):
            unique_taxon_id AS id,
            'class'         AS type,
            name            AS name,
-           name            AS name_es,
-           name            AS name_en,
            FALSE           AS determined
     FROM catalog_classname
     UNION ALL
@@ -1958,8 +1950,6 @@ class FinderView(models.Model):
            unique_taxon_id AS id,
            'order'         AS type,
            name            AS name,
-           name            AS name_es,
-           name            AS name_en,
            FALSE           AS determined
     FROM catalog_order
     UNION ALL
@@ -1967,8 +1957,6 @@ class FinderView(models.Model):
            unique_taxon_id AS id,
            'family'        AS type,
            name            AS name,
-           name            AS name_es,
-           name            AS name_en,
            FALSE           AS determined
     FROM catalog_family
     UNION ALL
@@ -1976,8 +1964,6 @@ class FinderView(models.Model):
            unique_taxon_id AS id,
            'genus'         AS type,
            name            AS name,
-           name            AS name_es,
-           name            AS name_en,
            FALSE           AS determined
     FROM catalog_genus
     UNION ALL
@@ -1985,8 +1971,6 @@ class FinderView(models.Model):
            id,
            'common_name'   AS type,
            name,
-           name_es,
-           name_en,
            FALSE           AS determined
     FROM catalog_commonname
     ORDER BY type, name;
@@ -1994,11 +1978,8 @@ class FinderView(models.Model):
     CREATE UNIQUE INDEX finder_view_id
         ON finder_view (id, type);
 
-    CREATE INDEX finder_view_trgm_es_id
-        ON finder_view USING gin(name_es gin_trgm_ops);
-
-    CREATE INDEX finder_view_trgm_en_id
-        ON finder_view USING gin(name_en gin_trgm_ops);
+    CREATE INDEX finder_view_trgm_id
+        ON finder_view USING gin(name gin_trgm_ops);
     """
     taxon_id = models.CharField()
     id = models.IntegerField(primary_key=True, blank=False, null=False, help_text="id")

@@ -2,6 +2,7 @@
 import logging
 
 from django.contrib import admin
+from django.contrib.admin import ModelAdmin
 from django.contrib.auth.admin import UserAdmin as BaseUserAdmin
 from django.contrib.auth.models import User
 from django.utils.safestring import mark_safe
@@ -14,7 +15,7 @@ from ..home.models import Profile
 
 
 @admin.register(Herbarium)
-class HerbariumAdmin(TranslationAdmin):
+class HerbariumAdmin(ModelAdmin):
     list_display = (['id', 'name', 'institution_code', 'collection_code', 'metadata'])
 
     def save_model(self, request, obj, form, change):
