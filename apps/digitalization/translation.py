@@ -3,11 +3,6 @@ from modeltranslation.translator import register, TranslationOptions
 from .models import Herbarium, GeneratedPage, Licence, Area, ProtectedArea, TemporalArea
 
 
-@register(Herbarium)
-class HerbariumTranslationOptions(TranslationOptions):
-    fields = ('name',)
-
-
 @register(GeneratedPage)
 class PageTranslationOptions(TranslationOptions):
     fields = ('name',)
