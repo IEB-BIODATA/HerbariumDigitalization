@@ -181,19 +181,11 @@
                             <tr>
                                 <td><strong>{% translate "Publication" %}</strong></td>
                                 <td>
-                                    {{ taxa_1.publication|default_if_none:"" }}
-                                </td>
-                            </tr>
-                            <tr>
-                                <td><strong>{% translate "Volume" %}</strong></td>
-                                <td>
-                                    {{ taxa_1.volume|default_if_none:"" }}
-                                </td>
-                            </tr>
-                            <tr>
-                                <td><strong>{% translate "Pages" %}</strong></td>
-                                <td>
-                                    {{ taxa_1.pages|default_if_none:"" }}
+                                    <ul>
+                                        {% for reference in taxa_1.publications %}
+                                            <li>{{ reference }}</li>
+                                        {% endfor %}
+                                    </ul>
                                 </td>
                             </tr>
                             <tr>
@@ -370,7 +362,11 @@
                                 <tr>
                                     <td><strong>{% translate "Publication" %}</strong></td>
                                     <td>
-                                        {{ taxa_2.publication|default_if_none:"" }}
+                                        <ul>
+                                            {% for reference in taxa_2.publications %}
+                                                <li>{{ reference }}</li>
+                                            {% endfor %}
+                                        </ul>
                                     </td>
                                 </tr>
                                 <tr>

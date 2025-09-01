@@ -153,6 +153,7 @@ class SpeciesSerializer(TaxonomicSerializer):
     cycle = SerializerMethodField()
     conservation_status = SerializerMethodField()
     status = ReadOnlyField(source='status.name')
+    publications = SerializerMethodField()
     synonyms = SynonymsSerializer(required=False, many=True)
     common_names = CommonNameSerializer(required=False, many=True)
     region = RegionSerializer(required=False, many=True)
@@ -168,8 +169,7 @@ class SpeciesSerializer(TaxonomicSerializer):
             'habit', 'cycle', 'status',
             'in_argentina', 'in_bolivia', 'in_peru',
             'minimum_height', 'maximum_height',
-            'notes', 'type_id', 'publication',
-            'volume', 'pages', 'year',
+            'notes', 'publications', 'type_id',
             'common_names', 'synonyms', 'region',
             'conservation_status', 'determined',
             'id_taxa_origin',
@@ -186,6 +186,9 @@ class SpeciesSerializer(TaxonomicSerializer):
 
     def get_conservation_status(self, obj: Species) -> List[str]:
         return get_conservation_status(obj)
+
+    def get_publications(self, obj: Species) -> List[str]:
+        return obj.references.all()
 
 
 class BinnacleSerializer(ModelSerializer):
