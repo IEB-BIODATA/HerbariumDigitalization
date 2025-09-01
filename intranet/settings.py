@@ -246,7 +246,7 @@ else:
 CSRF_TRUSTED_ORIGINS = ['https://*.herbariodigital.cl']
 CSRF_COOKIE_SECURE = not DEBUG
 
-TAXA_ID_PREF = 'https://catalogoplantas.udec.cl/taxa/'
+TAXA_ID_PREF = 'urn:catalog:catalogoplantas.udec.cl:taxa:'
 
 REST_FRAMEWORK = {
     'DEFAULT_PAGINATION_CLASS': 'rest_framework.pagination.PageNumberPagination',
