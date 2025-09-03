@@ -73,7 +73,7 @@ def generate_dwc_archive(self, option: int):
                     self.update_state(state="PROGRESS", meta={"step": i + current_total, "total": current_total + common_objects.count(), "logs": logger[0].get_logs()})
                     for spp in common_name.species_set.all():
                         common_names_result.append([
-                            spp.taxon_id, EMLLanguage.SPA, common_name.name_es
+                            spp.taxon_id, EMLLanguage.get_language(common_name.language), common_name.name
                         ])
                 darwin_core_archive.extensions.append(vernacular_extension)
                 darwin_core_archive.extensions[0].as_pandas(_no_interaction=True)
