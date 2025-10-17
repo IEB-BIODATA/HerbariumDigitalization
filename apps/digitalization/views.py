@@ -875,7 +875,7 @@ def vouchers_download(request):
             'georeferenced_date', 'decimal_latitude', 'decimal_longitude',
             'identified_by', 'date_identified',
             'decimal_latitude_public', 'decimal_longitude_public',
-            'priority',
+            'priority', 'voucher_state',
         ]
         logging.debug("Filtering voucher according to state")
         available_herbaria = [herbarium.collection_code for herbarium in HerbariumMember.objects.get(
