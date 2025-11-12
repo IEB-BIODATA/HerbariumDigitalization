@@ -292,6 +292,8 @@ class AttributeModel(models.Model):
     class Meta:
         abstract = True
 
+    def save(self, user, *args, **kwargs):
+        return super().save(*args, **kwargs)
 
 class StatusQuerySet(AttributeQuerySet):
     __attribute_name__ = "status"
