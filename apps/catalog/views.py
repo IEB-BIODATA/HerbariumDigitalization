@@ -6,7 +6,7 @@ import datetime as dt
 import logging
 from django.views import View
 from django.views.decorators.http import require_GET, require_POST
-from typing import Type
+from typing import Type, Union
 
 import tablib
 from django import forms
@@ -23,7 +23,7 @@ from intranet.utils import paginated_table, TaskProcessLogger
 from .forms import DivisionForm, ClassForm, OrderForm, FamilyForm, GenusForm, SpeciesForm, SynonymyForm, BinnacleForm, \
     CommonNameForm, ReferenceForm, AuthorForm
 from .models import Species, CatalogView, SynonymyView, RegionDistributionView, Division, ClassName, Order, Family, \
-    Genus, Synonymy, Region, CommonName, Binnacle, PlantHabit, EnvironmentalHabit, Cycle, TaxonomicModel, \
+    Genus, Synonymy, Region, CommonName, Binnacle, PlantHabit, EnvironmentalHabit, Cycle, TaxonomicModel, AttributeModel, \
     ConservationStatus, FinderView, Author, References
 from .serializers import DivisionSerializer, ClassSerializer, OrderSerializer, FamilySerializer, GenusSerializer, \
     CatalogViewSerializer, SpeciesSerializer, SynonymsSerializer, BinnacleSerializer, CommonNameSerializer
@@ -85,7 +85,7 @@ def catalog_download(request):
 
 def __catalog_table__(
         request: HttpRequest,
-        model: Type[TaxonomicModel],
+        model: Type[Union[TaxonomicModel, AttributeModel]],
         serializer: SerializerMetaclass,
         sort_by_func: dict[int, str],
         model_name: str,

@@ -269,6 +269,26 @@ class AttributeModel(models.Model):
     created_by = models.ForeignKey(User, verbose_name=_("Created by"), on_delete=models.PROTECT, default=1,
                                    editable=False)
 
+    @staticmethod
+    @abstractmethod
+    def get_query_name(search: str) -> Q:
+        return Q(name__icontains=search)
+
+    @staticmethod
+    @abstractmethod
+    def get_parent_query(search: str) -> Q:
+        pass
+
+    @staticmethod
+    @abstractmethod
+    def get_created_by_query(search: str) -> Q:
+        return Q(created_by__username__icontains=search)
+
+    @property
+    @abstractmethod
+    def parent(self) -> AttributeModel | None:
+        return None
+
     class Meta:
         abstract = True
 
@@ -1239,6 +1259,18 @@ class CommonName(AttributeModel):
 
     def __repr__(self):
         return "%s" % self.name
+
+    @staticmethod
+    def get_query_name(search: str) -> Q:
+        return Q(name__icontains=search)
+
+    @staticmethod
+    def get_parent_query(search: str) -> Q:
+        return Q(species__scientific_name__icontains=search)
+
+    @staticmethod
+    def get_created_by_query(search: str) -> Q:
+        return Q(created_by__username__icontains=search)
 
     class Meta:
         verbose_name = _("Common Name")
