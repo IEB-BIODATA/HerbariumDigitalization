@@ -274,7 +274,7 @@ Lab=false
 [Crop]
 Enabled=true
 X=330
-Y=170
+Y=350
 W=3570
 H=5340
 FixedRatio=false
