@@ -39,7 +39,7 @@ urlpatterns = [
     re_path(r'^common_names/$', CommonNameList.as_view()),
     re_path(r'^menu/$', MenuApiView.as_view()),
     re_path(r'^names/$', NameApiView.as_view()),
-    re_path(r'^finder/(?P<text>[\w ]+)/$', FinderApiView.as_view()),
+    re_path(r'^finder/(?P<text>[-\w\s]+)/$', FinderApiView.as_view()),
     re_path(r'^region/(?P<pk>\d+)/$', RegionDetails.as_view()),
     re_path(r'^species_list/$', SpeciesListApiView.as_view()),
     re_path(r'^taxa/(?P<unique_taxon_id>\d+)/$', RetrieveTaxaApiView.as_view()),
