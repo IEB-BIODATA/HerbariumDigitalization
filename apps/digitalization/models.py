@@ -72,6 +72,14 @@ TYPIFICATION = (
     (5, _("Paratype")),
     (6, _("Neotype")),
     (7, _("Epitype")),
+    (8, _("Isolectotype")),
+    (9, _("Isoneotype")),
+    (10, _("Topotype")),
+    (11, _("Iconotype")),
+    (12, _("Clastotype")),
+    (13, _("Cotype")),
+    (14, _("Archeotype")),
+    (15, _("Isosyntype")),
 )
 
 DCW_SQL = {
@@ -614,7 +622,7 @@ class GalleryImage(models.Model):
         verbose_name=_("Licence"),
         on_delete=models.SET_NULL,
         null=True,
-        default=Licence.objects.filter(id=1).first().pk
+        #default=Licence.objects.filter(id=1).first().pk
     )
     upload_by = models.ForeignKey(User, verbose_name=_("Upload by"), on_delete=models.PROTECT, default=1, editable=False)
     upload_at = models.DateTimeField(verbose_name=_("Upload at"), auto_now_add=True, blank=True, null=True, editable=False)
