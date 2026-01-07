@@ -13,6 +13,20 @@
                             <img id="{{ field.name }}Preview" src="{{ field.value.url }}" style="height: {% if height %}{{ height }}{% else %}auto{% endif %}; width: {% if width %}{{ width }}{% else %}auto{% endif %}" loading="lazy" alt="{% translate 'Preview' %}">
                         </div>
                     </div>
+                {% else %}
+                    <label class="col-sm-2 col-form-label" for="{{ field.id_for_label }}">
+                        {{ field.label_tag }}
+                    </label>
+                    <div class="col-sm-10">
+                        {% if field.errors %}
+                            {{ field|add_class:'is-invalid' }}
+                            <div class="invalid-feedback">
+                                {{ field.errors|join:", " }}
+                            </div>
+                        {% else %}
+                            {{ field }}
+                        {% endif %}
+                    </div>
                 {% endif %}
             {% else %}
                 <label class="col-sm-2 col-form-label" for="{{ field.id_for_label }}">

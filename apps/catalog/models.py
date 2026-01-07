@@ -1160,7 +1160,7 @@ class ScientificName(TaxonomicModel):
         if self.variety is not None:
             return f"{sp_name} var. {self.variety}"
         if self.subspecies is not None:
-            return f"{sp_name} fma. {self.subspecies}"
+            return f"{sp_name} subsp. {self.subspecies}"
         return sp_name
 
     @property

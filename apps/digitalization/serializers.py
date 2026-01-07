@@ -162,6 +162,7 @@ class GallerySerializer(HyperlinkedModelSerializer):
     species = ReadOnlyField(source='scientific_name')
     licence = ReadOnlyField(source='licence.short_name')
     upload_by = ReadOnlyField(source='upload_by.username')
+    specimen = ReadOnlyField(source='specimen.code')
 
     class Meta:
         model = GalleryImage

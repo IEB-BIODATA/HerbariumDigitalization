@@ -698,16 +698,16 @@ def species_gallery(request, species_id: int):
     gallery = GalleryImage.objects.filter(scientific_name=species)
     return render(request, 'digitalization/species_gallery.html', {
         'species': species,
-        'gallery': [GallerySerializer(image).data for image in gallery],
+        'gallery': [GallerySerializer(image, context={'request': request}).data for image in gallery],
     })
 
 
 @login_required
 def new_gallery_image(request, species_id: int) -> HttpResponse:
-    species = Species.objects.get(pk=species_id)
-    form = GalleryImageForm(instance=None)
+    species = Species.objects.get(unique_taxon_id=species_id)
+    form = GalleryImageForm(species=species, instance=None)
     if request.method == "POST":
-        form = GalleryImageForm(request.POST, request.FILES)
+        form = GalleryImageForm(request.POST, request.FILES, species=species)
         if form.is_valid():
             gallery = form.save(commit=False)
             gallery.upload_by = request.user
@@ -728,9 +728,9 @@ def new_gallery_image(request, species_id: int) -> HttpResponse:
 def modify_gallery_image(request, gallery_id):
     gallery = GalleryImage.objects.get(pk=gallery_id)
     species = gallery.scientific_name
-    form = GalleryImageForm(instance=gallery)
+    form = GalleryImageForm(species=species, instance=gallery)
     if request.method == "POST":
-        form = GalleryImageForm(request.POST, request.FILES, instance=gallery)
+        form = GalleryImageForm(request.POST, request.FILES, species=species, instance=gallery)
         if form.is_valid():
             gallery = form.save()
             gallery.generate_thumbnail()

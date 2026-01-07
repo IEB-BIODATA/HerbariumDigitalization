@@ -6,7 +6,7 @@ from django.forms import inlineformset_factory
 from django.utils.safestring import mark_safe
 from django.utils.translation import gettext_lazy as _
 
-from .models import Herbarium, ProtectedArea, TypeStatus, TYPIFICATION
+from .models import Herbarium, ProtectedArea, TypeStatus, TYPIFICATION, BiodataCode
 from .models import PriorityVouchersFile, ColorProfileFile, GeneratedPage
 from .models import VoucherImported, GalleryImage, Licence
 from ..catalog.models import Species, Synonymy, ScientificName
@@ -181,9 +181,12 @@ class TypeStatusFormSet(forms.BaseInlineFormSet):
 
 class GalleryImageForm(forms.ModelForm):
     def __init__(self, *args, **kwargs):
+        species = kwargs.pop('species')
         super(GalleryImageForm, self).__init__(*args, **kwargs)
         self.fields['licence'].choices = list(
             self.fields['licence'].choices) + [("", _("(Add new licence)"))]
+        print(BiodataCode.objects.filter(voucherimported__scientific_name=species))
+        self.fields['specimen'].queryset = BiodataCode.objects.filter(voucherimported__scientific_name=species)
 
     class Meta:
         model = GalleryImage
@@ -198,7 +201,7 @@ class GalleryImageForm(forms.ModelForm):
             'image': forms.FileInput(attrs={'class': 'form-control'}),
             'taken_by': forms.TextInput(attrs={'class': 'form-control'}),
             'licence': forms.Select(attrs={'class': 'form-control'}),
-            'specimen': forms.TextInput(attrs={'class': 'form-control'}),
+            'specimen': forms.Select(attrs={'class': "form-control"}),
         }
 
 

@@ -124,7 +124,7 @@
         <div class="card-body">
             <div class="table-responsive">
                 <div id="loading" class="col-sm-12"></div>
-                <form action="{% if gallery is None %}{% url 'new_gallery_image' species_id=species.id %}{% else %}{% url 'modify_gallery_image' gallery_id=gallery.id %}{% endif %}" method="post" enctype="multipart/form-data">
+                <form action="{% if gallery is None %}{% url 'new_gallery_image' species_id=species.unique_taxon_id %}{% else %}{% url 'modify_gallery_image' gallery_id=gallery.id %}{% endif %}" method="post" enctype="multipart/form-data">
                     {% csrf_token %}
                     {% include "form_base.html" with form=form height="300px"%}
                     <div style="display: flex; justify-content: space-around; margin: 20px;">
@@ -134,7 +134,7 @@
                             {% endif %}
                             {% translate "Photo" %}
                         </button>
-                        <a href="{% url 'species_gallery' species_id=species.id %}" class="btn btn-danger">{% translate "Cancel" %}</a>
+                        <a href="{% url 'species_gallery' species_id=species.unique_taxon_id %}" class="btn btn-danger">{% translate "Cancel" %}</a>
                     </div>
                 </form>
             </div>
