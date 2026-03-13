@@ -163,8 +163,9 @@ def etiquette_picture(voucher_id, logger: logging.Logger = None):
             (0, 0, 0), anchor="ms", font=normal_font
         )
         if voucher.locality is not None and voucher.locality != "":
+            locality = textwrap.fill(str(voucher.locality), width=60, break_long_words=False)
             voucher_image_editable.text(
-                parameters["LOCALITY_POS"], voucher.locality,
+                parameters["LOCALITY_POS"], locality,
                 (0, 0, 0), font=normal_font
             )
         if voucher.georeferenced_date:
