@@ -186,7 +186,7 @@ class GalleryImageForm(forms.ModelForm):
         self.fields['licence'].choices = list(
             self.fields['licence'].choices) + [("", _("(Add new licence)"))]
         print(BiodataCode.objects.filter(voucherimported__scientific_name=species))
-        self.fields['specimen'].queryset = BiodataCode.objects.filter(voucherimported__scientific_name=species)
+        self.fields['specimen'].queryset = BiodataCode.objects.filter(voucherimported__scientific_name=species).order_by('code')
 
     class Meta:
         model = GalleryImage

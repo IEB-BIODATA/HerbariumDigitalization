@@ -39,7 +39,7 @@
                 <form id="taxon-form" action="{% url 'merge_taxa' taxa_1=taxa_1.unique_taxon_id taxa_2=0 %}" method="get" class="form-horizontal">
                     {% translate "Select taxon to join" %} <b>{{ taxa_1.scientific_name}}</b>:<br>
                     <select id="select-taxon" class="selectpicker">
-                        <option value="0"></option>c
+                        <option value="0"></option>
                         {% for taxa in species %}
                             <option value="{{ taxa.unique_taxon_id }}">{{ taxa.scientific_name }}</option>
                         {% endfor %}

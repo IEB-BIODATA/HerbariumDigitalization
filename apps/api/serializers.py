@@ -221,6 +221,7 @@ class LicenceSerializer(HyperlinkedModelSerializer):
 
 class GallerySerializer(HyperlinkedModelSerializer):
     licence = LicenceSerializer()
+    specimen = SerializerMethodField()
 
     class Meta:
         model = GalleryImage
@@ -228,6 +229,12 @@ class GallerySerializer(HyperlinkedModelSerializer):
             'id', 'image', 'thumbnail', 'aspect_ratio',
             'specimen', 'taken_by', 'licence',
         ]
+
+    def get_specimen(self, obj: GalleryImage) -> str:
+        if obj.specimen is None:
+            return None
+        else:
+            return obj.specimen.code
 
 
 class SpeciesDetailsSerializer(SpeciesSerializer):
