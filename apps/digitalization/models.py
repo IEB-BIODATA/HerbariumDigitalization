@@ -399,7 +399,7 @@ class VoucherImported(models.Model):
     decimal_longitude = models.FloatField(verbose_name=_("Longitude"), blank=True, null=True)
     identified_by = models.CharField(verbose_name=_("Identified by"), max_length=100, blank=True, null=True)
     date_identified = models.IntegerField(verbose_name=_("Date Identified"), max_length=100, blank=True, null=True)
-    image = models.ImageField(verbose_name=_("Image"), storage=IAPrivateMediaStorage(), blank=True, null=True)
+    image = models.ImageField(verbose_name=_("Image"), storage=GlacierPrivateMediaStorage(), blank=True, null=True)
     image_resized_10 = models.ImageField(verbose_name=_("%d Times Smaller Image Scale") % 10,
                                          storage=IAPrivateMediaStorage(), blank=True, null=True)
     image_resized_60 = models.ImageField(verbose_name=_("%d Times Smaller Image Scale") % 60,
@@ -448,7 +448,7 @@ class VoucherImported(models.Model):
 
     def image_voucher_jpg_raw_url(self):
         if self.image:
-            return self.image.url
+            return self.image_resized_60.url
         else:
             return '#'
 

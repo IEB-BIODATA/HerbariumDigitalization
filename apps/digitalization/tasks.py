@@ -138,7 +138,7 @@ def etiquette_picture(voucher_id, logger: logging.Logger = None):
         logger.info("Working with {}".format(voucher.id))
         parameters = PARAMETERS[voucher.herbarium.collection_code]
         logger.debug(parameters)
-        image_file = IAPrivateMediaStorage().open(voucher.image.name, "rb")
+        image_file = PublicMediaStorage().open(voucher.image_public.name, "rb")
         voucher_image = Image.open(image_file)
         voucher_image_editable = ImageDraw.Draw(voucher_image)
         voucher_image_editable.rectangle(parameters["RECTANGLE"], fill='#d7d6e0', outline="black", width=4)
@@ -279,6 +279,9 @@ def scheduled_postprocess(input_folder: str, temp_folder: str, log_folder: str):
                                     voucher.save()
                                 with open(filename, "rb") as file:
                                     voucher.upload_image(file)
+                                    file.seek(0)
+                                    voucher.upload_image(file, public=True)
+                                    file.seek(0)
                                     image = Image.open(file)
                                     for scale_percent in [10, 60]:
                                         resized_image = change_image_resolution(image, scale_percent)
@@ -504,6 +507,9 @@ def process_pending_vouchers(self, pending_vouchers: List[str], user: int) -> st
             })
             with open(os.path.join(temp_folder, raw_file.replace(".CR3", ".jpg")), "rb") as image_file:
                 voucher_imported.upload_image(image_file)
+                image_file.seek(0)
+                voucher_imported.upload_image(image_file, public=True)
+                image_file.seek(0)
                 image = Image.open(image_file)
                 for scale_percent in [10, 60]:
                     resized_image = change_image_resolution(image, scale_percent)
