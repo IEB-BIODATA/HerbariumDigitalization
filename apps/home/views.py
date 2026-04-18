@@ -13,7 +13,7 @@ from django.shortcuts import render, redirect
 from django.utils import translation
 from django.views.decorators.http import require_GET
 
-from apps.digitalization.models import BiodataCode, Herbarium
+from apps.digitalization.models import Herbarium, VoucherImported
 from apps.digitalization.storage_backends import PrivateMediaStorage
 from apps.home.forms import ProfileForm, UserForm
 from apps.home.models import Profile, DarwinCoreArchiveFile
@@ -23,14 +23,14 @@ from apps.metadata.models import EML
 
 @login_required
 def index(request):
-    count_total_codes = BiodataCode.objects.filter(
+    count_total_codes = VoucherImported.objects.filter(
         qr_generated=True
     ).order_by('page__created_at__date').annotate(
         day=ExtractDay('page__created_at'),
         month=ExtractMonth('page__created_at'),
         year=ExtractYear('page__created_at'),
     ).values('day', 'month', 'year').annotate(count=Count('*')).values('day', 'month', 'year', 'count')
-    count_scanned_codes = BiodataCode.objects.filter(
+    count_scanned_codes = VoucherImported.objects.filter(
         Q(qr_generated=True, voucher_state=1) |
         Q(qr_generated=True, voucher_state=7) |
         Q(qr_generated=True, voucher_state=8)
@@ -43,10 +43,10 @@ def index(request):
     stands = []
     digitalized = []
     for herbarium in herbariums:
-        stands.append(BiodataCode.objects.filter(
+        stands.append(VoucherImported.objects.filter(
             herbarium__collection_code=herbarium, voucher_state=0
         ).count())
-        digitalized.append(BiodataCode.objects.filter(
+        digitalized.append(VoucherImported.objects.filter(
             Q(voucher_state=1) | Q(voucher_state=7) | Q(voucher_state=8),
             herbarium__collection_code=herbarium
         ).count())

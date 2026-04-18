@@ -6,7 +6,7 @@ from django.forms import inlineformset_factory
 from django.utils.safestring import mark_safe
 from django.utils.translation import gettext_lazy as _
 
-from .models import Herbarium, ProtectedArea, TypeStatus, TYPIFICATION, BiodataCode
+from .models import Herbarium, ProtectedArea, TypeStatus, TYPIFICATION
 from .models import PriorityVouchersFile, ColorProfileFile, GeneratedPage
 from .models import VoucherImported, GalleryImage, Licence
 from ..catalog.models import Species, Synonymy, ScientificName
@@ -185,8 +185,7 @@ class GalleryImageForm(forms.ModelForm):
         super(GalleryImageForm, self).__init__(*args, **kwargs)
         self.fields['licence'].choices = list(
             self.fields['licence'].choices) + [("", _("(Add new licence)"))]
-        print(BiodataCode.objects.filter(voucherimported__scientific_name=species))
-        self.fields['specimen'].queryset = BiodataCode.objects.filter(voucherimported__scientific_name=species).order_by('code')
+        self.fields['specimen'].queryset = VoucherImported.objects.filter(scientific_name=species).order_by('code')
 
     class Meta:
         model = GalleryImage

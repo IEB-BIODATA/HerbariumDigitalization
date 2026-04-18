@@ -14,7 +14,6 @@ import cv2
 import numpy as np
 import pandas as pd
 import pytesseract
-import pytz
 from PIL import Image, ImageDraw, ImageFont
 from celery import shared_task
 from celery.exceptions import Ignore
@@ -28,7 +27,7 @@ from django.db.models import Model
 from apps.catalog.models import Species, Synonymy
 from apps.digitalization.models import DCW_SQL, PostprocessingLog
 from apps.digitalization.models import GalleryImage, BannerImage
-from apps.digitalization.models import VoucherImported, BiodataCode, ColorProfileFile, PriorityVouchersFile
+from apps.digitalization.models import VoucherImported, ColorProfileFile, PriorityVouchersFile
 from apps.digitalization.storage_backends import PrivateMediaStorage, PublicMediaStorage, IAPrivateMediaStorage
 from apps.digitalization.utils import SessionFolder
 from apps.digitalization.utils import cr3_to_dng, dng_to_jpeg, dng_to_jpeg_color_profile
@@ -257,43 +256,34 @@ def scheduled_postprocess(input_folder: str, temp_folder: str, log_folder: str):
                         json_qr = json.loads(qr)
                         code_voucher = json_qr['code']
                         logging.info("Retrieving info...")
-                        biodata_codes = BiodataCode.objects.filter(code=code_voucher)
+                        biodata_codes = VoucherImported.objects.filter(code=code_voucher)
                         if biodata_codes.count() == 0:
                             process_logger.error("Error retrieving data on qr for file {} and code {}".format(
                                 filename, code_voucher
                             ))
                         else:
-                            biodata_code: BiodataCode = biodata_codes[0]
+                            biodata_code: VoucherImported = biodata_codes[0]
                             dng_to_jpeg_color_profile(
                                 temp_folder, temp_folder,
                                 session_folder.get_institution(),
                                 biodata_code.page.color_profile.file.url,
                                 process_logger, log_cache
                             )
-                            vouchers = VoucherImported.objects.filter(biodata_code__id=biodata_code.id)
-                            if vouchers.count() == 1:
-                                voucher: VoucherImported = vouchers[0]
-                                raw_image_path = filename.replace(temp_folder, input_folder).replace(".jpg", ".CR3")
-                                with open(raw_image_path, "rb") as file:
-                                    voucher.upload_raw_image(file)
-                                    voucher.save()
-                                with open(filename, "rb") as file:
-                                    voucher.upload_image(file)
-                                    file.seek(0)
-                                    voucher.upload_image(file, public=True)
-                                    file.seek(0)
-                                    image = Image.open(file)
-                                    for scale_percent in [10, 60]:
-                                        resized_image = change_image_resolution(image, scale_percent)
-                                        voucher.upload_scaled_image(resized_image, scale_percent)
-                                voucher.save()
-                                done = etiquette_picture(voucher.id, logger=process_logger)
-                            else:
-                                process_logger.error(
-                                    "No voucher, or more than one, associated with ocurrence {}".format(
-                                        biodata_code.id
-                                    )
-                                )
+                            raw_image_path = filename.replace(temp_folder, input_folder).replace(".jpg", ".CR3")
+                            with open(raw_image_path, "rb") as file:
+                                biodata_code.upload_raw_image(file)
+                                biodata_code.save()
+                            with open(filename, "rb") as file:
+                                biodata_code.upload_image(file)
+                                file.seek(0)
+                                biodata_code.upload_image(file, public=True)
+                                file.seek(0)
+                                image = Image.open(file)
+                                for scale_percent in [10, 60]:
+                                    resized_image = change_image_resolution(image, scale_percent)
+                                    biodata_code.upload_scaled_image(resized_image, scale_percent)
+                            biodata_code.save()
+                            done = etiquette_picture(biodata_code.id, logger=process_logger)
                         if done:
                             log_object.processed_images += 1
                     else:
@@ -614,7 +604,7 @@ def upload_priority_vouchers(self, priority_voucher: int):
                         priorities.herbarium.collection_code,
                         row["catalog_number"]
                     )
-                    biodata_codes = BiodataCode.objects.filter(code=code).all()
+                    biodata_codes = VoucherImported.objects.filter(code=code).all()
                     if len(biodata_codes) != 0:
                         logger.warning(f"Code {code} already on database")
                         biodata_code = biodata_codes[0]
@@ -628,16 +618,6 @@ def upload_priority_vouchers(self, priority_voucher: int):
                         else:
                             logger.debug(f"Overwriting code '{code}'")
                             biodata_code.delete()
-                    biodata_code = BiodataCode(
-                        herbarium=priorities.herbarium,
-                        code=code,
-                        catalog_number=row["catalog_number"],
-                        created_by=priorities.created_by,
-                        created_at=dt.datetime.now(tz=pytz.timezone('America/Santiago')),
-                        qr_generated=False
-                    )
-                    biodata_code.save()
-                    logger.debug(f"New occurrence ({biodata_code.id}) added with code {code}")
                     species, info = get_species(row, logger)
                     if species is None:
                         species_errors.append(info)
@@ -645,7 +625,7 @@ def upload_priority_vouchers(self, priority_voucher: int):
                         continue
                     try:
                         voucher_imported = VoucherImported.from_pandas_row(
-                            row, priorities, species=species, biodata_code=biodata_code, logger=logger
+                            row, priorities, species=species, logger=logger
                         )
                     except AssertionError as e:
                         voucher_assertion = True
@@ -653,6 +633,7 @@ def upload_priority_vouchers(self, priority_voucher: int):
                         voucher_errors.append(row)
                         continue
                     voucher_imported.save()
+                    logger.debug(f"New occurrence ({biodata_code.id}) added with code {code}")
                 except Exception as e:
                     logger.error(e, exc_info=True)
                     errors.append(row)

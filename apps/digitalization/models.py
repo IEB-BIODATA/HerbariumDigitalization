@@ -171,29 +171,29 @@ class GeneratedPage(models.Model):
 
     @property
     def total(self):
-        return BiodataCode.objects.filter(page__id=self.pk).count()
+        return VoucherImported.objects.filter(page__id=self.pk).count()
 
     @property
     def stateless_count(self):
-        return BiodataCode.objects.filter(page__id=self.pk, voucher_state=0).count()
+        return VoucherImported.objects.filter(page__id=self.pk, voucher_state=0).count()
 
     @property
     def found_count(self):
-        return BiodataCode.objects.filter(page__id=self.pk, voucher_state=1).count()
+        return VoucherImported.objects.filter(page__id=self.pk, voucher_state=1).count()
 
     @property
     def not_found_count(self):
-        return BiodataCode.objects.filter(page__id=self.pk, voucher_state=2).count()
+        return VoucherImported.objects.filter(page__id=self.pk, voucher_state=2).count()
 
     @property
     def digitalized(self):
-        return BiodataCode.objects.filter(
+        return VoucherImported.objects.filter(
             Q(page__id=self.pk) & (Q(voucher_state=7) | Q(voucher_state=8))
         ).count()
 
     @property
     def qr_count(self):
-        return BiodataCode.objects.filter(
+        return VoucherImported.objects.filter(
             Q(page__id=self.pk) & Q(qr_generated=True)
         ).count()
 
@@ -226,30 +226,6 @@ class GeneratedPage(models.Model):
 
     def natural_key(self) -> Tuple[Any, CharField]:
         return self.pk, self.name
-
-
-class BiodataCode(models.Model):
-    herbarium = models.ForeignKey(Herbarium, verbose_name=_("Herbarium"), on_delete=models.CASCADE)
-    code = models.CharField(verbose_name=_("Code"), max_length=30, blank=False, null=False, unique=True)
-    catalog_number = models.IntegerField(verbose_name=_("Catalog Number"), blank=True, null=True)
-    created_at = models.DateTimeField(verbose_name=_("Created at"), blank=True, null=True, editable=False)
-    created_by = models.ForeignKey(User, verbose_name=_("Created by"), on_delete=models.PROTECT)
-    qr_generated = models.BooleanField(verbose_name=_("Generated QR?"), default=False)
-    page = models.ForeignKey(GeneratedPage, verbose_name=_("Page"), on_delete=models.CASCADE, blank=True, null=True)
-    voucher_state = models.IntegerField(verbose_name=_("Voucher State"), choices=VOUCHER_STATE, default=0)
-
-    class Meta:
-        verbose_name = _("BIODATA Code")
-        verbose_name_plural = _("BIODATA Codes")
-
-    def __unicode__(self):
-        return self.code
-
-    def __str__(self):
-        return "%s " % self.code
-
-    def natural_key(self) -> Tuple[Any, CharField]:
-        return self.pk, self.code
 
 
 class HerbariumMember(models.Model):
@@ -380,8 +356,9 @@ class VoucherImportedQuerySet(CatalogQuerySet):
 class VoucherImported(models.Model):
     vouchers_file = models.ForeignKey(PriorityVouchersFile, verbose_name=_("Priority Vouchers File"),
                                       on_delete=models.CASCADE, blank=True, null=True)
-    biodata_code = models.ForeignKey(BiodataCode, verbose_name=_("BIODATA Code"), on_delete=models.CASCADE,
-                                     blank=True, null=True)
+    code = models.CharField(verbose_name=_("Code"), max_length=30, blank=False, null=False, unique=True)
+
+
     herbarium = models.ForeignKey(Herbarium, verbose_name=_("Herbarium"), on_delete=models.CASCADE,
                                   blank=True, null=True)
     other_catalog_numbers = models.CharField(verbose_name=_("Other Catalog Numbers"), max_length=13,
@@ -415,12 +392,23 @@ class VoucherImported(models.Model):
     decimal_longitude_public = models.FloatField(verbose_name=_("Public Longitude"), blank=True, null=True)
     point_public = models.PointField(verbose_name=_("Public Point"), null=True, blank=True, )
     priority = models.IntegerField(verbose_name=_("Priority"), blank=True, null=True, default=3)
+    created_at = models.DateTimeField(verbose_name=_("Created at"), blank=True, null=True, editable=False)
+    created_by = models.ForeignKey(User, verbose_name=_("Created by"), on_delete=models.PROTECT)
+    qr_generated = models.BooleanField(verbose_name=_("Generated QR?"), default=False)
+    page = models.ForeignKey(GeneratedPage, verbose_name=_("Page"), on_delete=models.CASCADE, blank=True, null=True)
+    voucher_state = models.IntegerField(verbose_name=_("Voucher State"), choices=VOUCHER_STATE, default=0)
 
     objects = VoucherImportedQuerySet.as_manager()
 
     class Meta:
         verbose_name = _("Voucher")
         verbose_name_plural = _("Vouchers")
+
+    def __unicode__(self):
+        return self.code
+
+    def __str__(self):
+        return "%s " % self.code
 
     def generate_etiquette(self):
         if self.biodata_code.voucher_state == 7:
@@ -515,18 +503,10 @@ class VoucherImported(models.Model):
             row: pd.Series,
             priority_file: PriorityVouchersFile,
             species: Species = None,
-            biodata_code: BiodataCode = None,
             logger: logging.Logger = None
     ) -> VoucherImported:
         if species is None:
             species = Species.objects.firter(scientific_name_db=row["scientific_name"].upper().strip()).first()
-        if biodata_code is None:
-            biodata_code = BiodataCode.objects.filter(
-                code="{}:{}:{:07d}".format(
-                    priority_file.herbarium.institution_code,
-                    priority_file.herbarium.collection_code,
-                    row['catalog_number']
-                )).first()
         if logger is None:
             logger = logging.getLogger(__name__)
 
@@ -563,10 +543,13 @@ class VoucherImported(models.Model):
                     f"POINT({decimal_longitude_public} {decimal_latitude_public})",
                     srid=4326
                 )
-
         return VoucherImported(
             vouchers_file=priority_file,
-            biodata_code=biodata_code,
+            code="{}:{}:{:07d}".format(
+                priority_file.herbarium.institution_code,
+                priority_file.herbarium.collection_code,
+                row['catalog_number']
+            ),
             herbarium=priority_file.herbarium,
             other_catalog_numbers=row['other_catalog_numbers'],
             catalog_number=row['catalog_number'],
@@ -591,7 +574,10 @@ class VoucherImported(models.Model):
             decimal_latitude_public=decimal_latitude_public,
             decimal_longitude_public=decimal_longitude_public,
             point_public=point_public,
-            priority=1 if "priority" not in row.keys() else row["priority"]
+            priority=1 if "priority" not in row.keys() else row["priority"],
+            created_by=priority_file.created_by,
+            created_at=datetime.now(tz=pytz.timezone('America/Santiago')),
+            qr_generated=False
         )
 
 
@@ -615,7 +601,7 @@ class GalleryImage(models.Model):
     image = models.ImageField(verbose_name=_("Image"), upload_to="gallery", storage=PublicMediaStorage())
     thumbnail = models.ImageField(verbose_name=_("Thumbnail"), upload_to="gallery", storage=PublicMediaStorage(), null=True)
     aspect_ratio = models.FloatField(verbose_name=_("Aspect Ratio"), null=True, blank=True)
-    specimen = models.ForeignKey(BiodataCode, verbose_name=_("Specimen"), on_delete=models.SET_NULL, blank=True, null=True)
+    specimen = models.ForeignKey(VoucherImported, verbose_name=_("Specimen"), on_delete=models.SET_NULL, blank=True, null=True)
     taken_by = models.CharField(verbose_name=_("Taken by"), max_length=300, blank=True, null=True)
     licence = models.ForeignKey(
         Licence,

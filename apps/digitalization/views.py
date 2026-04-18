@@ -11,7 +11,6 @@ import numpy
 import pytz
 import qrcode
 import tablib
-from celery.result import AsyncResult
 from django.contrib.auth.decorators import login_required
 from django.contrib.gis.geos import GEOSGeometry
 from django.core import serializers
@@ -30,7 +29,7 @@ from apps.catalog.models import Species
 from intranet.utils import paginated_table
 from .forms import LoadColorProfileForm, VoucherImportedForm, GalleryImageForm, LicenceForm, PriorityVoucherForm, \
     GeneratedPageForm, TypeStatusFormSet, TypeStatusForm
-from .models import BiodataCode, GeneratedPage, VoucherImported, PriorityVouchersFile, VouchersView, \
+from .models import GeneratedPage, VoucherImported, PriorityVouchersFile, VouchersView, \
     GalleryImage, BannerImage, VOUCHER_STATE, PostprocessingLog, TypeStatus, DCW_SQL, HerbariumMember
 from .serializers import PriorityVouchersSerializer, GeneratedPageSerializer, VoucherSerializer, \
     SpeciesGallerySerializer, GallerySerializer, PostprocessingLogSerializer
@@ -196,7 +195,7 @@ def qr_generator(request):
                     num_qrs = qr_per_page * int(quantity_pages)
                     logging.debug(f"Pages required {quantity_pages} with {num_qrs} qr codes")
                     vouchers = VoucherImported.objects.filter(
-                        biodata_code__qr_generated=False,
+                        qr_generated=False,
                         herbarium=generated_page.herbarium
                     ).order_by(
                         '-priority',
@@ -216,10 +215,9 @@ def qr_generator(request):
                     generated_page.created_by = request.user
                     generated_page.save(quantity_pages)
                     for voucher in vouchers:
-                        biodata_code = voucher.biodata_code
-                        biodata_code.qr_generated = True
-                        biodata_code.page = generated_page
-                        biodata_code.save()
+                        voucher.qr_generated = True
+                        voucher.page = generated_page
+                        voucher.save()
                     generated_page.save(quantity_pages)
                     logging.info(f"Created session '{generated_page.name}' ({generated_page.id}) "
                                  f"with {generated_page.qr_count} QR codes")
@@ -256,13 +254,13 @@ def session_table_qr(request):
                 Q(created_at__icontains=search_value) |
                 Q(created_by__username__icontains=search_value) |
                 Q(finished_annotation__icontains=search_value) |
-                Q(biodatacode__code=search_value)
+                Q(voucherimported__code=search_value)
         )
         if search_value.isdigit():
             search_query = (
                     search_query |
                     Q(qr_count_annotation=int(search_value)) |
-                    Q(biodatacode__catalog_number=int(search_value))
+                    Q(voucherimported__catalog_number=int(search_value))
             )
     return render_session_table(request, sort_by_func, search_query)
 
@@ -297,13 +295,13 @@ def render_session_table(request: HttpRequest, sort_by_func: Dict[int, str], sea
     entries = GeneratedPage.objects.filter(
         herbarium__herbariummember__user__id=request.user.id
     ).annotate(
-        stateless_count_annotation=Count('biodatacode', filter=Q(biodatacode__voucher_state=0)),
-        found_count_annotation=Count('biodatacode', filter=Q(biodatacode__voucher_state=1)),
-        not_found_count_annotation=Count('biodatacode', filter=Q(biodatacode__voucher_state=2)),
+        stateless_count_annotation=Count('voucherimported', filter=Q(voucherimported__voucher_state=0)),
+        found_count_annotation=Count('voucherimported', filter=Q(voucherimported__voucher_state=1)),
+        not_found_count_annotation=Count('voucherimported', filter=Q(voucherimported__voucher_state=2)),
         digitalized_annotation=Count(
-            'biodatacode', filter=Q(biodatacode__voucher_state=7) | Q(biodatacode__voucher_state=8)
+            'voucherimported', filter=Q(voucherimported__voucher_state=7) | Q(voucherimported__voucher_state=8)
         ),
-        qr_count_annotation=Count('biodatacode', filter=Q(biodatacode__qr_generated=True)),
+        qr_count_annotation=Count('voucherimported', filter=Q(voucherimported__qr_generated=True)),
         finished_annotation=Case(
             When(finished=True, then=Value("Sí")),
             default=Value("No"),
@@ -532,7 +530,7 @@ def set_state(request):
     if 'voucher_state' not in request.POST or 'biodata_code' not in request.POST:
         return HttpResponseBadRequest()
     voucher_state = int(request.POST['voucher_state'])
-    biodata_codes = BiodataCode.objects.get(pk=request.POST['biodata_code'])
+    biodata_codes = VoucherImported.objects.get(pk=request.POST['biodata_code'])
     display = -1
     for state, display in VOUCHER_STATE:
         if state == voucher_state:
@@ -564,7 +562,7 @@ def mark_all_page_as(request):
         return HttpResponseBadRequest()
     voucher_state = int(request.POST['voucher_state'])
     generated_page = GeneratedPage.objects.get(pk=request.POST['generated_page_id'])
-    biodata_codes = BiodataCode.objects.filter(page=generated_page)
+    biodata_codes = VoucherImported.objects.filter(page=generated_page)
     display = -1
     for state, display in VOUCHER_STATE:
         if state == voucher_state:
@@ -597,7 +595,7 @@ def terminate_session(request):
     try:
         page_id = request.POST['page_id']
         page = GeneratedPage.objects.get(pk=page_id)
-        codes = BiodataCode.objects.filter(voucher_state=0, page=page)
+        codes = VoucherImported.objects.filter(voucher_state=0, page=page)
         for code in codes:
             code.qr_generated = False
             code.page = None

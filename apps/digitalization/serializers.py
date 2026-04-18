@@ -2,7 +2,7 @@ import os
 from rest_framework.serializers import HyperlinkedModelSerializer, CharField, ReadOnlyField, SerializerMethodField
 
 from apps.catalog.models import Species
-from apps.digitalization.models import VoucherImported, PriorityVouchersFile, GeneratedPage, BiodataCode, GalleryImage, \
+from apps.digitalization.models import VoucherImported, PriorityVouchersFile, GeneratedPage, GalleryImage, \
     PostprocessingLog
 
 
@@ -71,19 +71,6 @@ class GeneratedPageSerializer(HyperlinkedModelSerializer):
         ]
 
 
-class BiodataCodeSerializer(HyperlinkedModelSerializer):
-    voucher_state_name = SerializerMethodField()
-
-    class Meta:
-        model = BiodataCode
-        fields = [
-            "id", "voucher_state", "voucher_state_name", "code",
-        ]
-
-    def get_voucher_state_name(self, obj):
-        return obj.get_voucher_state_display()
-
-
 class VoucherSerializer(HyperlinkedModelSerializer):
     species = CharField(source='scientific_name')
     occurrence_id = SerializerMethodField()
@@ -95,6 +82,7 @@ class VoucherSerializer(HyperlinkedModelSerializer):
     image_voucher_cr3_raw_url = SerializerMethodField()
     image_voucher_jpg_raw_url = SerializerMethodField()
     image_voucher_jpg_raw_url_public = SerializerMethodField()
+    voucher_state_name = SerializerMethodField()
 
     class Meta:
         model = VoucherImported
@@ -108,14 +96,8 @@ class VoucherSerializer(HyperlinkedModelSerializer):
             'image_voucher_url', 'image_voucher_thumb_url',
             'image_voucher_cr3_raw_url', 'image_voucher_jpg_raw_url',
             'image_voucher_jpg_raw_url_public',
+            'voucher_state', 'voucher_state_name', 'code',
         ]
-
-    def get_occurrence_id(self, obj):
-        return BiodataCodeSerializer(
-            instance=obj.biodata_code,
-            many=False,
-            context=self.context
-        ).data
 
     def get_priority_voucher(self, obj):
         return PriorityVouchersSerializer(
@@ -138,6 +120,9 @@ class VoucherSerializer(HyperlinkedModelSerializer):
 
     def get_image_voucher_jpg_raw_url_public(self, obj):
         return obj.image_voucher_jpg_raw_url_public()
+
+    def get_voucher_state_name(self, obj):
+        return obj.get_voucher_state_display()
 
 
 class SpeciesGallerySerializer(HyperlinkedModelSerializer):
