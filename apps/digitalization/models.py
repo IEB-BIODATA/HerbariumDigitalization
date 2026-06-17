@@ -377,11 +377,7 @@ class VoucherImportedQuerySet(CatalogQuerySet):
 
 
 
-class VoucherImported(models.Model):
-    vouchers_file = models.ForeignKey(PriorityVouchersFile, verbose_name=_("Priority Vouchers File"),
-                                      on_delete=models.CASCADE, blank=True, null=True)
-    biodata_code = models.ForeignKey(BiodataCode, verbose_name=_("BIODATA Code"), on_delete=models.CASCADE,
-                                     blank=True, null=True)
+class Voucher(models.Model):
     herbarium = models.ForeignKey(Herbarium, verbose_name=_("Herbarium"), on_delete=models.CASCADE,
                                   blank=True, null=True)
     other_catalog_numbers = models.CharField(verbose_name=_("Other Catalog Numbers"), max_length=13,
@@ -399,28 +395,39 @@ class VoucherImported(models.Model):
     decimal_longitude = models.FloatField(verbose_name=_("Longitude"), blank=True, null=True)
     identified_by = models.CharField(verbose_name=_("Identified by"), max_length=100, blank=True, null=True)
     date_identified = models.IntegerField(verbose_name=_("Date Identified"), max_length=100, blank=True, null=True)
-    image = models.ImageField(verbose_name=_("Image"), storage=GlacierPrivateMediaStorage(), blank=True, null=True)
-    image_resized_10 = models.ImageField(verbose_name=_("%d Times Smaller Image Scale") % 10,
-                                         storage=IAPrivateMediaStorage(), blank=True, null=True)
-    image_resized_60 = models.ImageField(verbose_name=_("%d Times Smaller Image Scale") % 60,
-                                         storage=IAPrivateMediaStorage(), blank=True, null=True)
-    image_public = models.ImageField(verbose_name=_("Public Image"), storage=PublicMediaStorage(), blank=True, null=True)
+    iiif = models.CharField(verbose_name=_("IIIF"), max_length=100, blank=True, null=True)
     image_public_resized_10 = models.ImageField(verbose_name=_("%d Times Smaller Public Image Scale") % 10,
                                                 storage=PublicMediaStorage(), blank=True, null=True)
-    image_public_resized_60 = models.ImageField(verbose_name=_("%d Times Smaller Public Image Scale") % 60,
-                                                storage=PublicMediaStorage(), blank=True, null=True)
-    image_raw = models.ImageField(verbose_name=_("Raw Image"), storage=GlacierPrivateMediaStorage(), blank=True, null=True)
     point = models.PointField(verbose_name=_("Point"), null=True, blank=True, )
     decimal_latitude_public = models.FloatField(verbose_name=_("Public Latitude"), blank=True, null=True)
     decimal_longitude_public = models.FloatField(verbose_name=_("Public Longitude"), blank=True, null=True)
     point_public = models.PointField(verbose_name=_("Public Point"), null=True, blank=True, )
-    priority = models.IntegerField(verbose_name=_("Priority"), blank=True, null=True, default=3)
 
     objects = VoucherImportedQuerySet.as_manager()
 
     class Meta:
         verbose_name = _("Voucher")
         verbose_name_plural = _("Vouchers")
+
+
+class VoucherImported(Voucher):
+    vouchers_file = models.ForeignKey(PriorityVouchersFile, verbose_name=_("Priority Vouchers File"),
+                                      on_delete=models.CASCADE, blank=True, null=True)
+    biodata_code = models.ForeignKey(BiodataCode, verbose_name=_("BIODATA Code"), on_delete=models.CASCADE,
+                                     blank=True, null=True)
+    image = models.ImageField(verbose_name=_("Image"), storage=GlacierPrivateMediaStorage(), blank=True, null=True)
+    image_resized_10 = models.ImageField(verbose_name=_("%d Times Smaller Image Scale") % 10,
+                                         storage=IAPrivateMediaStorage(), blank=True, null=True)
+    image_resized_60 = models.ImageField(verbose_name=_("%d Times Smaller Image Scale") % 60,
+                                         storage=IAPrivateMediaStorage(), blank=True, null=True)
+    image_public = models.ImageField(verbose_name=_("Public Image"), storage=PublicMediaStorage(), blank=True,
+                                     null=True)
+    image_public_resized_60 = models.ImageField(verbose_name=_("%d Times Smaller Public Image Scale") % 60,
+                                                storage=PublicMediaStorage(), blank=True, null=True)
+    image_raw = models.ImageField(verbose_name=_("Raw Image"), storage=GlacierPrivateMediaStorage(), blank=True,
+                                  null=True)
+    priority = models.IntegerField(verbose_name=_("Priority"), blank=True, null=True, default=3)
+
 
     def generate_etiquette(self):
         if self.biodata_code.voucher_state == 7:
@@ -510,6 +517,18 @@ class VoucherImported(models.Model):
         public_point = integer + min_round / 60
         return public_point
 
+    def save(
+        self,
+        *,
+        force_insert = False,
+        force_update = False,
+        using = None,
+        update_fields = None,
+    ):
+        if not force_insert and not force_update and self.image_public:
+            self.iiif = f"{settings.CANTALOUPE_HOST}/iiif/2/{self.image_public.name}/info.json"
+        return super(VoucherImported, self).save()
+
     @staticmethod
     def from_pandas_row(
             row: pd.Series,
@@ -557,8 +576,8 @@ class VoucherImported(models.Model):
                 srid=4326
             )
             if not np.isnan(row['decimal_latitude']) and not np.isnan(row['decimal_longitude']):
-                decimal_latitude_public = VoucherImported.public_point(row['decimal_latitude'])
-                decimal_longitude_public = VoucherImported.public_point(row['decimal_longitude'])
+                decimal_latitude_public = Voucher.public_point(row['decimal_latitude'])
+                decimal_longitude_public = Voucher.public_point(row['decimal_longitude'])
                 point_public = GEOSGeometry(
                     f"POINT({decimal_longitude_public} {decimal_latitude_public})",
                     srid=4326
@@ -600,7 +619,7 @@ class TypeStatus(models.Model):
     taxon_content_type = models.ForeignKey(ContentType, on_delete=models.CASCADE)
     taxon_id = models.PositiveIntegerField()
     attached = GenericForeignKey("taxon_content_type", "taxon_id")
-    specimen = models.ForeignKey(VoucherImported, on_delete=models.CASCADE, verbose_name=_("Specimen"))
+    specimen = models.ForeignKey(Voucher, on_delete=models.CASCADE, verbose_name=_("Specimen"))
 
     @property
     def attached_taxon(self) -> TaxonomicModel | None:
@@ -635,7 +654,7 @@ class GalleryImage(models.Model):
 class BannerImage(models.Model):
     species = models.OneToOneField(Species, verbose_name=_("Species"), on_delete=models.CASCADE)
     banner = models.ImageField(verbose_name=_("Banner"), upload_to="banners", storage=PublicMediaStorage())
-    image = models.ForeignKey(VoucherImported, verbose_name=_("Image"), on_delete=models.CASCADE)
+    image = models.ForeignKey(Voucher, verbose_name=_("Image"), on_delete=models.CASCADE)
     updated_at = models.DateTimeField(verbose_name=_("Updated at"), auto_now=True)
 
 
@@ -705,7 +724,7 @@ def auto_delete_file_on_delete_ColorProfileFile(sender, instance, **kwargs):
         instance.file.delete(save=False)
 
 
-@receiver(pre_save, sender=VoucherImported)
+@receiver(pre_save, sender=Voucher)
 def pre_save_image(sender, instance, *args, **kwargs):
     """ instance old image file will delete from os """
     try:

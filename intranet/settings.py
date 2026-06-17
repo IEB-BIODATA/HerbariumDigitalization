@@ -203,6 +203,8 @@ GEOS_LIBRARY_PATH = '/usr/lib/x86_64-linux-gnu/libgeos_c.so'
 GDAL_LIBRARY_PATH = '/usr/lib/x86_64-linux-gnu/libgdal.so'
 PROJ_LIBRARY_PATH = '/usr/lib/x86_64-linux-gnu/libproj.so'
 
+CANTALOUPE_HOST = os.environ.get("CANTALOUPE_HOST")
+
 SWAGGER_SETTINGS = {
     'DEFAULT_AUTO_SCHEMA_CLASS': 'drf_yasg.inspectors.SwaggerAutoSchema',
 }

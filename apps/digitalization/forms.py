@@ -2,8 +2,6 @@ from typing import Dict
 
 from django import forms
 from django.contrib.contenttypes.models import ContentType
-from django.forms import inlineformset_factory
-from django.utils.safestring import mark_safe
 from django.utils.translation import gettext_lazy as _
 
 from .models import Herbarium, ProtectedArea, TypeStatus, TYPIFICATION, BiodataCode
