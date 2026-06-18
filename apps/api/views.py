@@ -85,8 +85,8 @@ class InfoApi(APIView):
             image_public_resized_10__gt=''
         ).count()
         species_count = Species.objects.filter(
-            voucherimported__image_public_resized_10__isnull=False,
-            voucherimported__image_public_resized_10__gt=''
+            voucher__image_public_resized_10__isnull=False,
+            voucher__image_public_resized_10__gt=''
         ).distinct().count()
         content = {
             'images': images_count,
@@ -609,14 +609,14 @@ class SpeciesListApiView(FlatMultipleModelAPIView, POSTRedirect):
             species_queryset = filter_query_set(Species.objects.all(), self.request.query_params)
             if image_filter:
                 species_queryset = species_queryset.annotate(
-                    vouchers_count=Count('voucherimported')
+                    vouchers_count=Count('voucher')
                 ).exclude(
                     Q(vouchers_count__isnull=True) |
                     Q(vouchers_count=0) |
-                    Q(voucherimported__image_public_resized_10__exact='')
+                    Q(voucher__image_public_resized_10__exact='')
                 )
             species_queryset = species_queryset.filter(
-                filter_by_geo(self.request.query_params, "voucherimported__point__within")
+                filter_by_geo(self.request.query_params, "voucher__point__within")
             ).distinct()
             self.species_count = species_queryset.count()
             results.append({
@@ -632,7 +632,7 @@ class SpeciesListApiView(FlatMultipleModelAPIView, POSTRedirect):
             logging.info(f"Getting synonyms: {self.request.get_full_path()}")
             synonyms_queryset = filter_query_set(Synonymy.objects.all(), self.request.query_params)
             synonyms_queryset = synonyms_queryset.filter(
-                filter_by_geo(self.request.query_params, "species__voucherimported__point__within")
+                filter_by_geo(self.request.query_params, "species__voucher__point__within")
             ).distinct()
             self.synonyms_count = synonyms_queryset.count()
             results.append({

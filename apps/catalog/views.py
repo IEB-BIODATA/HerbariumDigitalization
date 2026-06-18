@@ -529,7 +529,7 @@ def update_taxa(request, species_id):
     warnings = False
     warning_text = ""
     gallery_warning = species.galleryimage_set.exists()
-    voucher_warning = species.voucherimported_set.exists()
+    voucher_warning = species.voucher_set.exists()
     synonymy_warning = species.synonyms.exists()
     if gallery_warning or voucher_warning or synonymy_warning:
         warnings = True
@@ -609,7 +609,7 @@ def merge_taxa(request, taxa_1: int, taxa_2: int) -> HttpResponse:
             new_synonymy.save(user=request.user)
             species_2.synonyms.add(new_synonymy)
             logging.info(f"Assigning voucher for {species_1}")
-            for voucher in species_1.voucherimported_set.all():
+            for voucher in species_1.voucher_set.all():
                 voucher.scientific_name = species_2
                 voucher.save()
                 logging.info(f"Re-generating etiquette for {voucher.biodata_code.code}")

@@ -178,23 +178,33 @@ class SpeciesFinderSerializer(SpeciesSerializer):
 
     @extend_schema_field(SampleSerializer)
     def get_sample(self, obj: Species) -> Union[Dict, None]:
-        sample = obj.voucherimported_set.exclude(
+        sample = VoucherImported.objects.filter(
+            scientific_name=obj
+        ).exclude(
             Q(image_public_resized_10__isnull=True) |
-            Q(image_public_resized_10__exact='')
+            Q(image_public_resized_10__exact='') |
+            Q(image_public_resized_60__isnull=True) |
+            Q(image_public_resized_60__exact='')
         ).first()
+
         if sample is None:
             sample = VoucherImported.objects.filter(
                 scientific_name__in=get_children(obj)
             ).exclude(
                 Q(image_public_resized_10__isnull=True) |
-                Q(image_public_resized_10__exact='')
+                Q(image_public_resized_10__exact='') |
+                Q(image_public_resized_60__isnull=True) |
+                Q(image_public_resized_60__exact='')
             ).first()
+
         if sample:
             return SampleSerializer(
-                instance=sample, many=False, context=self.context
+                instance=sample,
+                many=False,
+                context=self.context
             ).data
-        else:
-            return None
+
+        return None
 
 
 class SynonymyFinderSerializer(ScientificNameSerializer):
