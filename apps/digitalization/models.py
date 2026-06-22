@@ -409,6 +409,15 @@ class Voucher(models.Model):
         verbose_name = _("Voucher")
         verbose_name_plural = _("Vouchers")
 
+    @staticmethod
+    def public_point(point):
+        integer = int(point)
+        min_grade = point - integer
+        minimum = min_grade * 60
+        min_round = round(minimum) - 1
+        public_point = integer + min_round / 60
+        return public_point
+
 
 class VoucherImported(Voucher):
     vouchers_file = models.ForeignKey(PriorityVouchersFile, verbose_name=_("Priority Vouchers File"),
@@ -507,15 +516,6 @@ class VoucherImported(Voucher):
             file_field = getattr(self, image_variable).storage.save(image_name, image_content)
         setattr(self, image_variable, file_field)
         return
-
-    @staticmethod
-    def public_point(point):
-        integer = int(point)
-        min_grade = point - integer
-        minimum = min_grade * 60
-        min_round = round(minimum) - 1
-        public_point = integer + min_round / 60
-        return public_point
 
     def save(
         self,

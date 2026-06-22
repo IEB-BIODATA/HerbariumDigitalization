@@ -1454,12 +1454,14 @@ class Species(ScientificName):
                         self.__original__.scientific_name_full != self.scientific_name_full:
                     if self.__original__.scientific_name_full != self.scientific_name_full:
                         logging.debug(f"Name changed on taxa {self.pk}")
+                        voucher_specimens = self.voucher_set.filter(voucherimported__isnull=False).select_related("voucherimported")
                         logging.debug("Listing specimen:")
                         logging.debug("\n".join([
-                            specimen.biodata_code.code
-                            for specimen in self.voucher_set.all()
+                            specimen.voucherimported.biodata_code.code
+                            for specimen in voucher_specimens
                         ]))
-                        for specimen in self.voucher_set.all():
+                        for voucher in voucher_specimens:
+                            specimen = voucher.voucherimported
                             specimen.generate_etiquette()
                         with connection.cursor() as cursor:
                             cursor.execute("SELECT get_taxon_id()")
