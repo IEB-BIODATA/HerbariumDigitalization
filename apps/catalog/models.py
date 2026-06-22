@@ -985,7 +985,7 @@ class Family(TaxonomicModel):
             ))
             for genus in self.genus_set.all():
                 for species in genus.species_set.all():
-                    vouchers = species.voucherimported_set.all()
+                    vouchers = species.voucher_set.all()
                     logging.debug("Vouchers on {} ({}): {}".format(
                         species.scientific_name_full, species.id, vouchers.count()
                     ))
@@ -1063,7 +1063,7 @@ class Genus(TaxonomicModel):
                         **kwargs
                     )
                 else:
-                    vouchers = species.voucherimported_set.all()
+                    vouchers = species.voucher_set.all()
                     logging.debug("Vouchers on {} ({}): {}".format(
                         species.scientific_name_full, species.id, vouchers.count()
                     ))
@@ -1457,9 +1457,9 @@ class Species(ScientificName):
                         logging.debug("Listing specimen:")
                         logging.debug("\n".join([
                             specimen.biodata_code.code
-                            for specimen in self.voucherimported_set.all()
+                            for specimen in self.voucher_set.all()
                         ]))
-                        for specimen in self.voucherimported_set.all():
+                        for specimen in self.voucher_set.all():
                             specimen.generate_etiquette()
                         with connection.cursor() as cursor:
                             cursor.execute("SELECT get_taxon_id()")
