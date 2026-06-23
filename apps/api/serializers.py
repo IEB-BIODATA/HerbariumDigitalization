@@ -9,8 +9,8 @@ from apps.catalog.models import Species, Family, Genus, Synonymy, Division, Clas
     TaxonomicModel, FinderView, ScientificName, Region, Kingdom
 from apps.catalog.serializers import RegionSerializer, StatusSerializer
 from apps.catalog.utils import get_habit, get_conservation_status, get_children
-from apps.digitalization.models import VoucherImported, GalleryImage, Licence
-
+from apps.digitalization.models import VoucherImported, GalleryImage, Licence, Voucher
+from apps.digitalization.serializers import build_iiif_jpg_url, build_iiif_info_url
 
 class MinimumSerializer(Serializer):
     def to_representation(self, instance):
@@ -150,7 +150,7 @@ class SampleSerializer(HyperlinkedModelSerializer):
 
     class Meta:
         model = VoucherImported
-        fields = ['id', 'code', 'image_resized_10', 'image_resized_60']
+        fields = ['id', 'code', 'image_resized_10', 'image_resized_60', 'iiif']
 
     def get_image_resized_10(self, obj: VoucherImported) -> str:
         try:
@@ -158,11 +158,15 @@ class SampleSerializer(HyperlinkedModelSerializer):
         except ValueError:
             return "#"
 
-    def get_image_resized_60(self, obj: VoucherImported) -> str:
+    def get_image_resized_60(self, obj):
+        if obj.iiif:
+            return build_iiif_jpg_url(obj.iiif, width=2500)
         try:
-            return obj.image_public_resized_60.url
-        except ValueError:
-            return "#"
+            if obj.image_public_resized_60:
+                return obj.image_public_resized_60.url
+        except Exception:
+            pass
+        return "#"
 
 
 class SpeciesFinderSerializer(SpeciesSerializer):
@@ -178,23 +182,19 @@ class SpeciesFinderSerializer(SpeciesSerializer):
 
     @extend_schema_field(SampleSerializer)
     def get_sample(self, obj: Species) -> Union[Dict, None]:
-        sample = VoucherImported.objects.filter(
+        sample = Voucher.objects.filter(
             scientific_name=obj
         ).exclude(
             Q(image_public_resized_10__isnull=True) |
-            Q(image_public_resized_10__exact='') |
-            Q(image_public_resized_60__isnull=True) |
-            Q(image_public_resized_60__exact='')
+            Q(image_public_resized_10__exact='') 
         ).first()
 
         if sample is None:
-            sample = VoucherImported.objects.filter(
+            sample = Voucher.objects.filter(
                 scientific_name__in=get_children(obj)
             ).exclude(
                 Q(image_public_resized_10__isnull=True) |
-                Q(image_public_resized_10__exact='') |
-                Q(image_public_resized_60__isnull=True) |
-                Q(image_public_resized_60__exact='')
+                Q(image_public_resized_10__exact='') 
             ).first()
 
         if sample:
@@ -286,15 +286,11 @@ class SpeciesDetailsSerializer(SpeciesSerializer):
 
     def get_vouchers(self, obj: Species) -> SampleSerializer:
         children = get_children(obj)
-        vouchers = VoucherImported.objects.filter(
+        vouchers = Voucher.objects.filter(
             scientific_name__in=children
         ).exclude(
             Q(image_public_resized_10__isnull=True) |
-            Q(image_public_resized_10__exact='') |
-            Q(image_public_resized_60__isnull=True) |
-            Q(image_public_resized_60__exact='') |
-            Q(image_public__isnull=True) |
-            Q(image_public__exact='')
+            Q(image_public_resized_10__exact='')
         ).all()
         return SampleSerializer(
             instance=vouchers,
@@ -342,7 +338,7 @@ class SpecimenFinderSerializer(SampleSerializer):
     species = SpeciesSerializer(source='scientific_name')
 
     class Meta:
-        model = VoucherImported
+        model = Voucher
         fields = SampleSerializer.Meta.fields + [
             'herbarium_code',
             'catalog_number',
@@ -351,20 +347,48 @@ class SpecimenFinderSerializer(SampleSerializer):
             'species',
         ]
 
-
 class SpecimenDetailSerializer(SpecimenFinderSerializer):
     image = SerializerMethodField()
+    iiif_url = SerializerMethodField()
 
     class Meta:
-        model = VoucherImported
+        model = Voucher
         fields = SpecimenFinderSerializer.Meta.fields + [
             'image', 'recorded_by', 'georeferenced_date',
             'record_number', 'locality', 'identified_by',
-            'date_identified', 'organism_remarks',
+            'date_identified', 'organism_remarks', 'iiif',
+            'iiif_url',
         ]
 
-    def get_image(self, obj: VoucherImported) -> Dict[str, str]:
-        return {
-            'name': obj.image_public.name,
-            'url': obj.image_public.url,
-        }
+    def get_image(self, obj: Voucher) -> Dict[str, str]:
+        if obj.iiif:
+            return {
+                'name': obj.catalog_number,
+                'url': build_iiif_jpg_url(obj.iiif, width=2500),
+            }
+        try:
+            if obj.image_public_resized_60:
+                return {
+                    'name': obj.image_public.name,
+                    'url': obj.image_public.url,
+                }
+        except Exception:
+            pass
+        return None
+
+    def get_iiif_url(self, obj: Voucher) -> str:
+        if obj.iiif:
+            return build_iiif_info_url(obj.iiif)
+        image_public = getattr(obj, "image_public", None)
+        if image_public:
+            try:
+                return f"{settings.CANTALOUPE_HOST}/iiif/2/{image_public.name}/info.json"
+            except ValueError:
+                pass
+        image_public_resized_10 = getattr(obj, "image_public_resized_10", None)
+        if image_public_resized_10:
+            try:
+                return f"{settings.CANTALOUPE_HOST}/iiif/2/{image_public_resized_10.name}/info.json"
+            except ValueError:
+                pass
+        return ""

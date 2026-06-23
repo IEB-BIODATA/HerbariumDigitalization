@@ -270,6 +270,6 @@ class OpenAPIHerbarium(OpenApiParameter):
             description="Filter by the herbarium of the specimen. `all` "
                         "equivalent to use no filter",
             type=OpenApiTypes.STR,
-            enum=["CONC", "ULS", "all"],
+            enum=["CONC", "ULS", "EIF", "AGUCH", "SQF", "E", "all"],
         )
         return

@@ -28,7 +28,7 @@ from apps.catalog.models import Species, Synonymy, Family, Division, ClassName, 
     SynonymyQuerySet, \
     SpeciesQuerySet, TaxonomicQuerySet, DownloadSearchRegistration, FORMAT_CHOICES
 from apps.datavis.models import DataVisualization
-from apps.digitalization.models import VoucherImported, BannerImage
+from apps.digitalization.models import VoucherImported, BannerImage, Voucher
 from intranet.utils import get_geometry_post
 from .serializers import SpeciesFinderSerializer, \
     SynonymyFinderSerializer, DivisionSerializer, ClassSerializer, OrderSerializer, \
@@ -749,12 +749,13 @@ class SpecimensList(QueryList, POSTRedirect):
     """
     Gets the list of available specimens in the herbarium
     """
-    queryset = VoucherImported.objects.all()
+    queryset = Voucher.objects.all()
     serializer_class = SpecimenFinderSerializer
 
     def get_queryset(self):
         queryset = super().get_queryset()
-        query = Q(biodata_code__voucher_state=7)
+        #query = Q(biodata_code__voucher_state=7)
+        query = Q(image_public_resized_10__isnull=False)
         code = self.request.GET.get("code", None)
         herbarium = self.request.GET.get("herbarium", None)
         if herbarium is not None and herbarium != "all":
@@ -764,16 +765,16 @@ class SpecimensList(QueryList, POSTRedirect):
                 F("catalog_number") / Length(Value(code)),
                 output_field=FloatField()
             )
-            query = query & Q(biodata_code__code__icontains=code)
+            query = query & Q(voucherimported__biodata_code__code__icontains=code)
             return queryset.filter(query).annotate(similarity=similarity_score).order_by(
                 "similarity"
             )
         image_filter = self.request.query_params.get("image_filter", "false").lower() == "true"
         if image_filter:
             query = query & (
-                Q(image_public_resized_10__isnull=False) &
-                Q(image_public_resized_60__isnull=False) &
-                Q(image_public__isnull=False)
+                Q(image_public_resized_10__isnull=False)# &
+                #Q(image_public_resized_60__isnull=False) &
+                #Q(image_public__isnull=False)
             )
         query = query & filter_by_geo(self.request.query_params, "point__within")
         regions = self.request.GET.getlist("region", [])
@@ -814,7 +815,7 @@ class SpecimenDetails(RetrieveLangApiView):
     """
     Gets the information of a particular specimen
     """
-    queryset = VoucherImported.objects.all()
+    queryset = Voucher.objects.all()
     serializer_class = SpecimenDetailSerializer
 
 

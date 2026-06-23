@@ -4,7 +4,7 @@ from rest_framework.serializers import HyperlinkedModelSerializer, CharField, Re
 from apps.catalog.models import Species
 from apps.digitalization.models import VoucherImported, PriorityVouchersFile, GeneratedPage, BiodataCode, GalleryImage, \
     PostprocessingLog
-
+from urllib.parse import urlparse
 
 class PriorityVouchersSerializer(HyperlinkedModelSerializer):
     herbarium = ReadOnlyField(source='herbarium.name')
@@ -83,6 +83,69 @@ class BiodataCodeSerializer(HyperlinkedModelSerializer):
     def get_voucher_state_name(self, obj):
         return obj.get_voucher_state_display()
 
+def build_iiif_jpg_url(iiif_url, width=2500):
+    """
+    Genera una URL JPG renderizable en HTML desde distintos formatos IIIF.
+    Soporta:
+    1) RBGE:
+       https://iiif.rbge.org.uk/herb/iiif/E00000032/full/full/0/default.jpg
+       Retorna:
+       https://iiif.rbge.org.uk/herb/iiif/E00000032/full/2500,/0/default.jpg
+    2) Cantaloupe info.json:
+       https://cantaloupe.herbariodigital.cl/iiif/2/UDEC_CONC_0082518_public.jpg/info.json
+       Retorna:
+       https://cantaloupe.herbariodigital.cl/iiif/2/UDEC_CONC_0082518_public.jpg/full/2500,/0/default.jpg
+    """
+    if not iiif_url:
+        return "#"
+    iiif_url = str(iiif_url).strip()
+    if not iiif_url:
+        return "#"
+    # Caso Cantaloupe /info.json
+    if iiif_url.endswith("/info.json"):
+        base = iiif_url.removesuffix("/info.json")
+        return f"{base}/full/{width},/0/default.jpg"
+    # Caso URL IIIF de imagen ya renderizable, por ejemplo:
+    # .../full/full/0/default.jpg
+    if "/full/" in iiif_url and "/0/default.jpg" in iiif_url:
+        base = iiif_url.split("/full/")[0]
+        return f"{base}/full/{width},/0/default.jpg"
+    # Fallback: si viene como base del recurso IIIF sin info.json ni parámetros
+    return f"{iiif_url.rstrip('/')}/full/{width},/0/default.jpg"
+
+def build_iiif_info_url(iiif: str) -> str:
+    """
+    Normaliza una URL IIIF para que siempre apunte a info.json.
+    Compatible con Cantaloupe, RBGE y URLs IIIF de imagen.
+    """
+    if not iiif:
+        return ""
+    url = iiif.strip()
+    if not url:
+        return ""
+    if url.endswith("/info.json") or url.endswith("info.json"):
+        return url
+    parsed = urlparse(url)
+    path_parts = parsed.path.strip("/").split("/")
+    # Caso RBGE:
+    # https://iiif.rbge.org.uk/herb/iiif/E00000032/full/full/0/default.jpg
+    # https://iiif.rbge.org.uk/herb/iiif/E00000032/full/300,/0/default.jpg
+    #
+    # Resultado:
+    # https://iiif.rbge.org.uk/herb/iiif/E00000032/info.json
+    if "iiif" in path_parts:
+        iiif_index = path_parts.index("iiif")
+
+        if len(path_parts) > iiif_index + 2:
+            if path_parts[iiif_index + 2] == "full":
+                prefix = "/".join(path_parts[:iiif_index + 2])
+                return f"{parsed.scheme}://{parsed.netloc}/{prefix}/info.json"
+    # Caso genérico:
+    # .../full/full/0/default.jpg
+    # .../full/2500,/0/default.jpg
+    if "/full/" in url:
+        return url.split("/full/")[0].rstrip("/") + "/info.json"
+    return url
 
 class VoucherSerializer(HyperlinkedModelSerializer):
     species = CharField(source='scientific_name')
@@ -95,6 +158,7 @@ class VoucherSerializer(HyperlinkedModelSerializer):
     image_voucher_cr3_raw_url = SerializerMethodField()
     image_voucher_jpg_raw_url = SerializerMethodField()
     image_voucher_jpg_raw_url_public = SerializerMethodField()
+    image_resized_60 = SerializerMethodField()
 
     class Meta:
         model = VoucherImported
@@ -107,7 +171,7 @@ class VoucherSerializer(HyperlinkedModelSerializer):
             'image_public_resized_60', 'priority_voucher',
             'image_voucher_url', 'image_voucher_thumb_url',
             'image_voucher_cr3_raw_url', 'image_voucher_jpg_raw_url',
-            'image_voucher_jpg_raw_url_public',
+            'image_voucher_jpg_raw_url_public', 'image_resized_60',
         ]
 
     def get_occurrence_id(self, obj):
@@ -138,6 +202,16 @@ class VoucherSerializer(HyperlinkedModelSerializer):
 
     def get_image_voucher_jpg_raw_url_public(self, obj):
         return obj.image_voucher_jpg_raw_url_public()
+
+    def get_image_resized_60(self, obj):
+        if obj.iiif:
+            return build_iiif_jpg_url(obj.iiif, width=2500)
+        try:
+            if obj.image_public_resized_60:
+                return obj.image_public_resized_60.url
+        except Exception:
+            pass
+        return "#"
 
 
 class SpeciesGallerySerializer(HyperlinkedModelSerializer):
