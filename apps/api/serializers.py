@@ -291,7 +291,7 @@ class SpeciesDetailsSerializer(SpeciesSerializer):
         ).exclude(
             Q(image_public_resized_10__isnull=True) |
             Q(image_public_resized_10__exact='')
-        ).all()
+        ).order_by("herbarium__id").all()
         return SampleSerializer(
             instance=vouchers,
             many=True, context=self.context
