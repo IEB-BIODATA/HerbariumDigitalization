@@ -609,11 +609,12 @@ def merge_taxa(request, taxa_1: int, taxa_2: int) -> HttpResponse:
             new_synonymy.save(user=request.user)
             species_2.synonyms.add(new_synonymy)
             logging.info(f"Assigning voucher for {species_1}")
-            for voucher in species_1.voucher_set.all():
+            voucher_specimens = species_1.voucher_set.filter(voucherimported__isnull=False).select_related("voucherimported")
+            for voucher in voucher_specimens:
                 voucher.scientific_name = species_2
                 voucher.save()
-                logging.info(f"Re-generating etiquette for {voucher.biodata_code.code}")
-                voucher.generate_etiquette()
+                logging.info(f"Re-generating etiquette for {voucher.voucherimported.biodata_code.code}")
+                voucher.voucherimported.generate_etiquette()
             Binnacle.delete_entry(species_1, request.user)
             CatalogView.refresh_view()
             FinderView.refresh_view()
