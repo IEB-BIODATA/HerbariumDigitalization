@@ -765,7 +765,7 @@ class SpecimensList(QueryList, POSTRedirect):
                 F("catalog_number") / Length(Value(code)),
                 output_field=FloatField()
             )
-            query = query & Q(voucherimported__biodata_code__code__icontains=code)
+            query = query & Q(catalog_number__icontains=code)
             return queryset.filter(query).annotate(similarity=similarity_score).order_by(
                 "similarity"
             )

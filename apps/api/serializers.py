@@ -318,17 +318,24 @@ class SynonymyDetailsSerializer(SynonymyFinderSerializer):
 
 
 class DistributionSerializer(SampleSerializer):
-    code = ReadOnlyField(source="biodata_code.code")
+    code = SerializerMethodField()
     decimal_latitude = ReadOnlyField(source='decimal_latitude_public')
     decimal_longitude = ReadOnlyField(source='decimal_longitude_public')
 
     class Meta:
-        model = VoucherImported
+        model = Voucher
         fields = SampleSerializer.Meta.fields + [
             'code',
             'decimal_latitude',
             'decimal_longitude',
         ]
+
+    def get_code(self, obj):
+        collection_code = obj.herbarium.collection_code or ""
+        catalog_number = obj.catalog_number or ""
+        if collection_code and catalog_number:
+            return f"{collection_code}-{catalog_number}"
+        return catalog_number or collection_code
 
 
 class SpecimenFinderSerializer(SampleSerializer):
