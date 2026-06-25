@@ -28,7 +28,7 @@ from apps.catalog.models import Species, Synonymy, Family, Division, ClassName, 
     SynonymyQuerySet, \
     SpeciesQuerySet, TaxonomicQuerySet, DownloadSearchRegistration, FORMAT_CHOICES
 from apps.datavis.models import DataVisualization
-from apps.digitalization.models import VoucherImported, BannerImage, Voucher
+from apps.digitalization.models import VoucherImported, BannerImage, Voucher, VoucherRepatriated
 from intranet.utils import get_geometry_post
 from .serializers import SpeciesFinderSerializer, \
     SynonymyFinderSerializer, DivisionSerializer, ClassSerializer, OrderSerializer, \
@@ -83,7 +83,7 @@ class InfoApi(APIView):
         images_count = VoucherImported.objects.all().filter(
             image_public_resized_10__isnull=False,
             image_public_resized_10__gt=''
-        ).count()
+        ).count() + VoucherRepatriated().objects.all().count()
         species_count = Species.objects.filter(
             voucher__image_public_resized_10__isnull=False,
             voucher__image_public_resized_10__gt=''

@@ -120,6 +120,14 @@ class Herbarium(models.Model):
     institution_code = models.CharField(verbose_name=_("Institution Code"), max_length=10, blank=True, null=True,
                                         help_text=_("No more than %d letters") % 10)
     metadata = models.ForeignKey(EML, verbose_name=_("Metadata"), on_delete=models.PROTECT, blank=True, null=True)
+    herbarium_type = models.IntegerField(
+        verbose_name=_("Type of Herbarium"),
+        choices=(
+            (0, _("Managed")),
+            (1, _("Repatriated")),
+        ),
+        blank=True, null=True
+    )
 
     class Meta:
         verbose_name = _("Herbarium")
@@ -612,6 +620,11 @@ class VoucherImported(Voucher):
             point_public=point_public,
             priority=1 if "priority" not in row.keys() else row["priority"]
         )
+
+
+class VoucherRepatriated(Voucher):
+    verbatim_scientific_name = models.CharField(verbose_name=_("Verbatim Scientific Name"), max_length=300, blank=True, null=True)
+    rejected = models.BooleanField(verbose_name=_("Rejected"), default=False)
 
 
 class TypeStatus(models.Model):
