@@ -83,7 +83,7 @@ class InfoApi(APIView):
         images_count = VoucherImported.objects.all().filter(
             image_public_resized_10__isnull=False,
             image_public_resized_10__gt=''
-        ).count() + VoucherRepatriated().objects.all().count()
+        ).count() + VoucherRepatriated.objects.all().count()
         species_count = Species.objects.filter(
             voucher__image_public_resized_10__isnull=False,
             voucher__image_public_resized_10__gt=''
