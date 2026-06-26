@@ -726,7 +726,7 @@ class SynonymyDetails(ScientificNameDetails):
 
 class DistributionList(ListAPIView):
     pagination_class = CustomPagination
-    queryset = VoucherImported.objects.all()
+    queryset = Voucher.objects.all()
     serializer_class = DistributionSerializer
 
     def get_queryset(self):
