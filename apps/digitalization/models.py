@@ -793,32 +793,33 @@ def pre_save_image(sender, instance, *args, **kwargs):
 class VouchersView(models.Model):
     """
     CREATE MATERIALIZED VIEW vouchers_view AS
-    SELECT voucher.id,
+    SELECT v.id,
            voucherfile.file,
            biodatacode.code,
            biodatacode.voucher_state,
            herbarium.collection_code,
-           voucher.other_catalog_numbers,
-           voucher.catalog_number,
-           voucher.recorded_by,
-           voucher.record_number,
-           voucher.organism_remarks,
+           v.other_catalog_numbers,
+           v.catalog_number,
+           v.recorded_by,
+           v.record_number,
+           v.organism_remarks,
            species.scientific_name,
-           voucher.locality,
-           voucher.verbatim_elevation,
-           voucher.georeferenced_date,
-           voucher.decimal_latitude,
-           voucher.decimal_longitude,
-           voucher.identified_by,
-           voucher.date_identified,
-           voucher.decimal_latitude_public,
-           voucher.decimal_longitude_public,
+           v.locality,
+           v.verbatim_elevation,
+           v.georeferenced_date,
+           v.decimal_latitude,
+           v.decimal_longitude,
+           v.identified_by,
+           v.date_identified,
+           v.decimal_latitude_public,
+           v.decimal_longitude_public,
            voucher.priority
     FROM digitalization_voucherimported voucher
-         JOIN digitalization_herbarium herbarium ON voucher.herbarium_id = herbarium.id
+         JOIN digitalization_voucher v ON v.id = voucher.voucher_ptr_id
+         JOIN digitalization_herbarium herbarium ON v.herbarium_id = herbarium.id
          JOIN digitalization_priorityvouchersfile voucherfile ON voucher.vouchers_file_id = voucherfile.id
          JOIN digitalization_biodatacode biodatacode ON voucher.biodata_code_id = biodatacode.id
-         JOIN catalog_species species ON voucher.scientific_name_id = species.id;
+         JOIN catalog_species species ON v.scientific_name_id = species.id;
 
     CREATE UNIQUE INDEX vouchers_view_id_idx
         ON vouchers_view (id);
