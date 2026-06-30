@@ -159,11 +159,11 @@ class SampleSerializer(HyperlinkedModelSerializer):
             return "#"
 
     def get_image_resized_60(self, obj):
-        if obj.iiif:
-            return build_iiif_jpg_url(obj.iiif, width=2500)
         try:
-            if obj.image_public_resized_60:
-                return obj.image_public_resized_60.url
+            if obj.voucherimported.image_public_resized_60:
+                return obj.voucherimported.image_public_resized_60.url
+            elif obj.iiif:
+                return build_iiif_jpg_url(obj.iiif, width=2500)
         except Exception:
             pass
         return "#"
