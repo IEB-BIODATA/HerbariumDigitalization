@@ -204,7 +204,7 @@ class VoucherSerializer(HyperlinkedModelSerializer):
         return obj.image_voucher_jpg_raw_url_public()
 
     def get_image_resized_60(self, obj):
-        if herbarium.herbarium_type == 0:
+        if obj.herbarium.herbarium_type == 0:
             try:
                 if obj.image_public_resized_60:
                     return obj.image_public_resized_60.url

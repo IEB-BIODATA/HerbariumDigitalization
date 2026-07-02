@@ -160,7 +160,7 @@ class SampleSerializer(HyperlinkedModelSerializer):
 
     def get_image_resized_60(self, obj):
         try:
-            if obj.voucherimported.image_public_resized_60:
+            if obj.herbarium.herbarium_type==0:
                 return obj.voucherimported.image_public_resized_60.url
             elif obj.iiif:
                 return build_iiif_jpg_url(obj.iiif, width=2500)
