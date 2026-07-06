@@ -28,7 +28,7 @@ from django.db.models import Model
 from apps.catalog.models import Species, Synonymy
 from apps.digitalization.models import DCW_SQL, PostprocessingLog
 from apps.digitalization.models import GalleryImage, BannerImage
-from apps.digitalization.models import VoucherImported, BiodataCode, ColorProfileFile, PriorityVouchersFile
+from apps.digitalization.models import VoucherImported, BiodataCode, ColorProfileFile, PriorityVouchersFile, Voucher
 from apps.digitalization.storage_backends import PrivateMediaStorage, PublicMediaStorage, IAPrivateMediaStorage
 from apps.digitalization.utils import SessionFolder
 from apps.digitalization.utils import cr3_to_dng, dng_to_jpeg, dng_to_jpeg_color_profile
@@ -381,7 +381,7 @@ def clean_storage(log_folder: str):
                         (GalleryImage, "image", "", ".jpg"),
                         (GalleryImage, "thumbnail", "_thumbnail", ".jpg"),
                         (BannerImage, "banner", "", ".png"),
-                        (VoucherImported, "image_public_resized_10", "_public_resized_10", ".jpg"),
+                        (Voucher, "image_public_resized_10", "_public_resized_10", ".jpg"),
                         (VoucherImported, "image_public_resized_60", "_public_resized_60", ".jpg"),
                         (VoucherImported, "image_public", "_public", ".jpg"),
                     ]:
