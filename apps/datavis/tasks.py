@@ -48,7 +48,7 @@ def delete_by_prefix(prefix: str) -> int:
 
 @shared_task(name='digitalization_progress')
 def digitalization_progress():
-    collection_frequency_qs = (Species.objects.filter(determined=True, status__in=[1,3]).annotate(occ_count=Count("voucherimported")).values("id","scientific_name","occ_count").order_by("-occ_count"))
+    collection_frequency_qs = (Species.objects.filter(determined=True, status__in=[1,3]).annotate(occ_count=Count("voucher")).values("id","scientific_name","occ_count").order_by("-occ_count"))
     collection_frequency = pd.DataFrame.from_records(collection_frequency_qs)
     collection_frequency.columns= ["id", "ScientificName", "Frequency"]
     collection_frequency_plot = collection_frequency.copy().reset_index(drop=True)
