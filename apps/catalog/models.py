@@ -249,7 +249,7 @@ class TaxonomicQuerySet(CatalogQuerySet, ABC):
             query_name = f"{query_name}__"
         query = Q()
         for geometry in geometries:
-            query |= Q(**{f"{query_name}voucherimported__point__within": geometry})
+            query |= Q(**{f"{query_name}voucher__point__within": geometry})
         queryset = self.filter(query).distinct()
         logging.debug(f"{self.__rank_name__}: {query} and got {queryset}")
         logging.debug(
