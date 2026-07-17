@@ -1,7 +1,7 @@
 from modeltranslation.translator import register, TranslationOptions
 
 from .models import PlantHabit, EnvironmentalHabit, Status, Cycle, Region, ConservationStatus, CommonName, CatalogView, \
-    RegionDistributionView, FinderView, Binnacle, Habit, TaxonRank
+    RegionDistributionView, Binnacle, Habit, TaxonRank
 
 
 @register(PlantHabit)
@@ -34,11 +34,6 @@ class TaxonRankTranslationOptions(TranslationOptions):
     fields = ('name',)
 
 
-@register(Region)
-class RegionTranslationOptions(TranslationOptions):
-    fields = ('name',)
-
-
 @register(ConservationStatus)
 class ConservationStatusOptions(TranslationOptions):
     fields = ('name',)
@@ -47,11 +42,6 @@ class ConservationStatusOptions(TranslationOptions):
 @register(CatalogView)
 class CatalogViewTranslationOptions(TranslationOptions):
     fields = ('status',)
-
-
-@register(RegionDistributionView)
-class RegionViewTranslationOptions(TranslationOptions):
-    fields = ('region_name',)
 
 
 @register(Binnacle)

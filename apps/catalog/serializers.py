@@ -47,7 +47,7 @@ class TaxonRankSerializer(AttributeSerializer):
 class RegionSerializer(AttributeSerializer):
     class Meta:
         model = Region
-        fields = AttributeSerializer.Meta.fields
+        fields = AttributeSerializer.Meta.fields + ['key']
 
 
 class ConservationStatusSerializer(AttributeSerializer):

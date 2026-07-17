@@ -161,7 +161,6 @@ def __update_catalog__(
                 if len(changes) > 0:
                     Binnacle.update_entry(repr(new_model), new_model, request.user, notes=". ".join(changes))
             else:
-                logging.info("Here")
                 for identifier in request.POST.getlist("references"):
                     logging.info(identifier)
                     new_model.references.add(References.objects.get(id=identifier))

@@ -128,6 +128,13 @@ class BinnacleForm(forms.ModelForm):
 
 
 class SpeciesForm(TaxonomicForm):
+    basionym = forms.ModelChoiceField(
+        queryset=Synonymy.objects.all(),
+        required=False,
+        empty_label="---------",
+        label=_('Basionym'),
+        widget=forms.Select(attrs={'class': "selectpicker"}),
+    )
     synonyms = forms.ModelMultipleChoiceField(
         queryset=Synonymy.objects.all(),
         widget=forms.SelectMultiple(attrs={
@@ -135,6 +142,7 @@ class SpeciesForm(TaxonomicForm):
             'multiple data-live-search': 'true',
             'multiple data-multiple-separator': ','}
         ),
+        label=_('Synonyms'),
         required=False
     )
 
@@ -151,7 +159,7 @@ class SpeciesForm(TaxonomicForm):
             'minimum_height', 'maximum_height',
             'common_names', 'region',
             'notes', 'type_id', 'references',
-            'conservation_status', 'determined', 'id_mma',
+            'conservation_status', 'determined', 'id_mma', 'basionym'
         )
 
         widgets = {
@@ -203,6 +211,7 @@ class SpeciesForm(TaxonomicForm):
         super().__init__(*args, **kwargs)
         if self.instance and self.instance.pk:
             self.fields["synonyms"].initial = self.instance.synonyms.all()
+            self.fields["basionym"].queryset = self.instance.synonyms.all()
 
     def save(self, commit=True):
         instance = super(SpeciesForm, self).save(commit=False)

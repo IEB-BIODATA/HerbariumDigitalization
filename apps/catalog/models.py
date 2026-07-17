@@ -1298,6 +1298,7 @@ class Species(ScientificName):
         "id_mma": "id del MMA",
         "determined": "terminal",
         "id_taxa_origin": "id del taxón de origen",
+        "basionym": "basiónimo",
     }
 
     id_taxa = models.IntegerField(verbose_name=_("ID Taxa"), blank=True, null=True, help_text="")
@@ -1325,6 +1326,7 @@ class Species(ScientificName):
     parent_content_type = models.ForeignKey(ContentType, on_delete=models.CASCADE)
     parent_taxon_id = models.PositiveIntegerField()
     parent_name = GenericForeignKey("parent_content_type", "parent_taxon_id")
+    basionym = models.ForeignKey("Synonymy", verbose_name=_("Basionym"), blank=True, null=True, on_delete=models.SET_NULL, related_name="basionym_of")
 
     objects = SpeciesQuerySet.as_manager()
 
@@ -1916,8 +1918,6 @@ class RegionDistributionView(models.Model):
            species.id_taxa,
            species.scientific_name AS specie_scientific_name,
            region.name             AS region_name,
-           region.name_es          AS region_name_es,
-           region.name_en          AS region_name_en,
            region.key              AS region_key
     FROM catalog_species_region species_region
          JOIN catalog_species species ON species_region.species_id = species.id
