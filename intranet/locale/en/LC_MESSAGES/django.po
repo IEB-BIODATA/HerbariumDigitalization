@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-01-05 13:57-0300\n"
+"POT-Creation-Date: 2026-07-17 13:05-0400\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -94,6 +94,7 @@ msgstr "New %(title)s"
 #: templates/catalog/create_catalog.html:31 templates/catalog/taxa_form.html:14
 #: templates/catalog/update_binnacle.html:20
 #: templates/catalog/update_catalog.html:31
+#: templates/digitalization/gallery_image.html:133
 #: templates/digitalization/update_voucher.html:106
 #: templates/registration/preference.html:46
 msgid "Save"
@@ -222,7 +223,6 @@ msgstr "Delete"
 
 #: templates/catalog/list_taxa.html:98
 #: templates/digitalization/control_vouchers.html:124
-#: templates/digitalization/gallery_image.html:133
 msgid "Edit"
 msgstr "Edit"
 
@@ -1176,18 +1176,18 @@ msgstr "Spanish"
 msgid "English"
 msgstr "English"
 
-#: intranet/settings.py:263
+#: intranet/settings.py:265
 msgid "Digital Herbarium API"
 msgstr "Digital Herbarium API"
 
-#: intranet/settings.py:264
+#: intranet/settings.py:266
 msgid "API description"
 msgstr "Catalogue of Vascular Plants of Chile and Digital Herbarium API"
 
-#: intranet/settings.py:270
+#: intranet/settings.py:272
 msgid "Mozilla Public License, version 2.0"
 msgstr "Mozilla Public License, version 2.0"
 
-#: intranet/settings.py:271
+#: intranet/settings.py:273
 msgid "Mozilla MPL URL"
 msgstr "https://www.mozilla.org/en-US/MPL/2.0/"

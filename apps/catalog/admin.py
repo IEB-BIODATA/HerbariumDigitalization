@@ -50,9 +50,15 @@ class TaxonRankAdmin(AttributeAdmin):
 
 
 @admin.register(Region)
-class RegionAdmin(LeafletGeoAdmin, AttributeAdmin):
+class RegionAdmin(LeafletGeoAdmin, ModelAdmin):
+    list_display = (['id', 'key', 'name', 'created_by', 'created_at', 'updated_at'])
+    search_fields = ['name']
     form = RegionForm
     exclude = ('geometry', )
+
+    def save_model(self, request, obj, form, change):
+        obj.created_by = request.user
+        obj.save(user=request.user)
 
 
 @admin.register(ConservationStatus)
