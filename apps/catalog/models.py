@@ -990,7 +990,10 @@ class Family(TaxonomicModel):
                         species.scientific_name_full, species.id, vouchers.count()
                     ))
                     for voucher in vouchers:
-                        voucher.generate_etiquette()
+                        try:
+                            voucher.voucherimported.generate_etiquette()
+                        except:
+                            pass
         return super().save(
             force_insert=force_insert,
             force_update=force_update,
