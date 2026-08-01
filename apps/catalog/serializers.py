@@ -192,6 +192,8 @@ class SpeciesSerializer(TaxonomicSerializer):
 
 
 class BinnacleSerializer(ModelSerializer):
+    created_by = ReadOnlyField(source='created_by.username')
+    
     class Meta:
         model = Binnacle
         fields = [
