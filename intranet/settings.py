@@ -221,11 +221,13 @@ CELERY_BEAT_SCHEDULE = {
         'schedule': crontab(hour="5", minute="0"),
         'args': ('input', 'tmp', 'log')
     },
+    """
     'weekly_clean_storage': {
         'task': 'clean_storage',
         'schedule': crontab(hour="3", minute="0", day_of_week='sunday'),
         'args': ('/var/log/clean_storage', )
     },
+    """
     'weekly_datavis_digitalization_progress': {
         'task': 'digitalization_progress',
         'schedule': crontab(hour="8", minute="0", day_of_week='monday')
