@@ -89,7 +89,7 @@ def generate_dwc_archive(self, option: int):
                     self.update_state(state="PROGRESS", meta={"step": i + current_total, "total": current_total + regions.count(), "logs": logger[0].get_logs()})
                     for spp in region.species_set.all():
                         distribution_results.append([
-                            spp.taxon_id, dwc.OccurrenceStatus.DefaultStatus.PRESENT, region.name_es, "Chile", "CL"
+                            spp.taxon_id, dwc.OccurrenceStatus.DefaultStatus.PRESENT, region.name, "Chile", "CL"
                         ])
                 current_total += regions.count()
                 darwin_core_archive.extensions.append(distribution_extension)
