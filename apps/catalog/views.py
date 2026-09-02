@@ -27,6 +27,7 @@ from .models import Species, CatalogView, SynonymyView, RegionDistributionView, 
     ConservationStatus, FinderView, Author, References
 from .serializers import DivisionSerializer, ClassSerializer, OrderSerializer, FamilySerializer, GenusSerializer, \
     CatalogViewSerializer, SpeciesSerializer, SynonymsSerializer, BinnacleSerializer, CommonNameSerializer
+from .utils import get_children
 from ..digitalization.storage_backends import PrivateMediaStorage
 
 MANY_RELATIONS = [
@@ -530,12 +531,15 @@ def update_taxa(request, species_id):
     gallery_warning = species.galleryimage_set.exists()
     voucher_warning = species.voucher_set.exists()
     synonymy_warning = species.synonyms.exists()
-    if gallery_warning or voucher_warning or synonymy_warning:
+    print(get_children(species))
+    children_warning = len(get_children(species)) > 0
+    if gallery_warning or voucher_warning or synonymy_warning or children_warning:
         warnings = True
-        warning_text = "Esta especie no puede ser eliminada debido a que está asociada a {}{}{}".format(
+        warning_text = "Esta especie no puede ser eliminada debido a que está asociada a {}{}{}{}".format(
             "galería " if gallery_warning else "",
             "scans " if voucher_warning else "",
             "sinónimos" if synonymy_warning else "",
+            "subespecies" if children_warning else "",
         )
     if request.method == "POST":
         form = SpeciesForm(request.POST, instance=species)

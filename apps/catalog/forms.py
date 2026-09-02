@@ -16,6 +16,22 @@ class TaxonomicForm(forms.ModelForm):
         super(TaxonomicForm, self).__init__(*args, **kwargs)
         self.fields['references'].choices = [("", _("(Add new reference)"))] + list(self.fields['references'].choices)
 
+    def clean_name(self):
+        name = self.cleaned_data.get('name')
+        if name:
+            model = self._meta.model
+            qs = model.objects.filter(name__iexact=name)
+            if self.instance.pk:
+                qs = qs.exclude(pk=self.instance.pk)
+            if qs.exists():
+                raise forms.ValidationError(
+                    _("A %(model)s named \"%(name)s\" already exists.") % {
+                        'model': model._meta.verbose_name,
+                        'name': name,
+                    }
+                )
+        return name
+
 
 class DivisionForm(TaxonomicForm):
     class Meta:
@@ -275,6 +291,59 @@ class SpeciesForm(TaxonomicForm):
             raise ValidationError(_('Form authorship is required'))
         return form_authors
 
+    def clean(self):
+        cleaned_data = super().clean()
+        genus = cleaned_data["genus"].name.capitalize()
+        scientific_name_full = "{genus} {epithet}{authorship}{sub_ssp}{var}{fma}".format(
+            genus=genus, epithet=cleaned_data["specific_epithet"],
+            authorship=" {}".format(
+                cleaned_data["scientific_name_authorship"]
+            ) if cleaned_data["scientific_name_authorship"] is not None else "",
+            sub_ssp=" subsp. {}{}".format(
+                cleaned_data["subspecies"],
+                " {}".format(
+                    cleaned_data["ssp_authorship"]
+                ) if cleaned_data["ssp_authorship"] is not None else ""
+            ) if cleaned_data["subspecies"] is not None else "",
+            var=" var. {}{}".format(
+                cleaned_data["variety"],
+                " {}".format(
+                    cleaned_data["variety_authorship"]
+                ) if cleaned_data["variety_authorship"] is not None else ""
+            ) if cleaned_data["variety"] is not None else "",
+            fma=" fma. {}{}".format(
+                cleaned_data["form"],
+                " {}".format(
+                    cleaned_data["form_authorship"]
+                ) if cleaned_data["form_authorship"] is not None else ""
+            ) if cleaned_data["form"] is not None else "",
+        )
+        if scientific_name_full:
+            species_qs = Species.objects.filter(scientific_name_full__iexact=scientific_name_full)
+            synonymy_qs = Synonymy.objects.filter(scientific_name_full__iexact=scientific_name_full)
+
+            if isinstance(self.instance, Species) and self.instance.pk:
+                species_qs = species_qs.exclude(pk=self.instance.pk)
+            elif isinstance(self.instance, Synonymy) and self.instance.pk:
+                synonymy_qs = synonymy_qs.exclude(pk=self.instance.pk)
+
+            if species_qs.exists():
+                self.add_error(
+                    None,
+                    _('The scientific name "%(name)s" already exists as a Species.') % {
+                        'name': scientific_name_full
+                    }
+                )
+            if synonymy_qs.exists():
+                self.add_error(
+                    None,
+                    _('The scientific name "%(name)s" already exists as a Synonymy.') % {
+                        'name': scientific_name_full
+                    }
+                )
+
+            return cleaned_data
+
 
 class SynonymyForm(TaxonomicForm):
     class Meta:
@@ -311,6 +380,59 @@ class SynonymyForm(TaxonomicForm):
             'references': forms.SelectMultiple(attrs={'class': "selectpicker", "multiple data-live-search": "true",
                                                       "multiple data-multiple-separator": ','}),
         }
+
+    def clean(self):
+        cleaned_data = super().clean()
+        genus = cleaned_data["genus"].capitalize()
+        scientific_name_full = "{genus} {epithet}{authorship}{sub_ssp}{var}{fma}".format(
+            genus=genus, epithet=cleaned_data["specific_epithet"],
+            authorship=" {}".format(
+                cleaned_data["scientific_name_authorship"]
+            ) if cleaned_data["scientific_name_authorship"] is not None else "",
+            sub_ssp=" subsp. {}{}".format(
+                cleaned_data["subspecies"],
+                " {}".format(
+                    cleaned_data["ssp_authorship"]
+                ) if cleaned_data["ssp_authorship"] is not None else ""
+            ) if cleaned_data["subspecies"] is not None else "",
+            var=" var. {}{}".format(
+                cleaned_data["variety"],
+                " {}".format(
+                    cleaned_data["variety_authorship"]
+                ) if cleaned_data["variety_authorship"] is not None else ""
+            ) if cleaned_data["variety"] is not None else "",
+            fma=" fma. {}{}".format(
+                cleaned_data["form"],
+                " {}".format(
+                    cleaned_data["form_authorship"]
+                ) if cleaned_data["form_authorship"] is not None else ""
+            ) if cleaned_data["form"] is not None else "",
+        )
+        if scientific_name_full:
+            species_qs = Species.objects.filter(scientific_name_full__iexact=scientific_name_full)
+            synonymy_qs = Synonymy.objects.filter(scientific_name_full__iexact=scientific_name_full)
+
+            if isinstance(self.instance, Species) and self.instance.pk:
+                species_qs = species_qs.exclude(pk=self.instance.pk)
+            elif isinstance(self.instance, Synonymy) and self.instance.pk:
+                synonymy_qs = synonymy_qs.exclude(pk=self.instance.pk)
+
+            if species_qs.exists():
+                self.add_error(
+                    None,
+                    _('The scientific name "%(name)s" already exists as a Species.') % {
+                        'name': scientific_name_full
+                    }
+                )
+            if synonymy_qs.exists():
+                self.add_error(
+                    None,
+                    _('The scientific name "%(name)s" already exists as a Synonymy.') % {
+                        'name': scientific_name_full
+                    }
+                )
+
+            return cleaned_data
 
 
 class CommonNameForm(forms.ModelForm):
