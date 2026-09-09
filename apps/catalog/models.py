@@ -717,13 +717,15 @@ class TaxonomicModel(models.Model):
                     using=using,
                     update_fields=update_fields
                 )
-                Binnacle.new_entry(self, kwargs["user"], notes=kwargs.get("notes", None))
+                if not force_insert:
+                    Binnacle.new_entry(self, kwargs["user"], notes=kwargs.get("notes", None))
             except Exception as e:
                 raise e
         elif self.__original__ != self:
             prev_entry = repr(self.__original__)
             self.__original__ = deepcopy(self)
-            Binnacle.update_entry(prev_entry, self, kwargs["user"], notes=kwargs.get("notes", None))
+            if not force_insert:
+                Binnacle.update_entry(prev_entry, self, kwargs["user"], notes=kwargs.get("notes", None))
             return super().save(
                 force_insert=force_insert,
                 force_update=force_update,
