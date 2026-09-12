@@ -531,8 +531,14 @@ def update_taxa(request, species_id):
     gallery_warning = species.galleryimage_set.exists()
     voucher_warning = species.voucher_set.exists()
     synonymy_warning = species.synonyms.exists()
-    print(get_children(species))
-    children_warning = len(get_children(species)) > 0
+    children = get_children(species)
+    print(children)
+    for sp in children:
+        if sp.scientific_name_full == sp.scientific_name_full:
+            children.remove(sp)
+            break
+    print(children)
+    children_warning = len(children) > 0
     if gallery_warning or voucher_warning or synonymy_warning or children_warning:
         warnings = True
         warning_text = "Esta especie no puede ser eliminada debido a que está asociada a {}{}{}{}".format(

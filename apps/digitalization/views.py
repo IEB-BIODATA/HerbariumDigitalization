@@ -909,14 +909,19 @@ def download_catalog(request):
         logging.info("Generating catalog excel...")
         headers = [
             'unique_taxon_id', 'id taxa',
+            'Division', 'Class', 'Order',
             'Family', 'Genus', 'Species',
             'Scientific Name', 'Scientific Name Full',
-            'Scientific Name DB', 'Determined'
+            'Scientific Name DB', 'Determined', 'Status'
         ]
         species = Species.objects.values_list(
-            'unique_taxon_id', 'id_taxa', 'genus__family__name', 'genus__name',
+            'unique_taxon_id', 'id_taxa',
+            'genus__family__order__classname__division__name',
+            'genus__family__order__classname__name', 'genus__family__order__name',
+            'genus__family__name', 'genus__name',
             'specific_epithet', 'scientific_name',
-            'scientific_name_full', 'scientific_name_db', 'determined'
+            'scientific_name_full', 'scientific_name_db', 'determined',
+            'status__name_es',
         ).order_by('unique_taxon_id')
         databook = tablib.Databook()
         data_set = tablib.Dataset(*species, headers=headers, title='Catalog')
