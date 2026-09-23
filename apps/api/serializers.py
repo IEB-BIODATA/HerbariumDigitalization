@@ -364,7 +364,7 @@ class SpecimenDetailSerializer(SpecimenFinderSerializer):
             'image', 'recorded_by', 'georeferenced_date',
             'record_number', 'locality', 'identified_by',
             'date_identified', 'organism_remarks', 'iiif',
-            'iiif_url',
+            'iiif_url', 'associated_sequences',
         ]
 
     def get_image(self, obj: Voucher) -> Dict[str, str]:

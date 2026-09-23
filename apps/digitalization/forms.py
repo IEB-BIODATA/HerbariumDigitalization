@@ -81,8 +81,9 @@ class VoucherImportedForm(forms.ModelForm):
             'organism_remarks',
             'priority',
             'image_resized_60',
+            'associated_sequences',
             'decimal_latitude',
-            'decimal_longitude',
+            'decimal_longitude',   
         )
         widgets = {
             'catalog_number': forms.TextInput(attrs={'class': "form-control", 'readonly': 'true'}),
@@ -98,8 +99,9 @@ class VoucherImportedForm(forms.ModelForm):
             'organism_remarks': forms.Textarea(attrs={'class': "form-control", 'rows': "5"}),
             'priority': forms.TextInput(attrs={'class': "form-control", 'type': 'number'}),
             'image_resized_60': forms.TextInput(attrs={'class': "form-control", 'readonly': 'true'}),
+            'associated_sequences': forms.URLInput(attrs={'class': 'form-control','placeholder': 'Ej: https://portal.boldsystems.org/record/BNFJC037-24',}),
             'decimal_latitude': forms.TextInput(attrs={'class': "form-control"}),
-            'decimal_longitude': forms.TextInput(attrs={'class': "form-control"}),
+            'decimal_longitude': forms.TextInput(attrs={'class': "form-control"}),   
         }
 
 

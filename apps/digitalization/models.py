@@ -98,6 +98,7 @@ DCW_SQL = {
     "scientificNameSimilarity": "scientific_name_similarity",
     "synonymySimilarity": "synonymy_similarity",
     "similarity": "similarity",
+    "associatedSequences": "associated_sequences",
 }
 
 HERBARIUM_DWC_FIELDS = [
@@ -410,6 +411,8 @@ class Voucher(models.Model):
     decimal_latitude_public = models.FloatField(verbose_name=_("Public Latitude"), blank=True, null=True)
     decimal_longitude_public = models.FloatField(verbose_name=_("Public Longitude"), blank=True, null=True)
     point_public = models.PointField(verbose_name=_("Public Point"), null=True, blank=True, )
+
+    associated_sequences = models.URLField(null=True, blank=True, verbose_name=_("Associated Sequences"))
 
     objects = VoucherImportedQuerySet.as_manager()
 
