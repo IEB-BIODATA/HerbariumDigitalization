@@ -104,7 +104,7 @@ def __catalog_table__(
         )
         if add_searchable:
             search_query = search_query | add_searchable
-    entries = model.objects.all()
+    entries = model.objects.filter(deleted=False)
 
     return paginated_table(
         request, entries,
@@ -570,7 +570,8 @@ def delete_taxa(request, species_id):
         logging.info("Taxa to be deleted {}:{}".format(
             species_id, name
         ))
-        species.delete()
+        species.deleted = True
+        species.save()
         binnacle = Binnacle(
             type_update="Eliminación", model="Taxón",
             description="Se elimina Taxón {}".format(name),

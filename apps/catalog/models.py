@@ -601,6 +601,7 @@ class TaxonomicModel(models.Model):
     updated_at = models.DateTimeField(verbose_name=_("Updated at"), auto_now=True)
     created_by = models.ForeignKey(User, verbose_name=_("Created by"), on_delete=models.PROTECT, default=1, editable=False)
     references = models.ManyToManyField(References, verbose_name=_("References"), blank=True)
+    deleted = models.BooleanField(verbose_name=_("Deleted"), default=False)
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -1701,7 +1702,8 @@ class Binnacle(models.Model):
             model.pk
         )
         try:
-            model.delete()
+            model.deleted = True
+            model.save(force_update=True)
             logging.info("{}: {}".format(created_by, description))
             binnacle = Binnacle(
                 type_update="Eliminación",
@@ -1768,7 +1770,8 @@ class CatalogView(TaxonomicModel):
            species.id_taxa_origin,
            species.created_at,
            species.updated_at,
-           "user".username AS created_by
+           "user".username AS created_by,
+           species.deleted
     FROM catalog_species species
          JOIN auth_user "user" ON species.created_by_id = "user".id
          JOIN catalog_genus genus ON species.genus_id = genus.id
