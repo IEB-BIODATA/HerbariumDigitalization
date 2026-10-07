@@ -776,6 +776,11 @@ class SpecimensList(QueryList, POSTRedirect):
                 #Q(image_public_resized_60__isnull=False) &
                 #Q(image_public__isnull=False)
             )
+        genbank_filter = self.request.query_params.get("genbank_filter", "false").lower() == "true"
+        if genbank_filter:
+            query = query & (
+                Q(associated_sequences__isnull=False)
+            )
         query = query & filter_by_geo(self.request.query_params, "point__within")
         regions = self.request.GET.getlist("region", [])
         if len(regions) > 0:
