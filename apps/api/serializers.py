@@ -2,7 +2,7 @@ from django.conf import settings
 from django.db.models import Q
 from drf_spectacular.utils import extend_schema_field
 from rest_framework.serializers import HyperlinkedModelSerializer, ModelSerializer, CharField, ReadOnlyField, \
-    SerializerMethodField, Serializer
+    SerializerMethodField, Serializer, IntegerField
 from typing import Union, List, Dict
 
 from apps.catalog.models import Species, Family, Genus, Synonymy, Division, ClassName, Order, CommonName, \
@@ -399,3 +399,7 @@ class SpecimenDetailSerializer(SpecimenFinderSerializer):
             except ValueError:
                 pass
         return ""
+
+class TypificationSerializer(Serializer):
+    id = IntegerField()
+    name = CharField()
