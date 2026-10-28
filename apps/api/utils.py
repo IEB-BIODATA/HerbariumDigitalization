@@ -188,6 +188,13 @@ class OpenAPIConservation(OpenAPIQueryParameter):
         )
         return
 
+class OpenAPITypification(OpenAPIQueryParameter):
+    def __init__(self):
+        super(OpenAPITypification, self).__init__(
+            name="typification",
+            description="IDs of typification to include."
+        )
+        return
 
 class OpenAPICommonName(OpenAPIQueryParameter):
     def __init__(self):

@@ -28,25 +28,25 @@ from apps.catalog.models import Species, Synonymy, Family, Division, ClassName, 
     SynonymyQuerySet, \
     SpeciesQuerySet, TaxonomicQuerySet, DownloadSearchRegistration, FORMAT_CHOICES
 from apps.datavis.models import DataVisualization
-from apps.digitalization.models import VoucherImported, BannerImage, Voucher, VoucherRepatriated
+from apps.digitalization.models import VoucherImported, BannerImage, Voucher, VoucherRepatriated, TYPIFICATION
 from intranet.utils import get_geometry_post
 from .serializers import SpeciesFinderSerializer, \
     SynonymyFinderSerializer, DivisionSerializer, ClassSerializer, OrderSerializer, \
     FamilySerializer, DistributionSerializer, \
     FinderSerializer, GenusSerializer, CommonNameSerializer, \
     SpeciesDetailsSerializer, SynonymyDetailsSerializer, SpecimenDetailSerializer, SpecimenFinderSerializer, \
-    RegionDetailsSerializer, MinimumSerializer
+    RegionDetailsSerializer, MinimumSerializer, TypificationSerializer
 from .tasks import request_download
 from .utils import filter_query_set, OpenAPIKingdom, OpenAPIClass, OpenAPIOrder, OpenAPIFamily, OpenAPIGenus, \
     OpenAPISpecies, OpenAPIPlantHabit, OpenAPIEnvHabit, OpenAPIStatus, OpenAPICycle, OpenAPIRegion, OpenAPIConservation, \
     OpenAPICommonName, OpenAPISearch, OpenAPIDivision, OpenAPIHerbarium, OpenApiPaginated, OpenAPISpeciesFilter, \
-    OpenAPILang, filter_by_geo, OpenAPIArea, OpenAPIGeometry
+    OpenAPILang, filter_by_geo, OpenAPIArea, OpenAPIGeometry, OpenAPITypification
 from ..catalog.serializers import PlantHabitSerializer, EnvHabitSerializer, StatusSerializer, CycleSerializer, \
     RegionSerializer, ConservationStatusSerializer
 from ..datavis.serializers import DataVisualizationSerializer
 from ..catalog.utils import get_children
 from ..digitalization.utils import register_temporal_geometry
-from ..home.models import Alert
+from ..home.models import Alert 
 
 TAXONOMIC_MODEL = {
     "species": Species,
@@ -400,14 +400,30 @@ class MenuApiView(ObjectMultipleModelAPIView):
         OpenAPIFamily(), OpenAPIGenus(), OpenAPISpecies(),
         OpenAPIPlantHabit(), OpenAPIEnvHabit(), OpenAPIStatus(), OpenAPICycle(),
         OpenAPIRegion(), OpenAPIConservation(), OpenAPICommonName(), OpenAPISearch(),
-        OpenApiPaginated(), OpenAPILang(),
+        OpenApiPaginated(), OpenAPILang(), OpenAPITypification(),
     ], responses={
         ('200', 'application/json'): OpenApiResponse(
             description='All available options of each menu filter. Used on the main page',
         ),
     })
+
     def get(self, request, *args, **kwargs):
-        return super().get(request, *args, **kwargs)
+        response = super().get(request, *args, **kwargs)
+
+        typifications = [
+            {"id": value, "name": str(label)}
+            for value, label in TYPIFICATION
+        ]
+
+        serializer = TypificationSerializer(
+            typifications,
+            many=True,
+            context=self.get_serializer_context(),
+        )
+
+        response.data["typification"] = serializer.data
+
+        return response
 
 
 class NameApiView(ObjectMultipleModelAPIView):
@@ -754,6 +770,32 @@ class SpecimensList(QueryList, POSTRedirect):
 
     def get_queryset(self):
         queryset = super().get_queryset()
+
+        # Typification filter.
+        parameters = self.request.query_params.getlist("typification")
+
+        if parameters:
+            try:
+                typification_ids = {int(value) for value in parameters}
+            except (TypeError, ValueError):
+                raise exceptions.ValidationError({
+                    "typification": "Typification must be integer."
+                })
+
+            valid_ids = {value for value, _ in TYPIFICATION}
+            invalid_ids = typification_ids - valid_ids
+
+            if invalid_ids:
+                raise exceptions.ValidationError({
+                    "typification": (
+                        f"Invalid typifications ids: {sorted(invalid_ids)}."
+                    )
+                })
+
+            queryset = queryset.filter(
+                typestatus__type__in=typification_ids
+            ).distinct()
+
         #query = Q(biodata_code__voucher_state=7)
         query = Q(image_public_resized_10__isnull=False)
         code = self.request.GET.get("code", None)
@@ -776,6 +818,11 @@ class SpecimensList(QueryList, POSTRedirect):
                 #Q(image_public_resized_60__isnull=False) &
                 #Q(image_public__isnull=False)
             )
+        genbank_filter = self.request.query_params.get("genbank_filter", "false").lower() == "true"
+        if genbank_filter:
+            query = query & (
+                Q(associated_sequences__isnull=False)
+            )
         query = query & filter_by_geo(self.request.query_params, "point__within")
         regions = self.request.GET.getlist("region", [])
         if len(regions) > 0:
@@ -797,6 +844,7 @@ class SpecimensList(QueryList, POSTRedirect):
         OpenAPIRegion(), OpenAPIConservation(), OpenAPICommonName(),
         OpenAPISearch(), OpenApiPaginated(), OpenAPILang(),
         OpenAPIHerbarium(), OpenAPIArea(), OpenAPIGeometry(),
+        OpenAPITypification(),
         OpenApiParameter(
             name="code",
             location=OpenApiParameter.QUERY,
@@ -929,3 +977,13 @@ class DataVisualizationView(APIView):
             serializer.save()
             return Response(serializer.data, status=status.HTTP_201_CREATED)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+class TypificationListAPIView(APIView):
+    def get(self, request):
+        options = [
+            {"id": value, "name": str(label)}
+            for value, label in TYPIFICATION
+        ]
+
+        serializer = TypificationSerializer(options, many=True)
+        return Response(serializer.data)
