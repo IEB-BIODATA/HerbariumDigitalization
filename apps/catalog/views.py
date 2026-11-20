@@ -14,10 +14,11 @@ from django.contrib.auth.decorators import login_required
 from django.contrib.auth.models import User
 from django.db.models import Q
 from django.http import HttpResponse, JsonResponse, HttpRequest, HttpResponseServerError, HttpResponseRedirect
-from django.shortcuts import render, redirect
+from django.shortcuts import render, redirect, get_object_or_404
 from django.urls import reverse, resolve
 from django.utils.translation import gettext_lazy as _
 from rest_framework.serializers import SerializerMetaclass
+from django.contrib import messages
 
 from intranet.utils import paginated_table, TaskProcessLogger
 from .forms import DivisionForm, ClassForm, OrderForm, FamilyForm, GenusForm, SpeciesForm, SynonymyForm, BinnacleForm, \
@@ -564,7 +565,16 @@ def update_taxa(request, species_id):
 
 
 def delete_taxa(request, species_id):
-    species = Species.objects.get(unique_taxon_id=species_id)
+    species = get_object_or_404(Species,unique_taxon_id=species_id)
+
+    if species.voucher_set.exists():
+        messages.error(
+            request,
+            f"No se puede eliminar {species.scientific_name_full}: "
+            "existen vouchers asociados a esta especie.",
+        )
+        return redirect("list_taxa")
+
     name = species.scientific_name_full
     try:
         logging.info("Taxa to be deleted {}:{}".format(
