@@ -991,11 +991,11 @@ class Family(TaxonomicModel):
                     logging.debug("Vouchers on {} ({}): {}".format(
                         species.scientific_name_full, species.id, vouchers.count()
                     ))
-                    for voucher in vouchers:
-                        try:
-                            voucher.voucherimported.generate_etiquette()
-                        except:
-                            pass
+                    #for voucher in vouchers:
+                    #    try:
+                    #        voucher.voucherimported.generate_etiquette()
+                    #    except:
+                    #        pass
         return super().save(
             force_insert=force_insert,
             force_update=force_update,

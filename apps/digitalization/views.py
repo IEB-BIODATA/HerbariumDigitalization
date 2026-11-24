@@ -965,8 +965,8 @@ def update_voucher(request, voucher_id):
                 voucher.decimal_longitude_public = None
                 voucher.point_public = None
             voucher.save()
-            if voucher.image and voucher.biodata_code.voucher_state == 7:
-                etiquette_picture.delay(int(voucher.pk))
+            #if voucher.image and voucher.biodata_code.voucher_state == 7:
+            #    etiquette_picture.delay(int(voucher.pk))
             for form in formset.deleted_forms:
                 form.instance.delete()
             related_instances = formset.save(commit=False)

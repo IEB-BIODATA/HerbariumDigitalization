@@ -632,8 +632,8 @@ def merge_taxa(request, taxa_1: int, taxa_2: int) -> HttpResponse:
             for voucher in voucher_specimens:
                 voucher.scientific_name = species_2
                 voucher.save()
-                logging.info(f"Re-generating etiquette for {voucher.voucherimported.biodata_code.code}")
-                voucher.voucherimported.generate_etiquette()
+                #logging.info(f"Re-generating etiquette for {voucher.voucherimported.biodata_code.code}")
+                #voucher.voucherimported.generate_etiquette()
             Binnacle.delete_entry(species_1, request.user)
             CatalogView.refresh_view()
             FinderView.refresh_view()

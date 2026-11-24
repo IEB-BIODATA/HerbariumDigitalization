@@ -278,16 +278,17 @@ def scheduled_postprocess(input_folder: str, temp_folder: str, log_folder: str):
                                     voucher.upload_raw_image(file)
                                     voucher.save()
                                 with open(filename, "rb") as file:
-                                    voucher.upload_image(file)
-                                    file.seek(0)
+                                    #voucher.upload_image(file)
+                                    #file.seek(0)
                                     voucher.upload_image(file, public=True)
                                     file.seek(0)
                                     image = Image.open(file)
                                     for scale_percent in [10, 60]:
                                         resized_image = change_image_resolution(image, scale_percent)
-                                        voucher.upload_scaled_image(resized_image, scale_percent)
+                                        #voucher.upload_scaled_image(resized_image, scale_percent)
+                                        voucher.upload_scaled_image(resized_image, scale_percent, public=True)
                                 voucher.save()
-                                done = etiquette_picture(voucher.id, logger=process_logger)
+                                done = True #etiquette_picture(voucher.id, logger=process_logger)
                             else:
                                 process_logger.error(
                                     "No voucher, or more than one, associated with ocurrence {}".format(
@@ -506,19 +507,20 @@ def process_pending_vouchers(self, pending_vouchers: List[str], user: int) -> st
                 "step": i, "total": total, "logs": logger[0].get_logs()
             })
             with open(os.path.join(temp_folder, raw_file.replace(".CR3", ".jpg")), "rb") as image_file:
-                voucher_imported.upload_image(image_file)
+                #voucher_imported.upload_image(image_file)
                 image_file.seek(0)
                 voucher_imported.upload_image(image_file, public=True)
                 image_file.seek(0)
                 image = Image.open(image_file)
                 for scale_percent in [10, 60]:
                     resized_image = change_image_resolution(image, scale_percent)
-                    voucher_imported.upload_scaled_image(resized_image, scale_percent)
+                    #voucher_imported.upload_scaled_image(resized_image, scale_percent)
+                    voucher_imported.upload_scaled_image(resized_image, scale_percent, public=True)
                 voucher_imported.save()
                 self.update_state(state='PROGRESS', meta={
                     "step": i, "total": total, "logs": logger[0].get_logs()
                 })
-                etiquette_picture(int(voucher), logger=logger)
+                #etiquette_picture(int(voucher), logger=logger)
                 voucher_imported.refresh_from_db()
             log_object.processed_images += 1
             logger.info("Deep Archive image raw")

@@ -455,7 +455,7 @@ class VoucherImported(Voucher):
             self.biodata_code.voucher_state = 8
             self.biodata_code.save()
             self.save()
-            celery.current_app.send_task('etiquette_picture', (self.pk,))
+            #celery.current_app.send_task('etiquette_picture', (self.pk,))
             return
         else:
             logging.debug("Voucher not digitalized, skipping ({})".format(self.pk))

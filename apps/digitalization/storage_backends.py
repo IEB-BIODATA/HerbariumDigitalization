@@ -26,13 +26,13 @@ class StaticStorage(CustomDomainStorage):
 class PublicMediaStorage(CustomDomainStorage):
     location = settings.AWS_PUBLIC_MEDIA_LOCATION
     custom_domain = settings.MEDIA_URL
-    file_overwrite = False
+    file_overwrite = True
 
 
 class PrivateMediaStorage(CustomDomainStorage):
     location = settings.AWS_PRIVATE_MEDIA_LOCATION
     default_acl = 'private'
-    file_overwrite = False
+    file_overwrite = True
     custom_domain = False
     object_parameters = {
         'StorageClass': 'STANDARD',
