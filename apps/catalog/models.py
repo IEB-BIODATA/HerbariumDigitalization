@@ -1734,6 +1734,7 @@ class CatalogView(TaxonomicModel):
            species.id_taxa,
            species.unique_taxon_id,
            species.taxon_id,
+           species.deleted,
            kingdom.id      AS kingdom_id,
            kingdom.name    AS kingdom,
            division.id     AS division_id,
@@ -1770,8 +1771,7 @@ class CatalogView(TaxonomicModel):
            species.id_taxa_origin,
            species.created_at,
            species.updated_at,
-           "user".username AS created_by,
-           species.deleted
+           "user".username AS created_by
     FROM catalog_species species
          JOIN auth_user "user" ON species.created_by_id = "user".id
          JOIN catalog_genus genus ON species.genus_id = genus.id
@@ -1780,7 +1780,8 @@ class CatalogView(TaxonomicModel):
          JOIN catalog_classname classname ON "order".classname_id = classname.id
          JOIN catalog_division division ON classname.division_id = division.id
          JOIN catalog_kingdom kingdom ON division.kingdom_id = kingdom.id
-         LEFT JOIN catalog_status status ON species.status_id = status.id;
+         LEFT JOIN catalog_status status ON species.status_id = status.id
+    WHERE NOT species.deleted;
 
     CREATE UNIQUE INDEX catalog_view_id_idx
         ON catalog_view (id);
@@ -1789,6 +1790,7 @@ class CatalogView(TaxonomicModel):
     id_taxa = models.IntegerField(blank=False, null=False, help_text="")
     unique_taxon_id = models.BigIntegerField()
     taxon_id = models.CharField()
+    deleted = models.BooleanField(default=False)
     kingdom_id = models.IntegerField(blank=False, null=False, help_text="")
     kingdom = models.CharField(max_length=300, blank=True, null=True)
     division_id = models.IntegerField(blank=False, null=False, help_text="")
@@ -1856,6 +1858,7 @@ class SynonymyView(TaxonomicModel):
            species.scientific_name AS species_scientific_name,
            synonymy.scientific_name,
            synonymy.scientific_name_full,
+           synonymy.deleted,
            synonymy.genus,
            synonymy.specific_epithet,
            synonymy.scientific_name_authorship,
@@ -1870,7 +1873,8 @@ class SynonymyView(TaxonomicModel):
            "user".username          AS created_by
     FROM catalog_synonymy synonymy
         LEFT JOIN catalog_species species ON synonymy.species_id = species.id
-        LEFT JOIN auth_user "user" ON synonymy.created_by_id = "user".id;
+        LEFT JOIN auth_user "user" ON synonymy.created_by_id = "user".id
+    WHERE NOT synonymy.deleted;
 
     CREATE UNIQUE INDEX synonymy_view_id_idx
         ON synonymy_view (id);
@@ -1883,6 +1887,7 @@ class SynonymyView(TaxonomicModel):
     species_scientific_name = models.CharField(max_length=500, blank=True, null=True, help_text="sp")
     scientific_name = models.CharField(max_length=300, blank=True, null=True)
     scientific_name_full = models.CharField(max_length=800, blank=True, null=True)
+    deleted = models.BooleanField(default=False)
     genus = models.CharField(max_length=300, blank=True, null=True)
     specific_epithet = models.CharField(max_length=300, blank=True, null=True)
     scientific_name_authorship = models.CharField(max_length=500, blank=True, null=True)
