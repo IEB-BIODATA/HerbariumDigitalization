@@ -3,7 +3,7 @@ import logging
 from time import time
 
 from django.conf import settings
-from django.db.models import Q
+from django.db.models import Q, QuerySet
 from django.http import HttpRequest, QueryDict
 from django.utils.translation import activate
 from drf_spectacular.types import OpenApiTypes
@@ -11,12 +11,26 @@ from drf_spectacular.utils import OpenApiParameter
 from modeltranslation.utils import get_language
 from rest_framework.request import Request
 
-from apps.catalog.models import ATTRIBUTES, TAXONOMIC_RANK, CatalogQuerySet
+from apps.catalog.models import ATTRIBUTES, TAXONOMIC_RANK, CatalogQuerySet, TaxonomicModel, Synonymy
 from apps.digitalization.models import Area
+
+
+def exclude_deleted(queryset: QuerySet) -> QuerySet:
+    """
+    Remove soft-deleted taxonomic entries (``deleted=True``) from the queryset.
+    Querysets of models without a ``deleted`` field are returned untouched.
+    """
+    model = queryset.model
+    if issubclass(model, TaxonomicModel):
+        queryset = queryset.filter(deleted=False)
+    if issubclass(model, Synonymy):
+        queryset = queryset.exclude(species__deleted=True)
+    return queryset
 
 
 def filter_query_set(queryset: CatalogQuerySet, query_params: QueryDict) -> CatalogQuerySet:
     start = time()
+    queryset = exclude_deleted(queryset)
     default_language = get_language()
     lang = query_params.get("lang", default_language)
     activate(lang)

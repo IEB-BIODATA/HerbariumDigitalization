@@ -282,7 +282,7 @@ class SpeciesDetailsSerializer(SpeciesSerializer):
         return serializer_class(parent_model).data
 
     def get_synonyms(self, obj: Species) -> List[str]:
-        return [synonym.scientific_name_full for synonym in obj.synonyms.all()]
+        return [synonym.scientific_name_full for synonym in obj.synonyms.filter(deleted=False)]
 
     def get_vouchers(self, obj: Species) -> SampleSerializer:
         children = get_children(obj)
