@@ -585,14 +585,7 @@ def delete_taxa(request, species_id):
         logging.info("Taxa to be deleted {}:{}".format(
             species_id, name
         ))
-        species.deleted = True
-        species.save()
-        binnacle = Binnacle(
-            type_update="Eliminación", model="Taxón",
-            description="Se elimina Taxón {}".format(name),
-            created_by=request.user
-        )
-        binnacle.save()
+        Binnacle.delete_entry(species, request.user)
         CatalogView.refresh_view()
         FinderView.refresh_view()
         SynonymyView.refresh_view()
