@@ -462,20 +462,20 @@ class VoucherImported(Voucher):
             return
 
     def image_voucher_thumb_url(self):
-        if self.image_resized_10:
-            return self.image_resized_10.url
+        if self.image_public_resized_10:
+            return self.image_public_resized_10.url
         else:
             return '#'
 
     def image_voucher_url(self):
-        if self.image_resized_60:
-            return self.image_resized_60.url
+        if self.image_public_resized_60:
+            return self.image_public_resized_60.url
         else:
             return '#'
 
     def image_voucher_jpg_raw_url(self):
-        if self.image:
-            return self.image_resized_60.url
+        if self.image_public:
+            return self.image_public.url
         else:
             return '#'
 
