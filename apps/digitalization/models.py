@@ -28,9 +28,15 @@ from django.forms import CharField
 from django.utils.translation import gettext_lazy as _
 from typing import BinaryIO, Union, Any, Tuple, Callable, Dict, List
 
+from dwca.classes import DataFileType
+from dwca.terms import Field
+
+from xml_common.utils import Language
+
 from apps.catalog.models import Species, TAXONOMIC_RANK, RANK_MODELS, get_fuzzy_taxa, TaxonomicModel
 from apps.metadata.models import EML, Licence
 import dwca.terms as dwc
+import dwca.classes as dwc_classes
 from intranet.utils import CatalogQuerySet
 from .storage_backends import PublicMediaStorage, PrivateMediaStorage, GlacierPrivateMediaStorage, IAPrivateMediaStorage
 from .validators import validate_file_size
@@ -102,16 +108,125 @@ DCW_SQL = {
 }
 
 HERBARIUM_DWC_FIELDS = [
-    dwc.OccurrenceID(0), dwc.DWCModified(1), dwc.DWCLicense(2), dwc.DWCRightsHolder(3),
+    dwc.OccurrenceID(0), dwc.DWCReferences(1), dwc.DWCLicense(2), dwc.DWCRightsHolder(3),
     dwc.DWCInstitutionCode(4), dwc.DWCCollectionCode(5), dwc.DWCDatasetName(6), dwc.DWCBasisOfRecord(7),
     dwc.CatalogNumber(8), dwc.RecordNumber(9), dwc.RecordedBy(10), dwc.OccurrenceRemarks(11),
-    dwc.OtherCatalogNumbers(12), dwc.IdentifiedBy(13),
-    dwc.VerbatimElevation(14), dwc.DecimalLatitude(15), dwc.DecimalLongitude(16),
-    dwc.GeoreferencedDate(17), dwc.DateIdentified(18), dwc.TypeStatus(19),
-    dwc.ScientificName(20), dwc.Kingdom(21), dwc.Family(22), dwc.Genus(23),
-    dwc.SpecificEpithet(24), dwc.InfraspecificEpithet(25),
-    dwc.TaxonRank(26), dwc.ScientificNameAuthorship(27)
+    dwc.OtherCatalogNumbers(12), dwc.IdentifiedBy(13), dwc.VerbatimElevation(14),
+    dwc.DecimalLatitude(15), dwc.DecimalLongitude(16), dwc.GeodeticDatum(17),
+    dwc.Continent(18), dwc.Country(19), dwc.CountryCode(20), dwc.DWCLocalityTerm(21),
+    dwc.GeoreferencedDate(22), dwc.DateIdentified(23), dwc.TypeStatus(24),
+    dwc.ScientificName(25), dwc.Kingdom(26), dwc.Family(27), dwc.Genus(28),
+    dwc.SpecificEpithet(29), dwc.InfraspecificEpithet(30),
+    dwc.TaxonRank(31), dwc.ScientificNameAuthorship(32), dwc.DWCType(33),
+    dwc.DWCLanguage(34, two_letter_coding=True), dwc.EventDate(35)
 ]
+
+
+class Format(dwc.Field):
+    URI = "http://purl.org/dc/elements/1.1/format"
+    TYPE = str
+
+    def __init__(self, index: int | str, default: TYPE = None, vocabulary: str = None) -> None:
+        super().__init__(index, default, vocabulary)
+        return
+
+
+class AccessURI(dwc.Field):
+    URI = "http://rs.tdwg.org/ac/terms/accessURI"
+    TYPE = str
+
+    def __init__(self, index: int | str, default: TYPE = None, vocabulary: str = None) -> None:
+        super().__init__(index, default, vocabulary)
+        return
+
+
+class AssociatedSpecimenReference(dwc.Field):
+    URI = "http://rs.tdwg.org/ac/terms/associatedSpecimenReference"
+    TYPE = str
+
+    def __init__(self, index: int | str, default: TYPE = None, vocabulary: str = None) -> None:
+        super().__init__(index, default, vocabulary)
+        return
+
+
+class Identifier(dwc.Field):
+    URI = "http://purl.org/dc/terms/identifier"
+    TYPE = str
+
+    def __init__(self, index: int | str, default: TYPE = None, vocabulary: str = None) -> None:
+        super().__init__(index, default, vocabulary)
+        return
+
+class Description(dwc.Field):
+    URI = "http://purl.org/dc/terms/description"
+    TYPE = str
+
+    def __init__(self, index: int | str, default: TYPE = None, vocabulary: str = None) -> None:
+        super().__init__(index, default, vocabulary)
+        return
+
+class ServiceExpectation(dwc.Field):
+    URI = "http://rs.tdwg.org/ac/terms/serviceExpectation"
+    TYPE = str
+
+    def __init__(self, index: int | str, default: TYPE = None, vocabulary: str = None) -> None:
+        super().__init__(index, default, vocabulary)
+        return
+
+
+class Owner(dwc.Field):
+    URI = "http://ns.adobe.com/xap/1.0/rights/Owner"
+    TYPE = str
+
+    def __init__(self, index: int | str, default: TYPE = None, vocabulary: str = None) -> None:
+        super().__init__(index, default, vocabulary)
+        return
+
+
+class Rights(dwc.Field):
+    URI = "http://purl.org/dc/terms/rights"
+    TYPE = str
+
+    def __init__(self, index: int | str, default: TYPE = None, vocabulary: str = None) -> None:
+        super().__init__(index, default, vocabulary)
+        return
+
+class ElementsRights(dwc.Field):
+    URI = "http://purl.org/dc/elements/1.1/rights"
+    TYPE = str
+
+    def __init__(self, index: int | str, default: TYPE = None, vocabulary: str = None) -> None:
+        super().__init__(index, default, vocabulary)
+        return
+
+
+class Creator(dwc.Field):
+    URI = "http://purl.org/dc/elements/1.1/creator"
+    TYPE = str
+
+    def __init__(self, index: int | str, default: TYPE = None, vocabulary: str = None) -> None:
+        super().__init__(index, default, vocabulary)
+        return
+
+
+HERBARIUM_MULTIMEDIA_FIELDS = [
+    dwc.DWCType(1), Format(2), AccessURI(3), AssociatedSpecimenReference(4),
+    Identifier(5), Description(6), ServiceExpectation(7), Owner(8), Rights(9),
+    ElementsRights(10), dwc.DWCRightsHolder(11),
+    Creator(12), dwc.DWCLicense(13), dwc.DWCModified(14)
+]
+
+
+class Multimedia(dwc_classes.DataFile):
+    URI = "http://rs.gbif.org/terms/1.0/Multimedia"
+    def __init__(self, _id: int, files: str, fields: List[Field]):
+        super().__init__(
+            _id, files, fields,
+            dwc_classes.DataFileType.EXTENSION,
+            "utf-8", "\n", "\t",
+            "", 1
+        )
+        return
 
 
 class Herbarium(models.Model):
@@ -120,6 +235,10 @@ class Herbarium(models.Model):
                                        unique=True, help_text=_("No more than %d letters") % 6)
     institution_code = models.CharField(verbose_name=_("Institution Code"), max_length=10, blank=True, null=True,
                                         help_text=_("No more than %d letters") % 10)
+    dataset_name = models.CharField(verbose_name=_("Dataset Name"), max_length=10, blank=True, null=True,
+                                    help_text=_("No more than %d letters") % 10)
+    collection_id = models.URLField(verbose_name="Collection ID", blank=True, null=True)
+    institution_id = models.URLField(verbose_name="Institution ID", blank=True, null=True)
     metadata = models.ForeignKey(EML, verbose_name=_("Metadata"), on_delete=models.PROTECT, blank=True, null=True)
     herbarium_type = models.IntegerField(
         verbose_name=_("Type of Herbarium"),
@@ -352,8 +471,8 @@ class VoucherImportedQuerySet(CatalogQuerySet):
                 })
             rows.append(
                 [
-                    f"{settings.HERBARIUM_FRONTEND}/images/zoom/{obj.pk}/",
-                    obj.biodata_code.created_at,
+                    obj.biodata_code.code,
+                    f"https://herbariodigital.cl/{obj.id}/",
                     obj.herbarium.metadata.dataset.licensed.first().link,
                     obj.herbarium.name,
                     obj.herbarium.institution_code,
@@ -367,8 +486,13 @@ class VoucherImportedQuerySet(CatalogQuerySet):
                     [obj.other_catalog_numbers],
                     [obj.identified_by],
                     str(obj.verbatim_elevation),
-                    obj.decimal_latitude_public,
-                    obj.decimal_longitude_public,
+                    obj.decimal_latitude,
+                    obj.decimal_longitude,
+                    "WGS84",
+                    "Sudamérica",
+                    "Chile",
+                    "CL",
+                    obj.locality,
                     None if obj.georeferenced_date is None else datetime.combine(obj.georeferenced_date, datetime.min.time()),
                     None if obj.date_identified is None else datetime(year=obj.date_identified, month=1, day=1),
                     [type_status.get_type_display() for type_status in obj.typestatus_set.all()],
@@ -379,7 +503,10 @@ class VoucherImportedQuerySet(CatalogQuerySet):
                     obj.scientific_name.specific_epithet,
                     obj.scientific_name.infraspecific_epithet,
                     obj.scientific_name.taxon_rank.name_en,
-                    obj.scientific_name.authorship
+                    obj.scientific_name.authorship,
+                    "PhysicalObject",
+                    Language.SPA,
+                    None if obj.georeferenced_date is None else datetime.combine(obj.georeferenced_date, datetime.min.time()),
                 ]
             )
         return pd.DataFrame(rows, columns=[field.name for field in HERBARIUM_DWC_FIELDS])
@@ -395,7 +522,7 @@ class Voucher(models.Model):
     recorded_by = models.CharField(verbose_name=_("Recorded by"), max_length=300, blank=True, null=True)
     record_number = models.CharField(verbose_name=_("Record Number"), max_length=20, blank=True, null=True)
     organism_remarks = models.CharField(verbose_name=_("Observations"), max_length=300, blank=True, null=True)
-    scientific_name = models.ForeignKey(Species, verbose_name=_("Species"), on_delete=models.CASCADE, blank=True,
+    scientific_name = models.ForeignKey(Species, verbose_name=_("Species"), on_delete=models.PROTECT, blank=True,
                                         null=True)
     locality = models.CharField(verbose_name=_("Locality"), max_length=300, blank=True, null=True)
     verbatim_elevation = models.IntegerField(verbose_name=_("Altitude"), blank=True, null=True)

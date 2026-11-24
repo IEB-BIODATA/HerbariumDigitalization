@@ -191,5 +191,8 @@ Network Trash Folder
 Temporary Items
 .apdisk
 
+# PyCharm Modules
+digitalization.iml
+
 # Temporal files
 tmp/

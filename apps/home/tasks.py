@@ -14,7 +14,8 @@ from xml_common.utils import Language as EMLLanguage
 
 from apps.catalog.models import Kingdom, Division, ClassName, Order, Family, Genus, Species, Synonymy, \
     CATALOG_DWC_FIELDS, VernacularName, CommonName, Region, Reference
-from apps.digitalization.models import HERBARIUM_DWC_FIELDS, VoucherImported
+from apps.digitalization.models import HERBARIUM_DWC_FIELDS, VoucherImported, Multimedia, HERBARIUM_MULTIMEDIA_FIELDS, \
+    Voucher, Herbarium
 from apps.digitalization.storage_backends import PrivateMediaStorage
 from apps.home.models import DarwinCoreArchiveFile
 from apps.metadata.models import EML
@@ -121,11 +122,65 @@ def generate_dwc_archive(self, option: int):
                     0, "occurrence.tsv", HERBARIUM_DWC_FIELDS,
                     fields_terminated_by="\t", ignore_header_lines=1
                 )
-                herbarium_vouchers = VoucherImported.objects.filter(herbarium__metadata_id=option)
+                herbarium_vouchers = VoucherImported.objects.filter(herbarium__metadata_id=option).exclude(image__exact='')
                 results = herbarium_vouchers.get_dwc_data(logger=logger, task=self)
                 logger.info("Adding core to archive")
                 darwin_core_archive.core = core
                 darwin_core_archive.core.pandas = results
+                async_result = AsyncResult(self.request.id)
+                current_total = async_result.info['total']
+                # Extensions
+                logger.info(f"Retrieving mulimedia names")
+                multimedia = Multimedia(
+                    0, "multimedia.tsv", HERBARIUM_MULTIMEDIA_FIELDS
+                )
+                multimedia_result = list()
+                new_total = current_total + 2 * len(herbarium_vouchers)
+                for i, voucher in enumerate(herbarium_vouchers):
+                    self.update_state(state="PROGRESS",
+                                      meta={"step": 2 * i + current_total, "total": new_total,
+                                            "logs": logger[0].get_logs()})
+                    multimedia_result.extend([
+                        [
+                            voucher.biodata_code.code,
+                            "InteractiveResource",
+                            "application/ld+json",
+                            f"https://iiif.herbariodigital.cl/iiif/2/{voucher.image_public.name}/info.json",
+                            f"https://herbariodigital.cl/{voucher.id}/",
+                            f"https://iiif.herbariodigital.cl/iiif/2/{voucher.image_public.name}/info.json",
+                            f"IIIF Manifiesto para especimen {voucher.biodata_code.code}",
+                            "IIIF",
+                            voucher.herbarium.name,
+                            voucher.herbarium.metadata.dataset.licensed.first().link,
+                            f"Copyright {voucher.herbarium.name}",
+                            voucher.herbarium.name,
+                            voucher.herbarium.name,
+                            voucher.herbarium.metadata.dataset.licensed.first().short_name,
+                            voucher.biodata_code.created_at
+                        ],
+                        [
+                            voucher.biodata_code.code,
+                            "StillImage",
+                            "image/jpeg",
+                            voucher.image_public_resized_60.url,
+                            voucher.image_public_resized_60.url,
+                            voucher.image_public_resized_60.url,
+                            f"Imagen JPEG para especimen {voucher.biodata_code.code}",
+                            "JPEG",
+                            voucher.herbarium.name,
+                            voucher.herbarium.metadata.dataset.licensed.first().link,
+                            f"Copyright {voucher.herbarium.name}",
+                            voucher.herbarium.name,
+                            voucher.herbarium.name,
+                            voucher.herbarium.metadata.dataset.licensed.first().short_name,
+                            voucher.biodata_code.created_at
+                        ]
+                    ])
+                darwin_core_archive.extensions.append(multimedia)
+                darwin_core_archive.extensions[0].as_pandas(_no_interaction=True)
+                darwin_core_archive.extensions[0].pandas = pd.DataFrame(multimedia_result,
+                                                                        columns=[fields.name for fields in
+                                                                                 multimedia.__fields__])
                 logger.info("Zipping archive")
                 zip_filename = f"{eml.package_id}.zip"
                 darwin_core_archive.to_file(zip_filename)
