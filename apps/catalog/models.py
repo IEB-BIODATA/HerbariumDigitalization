@@ -19,7 +19,7 @@ from django.core.exceptions import ObjectDoesNotExist
 from django.db import connection
 from django.db import models
 from django.db.models import Q
-from django.utils.translation import gettext_lazy as _, pgettext_lazy, pgettext
+from django.utils.translation import gettext_lazy as _, pgettext_lazy
 from time import time_ns, time
 from typing import List, Dict, Tuple
 
@@ -614,7 +614,7 @@ class TaxonomicModel(models.Model):
         return super().__hash__()
 
     def __eq__(self, other: object):
-        return isinstance(other, TaxonomicModel)
+        return isinstance(other, TaxonomicModel) and self.deleted == other.deleted
 
     def __ne__(self, other: object):
         return not self.__eq__(other)
@@ -1227,15 +1227,16 @@ class ScientificName(TaxonomicModel):
         return
 
     def save(self, *args, **kwargs):
+        # TaxonRank names are stored in Spanish; don't depend on the active language
         if self.form is not None:
-            taxon_rank = TaxonRank.objects.get(name__iexact=pgettext("taxonomic", "form"))
+            rank_name = "forma"
         elif self.variety is not None:
-            taxon_rank = TaxonRank.objects.get(name__iexact=pgettext("taxonomic", "variety"))
+            rank_name = "variedad"
         elif self.subspecies is not None:
-            taxon_rank = TaxonRank.objects.get(name__iexact=pgettext("taxonomic", "subspecies"))
+            rank_name = "subespecie"
         else:
-            taxon_rank = TaxonRank.objects.get(name__iexact=pgettext("taxonomic", "species"))
-        self.taxon_rank = taxon_rank
+            rank_name = "especie"
+        self.taxon_rank = TaxonRank.objects.get(name__iexact=rank_name)
         return super().save(*args, **kwargs)
 
     class Meta:
