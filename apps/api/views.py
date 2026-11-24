@@ -9,7 +9,7 @@ from django.core.paginator import InvalidPage
 from django.db.models import Q, ExpressionWrapper, F, FloatField, Value, Count, QuerySet
 from django.db.models.functions import Length
 from django.http import HttpRequest, HttpResponse, JsonResponse, HttpResponseBadRequest
-from django.shortcuts import redirect
+from django.shortcuts import redirect, get_object_or_404
 from django.utils.translation import get_language, activate
 from drf_multiple_model.views import FlatMultipleModelAPIView, ObjectMultipleModelAPIView
 from drf_spectacular.types import OpenApiTypes
@@ -40,7 +40,7 @@ from .tasks import request_download
 from .utils import filter_query_set, OpenAPIKingdom, OpenAPIClass, OpenAPIOrder, OpenAPIFamily, OpenAPIGenus, \
     OpenAPISpecies, OpenAPIPlantHabit, OpenAPIEnvHabit, OpenAPIStatus, OpenAPICycle, OpenAPIRegion, OpenAPIConservation, \
     OpenAPICommonName, OpenAPISearch, OpenAPIDivision, OpenAPIHerbarium, OpenApiPaginated, OpenAPISpeciesFilter, \
-    OpenAPILang, filter_by_geo, OpenAPIArea, OpenAPIGeometry, OpenAPITypification
+    OpenAPILang, filter_by_geo, OpenAPIArea, OpenAPIGeometry, OpenAPITypification, exclude_deleted
 from ..catalog.serializers import PlantHabitSerializer, EnvHabitSerializer, StatusSerializer, CycleSerializer, \
     RegionSerializer, ConservationStatusSerializer
 from ..datavis.serializers import DataVisualizationSerializer
@@ -51,6 +51,17 @@ from ..home.models import Alert
 TAXONOMIC_MODEL = {
     "species": Species,
     "synonymy": Synonymy,
+}
+
+FINDER_TAXONOMIC_MODEL = {
+    "species": Species,
+    "synonymy": Synonymy,
+    "kingdom": Kingdom,
+    "division": Division,
+    "class": ClassName,
+    "order": Order,
+    "family": Family,
+    "genus": Genus,
 }
 
 TAXONOMIC_SERIALIZER = {
@@ -489,7 +500,7 @@ class NameApiView(ObjectMultipleModelAPIView):
             asking_for = self.request.query_params.getlist(label)
             if len(asking_for) > 0:
                 if isinstance(a_model["queryset"], TaxonomicQuerySet):
-                    a_queryset = a_model["queryset"].filter(unique_taxon_id__in=self.request.query_params.getlist(label))
+                    a_queryset = exclude_deleted(a_model["queryset"]).filter(unique_taxon_id__in=self.request.query_params.getlist(label))
                 else:
                     a_queryset = a_model["queryset"].filter(id__in=self.request.query_params.getlist(label))
                 if a_queryset.count() > 0:
@@ -541,7 +552,17 @@ class FinderApiView(ListAPIView):
         filters = {"name__icontains": text}
         if category is not None and category.lower() != "all":
             filters["type"] = category.lower()
-        return super().get_queryset().filter(**filters).order_by("type","name")
+        return super().get_queryset().filter(**filters).exclude(
+            self.deleted_query()
+        ).order_by("type","name")
+
+    @staticmethod
+    def deleted_query() -> Q:
+        query = Q()
+        for type_name, model in FINDER_TAXONOMIC_MODEL.items():
+            deleted_ids = model.objects.filter(deleted=True).values("unique_taxon_id")
+            query |= Q(type=type_name, id__in=deleted_ids)
+        return query
 
 
 class RegionDetails(RetrieveAPIView):
@@ -709,7 +730,7 @@ class RetrieveTaxaApiView(RetrieveLangApiView):
 
     def get_queryset(self):
         try:
-            return TAXONOMIC_MODEL[self.get_type()].objects.all()
+            return exclude_deleted(TAXONOMIC_MODEL[self.get_type()].objects.all())
         except KeyError:
             return None
 
@@ -722,6 +743,9 @@ class RetrieveTaxaApiView(RetrieveLangApiView):
 
 class ScientificNameDetails(RetrieveLangApiView):
     lookup_field = "unique_taxon_id"
+
+    def get_queryset(self):
+        return exclude_deleted(super().get_queryset())
 
 
 class SpeciesDetails(ScientificNameDetails):
@@ -749,7 +773,7 @@ class DistributionList(ListAPIView):
         species_id = self.kwargs["species_id"]
         queryset = super().get_queryset()
         if species_id:
-            main_species = Species.objects.get(unique_taxon_id=species_id)
+            main_species = get_object_or_404(exclude_deleted(Species.objects.all()), unique_taxon_id=species_id)
             children = get_children(main_species)
             queryset = queryset.filter(scientific_name__in=children)
         return queryset.order_by("id")

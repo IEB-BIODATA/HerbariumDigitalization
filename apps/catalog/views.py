@@ -12,6 +12,7 @@ import tablib
 from django import forms
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth.models import User
+from django.core.exceptions import FieldDoesNotExist
 from django.db.models import Q
 from django.http import HttpResponse, JsonResponse, HttpRequest, HttpResponseServerError, HttpResponseRedirect
 from django.shortcuts import render, redirect, get_object_or_404
@@ -105,7 +106,11 @@ def __catalog_table__(
         )
         if add_searchable:
             search_query = search_query | add_searchable
-    entries = model.objects.all()
+    try:
+        model._meta.get_field("deleted")
+        entries = model.objects.filter(deleted=False)
+    except FieldDoesNotExist:
+        entries = model.objects.all()
 
     return paginated_table(
         request, entries,
@@ -580,13 +585,7 @@ def delete_taxa(request, species_id):
         logging.info("Taxa to be deleted {}:{}".format(
             species_id, name
         ))
-        species.delete()
-        binnacle = Binnacle(
-            type_update="Eliminación", model="Taxón",
-            description="Se elimina Taxón {}".format(name),
-            created_by=request.user
-        )
-        binnacle.save()
+        Binnacle.delete_entry(species, request.user)
         CatalogView.refresh_view()
         FinderView.refresh_view()
         SynonymyView.refresh_view()

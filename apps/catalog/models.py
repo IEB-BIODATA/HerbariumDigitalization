@@ -19,7 +19,7 @@ from django.core.exceptions import ObjectDoesNotExist
 from django.db import connection
 from django.db import models
 from django.db.models import Q
-from django.utils.translation import gettext_lazy as _, pgettext_lazy, pgettext
+from django.utils.translation import gettext_lazy as _, pgettext_lazy
 from time import time_ns, time
 from typing import List, Dict, Tuple
 
@@ -601,6 +601,7 @@ class TaxonomicModel(models.Model):
     updated_at = models.DateTimeField(verbose_name=_("Updated at"), auto_now=True)
     created_by = models.ForeignKey(User, verbose_name=_("Created by"), on_delete=models.PROTECT, default=1, editable=False)
     references = models.ManyToManyField(References, verbose_name=_("References"), blank=True)
+    deleted = models.BooleanField(verbose_name=_("Deleted"), default=False)
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -613,7 +614,7 @@ class TaxonomicModel(models.Model):
         return super().__hash__()
 
     def __eq__(self, other: object):
-        return isinstance(other, TaxonomicModel)
+        return isinstance(other, TaxonomicModel) and self.deleted == other.deleted
 
     def __ne__(self, other: object):
         return not self.__eq__(other)
@@ -1226,15 +1227,16 @@ class ScientificName(TaxonomicModel):
         return
 
     def save(self, *args, **kwargs):
+        # TaxonRank names are stored in Spanish; don't depend on the active language
         if self.form is not None:
-            taxon_rank = TaxonRank.objects.get(name__iexact=pgettext("taxonomic", "form"))
+            rank_name = "forma"
         elif self.variety is not None:
-            taxon_rank = TaxonRank.objects.get(name__iexact=pgettext("taxonomic", "variety"))
+            rank_name = "variedad"
         elif self.subspecies is not None:
-            taxon_rank = TaxonRank.objects.get(name__iexact=pgettext("taxonomic", "subspecies"))
+            rank_name = "subespecie"
         else:
-            taxon_rank = TaxonRank.objects.get(name__iexact=pgettext("taxonomic", "species"))
-        self.taxon_rank = taxon_rank
+            rank_name = "especie"
+        self.taxon_rank = TaxonRank.objects.get(name__iexact=rank_name)
         return super().save(*args, **kwargs)
 
     class Meta:
@@ -1701,7 +1703,8 @@ class Binnacle(models.Model):
             model.pk
         )
         try:
-            model.delete()
+            model.deleted = True
+            model.save(force_update=True)
             logging.info("{}: {}".format(created_by, description))
             binnacle = Binnacle(
                 type_update="Eliminación",
@@ -1732,6 +1735,7 @@ class CatalogView(TaxonomicModel):
            species.id_taxa,
            species.unique_taxon_id,
            species.taxon_id,
+           species.deleted,
            kingdom.id      AS kingdom_id,
            kingdom.name    AS kingdom,
            division.id     AS division_id,
@@ -1777,7 +1781,8 @@ class CatalogView(TaxonomicModel):
          JOIN catalog_classname classname ON "order".classname_id = classname.id
          JOIN catalog_division division ON classname.division_id = division.id
          JOIN catalog_kingdom kingdom ON division.kingdom_id = kingdom.id
-         LEFT JOIN catalog_status status ON species.status_id = status.id;
+         LEFT JOIN catalog_status status ON species.status_id = status.id
+    WHERE NOT species.deleted;
 
     CREATE UNIQUE INDEX catalog_view_id_idx
         ON catalog_view (id);
@@ -1786,6 +1791,7 @@ class CatalogView(TaxonomicModel):
     id_taxa = models.IntegerField(blank=False, null=False, help_text="")
     unique_taxon_id = models.BigIntegerField()
     taxon_id = models.CharField()
+    deleted = models.BooleanField(default=False)
     kingdom_id = models.IntegerField(blank=False, null=False, help_text="")
     kingdom = models.CharField(max_length=300, blank=True, null=True)
     division_id = models.IntegerField(blank=False, null=False, help_text="")
@@ -1853,6 +1859,7 @@ class SynonymyView(TaxonomicModel):
            species.scientific_name AS species_scientific_name,
            synonymy.scientific_name,
            synonymy.scientific_name_full,
+           synonymy.deleted,
            synonymy.genus,
            synonymy.specific_epithet,
            synonymy.scientific_name_authorship,
@@ -1867,7 +1874,8 @@ class SynonymyView(TaxonomicModel):
            "user".username          AS created_by
     FROM catalog_synonymy synonymy
         LEFT JOIN catalog_species species ON synonymy.species_id = species.id
-        LEFT JOIN auth_user "user" ON synonymy.created_by_id = "user".id;
+        LEFT JOIN auth_user "user" ON synonymy.created_by_id = "user".id
+    WHERE NOT synonymy.deleted;
 
     CREATE UNIQUE INDEX synonymy_view_id_idx
         ON synonymy_view (id);
@@ -1880,6 +1888,7 @@ class SynonymyView(TaxonomicModel):
     species_scientific_name = models.CharField(max_length=500, blank=True, null=True, help_text="sp")
     scientific_name = models.CharField(max_length=300, blank=True, null=True)
     scientific_name_full = models.CharField(max_length=800, blank=True, null=True)
+    deleted = models.BooleanField(default=False)
     genus = models.CharField(max_length=300, blank=True, null=True)
     specific_epithet = models.CharField(max_length=300, blank=True, null=True)
     scientific_name_authorship = models.CharField(max_length=500, blank=True, null=True)
