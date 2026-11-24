@@ -12,6 +12,7 @@ import tablib
 from django import forms
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth.models import User
+from django.core.exceptions import FieldDoesNotExist
 from django.db.models import Q
 from django.http import HttpResponse, JsonResponse, HttpRequest, HttpResponseServerError, HttpResponseRedirect
 from django.shortcuts import render, redirect, get_object_or_404
@@ -105,7 +106,11 @@ def __catalog_table__(
         )
         if add_searchable:
             search_query = search_query | add_searchable
-    entries = model.objects.filter(deleted=False)
+    try:
+        model._meta.get_field("deleted")
+        entries = model.objects.filter(deleted=False)
+    except FieldDoesNotExist:
+        entries = model.objects.all()
 
     return paginated_table(
         request, entries,
