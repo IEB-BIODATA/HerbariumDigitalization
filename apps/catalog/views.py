@@ -623,16 +623,21 @@ def merge_taxa(request, taxa_1: int, taxa_2: int) -> HttpResponse:
         form = SpeciesForm(request.POST, instance=species_2)
         updated = __update_catalog__(form, request)
         if updated:
+            logging.info(f"Assigning {species_1} to synonymy")
             new_synonymy = Synonymy(species=species_1)
             new_synonymy.save(user=request.user)
             species_2.synonyms.add(new_synonymy)
+            logging.debug(f"Checking: {species_2.synonyms.all()}")
             logging.info(f"Assigning voucher for {species_1}")
             voucher_specimens = species_1.voucher_set.filter(voucherimported__isnull=False).select_related("voucherimported")
+            logging.debug(f"To assign: {voucher_specimens}")
+            logging.debug(f"Current vouchers {species_2.voucher_set.count()}")
             for voucher in voucher_specimens:
                 voucher.scientific_name = species_2
                 voucher.save()
                 #logging.info(f"Re-generating etiquette for {voucher.voucherimported.biodata_code.code}")
                 #voucher.voucherimported.generate_etiquette()
+            logging.debug(f"New number of vouchers {species_2.voucher_set.count()}")
             Binnacle.delete_entry(species_1, request.user)
             CatalogView.refresh_view()
             FinderView.refresh_view()
